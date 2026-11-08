@@ -1,0 +1,13 @@
+{
+  "name": "Lightning Strike",
+  "oracleId": "f34b9bc4-7bfe-47fd-ba23-4eeeb46026eb",
+  "status": "prospect",
+  "section": "dinosaurs",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 138,
+    "input": "[  ] Lightning strike"
+  }
+}

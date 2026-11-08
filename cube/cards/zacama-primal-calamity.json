@@ -1,0 +1,13 @@
+{
+  "name": "Zacama, Primal Calamity",
+  "oracleId": "23270e4a-a222-4ffb-a946-d0e20d665187",
+  "status": "prospect",
+  "section": "dinosaurs",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 132,
+    "input": "[  ] Zacama primal calamity"
+  }
+}

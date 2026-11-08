@@ -1,0 +1,13 @@
+{
+  "name": "Raptor Hatchling",
+  "oracleId": "91638137-06ba-4b21-b088-28d2b4d1d8da",
+  "status": "prospect",
+  "section": "dinosaurs",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 136,
+    "input": "[  ] Raptor hatchling"
+  }
+}

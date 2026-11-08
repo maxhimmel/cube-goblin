@@ -1,0 +1,13 @@
+{
+  "name": "Ravenous Chupacabra",
+  "oracleId": "7b459306-149b-4f43-abc1-2dd70c748c0e",
+  "status": "prospect",
+  "section": "pirates",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 125,
+    "input": "[  ] Ravenous chupacabra"
+  }
+}

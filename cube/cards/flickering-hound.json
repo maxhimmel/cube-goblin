@@ -1,0 +1,12 @@
+{
+  "name": "Flickering Hound",
+  "oracleId": "162421d2-8761-437f-bed9-578b61c96f1f",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 38,
+    "input": "[  ] Flickering hound"
+  }
+}

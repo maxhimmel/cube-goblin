@@ -1,0 +1,12 @@
+{
+  "name": "Liliana the Faultless",
+  "oracleId": "22c2e66d-a2a1-46db-a70a-dff5ad5d6c14",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 69,
+    "input": "[  ] Liliana the faultless"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Lyra, Tolarian Archangel",
+  "oracleId": "d9060fff-0b65-4b3d-930d-6e36315b802c",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 41,
+    "input": "[  ] Lyra tolarian archangel"
+  }
+}

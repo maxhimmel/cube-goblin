@@ -1,0 +1,13 @@
+{
+  "name": "Glorifier of Dusk",
+  "oracleId": "6205c485-f46b-40af-8b73-03c668f9ea42",
+  "status": "prospect",
+  "section": "vampires",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001-fixes",
+    "line": 2,
+    "input": "[  ] Glorifier of Dusk"
+  }
+}

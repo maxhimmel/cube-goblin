@@ -1,0 +1,12 @@
+{
+  "name": "Blasphemous Edict",
+  "oracleId": "6cf50e21-0f60-4e9a-b910-ebe1bad2a29e",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 115,
+    "input": "[  ] Blasphemous edict"
+  }
+}

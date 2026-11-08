@@ -1,0 +1,12 @@
+{
+  "name": "Deduce",
+  "oracleId": "eeae4161-9f35-45df-8b3c-c55e37f49cd1",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 43,
+    "input": "[  ] Deduce"
+  }
+}

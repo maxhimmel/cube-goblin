@@ -1,0 +1,13 @@
+{
+  "name": "River's Rebuke",
+  "oracleId": "c52cfb41-18f3-4e73-b5e7-d75baf74e578",
+  "status": "prospect",
+  "section": "pirates",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 123,
+    "input": "[  ] Rivers rebuke"
+  }
+}

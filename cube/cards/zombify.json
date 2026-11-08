@@ -1,0 +1,12 @@
+{
+  "name": "Zombify",
+  "oracleId": "bb95db4d-5017-4121-bf79-d68476602d8c",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 60,
+    "input": "[  ] Zombify"
+  }
+}

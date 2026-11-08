@@ -1,0 +1,12 @@
+{
+  "name": "Awaken the Honored Dead",
+  "oracleId": "5f694917-f434-4459-bc86-caf9ac1c80e7",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 58,
+    "input": "[  ] Awaken honored dead"
+  }
+}

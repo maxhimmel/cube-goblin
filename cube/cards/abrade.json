@@ -1,0 +1,12 @@
+{
+  "name": "Abrade",
+  "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 104,
+    "input": "[  ] Abrade"
+  }
+}

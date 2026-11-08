@@ -1,0 +1,12 @@
+{
+  "name": "The Misty Mountains Cold",
+  "oracleId": "c50282bd-4b57-4c7b-9598-ea67ba49248b",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 30,
+    "input": "[  ] The misty mountains cold"
+  }
+}

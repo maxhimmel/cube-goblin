@@ -1,5 +1,5 @@
 import type { CardEntry } from "./schema.ts";
-import { cardEntrySchema } from "./schema.ts";
+import { cardEntrySchema, cardPatchSchema } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
 import { readCards, readSections, slugify, writeCard } from "./store.ts";
 import { validateCube } from "./validate.ts";
@@ -40,4 +40,28 @@ export async function updateCard(
   }
   await writeCard(paths, card);
   return { ok: true, card };
+}
+
+export async function patchCard(
+  paths: CubePaths,
+  slug: string,
+  input: unknown,
+): Promise<UpdateResult> {
+  const parsed = cardPatchSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, status: 400, error: parsed.error.message };
+  }
+  const current = (await readCards(paths)).find((card) => slugify(card.name) === slug);
+  if (!current) {
+    return { ok: false, status: 404, error: `No card "${slug}"` };
+  }
+  const { section, ...rest } = parsed.data;
+  const { section: currentSection, ...base } = current;
+  const nextSection = section === undefined ? currentSection : (section ?? undefined);
+  const next: CardEntry = {
+    ...base,
+    ...Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined)),
+    ...(nextSection === undefined ? {} : { section: nextSection }),
+  };
+  return updateCard(paths, slug, next);
 }

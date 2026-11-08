@@ -18,6 +18,13 @@ export const cardEntrySchema = z.strictObject({
   }),
 });
 
+export const cardPatchSchema = z.strictObject({
+  status: cardStatusSchema.optional(),
+  section: z.string().nullable().optional(),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+});
+
 export const sectionSchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9-]+$/u),
   label: z.string().min(1),
@@ -37,5 +44,6 @@ export const cubeConfigSchema = z.strictObject({
 
 export type CardStatus = z.infer<typeof cardStatusSchema>;
 export type CardEntry = z.infer<typeof cardEntrySchema>;
+export type CardPatch = z.infer<typeof cardPatchSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type CubeConfig = z.infer<typeof cubeConfigSchema>;

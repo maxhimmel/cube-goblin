@@ -5,6 +5,6 @@ export { cardStatusSchema, cubeConfigSchema, sectionSchema, sectionsFileSchema }
 export type { CubeConfig } from "./schema.ts";
 export { cubePaths, readCards, readConfig, readSections, slugify, writeCard } from "./store.ts";
 export type { CubePaths } from "./store.ts";
-export { updateCard } from "./update.ts";
+export { patchCard, updateCard } from "./update.ts";
 export type { UpdateResult } from "./update.ts";
 export { validateCube } from "./validate.ts";

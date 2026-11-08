@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { CardEntry } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
 import { cubePaths, writeCard } from "./store.ts";
-import { updateCard } from "./update.ts";
+import { patchCard, updateCard } from "./update.ts";
 
 const shock: CardEntry = {
   name: "Shock",
@@ -80,5 +80,37 @@ describe("updateCard", () => {
     expect(unknownSection).toMatchObject({ ok: false, status: 400 });
     expect(await onDisk("shock")).toEqual(shock);
     expect(await onDisk("opt")).toEqual(opt);
+  });
+});
+
+describe("patchCard", () => {
+  it("merges editable fields into the card on disk", async () => {
+    const result = await patchCard(paths, "shock", { status: "prospect", section: "pirates" });
+    const expected = { ...shock, status: "prospect", section: "pirates" };
+    expect(result).toEqual({ ok: true, card: expected });
+    expect(await onDisk("shock")).toEqual(expected);
+
+    await patchCard(paths, "shock", { notes: "burn", tags: ["removal"] });
+    expect(await onDisk("shock")).toEqual({ ...expected, notes: "burn", tags: ["removal"] });
+  });
+
+  it("clears the section with null", async () => {
+    await patchCard(paths, "shock", { section: "pirates" });
+    await patchCard(paths, "shock", { section: null });
+    expect(await onDisk("shock")).toEqual(shock);
+  });
+
+  it("rejects identity fields and unknown keys", async () => {
+    for (const patch of [{ name: "Bolt" }, { oracleId: opt.oracleId }, { status: "maybe" }]) {
+      expect(await patchCard(paths, "shock", patch)).toMatchObject({ ok: false, status: 400 });
+    }
+    expect(await onDisk("shock")).toEqual(shock);
+  });
+
+  it("returns 404 for an unknown card", async () => {
+    expect(await patchCard(paths, "bolt", { notes: "x" })).toMatchObject({
+      ok: false,
+      status: 404,
+    });
   });
 });

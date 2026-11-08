@@ -20,11 +20,11 @@ A deck strategy, built on shared synergies, that the cube supports. ([MTG Salvat
 
 ## Tag
 
-A label on a card. A card can carry many tags, and the grid can be grouped by any of them. Every tag has a kind, either **archetype** (see [Archetype](#archetype)) or **group** (any other set of cards, such as removal). The allowed tags live in `cube/tags.json`. Cube Cobra models cards the same way, with a per-card `tags` list and a "Tags" sort. ([Cube Cobra `Card.ts`](https://github.com/dekkerglen/CubeCobra/blob/303e70743a787bb93d22893c2c6c2e9bb33e626a/packages/utils/src/datatypes/Card.ts#L262), [Cube Cobra `Sort.ts`](https://github.com/dekkerglen/CubeCobra/blob/303e70743a787bb93d22893c2c6c2e9bb33e626a/packages/utils/src/sorting/Sort.ts#L630))
+A label on a card. A card can carry many tags. Every tag has a kind, either **archetype** (see [Archetype](#archetype)) or **group** (see [Group](#group)). The allowed tags, and their labels, live in `cube/tags.json`. Cube Cobra also gives each card a free-form list of tags and can sort a cube by tag; the fixed vocabulary and the kinds are this project's additions. ([Cube Cobra `Card.ts`](https://github.com/dekkerglen/CubeCobra/blob/303e70743a787bb93d22893c2c6c2e9bb33e626a/packages/utils/src/datatypes/Card.ts#L281), [Cube Cobra `Sort.ts`](https://github.com/dekkerglen/CubeCobra/blob/303e70743a787bb93d22893c2c6c2e9bb33e626a/packages/utils/src/sorting/Sort.ts#L630))
 
 ## Group
 
-A tag of kind `group`: a set of cards the designer wants to see together that isn't an archetype, such as removal or card draw. Groups can overlap. See [Tag](#tag).
+A project-defined term with no outside source: a tag of kind `group`, meaning a set of cards the designer wants to see together that isn't an archetype, such as removal or card draw. Groups can overlap. See [Tag](#tag).
 
 ## Enabler / payoff
 

@@ -1,3 +1,4 @@
+import { mode } from "#mode";
 import {
   Outlet,
   createHashHistory,
@@ -29,8 +30,14 @@ const cardRoute = createRoute({
   component: CardPage,
 });
 
+const tagsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tags",
+  component: () => <mode.TagsPage />,
+});
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([gridRoute, cardRoute]),
+  routeTree: rootRoute.addChildren([gridRoute, cardRoute, tagsRoute]),
   history: createHashHistory(),
 });
 

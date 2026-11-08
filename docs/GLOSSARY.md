@@ -18,6 +18,14 @@ A two-player draft. Cards are dealt from a face-down main stack into three piles
 
 A deck strategy, built on shared synergies, that the cube supports. ([MTG Salvation](https://www.mtgsalvation.com/forums/the-game/the-cube-forum/articles-podcasts-and-guides/573818-a-comprehensive-list-of-cube-archetypes))
 
+## Tag
+
+A label on a card. A card can carry many tags. Every tag has a kind, either **archetype** (see [Archetype](#archetype)) or **group** (see [Group](#group)). The allowed tags, and their labels, live in `cube/tags.json`. Cube Cobra also gives each card a free-form list of tags and can sort a cube by tag; the fixed vocabulary and the kinds are this project's additions. ([Cube Cobra `Card.ts`](https://github.com/dekkerglen/CubeCobra/blob/303e70743a787bb93d22893c2c6c2e9bb33e626a/packages/utils/src/datatypes/Card.ts#L281), [Cube Cobra `Sort.ts`](https://github.com/dekkerglen/CubeCobra/blob/303e70743a787bb93d22893c2c6c2e9bb33e626a/packages/utils/src/sorting/Sort.ts#L630))
+
+## Group
+
+A project-defined term with no outside source: a tag of kind `group`, meaning a set of cards the designer wants to see together that isn't an archetype, such as removal or card draw. Groups can overlap. See [Tag](#tag).
+
 ## Enabler / payoff
 
 An **enabler** produces an effect or resource. A **payoff** turns it into value. Synergy and combo are both built from these two parts.

@@ -1,5 +1,5 @@
-import type { CardEntry, CardPatch, Workbench } from "@repo/cube/browser";
-import { cardEntrySchema, workbenchSchema } from "@repo/cube/browser";
+import type { CardEntry, CardPatch, Tag, TagKind, Workbench } from "@repo/cube/browser";
+import { cardEntrySchema, tagSchema, workbenchSchema } from "@repo/cube/browser";
 
 export const CUBE_QUERY_KEY = ["cube"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
@@ -42,4 +42,27 @@ export async function sendPatch(
     throw await failure("PATCH", url, response);
   }
   return cardEntrySchema.parse(await response.json());
+}
+
+async function sendJson(method: string, url: string, body: unknown): Promise<unknown> {
+  const response = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw await failure(method, url, response);
+  }
+  return response.json();
+}
+
+export async function createTagRequest(label: string, kind: TagKind): Promise<Tag> {
+  return tagSchema.parse(await sendJson("POST", "/api/tags", { label, kind }));
+}
+
+export async function changeTagRequest(
+  id: string,
+  change: { label?: string; kind?: TagKind },
+): Promise<Tag> {
+  return tagSchema.parse(await sendJson("PATCH", `/api/tags/${id}`, change));
 }

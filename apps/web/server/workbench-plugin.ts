@@ -1,13 +1,23 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
-import type { CubePaths, Workbench, WorkbenchCard } from "@repo/cube";
-import { cubePaths, patchCard, readCards, readSections, slugify } from "@repo/cube";
+import type { CubePaths, TagResult, UpdateResult, Workbench, WorkbenchCard } from "@repo/cube";
+import {
+  changeTag,
+  createTag,
+  cubePaths,
+  patchCard,
+  readCards,
+  readSections,
+  readTags,
+  slugify,
+} from "@repo/cube";
 import { FileCache, ScryfallClient, displayFields } from "@repo/scryfall";
 import type { Plugin } from "vite";
 
 const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
 const CUBE_CHANGED_EVENT = "cube:changed";
 const CARD_ROUTE = /^\/api\/cards\/([a-z0-9-]+)$/u;
+const TAG_ROUTE = /^\/api\/tags\/([a-z0-9-]+)$/u;
 const CHANGE_DEBOUNCE_MS = 100;
 
 export interface WorkbenchOptions {
@@ -38,7 +48,11 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
 }
 
 async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<Workbench> {
-  const [entries, sections] = await Promise.all([readCards(paths), readSections(paths)]);
+  const [entries, sections, vocabulary] = await Promise.all([
+    readCards(paths),
+    readSections(paths),
+    readTags(paths),
+  ]);
   const { cards } = await client.collection(
     entries.map((entry) => ({ oracle_id: entry.oracleId })),
   );
@@ -61,7 +75,26 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
       notes: entry.notes,
     });
   }
-  return { cards: workbenchCards, sections };
+  return { cards: workbenchCards, sections, vocabulary };
+}
+
+type Write = (body: unknown) => Promise<UpdateResult | TagResult>;
+
+function writeRoute(paths: CubePaths) {
+  return (url: string, method: string | undefined): Write | undefined => {
+    const card = CARD_ROUTE.exec(url)?.[1];
+    if (card !== undefined && method === "PATCH") {
+      return (body) => patchCard(paths, card, body);
+    }
+    const tag = TAG_ROUTE.exec(url)?.[1];
+    if (tag !== undefined && method === "PATCH") {
+      return (body) => changeTag(paths, tag, body);
+    }
+    if (url === "/api/tags" && method === "POST") {
+      return (body) => createTag(paths, body);
+    }
+    return undefined;
+  };
 }
 
 export function workbench(options: WorkbenchOptions): Plugin {
@@ -74,6 +107,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
         userAgent: USER_AGENT,
         cache: new FileCache(options.cacheDir),
       });
+      const route = writeRoute(paths);
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
 
@@ -105,23 +139,23 @@ export function workbench(options: WorkbenchOptions): Plugin {
           );
           return;
         }
-        const slug = CARD_ROUTE.exec(url)?.[1];
-        if (slug !== undefined && req.method === "PATCH") {
-          const write = writes.then(async () => {
+        const write = route(url, req.method);
+        if (write !== undefined) {
+          const run = writes.then(async () => {
             const body = parseJson(await readBody(req));
             if (!body.ok) {
               send(res, 400, { error: "Body is not valid JSON" });
               return;
             }
-            const result = await patchCard(paths, slug, body.value);
+            const result = await write(body.value);
             if (result.ok) {
-              send(res, 200, result.card);
+              send(res, 200, "card" in result ? result.card : result.tag);
             } else {
               send(res, result.status, { error: result.error });
             }
           });
-          writes = write.catch(() => undefined);
-          write.catch((error: unknown) => {
+          writes = run.catch(() => undefined);
+          run.catch((error: unknown) => {
             send(res, 500, { error: String(error) });
           });
           return;

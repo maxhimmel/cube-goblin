@@ -13,4 +13,5 @@ export interface Mode {
   useTileMark: (slug: string) => Record<string, string | undefined>;
   Toolbar: () => ReactNode;
   CardPanel: (props: { slug: string }) => ReactNode;
+  TagsPage: () => ReactNode;
 }

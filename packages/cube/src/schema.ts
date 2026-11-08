@@ -41,6 +41,24 @@ export const sectionSchema = z.strictObject({
   header: z.string().min(1),
 });
 
+export const TAG_KINDS = ["archetype", "group"] as const;
+
+export const tagKindSchema = z.enum(TAG_KINDS);
+
+export const tagSchema = z.strictObject({
+  id: z.string().regex(/^[a-z0-9-]+$/u),
+  label: z.string().trim().min(1),
+  kind: tagKindSchema,
+});
+
+export const tagsFileSchema = z.strictObject({
+  tags: z.array(tagSchema),
+});
+
+export const newTagSchema = tagSchema.pick({ label: true, kind: true });
+
+export const tagChangeSchema = tagSchema.pick({ label: true, kind: true }).partial();
+
 export const sectionsFileSchema = z.strictObject({
   sections: z.array(sectionSchema),
 });
@@ -56,4 +74,6 @@ export type CardStatus = z.infer<typeof cardStatusSchema>;
 export type CardEntry = z.infer<typeof cardEntrySchema>;
 export type CardPatch = z.infer<typeof cardPatchSchema>;
 export type Section = z.infer<typeof sectionSchema>;
+export type TagKind = z.infer<typeof tagKindSchema>;
+export type Tag = z.infer<typeof tagSchema>;
 export type CubeConfig = z.infer<typeof cubeConfigSchema>;

@@ -1,11 +1,13 @@
-import type { CardPatch, Section, WorkbenchCard } from "@repo/cube/browser";
-import { CARD_STATUSES } from "@repo/cube/browser";
+import type { CardPatch, Section, Tag, WorkbenchCard } from "@repo/cube/browser";
+import { CARD_STATUSES, TAG_KINDS } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { sendPatch } from "./api.ts";
 import { useCardEdit } from "./edits.ts";
+import { findTag, useCreateTag } from "./tags.ts";
 
 const NOTES_DEBOUNCE_MS = 600;
+const MAX_SUGGESTIONS = 12;
 
 type Save = (label: string, patch: CardPatch, undo: CardPatch) => void;
 
@@ -67,48 +69,147 @@ function NotesField({ slug, notes, save }: { slug: string; notes: string; save: 
   );
 }
 
-function TagsField({ tags, save }: { tags: string[]; save: Save }): ReactNode {
+function focusOnMount(element: HTMLButtonElement | null): void {
+  element?.focus();
+}
+
+function TagsField({
+  slug,
+  tags,
+  vocabulary,
+  save,
+}: {
+  slug: string;
+  tags: string[];
+  vocabulary: Tag[];
+  save: Save;
+}): ReactNode {
   const [input, setInput] = useState("");
+  const [creating, setCreating] = useState<string | undefined>(undefined);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const createTag = useCreateTag();
+
+  function closeCreate(): void {
+    setCreating(undefined);
+    inputRef.current?.focus();
+  }
+  const byId = new Map(vocabulary.map((tag) => [tag.id, tag]));
+  const query = input.trim().toLowerCase();
+  const suggestions = vocabulary
+    .filter((tag) => !tags.includes(tag.id))
+    .filter((tag) => tag.label.toLowerCase().includes(query) || tag.id.includes(query))
+    .slice(0, MAX_SUGGESTIONS);
+
+  function add(id: string): void {
+    if (!tags.includes(id)) {
+      save("tags", { addTags: [id] }, { removeTags: [id] });
+    }
+  }
+
   return (
     <fieldset className="field">
       <legend>Tags</legend>
       <ul className="chips">
-        {tags.map((tag) => (
-          <li key={tag} className="chip">
-            {tag}
-            <button
-              type="button"
-              aria-label={`Remove tag ${tag}`}
-              onClick={() => {
-                save("tags", { removeTags: [tag] }, { addTags: [tag] });
-              }}
-            >
-              ×
-            </button>
-          </li>
-        ))}
+        {tags.map((id) => {
+          const tag = byId.get(id);
+          const label = tag?.label ?? id;
+          return (
+            <li key={id} className="chip" data-kind={tag?.kind}>
+              {label}
+              <button
+                type="button"
+                aria-label={`Remove tag ${label}`}
+                onClick={() => {
+                  save("tags", { removeTags: [id] }, { addTags: [id] });
+                }}
+              >
+                ×
+              </button>
+            </li>
+          );
+        })}
       </ul>
       <form
         className="inline"
         onSubmit={(event) => {
           event.preventDefault();
-          const tag = input.trim();
-          setInput("");
-          if (tag && !tags.includes(tag)) {
-            save("tags", { addTags: [tag] }, { removeTags: [tag] });
+          const text = input.trim();
+          if (!text) {
+            return;
+          }
+          const known = findTag(vocabulary, text);
+          if (known) {
+            setInput("");
+            setCreating(undefined);
+            add(known.id);
+          } else {
+            setCreating(text);
           }
         }}
       >
         <input
-          aria-label="New tag"
+          ref={inputRef}
+          aria-label="Tag name"
           value={input}
           onChange={(event) => {
             setInput(event.target.value);
+            setCreating(undefined);
           }}
-          placeholder="add a tag"
+          placeholder="pick a tag"
         />
         <button type="submit">Add tag</button>
       </form>
+      {suggestions.length > 0 && (
+        <ul className="suggestions" aria-label="Suggested tags">
+          {suggestions.map((tag) => (
+            <li key={tag.id}>
+              <button
+                type="button"
+                className="suggestion"
+                data-kind={tag.kind}
+                onClick={() => {
+                  setInput("");
+                  setCreating(undefined);
+                  add(tag.id);
+                }}
+              >
+                + {tag.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div aria-live="polite">
+        {creating !== undefined && (
+          <div className="create-tag" role="group" aria-label="Create tag">
+            <span>&ldquo;{creating}&rdquo; is not a tag yet.</span>
+            {TAG_KINDS.map((kind, index) => (
+              <button
+                key={kind}
+                ref={index === 0 ? focusOnMount : undefined}
+                type="button"
+                disabled={createTag.isPending}
+                onClick={() => {
+                  createTag.mutate(
+                    { label: creating, kind, addTo: slug },
+                    {
+                      onSuccess: () => {
+                        setInput("");
+                        closeCreate();
+                      },
+                    },
+                  );
+                }}
+              >
+                Create as {kind}
+              </button>
+            ))}
+            <button type="button" onClick={closeCreate}>
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
     </fieldset>
   );
 }
@@ -116,9 +217,11 @@ function TagsField({ tags, save }: { tags: string[]; save: Save }): ReactNode {
 export function CardEditor({
   card,
   sections,
+  vocabulary,
 }: {
   card: WorkbenchCard;
   sections: Section[];
+  vocabulary: Tag[];
 }): ReactNode {
   const edit = useCardEdit();
   const save: Save = (label, patch, undo) => {
@@ -167,7 +270,7 @@ export function CardEditor({
           ))}
         </select>
       </label>
-      <TagsField tags={card.tags} save={save} />
+      <TagsField slug={card.slug} tags={card.tags} vocabulary={vocabulary} save={save} />
       <NotesField slug={card.slug} notes={card.notes} save={save} />
     </div>
   );

@@ -22,8 +22,18 @@ export const cardPatchSchema = z.strictObject({
   status: cardStatusSchema.optional(),
   section: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
+  addTags: z.array(z.string()).optional(),
+  removeTags: z.array(z.string()).optional(),
   notes: z.string().optional(),
 });
+
+export function applyTagChanges(tags: readonly string[], patch: CardPatch): string[] {
+  const base = patch.tags ?? tags;
+  const removed = new Set(patch.removeTags ?? []);
+  const kept = base.filter((tag) => !removed.has(tag));
+  const added = (patch.addTags ?? []).filter((tag) => !kept.includes(tag));
+  return [...kept, ...added];
+}
 
 export const sectionSchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9-]+$/u),

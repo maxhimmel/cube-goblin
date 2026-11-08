@@ -94,6 +94,14 @@ describe("patchCard", () => {
     expect(await onDisk("shock")).toEqual({ ...expected, notes: "burn", tags: ["removal"] });
   });
 
+  it("adds and removes tags against the tags on disk", async () => {
+    await patchCard(paths, "shock", { addTags: ["a"] });
+    await patchCard(paths, "shock", { addTags: ["b", "a"] });
+    expect(await onDisk("shock")).toMatchObject({ tags: ["a", "b"] });
+    await patchCard(paths, "shock", { removeTags: ["a"] });
+    expect(await onDisk("shock")).toMatchObject({ tags: ["b"] });
+  });
+
   it("clears the section with null", async () => {
     await patchCard(paths, "shock", { section: "pirates" });
     await patchCard(paths, "shock", { section: null });

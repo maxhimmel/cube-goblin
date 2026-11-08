@@ -18,5 +18,5 @@ export type {
   Workbench,
   WorkbenchCard,
 } from "./snapshot.ts";
-export { CARD_STATUSES, cardEntrySchema, cardPatchSchema } from "./schema.ts";
+export { CARD_STATUSES, applyTagChanges, cardEntrySchema, cardPatchSchema } from "./schema.ts";
 export type { CardEntry, CardPatch, CardStatus, Section } from "./schema.ts";

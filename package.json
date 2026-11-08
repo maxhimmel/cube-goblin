@@ -17,7 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "export": "tsx scripts/src/export.ts",
-    "dev": "turbo run dev --filter=@repo/web"
+    "dev": "turbo run dev --filter=@repo/web",
+    "handoff": "tsx scripts/src/handoff.ts"
   },
   "prettier": "@repo/prettier-config",
   "commitlint": {

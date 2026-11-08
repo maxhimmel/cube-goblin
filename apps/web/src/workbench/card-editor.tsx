@@ -80,7 +80,7 @@ function TagsField({ tags, save }: { tags: string[]; save: Save }): ReactNode {
               type="button"
               aria-label={`Remove tag ${tag}`}
               onClick={() => {
-                save("tags", { tags: tags.filter((other) => other !== tag) }, { tags });
+                save("tags", { removeTags: [tag] }, { addTags: [tag] });
               }}
             >
               ×

@@ -192,6 +192,27 @@ test("rapid edits all land and the page settles on them", async ({ page, workben
     "true",
   );
   await expect(page.locator(".chip")).toHaveText(["tempo×", "card-draw×", "blue×"]);
+
+  await page.getByRole("button", { name: "Remove tag tempo" }).click();
+  await page.getByLabel("New tag").fill("cantrip");
+  await page.getByLabel("New tag").press("Enter");
+  await page.getByRole("button", { name: "Remove tag blue" }).click();
+  await expect.poll(async () => (await disk()).tags).toEqual(["card-draw", "cantrip"]);
+  await expect(page.locator(".chip")).toHaveText(["card-draw×", "cantrip×"]);
+});
+
+test("leaving the card right after typing keeps every edit", async ({ page, workbench }) => {
+  const slug = "essence-scatter";
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await page.getByRole("button", { name: "cut", exact: true }).click();
+  await page.getByLabel("Notes").fill("left in a hurry");
+  await page.getByRole("link", { name: "← all cards" }).click();
+  await expect(page.locator('[data-group="cut"] img[alt="Essence Scatter"]')).toBeVisible();
+  await expect.poll(async () => (await disk()).notes).toBe("left in a hurry");
+  expect((await disk()).status).toBe("cut");
+  await page.locator('img[alt="Essence Scatter"]').click();
+  await expect(page.getByLabel("Notes")).toHaveValue("left in a hurry");
 });
 
 test("notes typed right before a reload are saved", async ({ page, workbench }) => {

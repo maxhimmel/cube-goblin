@@ -53,7 +53,11 @@ function ToastView({ toast }: { toast: Toast }): ReactNode {
       className="toast"
       data-tone={toast.tone}
       onMouseEnter={pauseDismiss}
-      onMouseLeave={resumeDismiss}
+      onMouseLeave={(event) => {
+        if (!event.currentTarget.contains(document.activeElement)) {
+          resumeDismiss();
+        }
+      }}
       onFocus={pauseDismiss}
       onBlur={resumeDismiss}
     >

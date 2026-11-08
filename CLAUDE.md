@@ -1,5 +1,11 @@
 Speak concisely; sacrifice grammar.
 
+## Sessions
+
+- **Start**: read `docs/ROADMAP.md`. Its Handoff section says where things stand and what comes next.
+- **While working**: move tickets between sections and set their `status` as work changes. Every merge to main updates the Handoff section.
+- **End**: run `pnpm handoff` until it prints SAFE TO CLOSE, then tell the user.
+
 ## Docs
 
 - `docs/VISION.md`: what we're building and why. Read before planning features or UX.

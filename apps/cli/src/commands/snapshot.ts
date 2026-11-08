@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotCard } from "@repo/cube";
 import { readCards, readSections, slugify, snapshotSchema } from "@repo/cube";
-import { cardFaces, imageUrl } from "@repo/scryfall";
+import { displayFields } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient, USER_AGENT } from "../client.ts";
 import { imageDataUri } from "../images.ts";
@@ -23,13 +23,11 @@ export async function snapshot(): Promise<number> {
   const snapshotCards: SnapshotCard[] = [];
   for (const entry of entries) {
     const card = byOracle.get(entry.oracleId);
-    const small = card ? imageUrl(card, "small") : undefined;
-    const large = card ? imageUrl(card, "large") : undefined;
-    if (!card || !small || !large) {
+    const fields = card ? displayFields(card) : undefined;
+    if (!fields) {
       console.error(chalk.red(`Missing Scryfall data or image for ${entry.name}`));
       return 1;
     }
-    const faces = cardFaces(card);
     process.stderr.write(`\rImages ${String(snapshotCards.length + 1)}/${String(entries.length)}`);
     snapshotCards.push({
       slug: slugify(entry.name),
@@ -37,14 +35,8 @@ export async function snapshot(): Promise<number> {
       oracleId: entry.oracleId,
       status: entry.status,
       ...(entry.section === undefined ? {} : { section: entry.section }),
-      manaCost: card.mana_cost ?? faces[0]?.mana_cost ?? "",
-      typeLine: card.type_line ?? "",
-      oracleText: faces.map((face) => face.oracle_text ?? "").join("\n//\n"),
-      cmc: card.cmc ?? 0,
-      colors: card.colors ?? card.color_identity,
-      image: await imageDataUri(small, `${entry.oracleId}-small`, USER_AGENT),
-      imageLarge: large,
-      scryfallUri: card.scryfall_uri.split("?")[0] ?? card.scryfall_uri,
+      ...fields,
+      image: await imageDataUri(fields.image, `${entry.oracleId}-small`, USER_AGENT),
     });
   }
   process.stderr.write("\n");

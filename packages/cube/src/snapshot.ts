@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cardStatusSchema, sectionSchema } from "./schema.ts";
+import { cardStatusSchema, sectionSchema, tagSchema } from "./schema.ts";
 
 export const snapshotCardSchema = z.strictObject({
   slug: z.string(),
@@ -32,6 +32,7 @@ export const workbenchCardSchema = snapshotCardSchema.extend({
 export const workbenchSchema = z.strictObject({
   cards: z.array(workbenchCardSchema),
   sections: z.array(sectionSchema),
+  vocabulary: z.array(tagSchema),
 });
 
 export const VOTES = ["keep", "cut"] as const;

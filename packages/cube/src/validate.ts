@@ -1,8 +1,19 @@
-import type { CardEntry, Section } from "./schema.ts";
+import type { CardEntry, Section, Tag } from "./schema.ts";
 import { slugify } from "./store.ts";
 
-export function validateCube(cards: readonly CardEntry[], sections: readonly Section[]): string[] {
+export function validateCube(
+  cards: readonly CardEntry[],
+  sections: readonly Section[],
+  tags: readonly Tag[],
+): string[] {
   const problems: string[] = [];
+  const tagIds = new Set<string>();
+  for (const tag of tags) {
+    if (tagIds.has(tag.id)) {
+      problems.push(`Duplicate tag "${tag.id}" in tags.json`);
+    }
+    tagIds.add(tag.id);
+  }
   const sectionIds = new Set(sections.map((section) => section.id));
   const byOracle = new Map<string, string>();
   const bySlug = new Map<string, string>();
@@ -23,6 +34,15 @@ export function validateCube(cards: readonly CardEntry[], sections: readonly Sec
 
     if (card.section !== undefined && !sectionIds.has(card.section)) {
       problems.push(`"${card.name}" has unknown section "${card.section}"`);
+    }
+
+    for (const tag of card.tags) {
+      if (!tagIds.has(tag)) {
+        problems.push(`"${card.name}" has tag "${tag}", which is not in tags.json`);
+      }
+    }
+    if (new Set(card.tags).size !== card.tags.length) {
+      problems.push(`"${card.name}" lists a tag more than once`);
     }
   }
   return problems;

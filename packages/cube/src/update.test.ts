@@ -31,6 +31,12 @@ beforeEach(async () => {
     paths.sectionsFile,
     JSON.stringify({ sections: [{ id: "pirates", label: "Pirates", header: "x" }] }),
   );
+  await writeFile(
+    paths.tagsFile,
+    JSON.stringify({
+      tags: ["removal", "burn", "a", "b"].map((id) => ({ id, label: id, kind: "group" })),
+    }),
+  );
   await writeCard(paths, shock);
   await writeCard(paths, opt);
 });
@@ -73,6 +79,12 @@ describe("updateCard", () => {
   it("returns 404 for an unknown card", async () => {
     const result = await updateCard(paths, "bolt", { ...shock, name: "Bolt" });
     expect(result).toMatchObject({ ok: false, status: 404 });
+  });
+
+  it("rejects tags that are not in the vocabulary", async () => {
+    const result = await patchCard(paths, "shock", { addTags: ["elves"] });
+    expect(result).toMatchObject({ ok: false, status: 400 });
+    expect(await onDisk("shock")).toEqual(shock);
   });
 
   it("rejects edits that break cube rules", async () => {

@@ -10,6 +10,14 @@ import { createServer } from "vite";
 const WEB_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const REPO_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 
+const TEST_VOCABULARY = [
+  { id: "removal", label: "Removal", kind: "group" },
+  { id: "tempo", label: "Tempo", kind: "archetype" },
+  { id: "card-draw", label: "Card draw", kind: "group" },
+  { id: "blue", label: "Blue", kind: "group" },
+  { id: "cantrip", label: "Cantrip", kind: "group" },
+];
+
 interface Workbench {
   url: string;
   cardsDir: string;
@@ -22,6 +30,10 @@ const test = base.extend<object, { workbench: Workbench }>({
       const root = await mkdtemp(join(tmpdir(), "workbench-"));
       await cp(join(REPO_ROOT, "cube"), join(root, "cube"), { recursive: true });
       await cp(join(REPO_ROOT, "cube.config.json"), join(root, "cube.config.json"));
+      await writeFile(
+        join(root, "cube", "tags.json"),
+        `${JSON.stringify({ tags: TEST_VOCABULARY }, null, 2)}\n`,
+      );
       process.env["CUBE_REPO_ROOT"] = root;
       const server = await createServer({
         root: WEB_ROOT,

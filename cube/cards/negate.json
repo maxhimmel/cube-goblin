@@ -1,0 +1,13 @@
+{
+  "name": "Negate",
+  "oracleId": "3407fe41-fdd3-4119-8f70-4bc4590a379f",
+  "status": "prospect",
+  "section": "merfolk",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 145,
+    "input": "[  ] Negate"
+  }
+}

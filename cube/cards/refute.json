@@ -1,0 +1,12 @@
+{
+  "name": "Refute",
+  "oracleId": "eb1dfa29-7371-4cb6-bfa2-16f7820b69be",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 102,
+    "input": "[  ] Refute"
+  }
+}

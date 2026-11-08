@@ -1,0 +1,13 @@
+{
+  "name": "Daring Saboteur",
+  "oracleId": "d36f64a0-53f7-4c56-9f40-a7927a5c2608",
+  "status": "prospect",
+  "section": "pirates",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 122,
+    "input": "[  ] Daring saboteur"
+  }
+}

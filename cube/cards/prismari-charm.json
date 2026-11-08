@@ -1,0 +1,12 @@
+{
+  "name": "Prismari Charm",
+  "oracleId": "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 52,
+    "input": "[  ] Prismari charm"
+  }
+}

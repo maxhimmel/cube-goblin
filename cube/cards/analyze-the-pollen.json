@@ -1,0 +1,12 @@
+{
+  "name": "Analyze the Pollen",
+  "oracleId": "ec7d550b-9e13-4249-89c7-6ad43f71ea11",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 16,
+    "input": "[  ] Analyze the pollen"
+  }
+}

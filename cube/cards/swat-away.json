@@ -1,0 +1,12 @@
+{
+  "name": "Swat Away",
+  "oracleId": "79090b00-d920-4134-a838-fb434cf3ee4d",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 100,
+    "input": "[  ] Swat away"
+  }
+}

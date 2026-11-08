@@ -1,0 +1,12 @@
+{
+  "name": "Bite Down",
+  "oracleId": "623903de-3c04-4745-9af3-d7ec9fb2574d",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 92,
+    "input": "[  ] Bite down"
+  }
+}

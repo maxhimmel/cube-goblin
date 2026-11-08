@@ -1,0 +1,12 @@
+{
+  "name": "Biotech Specialist",
+  "oracleId": "78de77ef-c325-4342-869f-042921229577",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 13,
+    "input": "[  ] Biotech specialist"
+  }
+}

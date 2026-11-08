@@ -38,6 +38,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@repo/cube':
+        specifier: workspace:*
+        version: link:../../packages/cube
       '@repo/scryfall':
         specifier: workspace:*
         version: link:../../packages/scryfall
@@ -63,6 +66,34 @@ importers:
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+
+  packages/cube:
+    dependencies:
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: 22.20.5
+        version: 22.20.5
+      eslint:
+        specifier: 10.14.0
+        version: 10.14.0(jiti@2.7.0)
+      jiti:
+        specifier: 2.7.0
+        version: 2.7.0
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 5.1.0
+        version: 5.1.0(@types/node@22.20.5)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
   packages/eslint-config:
     dependencies:

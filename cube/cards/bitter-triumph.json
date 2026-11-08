@@ -1,0 +1,12 @@
+{
+  "name": "Bitter Triumph",
+  "oracleId": "776341cb-d2ec-423f-9250-92dc8bd8d503",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 105,
+    "input": "[  ] Bitter triumph"
+  }
+}

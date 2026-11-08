@@ -1,0 +1,13 @@
+{
+  "name": "Vicious Conquistador",
+  "oracleId": "26b077df-7a05-459a-b5ff-bf27767bb519",
+  "status": "prospect",
+  "section": "vampires",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001-fixes",
+    "line": 3,
+    "input": "[  ] Vicious Conquistador"
+  }
+}

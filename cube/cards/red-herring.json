@@ -1,0 +1,12 @@
+{
+  "name": "Red Herring",
+  "oracleId": "f0ee45b5-697b-48f8-b1a6-cb3ae75e4a29",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 74,
+    "input": "[  ] Red Herring"
+  }
+}

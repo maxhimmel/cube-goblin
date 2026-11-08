@@ -1,0 +1,13 @@
+{
+  "name": "Path of Discovery",
+  "oracleId": "52714c3c-6821-44dd-88ba-813554df9914",
+  "status": "prospect",
+  "section": "merfolk",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 140,
+    "input": "[  ] Path of discovery"
+  }
+}

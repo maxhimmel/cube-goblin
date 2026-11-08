@@ -1,0 +1,12 @@
+{
+  "name": "Dream Harvest",
+  "oracleId": "70b9497f-0dd6-4b66-9675-57c7041fe3c0",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 112,
+    "input": "[  ] Dream harvest"
+  }
+}

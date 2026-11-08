@@ -1,0 +1,13 @@
+{
+  "name": "Deadeye Brawler",
+  "oracleId": "a7c36b66-4f58-41af-b1c5-704ff0d9eac8",
+  "status": "prospect",
+  "section": "pirates",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 127,
+    "input": "[  ] Deadeye brawler"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Winnowing",
+  "oracleId": "8b834f83-951b-4b5c-b9f1-3d860baa3c0e",
+  "status": "draft",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 113,
+    "input": "[  ] Winnowing"
+  }
+}

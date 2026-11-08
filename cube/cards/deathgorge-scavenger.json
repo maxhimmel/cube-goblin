@@ -1,0 +1,13 @@
+{
+  "name": "Deathgorge Scavenger",
+  "oracleId": "17da3654-7517-473b-89e7-0303f6f030cb",
+  "status": "prospect",
+  "section": "dinosaurs",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 137,
+    "input": "[  ] Deathgorge scavenger"
+  }
+}

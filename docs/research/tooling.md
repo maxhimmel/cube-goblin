@@ -18,4 +18,15 @@ Set up 2026-11-08. The config is the source of truth: `package.json` files, `tur
 - **Type-aware lint**: `typescript-eslint` `strictTypeChecked` + `stylisticTypeChecked` with `projectService` ([typed linting](https://typescript-eslint.io/getting-started/typed-linting)). The strict configs aren't semver-stable, so upgrades may add errors.
 - **Custom rule `repo/no-comments`** enforces the no-comments convention. ESLint directives and shebangs are exempt.
 - **markdownlint**: `extends` resolves the npm package `@repo/markdownlint-config`; verified working. MD013 (line length) is off.
-- **pnpm 10** blocks build scripts by default; `esbuild` is allowed in `pnpm-workspace.yaml`.
+- **pnpm 10** blocks build scripts by default; `esbuild` and `lefthook` are allowed in `pnpm-workspace.yaml`. Lefthook's postinstall installs the hooks ([lefthook npm docs](https://github.com/evilmartians/lefthook/blob/master/docs/installation/node.md)).
+
+## Git hooks: lefthook
+
+Chosen over simple-git-hooks and husky on 2026-11-08:
+
+- **Husky**: its hooks are shell files, which breaks the TypeScript-only rule.
+- **simple-git-hooks**: hooks have to be reinstalled after every config change, and it can't run commands in parallel.
+- **Lefthook**: reads `lefthook.yml` on each run and re-syncs the hooks when the config changes ([no_auto_install](https://github.com/evilmartians/lefthook/blob/master/docs/configuration/no_auto_install.md)). Jobs can run in parallel, and `{1}` passes in the hook's arguments ([run](https://github.com/evilmartians/lefthook/blob/master/docs/configuration/run.md)).
+- Comparisons: [pkgpulse](https://www.pkgpulse.com/guides/husky-vs-lefthook-vs-lint-staged-git-hooks-nodejs-2026), [DEV](https://dev.to/quave/lefthook-benefits-vs-husky-and-how-to-use-30je).
+
+The branch guard (`scripts/src/branch.ts`) rejects commits on `main`/`master` and branch names that don't match `<type>/<slug>`. The types are the Conventional Commits set.

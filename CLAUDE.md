@@ -16,7 +16,8 @@ Speak concisely; sacrifice grammar.
 ## Rules
 
 - **Rules become code.** When a rule can live as a lint rule, type, test, or check in `scripts/`, put it there instead of in prose.
-- **Commits: atomic, incremental, conventional.** One logical change per commit, and commit as each piece lands. Messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat(cli): ...`, `fix(scryfall): ...`). Git hooks enforce this: `commit-msg` runs commitlint, `pre-commit` runs `pnpm check`.
+- **Branch per change.** Work on a `<type>/<slug>` branch (e.g. `feat/card-images`); main only moves by fast-forward merge once `pnpm check` passes.
+- **Commits: atomic, incremental, conventional.** One logical change per commit, and commit as each piece lands. Messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat(cli): ...`, `fix(scryfall): ...`). `lefthook.yml` enforces branch name, message format, and `pnpm check` on commit.
 - **TypeScript only.** Scripts are TypeScript run with zx, in `scripts/` or a workspace package.
 - **Pointers over copies.** Every markdown, reference, doc, and skill states each fact once, in one source of truth, and links to it elsewhere. When a fact already lives in a doc, config, or API, point to it.
 - **Research terms.** Before defining or relying on an MTG or domain term, check it against a primary source (mtg.wiki, MTG Comprehensive Rules, Scryfall, Cube Cobra). Record it in `docs/GLOSSARY.md` with its source link, and use the glossary's term everywhere.

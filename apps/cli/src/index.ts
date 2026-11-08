@@ -3,6 +3,8 @@ import { parseArgs } from "node:util";
 import { ScryfallError } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient } from "./client.ts";
+import { addBatch } from "./commands/add.ts";
+import { validate } from "./commands/validate.ts";
 import { formatCard, formatCardLine } from "./format.ts";
 
 const USAGE = `Usage: cube <command> [options]
@@ -11,11 +13,14 @@ Commands:
   card <name>          Look up one card (exact name; --fuzzy for partial)
   cards <name...>      Look up many cards at once
   search <query>       Scryfall search syntax, e.g. "o:graveyard t:sorcery"
+  add <batch-file>     Parse a batch list, resolve on Scryfall, write cube/cards/*.json
+  validate             Check cube files: schema, singleton, sections, size
 
 Options:
   --fuzzy              Fuzzy name match (card)
   --limit <n>          Max results (search, default 20)
   --json               Print raw JSON
+  --dry-run            Resolve without writing (add)
   -h, --help           Show this help`;
 
 const { positionals, values } = parseArgs({
@@ -24,6 +29,7 @@ const { positionals, values } = parseArgs({
     fuzzy: { type: "boolean", default: false },
     limit: { type: "string", default: "20" },
     json: { type: "boolean", default: false },
+    "dry-run": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -39,15 +45,25 @@ async function run(): Promise<number> {
     console.log(USAGE);
     return values.help ? 0 : 1;
   }
-  const client = createClient();
   switch (command) {
+    case "add": {
+      const [file] = rest;
+      if (file === undefined) {
+        console.error("add: batch file required");
+        return 1;
+      }
+      return addBatch(file, { dryRun: values["dry-run"] });
+    }
+    case "validate": {
+      return validate();
+    }
     case "card": {
       const name = rest.join(" ");
       if (!name) {
         console.error("card: name required");
         return 1;
       }
-      const card = await client.named(name, { fuzzy: values.fuzzy });
+      const card = await createClient().named(name, { fuzzy: values.fuzzy });
       print(card, () => formatCard(card));
       return 0;
     }
@@ -56,7 +72,7 @@ async function run(): Promise<number> {
         console.error("cards: at least one name required");
         return 1;
       }
-      const { cards, notFound } = await client.collection(rest.map((name) => ({ name })));
+      const { cards, notFound } = await createClient().collection(rest.map((name) => ({ name })));
       print({ cards, notFound }, () =>
         [
           ...cards.map((card) => formatCard(card)),
@@ -72,7 +88,7 @@ async function run(): Promise<number> {
         console.error("search: query and a positive --limit required");
         return 1;
       }
-      const cards = await client.search(query, { limit });
+      const cards = await createClient().search(query, { limit });
       print(cards, () => cards.map((card) => formatCardLine(card)).join("\n"));
       return 0;
     }

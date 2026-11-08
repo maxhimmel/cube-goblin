@@ -1,8 +1,6 @@
-import { fileURLToPath } from "node:url";
 import { FileCache, ScryfallClient } from "@repo/scryfall";
 import packageJson from "../package.json" with { type: "json" };
-
-const CACHE_DIR = fileURLToPath(new URL("../../../.cache/scryfall", import.meta.url));
+import { CACHE_DIR } from "./paths.ts";
 
 export function createClient(): ScryfallClient {
   return new ScryfallClient({

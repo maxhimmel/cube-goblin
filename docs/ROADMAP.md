@@ -5,8 +5,8 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Handoff
 
 - **Updated**: 2026-11-08
-- **State**: `main` has the monorepo, CLI, first batch (143 cards), share doc, roadmap, and T-001 slice 1. `pnpm dev` runs the workbench on live `cube/cards` data with a dev-only, validated write API (`PUT /api/cards/:slug`), serialized and atomic. It has no edit UI yet. Design notes and the experimental `configLoader: "runner"` gotcha: [rendering-and-sharing.md](research/rendering-and-sharing.md#workbench-dev-server-2026-11-08).
-- **Next step**: [T-001](tickets/T-001-editing-workbench.md) slice 2 (single-card editing: status, notes, tags on the card page with auto-save and undo), built on the existing PUT endpoint and TanStack Query mutations.
+- **State**: `main` has the monorepo, CLI, first batch (143 cards), share doc, roadmap, and T-001 slices 1–2. `pnpm dev` runs the workbench on live `cube/cards` data. The card page edits status, section, tags, and notes with auto-save and an undo toast via `PATCH /api/cards/:slug` (editable fields only; tags as `addTags`/`removeTags` deltas). Tags are free text for now. Known minor gaps: a failed notes save keeps the draft until blur; only notes flush on tab close. Design notes: [rendering-and-sharing.md](research/rendering-and-sharing.md#workbench-dev-server-2026-11-08).
+- **Next step**: [T-001](tickets/T-001-editing-workbench.md) slice 3 (tag vocabulary: vocabulary file with `archetype`/`group` kinds, a check that every card tag is in it, and a picker with explicit "add new" replacing the free-text tag input).
 
 ## Now
 

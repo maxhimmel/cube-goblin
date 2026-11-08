@@ -58,15 +58,17 @@ test("workbench shows live data from cube/cards", async ({ page, workbench }) =>
 
 test("an edit on disk shows up without a reload", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/card/abrade`);
-  await expect(page.getByTestId("card-status")).toHaveText("draft");
+  const pressed = (name: string) =>
+    expect(page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", "true");
+  await pressed("draft");
 
   const entry = await readEntry(workbench.cardsDir, "abrade");
   await writeFile(
     join(workbench.cardsDir, "abrade.json"),
     `${JSON.stringify({ ...entry, status: "cut", notes: "edited on disk" }, null, 2)}\n`,
   );
-  await expect(page.getByTestId("card-status")).toHaveText("cut");
-  await expect(page.getByTestId("card-notes")).toHaveText("edited on disk");
+  await pressed("cut");
+  await expect(page.getByLabel("Notes")).toHaveValue("edited on disk");
 
   await page.getByRole("link", { name: "← all cards" }).click();
   await expect(page.locator('[data-group="cut"] img[alt="Abrade"]')).toBeVisible();
@@ -76,31 +78,31 @@ test("an edit on disk shows up without a reload", async ({ page, workbench }) =>
 test("the write API validates and lands edits on disk", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/card/bite-down`);
   const entry = await readEntry(workbench.cardsDir, "bite-down");
+  const url = `${workbench.url}api/cards/bite-down`;
 
-  const rejected = await page.request.put(`${workbench.url}api/cards/bite-down`, {
-    data: { ...entry, status: "maybe" },
-  });
-  expect(rejected.status()).toBe(400);
+  for (const data of [{ status: "maybe" }, { name: "Bite Up" }, { section: "elves" }]) {
+    const rejected = await page.request.patch(url, { data });
+    expect(rejected.status()).toBe(400);
+  }
   expect(await readEntry(workbench.cardsDir, "bite-down")).toEqual(entry);
 
-  const renamed = await page.request.put(`${workbench.url}api/cards/bite-down`, {
-    data: { ...entry, name: "Bite Up" },
+  const saved = await page.request.patch(url, {
+    data: { notes: "saved through the API", tags: ["removal"] },
   });
-  expect(renamed.status()).toBe(400);
-
-  const edited = { ...entry, notes: "saved through the API", tags: ["removal"] };
-  const saved = await page.request.put(`${workbench.url}api/cards/bite-down`, { data: edited });
   expect(saved.status()).toBe(200);
-  expect(await readEntry(workbench.cardsDir, "bite-down")).toEqual(edited);
-  await expect(page.getByTestId("card-notes")).toHaveText("saved through the API");
+  expect(await readEntry(workbench.cardsDir, "bite-down")).toEqual({
+    ...entry,
+    notes: "saved through the API",
+    tags: ["removal"],
+  });
+  await expect(page.getByLabel("Notes")).toHaveValue("saved through the API");
 });
 
 test("parallel writes leave a valid card file", async ({ page, workbench }) => {
-  const entry = await readEntry(workbench.cardsDir, "abrade");
   const notes = Array.from({ length: 12 }, (_, index) => "x".repeat(index % 2 ? 2000 : 1));
   const responses = await Promise.all(
     notes.map((note) =>
-      page.request.put(`${workbench.url}api/cards/abrade`, { data: { ...entry, notes: note } }),
+      page.request.patch(`${workbench.url}api/cards/abrade`, { data: { notes: note } }),
     ),
   );
   expect(responses.map((response) => response.status())).toEqual(notes.map(() => 200));
@@ -108,4 +110,117 @@ test("parallel writes leave a valid card file", async ({ page, workbench }) => {
   expect(notes).toContain(final.notes);
   const leftovers = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".tmp"));
   expect(leftovers).toEqual([]);
+});
+
+test("editing status, section, tags and notes auto-saves to disk", async ({ page, workbench }) => {
+  const slug = "banishing-light";
+  const entry = await readEntry(workbench.cardsDir, slug);
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  await page.goto(`${workbench.url}#/card/${slug}`);
+
+  await page.getByRole("button", { name: "prospect", exact: true }).click();
+  await expect.poll(async () => (await disk()).status).toBe("prospect");
+
+  await page.getByLabel("Section").selectOption("pirates");
+  await expect.poll(async () => (await disk()).section).toBe("pirates");
+
+  await page.getByLabel("New tag").fill("removal");
+  await page.getByRole("button", { name: "Add tag" }).click();
+  await expect.poll(async () => (await disk()).tags).toEqual([...entry.tags, "removal"]);
+
+  await page.getByLabel("Notes").fill("Clean answer, keep.");
+  await expect.poll(async () => (await disk()).notes).toBe("Clean answer, keep.");
+  await expect(page.getByTestId("save-state")).toHaveText("all changes saved");
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "prospect", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByLabel("Notes")).toHaveValue("Clean answer, keep.");
+  await expect(page.getByRole("listitem").filter({ hasText: "removal" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Remove tag removal" }).click();
+  await expect.poll(async () => (await disk()).tags).toEqual(entry.tags);
+  await page.getByLabel("Section").selectOption("");
+  await expect.poll(async () => (await disk()).section).toBeUndefined();
+});
+
+test("undo reverts the last save on disk", async ({ page, workbench }) => {
+  const slug = "deduce";
+  const entry = await readEntry(workbench.cardsDir, slug);
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  await page.goto(`${workbench.url}#/card/${slug}`);
+
+  await page.getByRole("button", { name: "cut", exact: true }).click();
+  await expect.poll(async () => (await disk()).status).toBe("cut");
+  await expect(page.getByRole("status")).toContainText("Saved status");
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(async () => (await disk()).status).toBe(entry.status);
+  await expect(page.getByRole("button", { name: entry.status, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("status")).toContainText("Undid status");
+
+  await page.getByLabel("Notes").fill("first thought");
+  await expect.poll(async () => (await disk()).notes).toBe("first thought");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(async () => (await disk()).notes).toBe(entry.notes);
+});
+
+test("rapid edits all land and the page settles on them", async ({ page, workbench }) => {
+  const slug = "chart-a-course";
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await expect(page.getByLabel("Notes")).toBeVisible();
+
+  for (const tag of ["tempo", "card-draw", "blue"]) {
+    await page.getByLabel("New tag").fill(tag);
+    await page.getByLabel("New tag").press("Enter");
+  }
+  await page.getByRole("button", { name: "cut", exact: true }).click();
+  await page.getByRole("button", { name: "prospect", exact: true }).click();
+
+  await expect.poll(async () => (await disk()).tags).toEqual(["tempo", "card-draw", "blue"]);
+  await expect.poll(async () => (await disk()).status).toBe("prospect");
+  await expect(page.getByTestId("save-state")).toHaveText("all changes saved");
+  await page.waitForTimeout(500);
+  await expect(page.getByRole("button", { name: "prospect", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator(".chip")).toHaveText(["tempo×", "card-draw×", "blue×"]);
+
+  await page.getByRole("button", { name: "Remove tag tempo" }).click();
+  await page.getByLabel("New tag").fill("cantrip");
+  await page.getByLabel("New tag").press("Enter");
+  await page.getByRole("button", { name: "Remove tag blue" }).click();
+  await expect.poll(async () => (await disk()).tags).toEqual(["card-draw", "cantrip"]);
+  await expect(page.locator(".chip")).toHaveText(["card-draw×", "cantrip×"]);
+});
+
+test("leaving the card right after typing keeps every edit", async ({ page, workbench }) => {
+  const slug = "essence-scatter";
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await page.getByRole("button", { name: "cut", exact: true }).click();
+  await page.getByLabel("Notes").fill("left in a hurry");
+  await page.getByRole("link", { name: "← all cards" }).click();
+  await expect(page.locator('[data-group="cut"] img[alt="Essence Scatter"]')).toBeVisible();
+  await expect.poll(async () => (await disk()).notes).toBe("left in a hurry");
+  expect((await disk()).status).toBe("cut");
+  await page.locator('img[alt="Essence Scatter"]').click();
+  await expect(page.getByLabel("Notes")).toHaveValue("left in a hurry");
+});
+
+test("notes typed right before a reload are saved", async ({ page, workbench }) => {
+  const slug = "dream-harvest";
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await page.getByLabel("Notes").fill("typed then reloaded");
+  await page.reload();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, slug)).notes)
+    .toBe("typed then reloaded");
 });

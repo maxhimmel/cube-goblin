@@ -24,6 +24,16 @@ export const snapshotSchema = z.strictObject({
   sections: z.array(sectionSchema),
 });
 
+export const workbenchCardSchema = snapshotCardSchema.extend({
+  tags: z.array(z.string()),
+  notes: z.string(),
+});
+
+export const workbenchSchema = z.strictObject({
+  cards: z.array(workbenchCardSchema),
+  sections: z.array(sectionSchema),
+});
+
 export const VOTES = ["keep", "cut"] as const;
 
 export const cardReviewSchema = z.strictObject({
@@ -44,6 +54,8 @@ export const REVIEW_SCRIPT_ID = "review-state";
 
 export type SnapshotCard = z.infer<typeof snapshotCardSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;
+export type WorkbenchCard = z.infer<typeof workbenchCardSchema>;
+export type Workbench = z.infer<typeof workbenchSchema>;
 export type Vote = (typeof VOTES)[number];
 export type CardReview = z.infer<typeof cardReviewSchema>;
 export type Review = z.infer<typeof reviewSchema>;

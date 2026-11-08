@@ -5,10 +5,24 @@
       "dependsOn": ["^lint"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
     },
     "test": {
       "dependsOn": ["^test"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/generated/**"],
+      "outputs": ["dist/**"]
+    },
+    "e2e": {
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
+    },
+    "dev": {
+      "persistent": true,
+      "cache": false
     }
   }
 }

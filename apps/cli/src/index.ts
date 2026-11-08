@@ -4,6 +4,8 @@ import { ScryfallError } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient } from "./client.ts";
 import { addBatch } from "./commands/add.ts";
+import { importReview } from "./commands/review.ts";
+import { snapshot } from "./commands/snapshot.ts";
 import { validate } from "./commands/validate.ts";
 import { formatCard, formatCardLine } from "./format.ts";
 
@@ -15,6 +17,8 @@ Commands:
   search <query>       Scryfall search syntax, e.g. "o:graveyard t:sorcery"
   add <batch-file>     Parse a batch list, resolve on Scryfall, write cube/cards/*.json
   validate             Check cube files: schema, singleton, sections, size
+  snapshot             Bake cube + Scryfall data + images for the share doc build
+  review import <src>  Import a friend's review (saved .html, code, or .json)
 
 Options:
   --fuzzy              Fuzzy name match (card)
@@ -56,6 +60,17 @@ async function run(): Promise<number> {
     }
     case "validate": {
       return validate();
+    }
+    case "snapshot": {
+      return snapshot();
+    }
+    case "review": {
+      const [action, source] = rest;
+      if (action !== "import" || source === undefined) {
+        console.error("review: usage: review import <file|code>");
+        return 1;
+      }
+      return importReview(source);
     }
     case "card": {
       const name = rest.join(" ");

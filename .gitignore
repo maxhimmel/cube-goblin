@@ -5,3 +5,7 @@ dist
 coverage
 .DS_Store
 .omc
+apps/web/src/generated
+apps/web/test-results
+apps/web/playwright-report
+exports

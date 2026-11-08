@@ -1,2 +1,4 @@
 pnpm-lock.yaml
 .omc
+apps/web/src/generated
+exports

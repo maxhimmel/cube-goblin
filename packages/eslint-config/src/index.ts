@@ -9,7 +9,7 @@ export function createConfig(tsconfigRootDir: string): Linter.Config[] {
   return defineConfig(
     { ignores: ["**/node_modules/**", "**/dist/**", "**/.turbo/**"] },
     {
-      files: ["**/*.ts"],
+      files: ["**/*.{ts,tsx}"],
       extends: [
         js.configs.recommended,
         tseslint.configs.strictTypeChecked,

@@ -19,8 +19,13 @@ Researched 2026-11-08. Versions from `npm view` on that date. Plan discussion ha
   - Hotlinking keeps the file small but needs internet.
   - Image rules: no cropping, distorting, or recoloring.
 
-## Open questions to prototype
+## Proof-of-concept results (2026-11-08)
 
-- Does a single-file build with hash routing open from `file://` in Chrome, Safari, and Firefox?
-- File size with about 100 embedded `small` images.
-- Can the page re-save itself with state embedded (a self-saving HTML file) across browsers? Fallbacks: download a JSON file, or copy a compressed code (`lz-string` 1.5.0).
+`apps/web/e2e/share-doc.spec.ts` covers all of this in Chromium, Firefox, and WebKit:
+
+- **`file://` + hash routing + `localStorage`** work in all three. The `vite-plugin-singlefile` README says the same, and warns that history routing and lazy `import()` chunks don't work ([README](https://www.npmjs.com/package/vite-plugin-singlefile)).
+- **Size**: about 2.9 MB for 143 cards with embedded `small` images (146×204 JPEG), 2 MB gzipped. Large images on the card page are hotlinked, so they need internet.
+- **Self-saving HTML** works. At boot the app captures `document.documentElement.outerHTML` before React mounts. "Save copy" adds the review as a `<script type="application/json">` and downloads the result. The saved copy reopens with the review in a fresh profile.
+- **Gotcha**: the inlined JS bundle contains `</head>` and the marker string, so the review tag must go right before the last `</body>`, never searched for from the front. See `packages/cube/src/embed.ts` and its tests.
+- **Review code fallback**: `lz-string` compressed JSON. `pnpm cube review import` accepts a saved `.html`, a code, or `.json`.
+- **Gotcha**: `lz-string` is CommonJS, so in Node ESM use a default import (`import lzString from "lz-string"`).

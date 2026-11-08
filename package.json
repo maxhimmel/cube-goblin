@@ -15,7 +15,9 @@
     "test": "turbo run test",
     "lint:md": "markdownlint-cli2",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "export": "tsx scripts/src/export.ts",
+    "dev": "turbo run dev --filter=@repo/web"
   },
   "prettier": "@repo/prettier-config",
   "commitlint": {

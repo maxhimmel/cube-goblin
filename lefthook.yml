@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: branch
+      run: pnpm exec tsx scripts/src/guard-branch.ts
+    - name: check
+      run: pnpm check
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: pnpm exec commitlint --edit {1}

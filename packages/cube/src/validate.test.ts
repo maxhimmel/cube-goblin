@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CardEntry } from "./schema.ts";
-import { slugify } from "./store.ts";
+import { slugify } from "./slug.ts";
 import { validateCube } from "./validate.ts";
 
 function card(name: string, oracleId: string, section?: string): CardEntry {
@@ -53,10 +53,12 @@ describe("validateCube", () => {
     const vocabulary = [
       { id: "burn", label: "Burn", kind: "group" as const },
       { id: "burn", label: "Burn again", kind: "archetype" as const },
+      { id: "shock", label: "burn", kind: "group" as const },
     ];
     const problems = validateCube([tagged], sections, vocabulary);
     expect(problems).toEqual([
       'Duplicate tag "burn" in tags.json',
+      'Duplicate tag label "burn" in tags.json',
       '"Shock" has tag "elves", which is not in tags.json',
       '"Shock" lists a tag more than once',
     ]);

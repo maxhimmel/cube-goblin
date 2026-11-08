@@ -58,6 +58,19 @@ describe("changeTag", () => {
     ]);
   });
 
+  it("refuses labels another tag already uses, ignoring case", async () => {
+    await createTag(paths, { label: "Removal", kind: "group" });
+    await createTag(paths, { label: "Burn", kind: "group" });
+    expect(await changeTag(paths, "burn", { label: "removal" })).toMatchObject({ status: 409 });
+    await changeTag(paths, "removal", { label: "Hard removal" });
+    expect(await createTag(paths, { label: "hard REMOVAL", kind: "group" })).toMatchObject({
+      status: 409,
+    });
+    expect(await changeTag(paths, "removal", { label: "HARD removal" })).toMatchObject({
+      ok: true,
+    });
+  });
+
   it("returns 404 for an unknown tag and 400 for a bad change", async () => {
     expect(await changeTag(paths, "nope", { label: "x" })).toMatchObject({ status: 404 });
     await createTag(paths, { label: "Removal", kind: "group" });

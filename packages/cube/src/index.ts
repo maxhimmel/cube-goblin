@@ -9,7 +9,6 @@ export {
   readConfig,
   readSections,
   readTags,
-  slugify,
   writeCard,
   writeTags,
 } from "./store.ts";

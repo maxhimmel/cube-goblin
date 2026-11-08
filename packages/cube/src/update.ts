@@ -1,7 +1,8 @@
 import type { CardEntry } from "./schema.ts";
 import { applyTagChanges, cardEntrySchema, cardPatchSchema } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
-import { readCards, readSections, readTags, slugify, writeCard } from "./store.ts";
+import { slugify } from "./slug.ts";
+import { readCards, readSections, readTags, writeCard } from "./store.ts";
 import { validateCube } from "./validate.ts";
 
 const IDENTITY_FIELDS = ["name", "oracleId", "source"] as const;

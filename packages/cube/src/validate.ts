@@ -1,5 +1,5 @@
 import type { CardEntry, Section, Tag } from "./schema.ts";
-import { slugify } from "./store.ts";
+import { slugify } from "./slug.ts";
 
 export function validateCube(
   cards: readonly CardEntry[],
@@ -8,11 +8,17 @@ export function validateCube(
 ): string[] {
   const problems: string[] = [];
   const tagIds = new Set<string>();
+  const tagLabels = new Set<string>();
   for (const tag of tags) {
     if (tagIds.has(tag.id)) {
       problems.push(`Duplicate tag "${tag.id}" in tags.json`);
     }
     tagIds.add(tag.id);
+    const label = tag.label.trim().toLowerCase();
+    if (tagLabels.has(label)) {
+      problems.push(`Duplicate tag label "${tag.label}" in tags.json`);
+    }
+    tagLabels.add(label);
   }
   const sectionIds = new Set(sections.map((section) => section.id));
   const byOracle = new Map<string, string>();

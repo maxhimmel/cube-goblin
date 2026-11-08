@@ -29,3 +29,4 @@ export {
   tagSchema,
 } from "./schema.ts";
 export type { CardEntry, CardPatch, CardStatus, Section, Tag, TagKind } from "./schema.ts";
+export { slugify } from "./slug.ts";

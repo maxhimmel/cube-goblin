@@ -1,7 +1,12 @@
 import type { Tag } from "./schema.ts";
 import { newTagSchema, tagChangeSchema } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
-import { readTags, slugify, writeTags } from "./store.ts";
+import { slugify } from "./slug.ts";
+import { readTags, writeTags } from "./store.ts";
+
+export function sameLabel(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
 
 export type TagResult =
   { ok: true; tag: Tag } | { ok: false; status: 400 | 404 | 409; error: string };
@@ -16,7 +21,7 @@ export async function createTag(paths: CubePaths, input: unknown): Promise<TagRe
     return { ok: false, status: 400, error: `"${parsed.data.label}" has no letters or digits` };
   }
   const tags = await readTags(paths);
-  const existing = tags.find((tag) => tag.id === id);
+  const existing = tags.find((tag) => tag.id === id || sameLabel(tag.label, parsed.data.label));
   if (existing) {
     return { ok: false, status: 409, error: `Tag "${existing.label}" already exists` };
   }
@@ -35,9 +40,14 @@ export async function changeTag(paths: CubePaths, id: string, input: unknown): P
   if (!current) {
     return { ok: false, status: 404, error: `No tag "${id}"` };
   }
+  const label = parsed.data.label ?? current.label;
+  const clash = tags.find((other) => other.id !== id && sameLabel(other.label, label));
+  if (clash) {
+    return { ok: false, status: 409, error: `Tag "${clash.label}" already has that label` };
+  }
   const tag: Tag = {
     id,
-    label: parsed.data.label ?? current.label,
+    label,
     kind: parsed.data.kind ?? current.kind,
   };
   await writeTags(

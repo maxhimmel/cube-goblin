@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
 import type { CardEntry, CubeConfig, Section, Tag } from "./schema.ts";
+import { slugify } from "./slug.ts";
 import { cardEntrySchema, cubeConfigSchema, sectionsFileSchema, tagsFileSchema } from "./schema.ts";
 
 export interface CubePaths {
@@ -21,17 +22,6 @@ export function cubePaths(repoRoot: string): CubePaths {
     tagsFile: join(repoRoot, "cube", "tags.json"),
     configFile: join(repoRoot, "cube.config.json"),
   };
-}
-
-export function slugify(name: string): string {
-  return name
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/gu, "")
-    .toLowerCase()
-    .replace(/\/\//gu, " ")
-    .replace(/['’]/gu, "")
-    .replace(/[^a-z0-9]+/gu, "-")
-    .replace(/^-|-$/gu, "");
 }
 
 async function readJson<S extends z.ZodType>(path: string, schema: S): Promise<z.infer<S>> {

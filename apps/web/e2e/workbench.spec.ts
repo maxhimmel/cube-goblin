@@ -136,7 +136,7 @@ test("editing status, section, tags and notes auto-saves to disk", async ({ page
   await page.getByLabel("Section").selectOption("pirates");
   await expect.poll(async () => (await disk()).section).toBe("pirates");
 
-  await page.getByLabel("New tag").fill("removal");
+  await page.getByLabel("Tag name").fill("removal");
   await page.getByRole("button", { name: "Add tag" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual([...entry.tags, "removal"]);
 
@@ -152,7 +152,7 @@ test("editing status, section, tags and notes auto-saves to disk", async ({ page
   await expect(page.getByLabel("Notes")).toHaveValue("Clean answer, keep.");
   await expect(page.getByRole("listitem").filter({ hasText: "removal" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Remove tag removal" }).click();
+  await page.getByRole("button", { name: "Remove tag Removal" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual(entry.tags);
   await page.getByLabel("Section").selectOption("");
   await expect.poll(async () => (await disk()).section).toBeUndefined();
@@ -189,8 +189,8 @@ test("rapid edits all land and the page settles on them", async ({ page, workben
   await expect(page.getByLabel("Notes")).toBeVisible();
 
   for (const tag of ["tempo", "card-draw", "blue"]) {
-    await page.getByLabel("New tag").fill(tag);
-    await page.getByLabel("New tag").press("Enter");
+    await page.getByLabel("Tag name").fill(tag);
+    await page.getByLabel("Tag name").press("Enter");
   }
   await page.getByRole("button", { name: "cut", exact: true }).click();
   await page.getByRole("button", { name: "prospect", exact: true }).click();
@@ -203,14 +203,14 @@ test("rapid edits all land and the page settles on them", async ({ page, workben
     "aria-pressed",
     "true",
   );
-  await expect(page.locator(".chip")).toHaveText(["tempo×", "card-draw×", "blue×"]);
+  await expect(page.locator(".chip")).toHaveText(["Tempo×", "Card draw×", "Blue×"]);
 
-  await page.getByRole("button", { name: "Remove tag tempo" }).click();
-  await page.getByLabel("New tag").fill("cantrip");
-  await page.getByLabel("New tag").press("Enter");
-  await page.getByRole("button", { name: "Remove tag blue" }).click();
+  await page.getByRole("button", { name: "Remove tag Tempo" }).click();
+  await page.getByLabel("Tag name").fill("cantrip");
+  await page.getByLabel("Tag name").press("Enter");
+  await page.getByRole("button", { name: "Remove tag Blue" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual(["card-draw", "cantrip"]);
-  await expect(page.locator(".chip")).toHaveText(["card-draw×", "cantrip×"]);
+  await expect(page.locator(".chip")).toHaveText(["Card draw×", "Cantrip×"]);
 });
 
 test("leaving the card right after typing keeps every edit", async ({ page, workbench }) => {
@@ -235,4 +235,72 @@ test("notes typed right before a reload are saved", async ({ page, workbench }) 
   await expect
     .poll(async () => (await readEntry(workbench.cardsDir, slug)).notes)
     .toBe("typed then reloaded");
+});
+
+async function readVocabulary(cardsDir: string): Promise<unknown> {
+  return JSON.parse(await readFile(join(cardsDir, "..", "tags.json"), "utf8"));
+}
+
+test("a tag outside the vocabulary needs an explicit create", async ({ page, workbench }) => {
+  const slug = "abrade";
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  const before = (await disk()).tags;
+  await page.goto(`${workbench.url}#/card/${slug}`);
+
+  await page.getByLabel("Tag name").fill("Artifact hate");
+  await page.getByRole("button", { name: "Add tag" }).click();
+  const create = page.getByRole("group", { name: "Create tag" });
+  await expect(create).toContainText("is not a tag yet");
+  expect((await disk()).tags).toEqual(before);
+
+  await create.getByRole("button", { name: "group" }).click();
+  await expect.poll(async () => (await disk()).tags).toEqual([...before, "artifact-hate"]);
+  await expect(page.locator(".chip").filter({ hasText: "Artifact hate" })).toBeVisible();
+  expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
+    tags: expect.arrayContaining([{ id: "artifact-hate", label: "Artifact hate", kind: "group" }]),
+  });
+  await page.getByLabel("Tag name").fill("can");
+  await page
+    .getByRole("list", { name: "Suggested tags" })
+    .getByRole("button", { name: "+ Cantrip" })
+    .click();
+  await expect
+    .poll(async () => (await disk()).tags)
+    .toEqual([...before, "artifact-hate", "cantrip"]);
+});
+
+test("the tags page renames a tag without touching card files", async ({ page, workbench }) => {
+  const slug = "deadeye-brawler";
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await page.getByLabel("Tag name").fill("tempo");
+  await page.getByRole("button", { name: "Add tag" }).click();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, slug)).tags)
+    .toContain("tempo");
+  const cardFile = await readFile(join(workbench.cardsDir, `${slug}.json`), "utf8");
+
+  await page.getByRole("link", { name: "Tags" }).click();
+  const label = page.getByLabel("Label for tempo");
+  await label.fill("Tempo aggro");
+  await label.press("Enter");
+  await expect
+    .poll(async () => readVocabulary(workbench.cardsDir))
+    .toMatchObject({
+      tags: expect.arrayContaining([{ id: "tempo", label: "Tempo aggro", kind: "archetype" }]),
+    });
+  await page.getByLabel("Kind for tempo").selectOption("group");
+  await expect
+    .poll(async () => readVocabulary(workbench.cardsDir))
+    .toMatchObject({
+      tags: expect.arrayContaining([{ id: "tempo", label: "Tempo aggro", kind: "group" }]),
+    });
+
+  expect(await readFile(join(workbench.cardsDir, `${slug}.json`), "utf8")).toBe(cardFile);
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await expect(page.locator(".chip").filter({ hasText: "Tempo aggro" })).toBeVisible();
+
+  const duplicate = await page.request.post(`${workbench.url}api/tags`, {
+    data: { label: "tempo", kind: "group" },
+  });
+  expect(duplicate.status()).toBe(409);
 });

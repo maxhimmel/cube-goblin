@@ -1,10 +1,12 @@
 import type { Workbench, WorkbenchCard } from "@repo/cube/browser";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { queryClient } from "../query-client.ts";
 import { CUBE_CHANGED_EVENT, CUBE_QUERY_KEY, fetchCube } from "../workbench/api.ts";
 import { CardEditor } from "../workbench/card-editor.tsx";
 import { editsPending, useSaving } from "../workbench/edits.ts";
+import { TagsPage } from "../workbench/tags-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
 
@@ -30,6 +32,7 @@ function Toolbar(): ReactNode {
   return (
     <>
       <span className="badge">workbench · live</span>
+      <Link to="/tags">Tags</Link>
       <span className="muted" data-testid="save-state">
         {saving ? "saving…" : "all changes saved"}
       </span>
@@ -49,7 +52,9 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
   if (!data || !card) {
     return null;
   }
-  return <CardEditor key={slug} card={card} sections={data.sections} />;
+  return (
+    <CardEditor key={slug} card={card} sections={data.sections} vocabulary={data.vocabulary} />
+  );
 }
 
 export const mode: Mode = {
@@ -61,4 +66,5 @@ export const mode: Mode = {
   useTileMark: (slug) => ({ "data-status": useWorkbenchCard(slug)?.status }),
   Toolbar,
   CardPanel,
+  TagsPage: () => <TagsPage cube={useWorkbench()} />,
 };

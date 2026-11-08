@@ -246,3 +246,46 @@ textarea {
 .toast[data-tone="error"] {
   background: var(--cut);
 }
+
+.chip[data-kind="archetype"] {
+  border-color: var(--accent);
+}
+
+.create-tag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-table {
+  border-collapse: collapse;
+}
+
+.tag-table th,
+.tag-table td {
+  padding: 4px 10px 4px 0;
+  text-align: left;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.suggestion {
+  padding: 2px 10px;
+  border: 1px dashed var(--muted);
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.suggestion[data-kind="archetype"] {
+  border-color: var(--accent);
+}

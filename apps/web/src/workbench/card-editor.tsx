@@ -69,11 +69,17 @@ function NotesField({ slug, notes, save }: { slug: string; notes: string; save: 
   );
 }
 
+function focusOnMount(element: HTMLButtonElement | null): void {
+  element?.focus();
+}
+
 function TagsField({
+  slug,
   tags,
   vocabulary,
   save,
 }: {
+  slug: string;
   tags: string[];
   vocabulary: Tag[];
   save: Save;
@@ -166,40 +172,42 @@ function TagsField({
           ))}
         </ul>
       )}
-      {creating !== undefined && (
-        <div className="create-tag" role="group" aria-label="Create tag">
-          <span>&ldquo;{creating}&rdquo; is not a tag yet. Create it as</span>
-          {TAG_KINDS.map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              disabled={createTag.isPending}
-              onClick={() => {
-                createTag.mutate(
-                  { label: creating, kind },
-                  {
-                    onSuccess: (tag) => {
-                      setInput("");
-                      setCreating(undefined);
-                      add(tag.id);
+      <div aria-live="polite">
+        {creating !== undefined && (
+          <div className="create-tag" role="group" aria-label="Create tag">
+            <span>&ldquo;{creating}&rdquo; is not a tag yet.</span>
+            {TAG_KINDS.map((kind, index) => (
+              <button
+                key={kind}
+                ref={index === 0 ? focusOnMount : undefined}
+                type="button"
+                disabled={createTag.isPending}
+                onClick={() => {
+                  createTag.mutate(
+                    { label: creating, kind, addTo: slug },
+                    {
+                      onSuccess: () => {
+                        setInput("");
+                        setCreating(undefined);
+                      },
                     },
-                  },
-                );
+                  );
+                }}
+              >
+                Create as {kind}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                setCreating(undefined);
               }}
             >
-              {kind}
+              Cancel
             </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              setCreating(undefined);
-            }}
-          >
-            cancel
-          </button>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </fieldset>
   );
 }
@@ -260,7 +268,7 @@ export function CardEditor({
           ))}
         </select>
       </label>
-      <TagsField tags={card.tags} vocabulary={vocabulary} save={save} />
+      <TagsField slug={card.slug} tags={card.tags} vocabulary={vocabulary} save={save} />
       <NotesField slug={card.slug} notes={card.notes} save={save} />
     </div>
   );

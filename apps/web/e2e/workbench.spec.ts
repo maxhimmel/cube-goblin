@@ -253,7 +253,8 @@ test("a tag outside the vocabulary needs an explicit create", async ({ page, wor
   await expect(create).toContainText("is not a tag yet");
   expect((await disk()).tags).toEqual(before);
 
-  await create.getByRole("button", { name: "group" }).click();
+  await expect(create.getByRole("button", { name: "Create as archetype" })).toBeFocused();
+  await create.getByRole("button", { name: "Create as group" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual([...before, "artifact-hate"]);
   await expect(page.locator(".chip").filter({ hasText: "Artifact hate" })).toBeVisible();
   expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
@@ -299,8 +300,18 @@ test("the tags page renames a tag without touching card files", async ({ page, w
   await page.goto(`${workbench.url}#/card/${slug}`);
   await expect(page.locator(".chip").filter({ hasText: "Tempo aggro" })).toBeVisible();
 
-  const duplicate = await page.request.post(`${workbench.url}api/tags`, {
-    data: { label: "tempo", kind: "group" },
-  });
-  expect(duplicate.status()).toBe(409);
+  for (const label of ["tempo", "TEMPO aggro"]) {
+    const duplicate = await page.request.post(`${workbench.url}api/tags`, {
+      data: { label, kind: "group" },
+    });
+    expect(duplicate.status()).toBe(409);
+  }
+
+  await page.goto(`${workbench.url}#/card/abrade`);
+  await page.getByLabel("Tag name").fill("card  draw!");
+  await page.getByRole("button", { name: "Add tag" }).click();
+  await expect(page.getByRole("group", { name: "Create tag" })).toHaveCount(0);
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, "abrade")).tags)
+    .toContain("card-draw");
 });

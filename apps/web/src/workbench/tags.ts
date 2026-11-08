@@ -1,14 +1,16 @@
 import type { Tag, TagKind, Workbench } from "@repo/cube/browser";
+import { slugify } from "@repo/cube/browser";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient } from "../query-client.ts";
 import { CUBE_QUERY_KEY, changeTagRequest, createTagRequest } from "./api.ts";
-import { editsPending } from "./edits.ts";
+import { editsPending, runCardEdit } from "./edits.ts";
 import { showToast } from "./toast.tsx";
 
 export interface NewTag {
   label: string;
   kind: TagKind;
+  addTo?: string;
 }
 
 export interface TagChange {
@@ -44,13 +46,24 @@ function cacheTag(tag: Tag): void {
 
 export function findTag(vocabulary: readonly Tag[], text: string): Tag | undefined {
   const wanted = text.trim().toLowerCase();
-  return vocabulary.find((tag) => tag.label.toLowerCase() === wanted || tag.id === wanted);
+  const id = slugify(text);
+  return vocabulary.find((tag) => tag.label.toLowerCase() === wanted || tag.id === id);
 }
 
 export function useCreateTag(): UseMutationResult<Tag, Error, NewTag> {
   return useMutation({
     mutationFn: ({ label, kind }: NewTag) => createTagRequest(label, kind),
-    onSuccess: cacheTag,
+    onSuccess: (tag: Tag, { addTo }: NewTag) => {
+      cacheTag(tag);
+      if (addTo !== undefined) {
+        runCardEdit({
+          slug: addTo,
+          label: "tags",
+          patch: { addTags: [tag.id] },
+          undo: { removeTags: [tag.id] },
+        });
+      }
+    },
     onError: reportError,
     onSettled: refresh,
   });

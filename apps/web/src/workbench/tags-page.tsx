@@ -12,10 +12,18 @@ function TagRow({ tag, count }: { tag: Tag; count: number }): ReactNode {
 
   function commit(): void {
     const next = label?.trim();
-    setLabel(undefined);
-    if (next && next !== tag.label) {
-      changeTag.mutate({ id: tag.id, label: next });
+    if (!next || next === tag.label) {
+      setLabel(undefined);
+      return;
     }
+    changeTag.mutate(
+      { id: tag.id, label: next },
+      {
+        onSettled: () => {
+          setLabel(undefined);
+        },
+      },
+    );
   }
 
   return (

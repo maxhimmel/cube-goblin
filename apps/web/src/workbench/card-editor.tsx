@@ -86,7 +86,13 @@ function TagsField({
 }): ReactNode {
   const [input, setInput] = useState("");
   const [creating, setCreating] = useState<string | undefined>(undefined);
+  const inputRef = useRef<HTMLInputElement>(null);
   const createTag = useCreateTag();
+
+  function closeCreate(): void {
+    setCreating(undefined);
+    inputRef.current?.focus();
+  }
   const byId = new Map(vocabulary.map((tag) => [tag.id, tag]));
   const query = input.trim().toLowerCase();
   const suggestions = vocabulary
@@ -142,6 +148,7 @@ function TagsField({
         }}
       >
         <input
+          ref={inputRef}
           aria-label="Tag name"
           value={input}
           onChange={(event) => {
@@ -188,7 +195,7 @@ function TagsField({
                     {
                       onSuccess: () => {
                         setInput("");
-                        setCreating(undefined);
+                        closeCreate();
                       },
                     },
                   );
@@ -197,12 +204,7 @@ function TagsField({
                 Create as {kind}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => {
-                setCreating(undefined);
-              }}
-            >
+            <button type="button" onClick={closeCreate}>
               Cancel
             </button>
           </div>

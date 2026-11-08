@@ -256,6 +256,7 @@ test("a tag outside the vocabulary needs an explicit create", async ({ page, wor
   await expect(create.getByRole("button", { name: "Create as archetype" })).toBeFocused();
   await create.getByRole("button", { name: "Create as group" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual([...before, "artifact-hate"]);
+  await expect(page.getByLabel("Tag name")).toBeFocused();
   await expect(page.locator(".chip").filter({ hasText: "Artifact hate" })).toBeVisible();
   expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
     tags: expect.arrayContaining([{ id: "artifact-hate", label: "Artifact hate", kind: "group" }]),

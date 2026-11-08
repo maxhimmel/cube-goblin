@@ -5,8 +5,8 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Handoff
 
 - **Updated**: 2026-11-08
-- **State**: `main` has the monorepo, CLI, first batch (143 cards), the share-doc proof of concept, and this roadmap with `pnpm handoff`, all merged. Nothing in flight.
-- **Next step**: [T-001](tickets/T-001-editing-workbench.md). Ask the user the open questions in the ticket before building.
+- **State**: `main` has the monorepo, CLI, first batch (143 cards), the share-doc proof of concept, and this roadmap with `pnpm handoff`, all merged. T-001 is in progress: decisions recorded, nothing built yet.
+- **Next step**: [T-001](tickets/T-001-editing-workbench.md) slice 1 (write API + live data). The user's decisions are recorded in the ticket.
 
 ## Now
 

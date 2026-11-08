@@ -8,6 +8,7 @@ import type { Plugin } from "vite";
 const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
 const CUBE_CHANGED_EVENT = "cube:changed";
 const CARD_ROUTE = /^\/api\/cards\/([a-z0-9-]+)$/u;
+const CHANGE_DEBOUNCE_MS = 100;
 
 export interface WorkbenchOptions {
   repoRoot: string;
@@ -20,12 +21,20 @@ function send(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-async function readBody(req: IncomingMessage): Promise<unknown> {
+async function readBody(req: IncomingMessage): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.from(chunk as Uint8Array));
   }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch {
+    return { ok: false };
+  }
 }
 
 async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<Workbench> {
@@ -68,12 +77,19 @@ export function workbench(options: WorkbenchOptions): Plugin {
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
 
+      let writes: Promise<void> = Promise.resolve();
+      let pending: ReturnType<typeof setTimeout> | undefined;
+
       server.watcher.add([paths.root, paths.configFile]);
       server.watcher.on("all", (_event, file) => {
         const path = resolve(file);
-        if (path.startsWith(cubeRoot) || path === configFile) {
-          server.ws.send(CUBE_CHANGED_EVENT);
+        if (path.endsWith(".tmp") || !(path.startsWith(cubeRoot) || path === configFile)) {
+          return;
         }
+        clearTimeout(pending);
+        pending = setTimeout(() => {
+          server.ws.send(CUBE_CHANGED_EVENT);
+        }, CHANGE_DEBOUNCE_MS);
       });
 
       server.middlewares.use((req, res, next) => {
@@ -91,20 +107,23 @@ export function workbench(options: WorkbenchOptions): Plugin {
         }
         const slug = CARD_ROUTE.exec(url)?.[1];
         if (slug !== undefined && req.method === "PUT") {
-          readBody(req)
-            .then((body) => updateCard(paths, slug, body))
-            .then(
-              (result) => {
-                if (result.ok) {
-                  send(res, 200, result.card);
-                } else {
-                  send(res, result.status, { error: result.error });
-                }
-              },
-              (error: unknown) => {
-                send(res, 400, { error: String(error) });
-              },
-            );
+          const write = writes.then(async () => {
+            const body = parseJson(await readBody(req));
+            if (!body.ok) {
+              send(res, 400, { error: "Body is not valid JSON" });
+              return;
+            }
+            const result = await updateCard(paths, slug, body.value);
+            if (result.ok) {
+              send(res, 200, result.card);
+            } else {
+              send(res, result.status, { error: result.error });
+            }
+          });
+          writes = write.catch(() => undefined);
+          write.catch((error: unknown) => {
+            send(res, 500, { error: String(error) });
+          });
           return;
         }
         if (url.startsWith("/api/")) {

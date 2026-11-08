@@ -31,7 +31,17 @@ function useWorkbenchCard(slug: string): WorkbenchCard | undefined {
 }
 
 function Toolbar(): ReactNode {
-  return <span className="badge">workbench · live</span>;
+  const { error } = useQuery({ queryKey: CUBE_QUERY_KEY, queryFn: fetchCube });
+  return (
+    <>
+      <span className="badge">workbench · live</span>
+      {error && (
+        <span role="alert" className="error">
+          {error.message}
+        </span>
+      )}
+    </>
+  );
 }
 
 function CardPanel({ slug }: { slug: string }): ReactNode {

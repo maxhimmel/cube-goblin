@@ -94,3 +94,18 @@ test("the write API validates and lands edits on disk", async ({ page, workbench
   expect(await readEntry(workbench.cardsDir, "bite-down")).toEqual(edited);
   await expect(page.getByTestId("card-notes")).toHaveText("saved through the API");
 });
+
+test("parallel writes leave a valid card file", async ({ page, workbench }) => {
+  const entry = await readEntry(workbench.cardsDir, "abrade");
+  const notes = Array.from({ length: 12 }, (_, index) => "x".repeat(index % 2 ? 2000 : 1));
+  const responses = await Promise.all(
+    notes.map((note) =>
+      page.request.put(`${workbench.url}api/cards/abrade`, { data: { ...entry, notes: note } }),
+    ),
+  );
+  expect(responses.map((response) => response.status())).toEqual(notes.map(() => 200));
+  const final = await readEntry(workbench.cardsDir, "abrade");
+  expect(notes).toContain(final.notes);
+  const leftovers = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".tmp"));
+  expect(leftovers).toEqual([]);
+});

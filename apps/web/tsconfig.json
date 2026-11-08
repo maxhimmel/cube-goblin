@@ -5,7 +5,10 @@
     "types": ["vite/client", "node"],
     "jsx": "react-jsx",
     "module": "preserve",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "paths": {
+      "#mode": ["./src/modes/share.tsx"]
+    }
   },
-  "include": ["src", "e2e", "eslint.config.ts", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "server", "e2e", "eslint.config.ts", "vite.config.ts", "playwright.config.ts"]
 }

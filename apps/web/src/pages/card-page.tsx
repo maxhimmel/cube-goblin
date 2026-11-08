@@ -1,12 +1,14 @@
+import { mode } from "#mode";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { cardsBySlug } from "../data.ts";
-import { toggleVote, updateCard, useReview } from "../review-store.ts";
 
 export function CardPage(): ReactNode {
   const { slug } = useParams({ from: "/card/$slug" });
-  const review = useReview();
-  const card = cardsBySlug.get(slug);
+  const cube = mode.useCube();
+  if (!cube) {
+    return <p className="muted">Loading cube…</p>;
+  }
+  const card = cube.cards.find((candidate) => candidate.slug === slug);
   if (!card) {
     return (
       <p>
@@ -14,7 +16,6 @@ export function CardPage(): ReactNode {
       </p>
     );
   }
-  const mine = review.cards[slug];
 
   return (
     <article className="detail">
@@ -29,31 +30,7 @@ export function CardPage(): ReactNode {
         <a href={card.scryfallUri} target="_blank" rel="noreferrer">
           Scryfall
         </a>
-        <div className="votes">
-          {(["keep", "cut"] as const).map((vote) => (
-            <button
-              key={vote}
-              type="button"
-              aria-pressed={mine?.vote === vote}
-              onClick={() => {
-                toggleVote(slug, vote);
-              }}
-            >
-              {vote}
-            </button>
-          ))}
-        </div>
-        <label>
-          Comment
-          <textarea
-            aria-label="Comment"
-            value={mine?.comment ?? ""}
-            onChange={(event) => {
-              updateCard(slug, { comment: event.target.value });
-            }}
-            rows={5}
-          />
-        </label>
+        <mode.CardPanel slug={slug} />
       </div>
     </article>
   );

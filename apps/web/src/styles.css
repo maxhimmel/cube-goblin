@@ -137,3 +137,30 @@ body {
 textarea {
   width: 100%;
 }
+
+.tile[data-status="cut"] {
+  opacity: 0.5;
+}
+
+.badge {
+  padding: 2px 8px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  font-size: 0.85em;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  white-space: pre-line;
+}

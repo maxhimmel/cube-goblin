@@ -2,13 +2,14 @@ import type { CardPatch, Section, WorkbenchCard } from "@repo/cube/browser";
 import { CARD_STATUSES } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { sendPatch } from "./api.ts";
 import { useCardEdit } from "./edits.ts";
 
 const NOTES_DEBOUNCE_MS = 600;
 
 type Save = (label: string, patch: CardPatch, undo: CardPatch) => void;
 
-function NotesField({ notes, save }: { notes: string; save: Save }): ReactNode {
+function NotesField({ slug, notes, save }: { slug: string; notes: string; save: Save }): ReactNode {
   const [draft, setDraft] = useState<string | undefined>(undefined);
   const before = useRef<string | undefined>(undefined);
   const latest = useRef<string | undefined>(undefined);
@@ -26,7 +27,21 @@ function NotesField({ notes, save }: { notes: string; save: Save }): ReactNode {
     }
   }
 
-  useEffect(() => flush, []);
+  useEffect(() => {
+    function persistOnExit(): void {
+      clearTimeout(timer.current);
+      const value = latest.current;
+      if (before.current !== undefined && value !== undefined && value !== before.current) {
+        before.current = undefined;
+        void sendPatch(slug, { notes: value }, true).catch(() => undefined);
+      }
+    }
+    window.addEventListener("pagehide", persistOnExit);
+    return () => {
+      window.removeEventListener("pagehide", persistOnExit);
+      flush();
+    };
+  }, [slug]);
 
   return (
     <label className="field">
@@ -80,7 +95,7 @@ function TagsField({ tags, save }: { tags: string[]; save: Save }): ReactNode {
           const tag = input.trim();
           setInput("");
           if (tag && !tags.includes(tag)) {
-            save("tags", { tags: [...tags, tag] }, { tags });
+            save("tags", { addTags: [tag] }, { removeTags: [tag] });
           }
         }}
       >
@@ -153,7 +168,7 @@ export function CardEditor({
         </select>
       </label>
       <TagsField tags={card.tags} save={save} />
-      <NotesField notes={card.notes} save={save} />
+      <NotesField slug={card.slug} notes={card.notes} save={save} />
     </div>
   );
 }

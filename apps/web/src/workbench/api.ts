@@ -26,10 +26,15 @@ export async function fetchCube(): Promise<Workbench> {
   return workbenchSchema.parse(await response.json());
 }
 
-export async function sendPatch(slug: string, patch: CardPatch): Promise<CardEntry> {
+export async function sendPatch(
+  slug: string,
+  patch: CardPatch,
+  keepalive = false,
+): Promise<CardEntry> {
   const url = `/api/cards/${slug}`;
   const response = await fetch(url, {
     method: "PATCH",
+    keepalive,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),
   });

@@ -1,4 +1,5 @@
 import type { CardEntry, CardPatch, Workbench, WorkbenchCard } from "@repo/cube/browser";
+import { applyTagChanges } from "@repo/cube/browser";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { MutationObserver, useIsMutating, useMutation } from "@tanstack/react-query";
 import { queryClient } from "../query-client.ts";
@@ -12,10 +13,6 @@ export interface CardEdit {
   undo?: CardPatch;
 }
 
-interface Rollback {
-  previous: Workbench | undefined;
-}
-
 const CARD_EDIT_KEY = ["card-edit"] as const;
 
 export function applyPatch(card: WorkbenchCard, patch: CardPatch): WorkbenchCard {
@@ -23,31 +20,39 @@ export function applyPatch(card: WorkbenchCard, patch: CardPatch): WorkbenchCard
   const nextSection = patch.section === undefined ? section : (patch.section ?? undefined);
   return {
     ...rest,
-    ...(patch.status === undefined ? {} : { status: patch.status }),
-    ...(patch.tags === undefined ? {} : { tags: patch.tags }),
-    ...(patch.notes === undefined ? {} : { notes: patch.notes }),
+    status: patch.status ?? card.status,
+    notes: patch.notes ?? card.notes,
+    tags: applyTagChanges(card.tags, patch),
     ...(nextSection === undefined ? {} : { section: nextSection }),
   };
+}
+
+function patchCached(slug: string, patch: CardPatch): void {
+  queryClient.setQueryData<Workbench>(
+    CUBE_QUERY_KEY,
+    (cube) =>
+      cube && {
+        ...cube,
+        cards: cube.cards.map((card) => (card.slug === slug ? applyPatch(card, patch) : card)),
+      },
+  );
+}
+
+export function editsPending(): boolean {
+  return queryClient.isMutating({ mutationKey: CARD_EDIT_KEY }) > 0;
 }
 
 const cardEditOptions = {
   mutationKey: CARD_EDIT_KEY,
   scope: { id: "card-edit" },
   mutationFn: ({ slug, patch }: CardEdit): Promise<CardEntry> => sendPatch(slug, patch),
-  onMutate: async ({ slug, patch }: CardEdit): Promise<Rollback> => {
+  onMutate: async ({ slug, patch }: CardEdit): Promise<void> => {
     await queryClient.cancelQueries({ queryKey: CUBE_QUERY_KEY });
-    const previous = queryClient.getQueryData<Workbench>(CUBE_QUERY_KEY);
-    if (previous) {
-      queryClient.setQueryData<Workbench>(CUBE_QUERY_KEY, {
-        ...previous,
-        cards: previous.cards.map((card) => (card.slug === slug ? applyPatch(card, patch) : card)),
-      });
-    }
-    return { previous };
+    patchCached(slug, patch);
   },
-  onError: (error: Error, _edit: CardEdit, rollback: Rollback | undefined): void => {
-    if (rollback?.previous) {
-      queryClient.setQueryData(CUBE_QUERY_KEY, rollback.previous);
+  onError: (error: Error, edit: CardEdit): void => {
+    if (edit.undo !== undefined) {
+      patchCached(edit.slug, edit.undo);
     }
     showToast({ message: error.message, tone: "error" });
   },
@@ -68,14 +73,18 @@ const cardEditOptions = {
       },
     });
   },
-  onSettled: (): Promise<void> => queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY }),
+  onSettled: async (): Promise<void> => {
+    if (queryClient.isMutating({ mutationKey: CARD_EDIT_KEY }) <= 1) {
+      await queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
+    }
+  },
 };
 
 export function runCardEdit(edit: CardEdit): void {
   new MutationObserver(queryClient, cardEditOptions).mutate(edit).catch(() => undefined);
 }
 
-export function useCardEdit(): UseMutationResult<CardEntry, Error, CardEdit, Rollback> {
+export function useCardEdit(): UseMutationResult<CardEntry, Error, CardEdit> {
   return useMutation(cardEditOptions);
 }
 

@@ -4,13 +4,15 @@ import type { ReactNode } from "react";
 import { queryClient } from "../query-client.ts";
 import { CUBE_CHANGED_EVENT, CUBE_QUERY_KEY, fetchCube } from "../workbench/api.ts";
 import { CardEditor } from "../workbench/card-editor.tsx";
-import { useSaving } from "../workbench/edits.ts";
+import { editsPending, useSaving } from "../workbench/edits.ts";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
 
 if (import.meta.hot) {
   import.meta.hot.on(CUBE_CHANGED_EVENT, () => {
-    void queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
+    if (!editsPending()) {
+      void queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
+    }
   });
 }
 

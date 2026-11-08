@@ -27,10 +27,18 @@ export function dismissToast(): void {
   emit();
 }
 
-export function showToast(toast: Omit<Toast, "id">): void {
+function pauseDismiss(): void {
   clearTimeout(timer);
-  current = { ...toast, id: nextId++ };
+}
+
+function resumeDismiss(): void {
+  clearTimeout(timer);
   timer = setTimeout(dismissToast, DISMISS_MS);
+}
+
+export function showToast(toast: Omit<Toast, "id">): void {
+  current = { ...toast, id: nextId++ };
+  resumeDismiss();
   emit();
 }
 
@@ -39,29 +47,45 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+function ToastView({ toast }: { toast: Toast }): ReactNode {
+  return (
+    <div
+      className="toast"
+      data-tone={toast.tone}
+      onMouseEnter={pauseDismiss}
+      onMouseLeave={resumeDismiss}
+      onFocus={pauseDismiss}
+      onBlur={resumeDismiss}
+    >
+      <span>{toast.message}</span>
+      {toast.action && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.action?.run();
+            dismissToast();
+          }}
+        >
+          {toast.action.label}
+        </button>
+      )}
+      <button type="button" aria-label="Dismiss" onClick={dismissToast}>
+        ×
+      </button>
+    </div>
+  );
+}
+
 export function Toaster(): ReactNode {
   const toast = useSyncExternalStore(subscribe, () => current);
   return (
-    <div className="toaster" role="status" aria-live="polite">
-      {toast && (
-        <div className="toast" data-tone={toast.tone} key={toast.id}>
-          <span>{toast.message}</span>
-          {toast.action && (
-            <button
-              type="button"
-              onClick={() => {
-                toast.action?.run();
-                dismissToast();
-              }}
-            >
-              {toast.action.label}
-            </button>
-          )}
-          <button type="button" aria-label="Dismiss" onClick={dismissToast}>
-            ×
-          </button>
-        </div>
-      )}
+    <div className="toaster">
+      <div role="status">
+        {toast?.tone === "info" && <ToastView key={toast.id} toast={toast} />}
+      </div>
+      <div role="alert">
+        {toast?.tone === "error" && <ToastView key={toast.id} toast={toast} />}
+      </div>
     </div>
   );
 }

@@ -169,3 +169,37 @@ test("undo reverts the last save on disk", async ({ page, workbench }) => {
   await page.getByRole("button", { name: "Undo" }).click();
   await expect.poll(async () => (await disk()).notes).toBe(entry.notes);
 });
+
+test("rapid edits all land and the page settles on them", async ({ page, workbench }) => {
+  const slug = "chart-a-course";
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await expect(page.getByLabel("Notes")).toBeVisible();
+
+  for (const tag of ["tempo", "card-draw", "blue"]) {
+    await page.getByLabel("New tag").fill(tag);
+    await page.getByLabel("New tag").press("Enter");
+  }
+  await page.getByRole("button", { name: "cut", exact: true }).click();
+  await page.getByRole("button", { name: "prospect", exact: true }).click();
+
+  await expect.poll(async () => (await disk()).tags).toEqual(["tempo", "card-draw", "blue"]);
+  await expect.poll(async () => (await disk()).status).toBe("prospect");
+  await expect(page.getByTestId("save-state")).toHaveText("all changes saved");
+  await page.waitForTimeout(500);
+  await expect(page.getByRole("button", { name: "prospect", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.locator(".chip")).toHaveText(["tempo×", "card-draw×", "blue×"]);
+});
+
+test("notes typed right before a reload are saved", async ({ page, workbench }) => {
+  const slug = "dream-harvest";
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await page.getByLabel("Notes").fill("typed then reloaded");
+  await page.reload();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, slug)).notes)
+    .toBe("typed then reloaded");
+});

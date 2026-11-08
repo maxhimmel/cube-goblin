@@ -22,3 +22,33 @@ export function cardFaces(card: Card): CardFace[] {
 export function imageUrl(card: Card, version: ImageVersion = "normal"): string | undefined {
   return card.image_uris?.[version] ?? card.card_faces?.[0]?.image_uris?.[version];
 }
+
+export interface DisplayFields {
+  manaCost: string;
+  typeLine: string;
+  oracleText: string;
+  cmc: number;
+  colors: string[];
+  image: string;
+  imageLarge: string;
+  scryfallUri: string;
+}
+
+export function displayFields(card: Card): DisplayFields | undefined {
+  const small = imageUrl(card, "small");
+  const large = imageUrl(card, "large");
+  if (!small || !large) {
+    return undefined;
+  }
+  const faces = cardFaces(card);
+  return {
+    manaCost: card.mana_cost ?? faces[0]?.mana_cost ?? "",
+    typeLine: card.type_line ?? "",
+    oracleText: faces.map((face) => face.oracle_text ?? "").join("\n//\n"),
+    cmc: card.cmc ?? 0,
+    colors: card.colors ?? card.color_identity,
+    image: small,
+    imageLarge: large,
+    scryfallUri: card.scryfall_uri.split("?")[0] ?? card.scryfall_uri,
+  };
+}

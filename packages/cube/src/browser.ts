@@ -6,7 +6,17 @@ export {
   reviewSchema,
   snapshotCardSchema,
   snapshotSchema,
+  workbenchCardSchema,
+  workbenchSchema,
 } from "./snapshot.ts";
-export type { CardReview, Review, Snapshot, SnapshotCard, Vote } from "./snapshot.ts";
-export { CARD_STATUSES } from "./schema.ts";
-export type { CardStatus, Section } from "./schema.ts";
+export type {
+  CardReview,
+  Review,
+  Snapshot,
+  SnapshotCard,
+  Vote,
+  Workbench,
+  WorkbenchCard,
+} from "./snapshot.ts";
+export { CARD_STATUSES, cardEntrySchema } from "./schema.ts";
+export type { CardEntry, CardStatus, Section } from "./schema.ts";

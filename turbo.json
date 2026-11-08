@@ -18,7 +18,12 @@
     },
     "e2e": {
       "dependsOn": ["build"],
-      "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/generated/**",
+        "$TURBO_ROOT$/cube/**",
+        "$TURBO_ROOT$/cube.config.json"
+      ]
     },
     "dev": {
       "persistent": true,

@@ -9,5 +9,6 @@ export {
   chunk,
 } from "./client.ts";
 export type { CardIdentifier, ScryfallClientOptions } from "./client.ts";
-export { cardFaces, imageUrl } from "./card.ts";
+export { cardFaces, displayFields, imageUrl } from "./card.ts";
+export type { DisplayFields } from "./card.ts";
 export type { Card, CardFace, CardList, ImageUris } from "./schemas.ts";

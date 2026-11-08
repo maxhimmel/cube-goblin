@@ -13,6 +13,7 @@ test("share doc is one self-contained file", async () => {
   const html = await readFile(DIST, "utf8");
   expect(html).not.toMatch(/<script[^>]+src=/u);
   expect(html).not.toMatch(/<link[^>]+rel="stylesheet"/u);
+  expect(html).not.toContain("/api/cube");
   const { size } = await stat(DIST);
   console.log(`dist/index.html: ${(size / 1024 / 1024).toFixed(2)} MB`);
 });

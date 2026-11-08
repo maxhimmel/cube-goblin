@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
 import type { CubePaths, Workbench, WorkbenchCard } from "@repo/cube";
-import { cubePaths, readCards, readSections, slugify, updateCard } from "@repo/cube";
+import { cubePaths, patchCard, readCards, readSections, slugify } from "@repo/cube";
 import { FileCache, ScryfallClient, displayFields } from "@repo/scryfall";
 import type { Plugin } from "vite";
 
@@ -106,14 +106,14 @@ export function workbench(options: WorkbenchOptions): Plugin {
           return;
         }
         const slug = CARD_ROUTE.exec(url)?.[1];
-        if (slug !== undefined && req.method === "PUT") {
+        if (slug !== undefined && req.method === "PATCH") {
           const write = writes.then(async () => {
             const body = parseJson(await readBody(req));
             if (!body.ok) {
               send(res, 400, { error: "Body is not valid JSON" });
               return;
             }
-            const result = await updateCard(paths, slug, body.value);
+            const result = await patchCard(paths, slug, body.value);
             if (result.ok) {
               send(res, 200, result.card);
             } else {

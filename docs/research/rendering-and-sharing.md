@@ -29,3 +29,11 @@ Researched 2026-11-08. Versions from `npm view` on that date. Plan discussion ha
 - **Gotcha**: the inlined JS bundle contains `</head>` and the marker string, so the review tag must go right before the last `</body>`, never searched for from the front. See `packages/cube/src/embed.ts` and its tests.
 - **Review code fallback**: `lz-string` compressed JSON. `pnpm cube review import` accepts a saved `.html`, a code, or `.json`.
 - **Gotcha**: `lz-string` is CommonJS, so in Node ESM use a default import (`import lzString from "lz-string"`).
+
+## Workbench dev server (2026-11-08)
+
+- **Mode switch**: `vite.config.ts` aliases `#mode` to `src/modes/workbench.tsx` when `command === "serve"` and to `src/modes/share.tsx` for builds. The share doc build contains no workbench or TanStack Query code; `e2e/share-doc.spec.ts` checks this.
+- **Write API**: a `configureServer` plugin (`server/workbench-plugin.ts`, `apply: "serve"`) adds middleware for `GET /api/cube` and `PUT /api/cards/:slug`, which calls `updateCard` in `@repo/cube` ([Vite plugin API](https://vite.dev/guide/api-plugin#configureserver)).
+- **Live reload of data**: the plugin watches `cube/` with `server.watcher` and sends a custom `cube:changed` event with `server.ws.send`. The client invalidates the TanStack Query cache in `import.meta.hot.on` ([Vite HMR events](https://vite.dev/guide/api-plugin#client-server-communication), [Query invalidation](https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation)).
+- **Gotcha**: Vite's default `bundle` config loader externalizes workspace packages, and Node then refuses their `.ts` sources (`ERR_UNKNOWN_FILE_EXTENSION`). `dev`, `build`, and the e2e `createServer` call use `configLoader: "runner"`, which Vite 8.3 marks `@experimental`.
+- **Images** are hotlinked `small` URLs in the workbench, not embedded data URIs.

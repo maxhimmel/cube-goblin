@@ -1,0 +1,20 @@
+{
+  "name": "@repo/scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "zx": "8.8.5"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "22.20.5",
+    "eslint": "10.14.0",
+    "jiti": "2.7.0",
+    "typescript": "6.0.3"
+  }
+}

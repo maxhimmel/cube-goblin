@@ -4,6 +4,8 @@ import type { CubePaths } from "./store.ts";
 import { readCards, readSections, slugify, writeCard } from "./store.ts";
 import { validateCube } from "./validate.ts";
 
+const IDENTITY_FIELDS = ["name", "oracleId", "source"] as const;
+
 export type UpdateResult =
   { ok: true; card: CardEntry } | { ok: false; status: 400 | 404; error: string };
 
@@ -21,8 +23,15 @@ export async function updateCard(
     return { ok: false, status: 400, error: `Name "${card.name}" does not match slug "${slug}"` };
   }
   const [cards, sections] = await Promise.all([readCards(paths), readSections(paths)]);
-  if (!cards.some((existing) => slugify(existing.name) === slug)) {
+  const current = cards.find((existing) => slugify(existing.name) === slug);
+  if (!current) {
     return { ok: false, status: 404, error: `No card "${slug}"` };
+  }
+  const changed = IDENTITY_FIELDS.filter(
+    (field) => JSON.stringify(current[field]) !== JSON.stringify(card[field]),
+  );
+  if (changed.length > 0) {
+    return { ok: false, status: 400, error: `Cannot change ${changed.join(", ")}` };
   }
   const next = cards.map((existing) => (slugify(existing.name) === slug ? card : existing));
   const problems = validateCube(next, sections);

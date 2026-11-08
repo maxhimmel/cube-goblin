@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile, mkdir } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -53,6 +53,23 @@ describe("updateCard", () => {
     expect(result).toMatchObject({ ok: false, status: 400 });
   });
 
+  it("rejects changes to a card's identity", async () => {
+    for (const change of [
+      { name: "shock" },
+      { oracleId: "8b4b6b0e-0000-4000-8000-000000000009" },
+      { source: { batch: "other", line: 2, input: "Shock" } },
+    ]) {
+      const result = await updateCard(paths, "shock", { ...shock, ...change });
+      expect(result).toMatchObject({ ok: false, status: 400 });
+    }
+    expect(await onDisk("shock")).toEqual(shock);
+  });
+
+  it("leaves no temp files behind", async () => {
+    await updateCard(paths, "shock", { ...shock, notes: "x" });
+    expect((await readdir(paths.cardsDir)).sort()).toEqual(["opt.json", "shock.json"]);
+  });
+
   it("returns 404 for an unknown card", async () => {
     const result = await updateCard(paths, "bolt", { ...shock, name: "Bolt" });
     expect(result).toMatchObject({ ok: false, status: 404 });
@@ -61,8 +78,6 @@ describe("updateCard", () => {
   it("rejects edits that break cube rules", async () => {
     const unknownSection = await updateCard(paths, "shock", { ...shock, section: "elves" });
     expect(unknownSection).toMatchObject({ ok: false, status: 400 });
-    const duplicate = await updateCard(paths, "opt", { ...opt, oracleId: shock.oracleId });
-    expect(duplicate).toMatchObject({ ok: false, status: 400 });
     expect(await onDisk("shock")).toEqual(shock);
     expect(await onDisk("opt")).toEqual(opt);
   });

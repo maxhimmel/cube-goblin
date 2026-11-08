@@ -1,4 +1,5 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
 import type { CardEntry, CubeConfig, Section } from "./schema.ts";
@@ -67,6 +68,8 @@ export async function readCards(paths: CubePaths): Promise<CardEntry[]> {
 export async function writeCard(paths: CubePaths, card: CardEntry): Promise<string> {
   await mkdir(paths.cardsDir, { recursive: true });
   const path = join(paths.cardsDir, `${slugify(card.name)}.json`);
-  await writeFile(path, `${JSON.stringify(cardEntrySchema.parse(card), null, 2)}\n`);
+  const temp = `${path}.${randomUUID()}.tmp`;
+  await writeFile(temp, `${JSON.stringify(cardEntrySchema.parse(card), null, 2)}\n`);
+  await rename(temp, path);
   return path;
 }

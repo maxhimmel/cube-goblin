@@ -1,0 +1,42 @@
+{
+  "name": "mtg-maxs-cube",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.8.1",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "prepare": "simple-git-hooks",
+    "cube": "tsx apps/cli/src/index.ts",
+    "check": "tsx scripts/src/check.ts",
+    "fix": "tsx scripts/src/fix.ts",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint:md": "markdownlint-cli2",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@repo/prettier-config",
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm check",
+    "commit-msg": "pnpm exec commitlint --edit \"$1\""
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@repo/markdownlint-config": "workspace:*",
+    "@repo/prettier-config": "workspace:*",
+    "markdownlint-cli2": "0.24.0",
+    "prettier": "3.9.10",
+    "simple-git-hooks": "2.14.0",
+    "tsx": "4.23.15",
+    "turbo": "2.11.10"
+  }
+}

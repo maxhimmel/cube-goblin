@@ -1,0 +1,5 @@
+{
+  "name": "@repo/markdownlint-config",
+  "private": true,
+  "exports": "./markdownlint.json"
+}

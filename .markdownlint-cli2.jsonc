@@ -1,0 +1,8 @@
+{
+  "config": {
+    "extends": "@repo/markdownlint-config",
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["**/node_modules/**", ".omc/**"],
+  "gitignore": true,
+}

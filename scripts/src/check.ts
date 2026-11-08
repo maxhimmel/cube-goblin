@@ -5,5 +5,6 @@ process.exitCode = await runSteps([
   { name: "no shell scripts", run: forbidShellScripts },
   { name: "format", run: () => $`pnpm exec prettier --check .` },
   { name: "markdown", run: () => $`pnpm exec markdownlint-cli2` },
+  { name: "cube data", run: () => $`pnpm -s cube validate` },
   { name: "lint + typecheck + test", run: () => $`pnpm exec turbo run lint typecheck test` },
 ]);

@@ -4,6 +4,7 @@ export {
   VOTES,
   cardReviewSchema,
   reviewSchema,
+  searchResultSchema,
   snapshotCardSchema,
   snapshotSchema,
   workbenchCardSchema,
@@ -12,6 +13,7 @@ export {
 export type {
   CardReview,
   Review,
+  SearchResult,
   Snapshot,
   SnapshotCard,
   Vote,

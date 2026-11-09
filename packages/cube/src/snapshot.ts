@@ -35,6 +35,15 @@ export const workbenchSchema = z.strictObject({
   vocabulary: z.array(tagSchema),
 });
 
+export const searchResultSchema = z.strictObject({
+  oracleId: z.string(),
+  name: z.string(),
+  manaCost: z.string(),
+  typeLine: z.string(),
+  image: z.string(),
+  inCube: z.boolean(),
+});
+
 export const VOTES = ["keep", "cut"] as const;
 
 export const cardReviewSchema = z.strictObject({
@@ -57,6 +66,7 @@ export type SnapshotCard = z.infer<typeof snapshotCardSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export type WorkbenchCard = z.infer<typeof workbenchCardSchema>;
 export type Workbench = z.infer<typeof workbenchSchema>;
+export type SearchResult = z.infer<typeof searchResultSchema>;
 export type Vote = (typeof VOTES)[number];
 export type CardReview = z.infer<typeof cardReviewSchema>;
 export type Review = z.infer<typeof reviewSchema>;

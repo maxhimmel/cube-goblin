@@ -34,7 +34,6 @@ export function GridPage(): ReactNode {
   );
   return (
     <div className="grid-layout">
-      <mode.Stats />
       <div className="grid-main">
         <div className="grid-tools">
           <label>

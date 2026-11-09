@@ -478,36 +478,6 @@ textarea {
   gap: 20px;
 }
 
-@media (min-width: 900px) {
-  .grid-layout:has(.stats) {
-    grid-template-columns: minmax(0, 1fr) 230px;
-  }
-
-  .grid-main {
-    grid-row: 1;
-    grid-column: 1;
-  }
-
-  .stats {
-    grid-row: 1;
-    grid-column: 2;
-    position: sticky;
-    top: 60px;
-    align-self: start;
-    max-height: calc(100vh - 80px);
-    overflow-y: auto;
-  }
-}
-
-.stats h2 {
-  display: inline;
-  margin: 0;
-}
-
-.stats summary {
-  cursor: pointer;
-}
-
 .stat-table {
   width: 100%;
   border-collapse: collapse;
@@ -528,11 +498,6 @@ textarea {
 .stat-table td {
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-
-.stat-size [data-verdict="over"],
-.stat-size [data-verdict="under"] {
-  color: var(--accent);
 }
 
 .card-fallback {

@@ -537,21 +537,32 @@ async function draftCount(cardsDir: string): Promise<number> {
   return entries.filter((entry) => entry.status === "draft").length;
 }
 
-test("stats count the draft against the target and follow edits", async ({ page, workbench }) => {
-  const config = JSON.parse(
-    await readFile(join(workbench.cardsDir, "..", "..", "cube.config.json"), "utf8"),
-  ) as { size: { min: number; max: number } };
-  await page.goto(`${workbench.url}#/cards`);
-  const stats = page.getByRole("complementary", { name: "Cube stats" });
+test("insights count the draft, follow edits, and scope to a selection", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(`${workbench.url}#/insights`);
   const drafted = await draftCount(workbench.cardsDir);
-  await expect(stats.getByTestId("draft-size")).toContainText(
-    `${String(drafted)} in draft · target ${String(config.size.min)}–${String(config.size.max)}`,
+  const total = page.getByTestId("stat-cards").locator(".stat-value");
+  await expect(total).toHaveText(String(drafted));
+  await expect(page.getByRole("img", { name: "Mana curve" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Color by mana value" })).toBeVisible();
+
+  const color = page
+    .getByRole("figure")
+    .filter({ has: page.getByRole("heading", { name: "Color", exact: true }) });
+  await color.getByRole("button", { name: "Table" }).click();
+  const counts = (await color.getByRole("cell").allTextContents()).map(Number);
+  const nonland = Number(
+    await page.getByTestId("stat-nonland").locator(".stat-value").textContent(),
   );
-  await expect(stats.getByTestId("stats-total")).toHaveText(`${String(drafted)} cards`);
-  const colors = stats.getByRole("table", { name: "Color" }).getByRole("cell");
-  const counts = (await colors.allTextContents()).map(Number);
-  const lands = parseInt((await stats.getByTestId("stats-lands").textContent()) ?? "", 10);
-  expect(counts.reduce((sum, value) => sum + value, 0)).toBe(drafted - lands);
+  expect(counts.reduce((sum, value) => sum + value, 0)).toBe(nonland);
+
+  const curve = page
+    .getByRole("figure")
+    .filter({ has: page.getByRole("heading", { name: "Mana curve" }) });
+  await curve.locator(".ts-chart__bar path").nth(2).hover();
+  await expect(page.getByText(/^Mana value 2: \d+ cards$/u)).toBeVisible();
 
   const slug = "dancing-from-dark-to-dawn";
   const entry = await readEntry(workbench.cardsDir, slug);
@@ -559,14 +570,17 @@ test("stats count the draft against the target and follow edits", async ({ page,
   await page.request.patch(`${workbench.url}api/cards`, {
     data: { changes: [{ slug, patch: { status: next } }] },
   });
-  const after = drafted + (next === "draft" ? 1 : -1);
-  await expect(stats.getByTestId("draft-size")).toContainText(`${String(after)} in draft`);
+  await expect(total).toHaveText(String(drafted + (next === "draft" ? 1 : -1)));
 
-  await stats.getByLabel("Count cards in").selectOption("all");
-  await expect(stats.getByRole("table", { name: "Status" })).toBeVisible();
+  await page.getByLabel("Count cards in").selectOption("all");
+  await expect(page.getByRole("heading", { name: "Status" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Cards", exact: true }).click();
   await page.getByRole("checkbox", { name: "Select Abrade", exact: true }).first().check();
-  await stats.getByLabel("Count cards in").selectOption("selected");
-  await expect(stats.getByTestId("stats-total")).toHaveText("1 card");
+  await page.getByRole("link", { name: "Insights" }).click();
+  await page.getByLabel("Count cards in").selectOption("selected");
+  await expect(total).toHaveText("1");
+  await page.getByRole("link", { name: "Cards", exact: true }).click();
   await page.getByRole("button", { name: "Clear selection" }).click();
 });
 

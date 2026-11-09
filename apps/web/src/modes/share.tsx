@@ -16,7 +16,10 @@ const view: CubeView = {
   sections: snapshot.sections,
   vocabulary: [],
   label: `snapshot ${snapshot.id}`,
+  functionsAsOf: snapshot.functionsAsOf,
 };
+
+const NO_SELECTION: ReadonlySet<string> = new Set();
 
 function Toolbar(): ReactNode {
   const review = useReview();
@@ -115,6 +118,6 @@ export const mode: Mode = {
   SelectCard: () => null,
   SelectPile: () => null,
   BulkBar: () => null,
-  Stats: () => null,
+  useSelection: () => NO_SELECTION,
   AddPage: () => <p className="muted">Cards are added in the workbench.</p>,
 };

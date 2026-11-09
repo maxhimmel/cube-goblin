@@ -66,3 +66,20 @@ test("friend reviews from file://, saves a copy, and the copy carries the review
   await expect(reopened.getByLabel("Your name")).toHaveValue("Sam");
   await fresh.close();
 });
+
+test("share doc shows insights from the snapshot", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(`${DOC_URL}#/insights`);
+  const drafted = snapshot.cards.filter((card) => card.status === "draft").length;
+  await expect(page.getByTestId("stat-cards").locator(".stat-value")).toHaveText(String(drafted));
+  await expect(page.getByRole("img", { name: "Mana curve" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Functions" })).toBeVisible();
+  await expect(page.getByText(`as of ${snapshot.functionsAsOf.slice(0, 10)}`)).toBeVisible();
+  await expect(page.getByLabel("Count cards in").locator("option")).toHaveText([
+    "Draft",
+    "Draft + prospects",
+    "All cards",
+  ]);
+  expect(errors).toEqual([]);
+});

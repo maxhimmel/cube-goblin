@@ -69,9 +69,7 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
     readTags(paths),
     readConfig(paths),
   ]);
-  const { cards } = await client.collection(
-    entries.map((entry) => ({ oracle_id: entry.oracleId })),
-  );
+  const { cards } = await client.byOracleIds(entries.map((entry) => entry.oracleId));
   const byOracle = new Map(cards.map((card) => [card.oracle_id, card]));
   const workbenchCards: WorkbenchCard[] = [];
   for (const entry of entries) {
@@ -147,7 +145,7 @@ async function search(
 
 function writeRoute(paths: CubePaths, client: ScryfallClient) {
   const lookup = async (oracleId: string): Promise<string | undefined> =>
-    (await client.collection([{ oracle_id: oracleId }])).cards[0]?.name;
+    (await client.byOracleIds([oracleId])).cards[0]?.name;
   return (url: string, method: string | undefined): Write | undefined => {
     if (url === "/api/cards" && method === "POST") {
       return (body) => addCard(paths, body, lookup);

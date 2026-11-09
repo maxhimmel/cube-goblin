@@ -41,10 +41,7 @@ const cardEditOptions = {
     await queryClient.cancelQueries({ queryKey: CUBE_QUERY_KEY });
     patchCached(changes);
   },
-  onError: (error: Error, edit: CardEdit): void => {
-    if (edit.undo !== undefined) {
-      patchCached(edit.undo);
-    }
+  onError: (error: Error): void => {
     showToast({ message: error.message, tone: "error" });
   },
   onSuccess: (_entries: CardEntry[], edit: CardEdit): void => {

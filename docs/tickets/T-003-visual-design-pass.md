@@ -1,7 +1,7 @@
 ---
 id: T-003
 title: Visual design pass
-status: doing
+status: done
 ---
 
 Give the workbench and the share doc a deliberate look ("fun, simple, juicy, elegant" in [VISION.md](../VISION.md)) and the layout in [views.md](../design/views.md): the Wall, the prospects tray, the detail pane, and the card strip with a hover preview. Use the `frontend-design` skill.

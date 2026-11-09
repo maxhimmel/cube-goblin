@@ -10,6 +10,9 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-015: Insights dashboard layout](tickets/T-015-insights-dashboard-layout.md)
+- [T-016: Insights drill-down](tickets/T-016-insights-drill-down.md)
+
 ## Next
 
 - [T-011: Board view](tickets/T-011-board-view.md)

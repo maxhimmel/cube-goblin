@@ -11,8 +11,8 @@ import { CUBE_PATHS, SNAPSHOT_FILE } from "../paths.ts";
 
 export async function snapshot(): Promise<number> {
   const [entries, sections] = await Promise.all([readCards(CUBE_PATHS), readSections(CUBE_PATHS)]);
-  const { cards, notFound } = await createClient().collection(
-    entries.map((entry) => ({ oracle_id: entry.oracleId })),
+  const { cards, missing: notFound } = await createClient().byOracleIds(
+    entries.map((entry) => entry.oracleId),
   );
   if (notFound.length > 0) {
     console.error(chalk.red(`Scryfall could not find: ${JSON.stringify(notFound)}`));

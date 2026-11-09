@@ -42,6 +42,11 @@ interface RequestSpec {
   path: string;
   params?: Record<string, string>;
   body?: unknown;
+  cache?: boolean;
+}
+
+function oracleKey(oracleId: string): string {
+  return `oracle:${oracleId}`;
 }
 
 function intervalFor(path: string): number {
@@ -92,8 +97,9 @@ export class ScryfallClient {
     for (const [key, value] of Object.entries(spec.params ?? {})) {
       url.searchParams.set(key, value);
     }
+    const useCache = spec.cache !== false;
     const cacheKey = JSON.stringify([url.toString(), spec.body ?? null]);
-    const cached = await this.#cache.get(cacheKey);
+    const cached = useCache ? await this.#cache.get(cacheKey) : undefined;
     if (cached !== undefined) {
       return schema.parse(cached);
     }
@@ -127,7 +133,9 @@ export class ScryfallClient {
     }
 
     const parsed = schema.parse(json);
-    await this.#cache.set(cacheKey, json);
+    if (useCache) {
+      await this.#cache.set(cacheKey, json);
+    }
     return parsed;
   }
 
@@ -170,5 +178,39 @@ export class ScryfallClient {
       notFound.push(...(list.not_found ?? []));
     }
     return { cards, notFound };
+  }
+
+  async byOracleIds(oracleIds: readonly string[]): Promise<{ cards: Card[]; missing: string[] }> {
+    const unique = [...new Set(oracleIds)];
+    const found = new Map<string, Card>();
+    const toFetch: string[] = [];
+    for (const oracleId of unique) {
+      const cached = cardSchema.safeParse(await this.#cache.get(oracleKey(oracleId)));
+      if (cached.success) {
+        found.set(oracleId, cached.data);
+      } else {
+        toFetch.push(oracleId);
+      }
+    }
+    for (const batch of chunk(toFetch, COLLECTION_MAX_IDENTIFIERS)) {
+      const list = await this.#request(
+        {
+          path: "/cards/collection",
+          body: { identifiers: batch.map((oracleId) => ({ oracle_id: oracleId })) },
+          cache: false,
+        },
+        cardListSchema,
+      );
+      for (const card of list.data) {
+        if (card.oracle_id !== undefined) {
+          found.set(card.oracle_id, card);
+          await this.#cache.set(oracleKey(card.oracle_id), card);
+        }
+      }
+    }
+    return {
+      cards: unique.flatMap((oracleId) => found.get(oracleId) ?? []),
+      missing: unique.filter((oracleId) => !found.has(oracleId)),
+    };
   }
 }

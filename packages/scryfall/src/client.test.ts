@@ -104,6 +104,36 @@ describe("ScryfallClient", () => {
     expect(sleeps).toEqual([CARD_ENDPOINT_INTERVAL_MS, 2 * CARD_ENDPOINT_INTERVAL_MS]);
   });
 
+  it("caches cards per oracle id, so an added card costs one small request", async () => {
+    const calls: Call[] = [];
+    const named = (id: string, name: string) => ({ ...card, id, oracle_id: id, name });
+    const cache = new MemoryCache();
+    const options = { userAgent: "Test/1.0", cache, sleep: () => Promise.resolve() };
+    const first = new ScryfallClient({
+      ...options,
+      fetch: fakeFetch(
+        [{ status: 200, body: { object: "list", data: [named("a", "A"), named("b", "B")] } }],
+        calls,
+      ),
+    });
+    expect((await first.byOracleIds(["a", "b"])).cards.map((c) => c.name)).toEqual(["A", "B"]);
+
+    const second = new ScryfallClient({
+      ...options,
+      fetch: fakeFetch(
+        [{ status: 200, body: { object: "list", data: [named("c", "C")], not_found: [{}] } }],
+        calls,
+      ),
+    });
+    const result = await second.byOracleIds(["c", "a", "x", "b"]);
+    expect(result.cards.map((c) => c.name)).toEqual(["C", "A", "B"]);
+    expect(result.missing).toEqual(["x"]);
+    expect(calls).toHaveLength(2);
+    expect(JSON.parse(calls[1]?.init?.body as string)).toEqual({
+      identifiers: [{ oracle_id: "c" }, { oracle_id: "x" }],
+    });
+  });
+
   it("throws ScryfallError with the API error details", async () => {
     const client = new ScryfallClient({
       userAgent: "Test/1.0",

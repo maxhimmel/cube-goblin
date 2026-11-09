@@ -25,6 +25,7 @@ import {
 } from "@repo/cube";
 import { FileCache, ScryfallClient, ScryfallError, displayFields } from "@repo/scryfall";
 import type { Plugin } from "vite";
+import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
 
 const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
 const CUBE_CHANGED_EVENT = "cube:changed";
@@ -36,6 +37,7 @@ const SEARCH_LIMIT = 24;
 export interface WorkbenchOptions {
   repoRoot: string;
   cacheDir: string;
+  imageCacheDir: string;
 }
 
 function send(res: ServerResponse, status: number, body: unknown): void {
@@ -85,6 +87,8 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
       status: entry.status,
       ...(entry.section === undefined ? {} : { section: entry.section }),
       ...fields,
+      image: localImageUrl(fields.image),
+      imageLarge: localImageUrl(fields.imageLarge),
       tags: entry.tags,
       notes: entry.notes,
     });
@@ -133,7 +137,7 @@ async function search(
         name: card.name,
         manaCost: fields.manaCost,
         typeLine: fields.typeLine,
-        image: fields.image,
+        image: localImageUrl(fields.image),
         inCube: inCube.has(card.oracle_id),
       });
     }
@@ -176,6 +180,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
         userAgent: USER_AGENT,
         cache: new FileCache(options.cacheDir),
       });
+      const images = new ImageCache(options.imageCacheDir, USER_AGENT);
       const route = writeRoute(paths, client);
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
@@ -198,6 +203,25 @@ export function workbench(options: WorkbenchOptions): Plugin {
       server.middlewares.use((req, res, next) => {
         const requestUrl = new URL(req.url ?? "/", "http://workbench.local");
         const url = requestUrl.pathname;
+        if (url === IMAGE_ROUTE && req.method === "GET") {
+          const remote = requestUrl.searchParams.get("u") ?? "";
+          if (!isAllowedImage(remote)) {
+            send(res, 400, { error: "Only Scryfall card images are served" });
+            return;
+          }
+          images.get(remote).then(
+            (image) => {
+              res.statusCode = 200;
+              res.setHeader("Content-Type", image.type);
+              res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+              res.end(image.body);
+            },
+            (error: unknown) => {
+              send(res, 502, { error: error instanceof Error ? error.message : String(error) });
+            },
+          );
+          return;
+        }
         if (url === "/api/search" && req.method === "GET") {
           search(paths, client, requestUrl.searchParams.get("q") ?? "").then(
             (results) => {

@@ -431,3 +431,17 @@ textarea {
 .stat-size [data-verdict="under"] {
   color: var(--cut);
 }
+
+.card-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 146 / 204;
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px dashed var(--muted);
+  border-radius: 6px;
+  text-align: center;
+  color: var(--muted);
+}

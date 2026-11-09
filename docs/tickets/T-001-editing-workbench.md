@@ -20,6 +20,12 @@ Edit the cube in a local web app instead of hand-editing JSON. Edits save to `cu
 - **Saving**: auto-save. Every change writes the card file immediately, with an undo toast. Git commits stay a separate, deliberate step.
 - **Tags**: picked from a fixed list kept in a vocabulary file. "Add new" is an explicit action, so names stay consistent.
 
+## Decisions (user, 2026-11-09)
+
+- **Added cards' source**: each add appends a `[  ] Name` line to `cube/inbox/workbench.txt`, and the card's `source` points at that line.
+- **Swap**: never deletes. The old card becomes `cut` and keeps its notes. Copying its tags to the new card is a choice made on each swap. Deletion and an archive are [T-009](T-009-archive-and-delete.md).
+- **Status of an added card**: picked on each add (prospect selected by default; a swap starts from the old card's status and section).
+
 ## Slices (each one is a branch merged with `--no-ff`)
 
 1. **Write API + live data**: dev-only endpoints that read the cube and Scryfall data and validate writes with zod. The workbench shows live data instead of the snapshot, and the share doc stays read-only.

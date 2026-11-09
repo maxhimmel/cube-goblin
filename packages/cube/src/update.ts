@@ -1,5 +1,5 @@
 import type { CardEntry } from "./schema.ts";
-import { applyTagChanges, cardEntrySchema, cardPatchSchema } from "./schema.ts";
+import { applyCardPatch, cardChangesSchema, cardEntrySchema, cardPatchSchema } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
 import { slugify } from "./slug.ts";
 import { readCards, readSections, readTags, writeCard } from "./store.ts";
@@ -60,15 +60,38 @@ export async function patchCard(
   if (!current) {
     return { ok: false, status: 404, error: `No card "${slug}"` };
   }
-  const patch = parsed.data;
-  const { section: currentSection, ...base } = current;
-  const nextSection = patch.section === undefined ? currentSection : (patch.section ?? undefined);
-  const next: CardEntry = {
-    ...base,
-    status: patch.status ?? current.status,
-    notes: patch.notes ?? current.notes,
-    tags: applyTagChanges(current.tags, patch),
-    ...(nextSection === undefined ? {} : { section: nextSection }),
-  };
-  return updateCard(paths, slug, next);
+  return updateCard(paths, slug, applyCardPatch(current, parsed.data));
+}
+
+export type BatchResult =
+  { ok: true; cards: CardEntry[] } | { ok: false; status: 400 | 404; error: string };
+
+export async function patchCards(paths: CubePaths, input: unknown): Promise<BatchResult> {
+  const parsed = cardChangesSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, status: 400, error: parsed.error.message };
+  }
+  const [cards, sections, tags] = await Promise.all([
+    readCards(paths),
+    readSections(paths),
+    readTags(paths),
+  ]);
+  const bySlug = new Map(cards.map((card) => [slugify(card.name), card]));
+  const changed = new Map<string, CardEntry>();
+  for (const { slug, patch } of parsed.data.changes) {
+    const current = changed.get(slug) ?? bySlug.get(slug);
+    if (!current) {
+      return { ok: false, status: 404, error: `No card "${slug}"` };
+    }
+    changed.set(slug, applyCardPatch(current, patch));
+  }
+  const next = cards.map((card) => changed.get(slugify(card.name)) ?? card);
+  const problems = validateCube(next, sections, tags);
+  if (problems.length > 0) {
+    return { ok: false, status: 400, error: problems.join("\n") };
+  }
+  for (const card of changed.values()) {
+    await writeCard(paths, card);
+  }
+  return { ok: true, cards: [...changed.values()] };
 }

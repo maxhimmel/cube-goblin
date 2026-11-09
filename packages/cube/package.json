@@ -7,7 +7,7 @@
     "./browser": "./src/browser.ts"
   },
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

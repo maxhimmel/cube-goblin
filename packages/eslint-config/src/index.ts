@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import type { Linter } from "eslint";
 import { defineConfig } from "eslint/config";
 import prettier from "eslint-config-prettier/flat";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 import { noComments } from "./no-comments.ts";
 
@@ -14,6 +15,7 @@ export function createConfig(tsconfigRootDir: string): Linter.Config[] {
         js.configs.recommended,
         tseslint.configs.strictTypeChecked,
         tseslint.configs.stylisticTypeChecked,
+        reactHooks.configs.flat.recommended,
       ],
       languageOptions: {
         parserOptions: {

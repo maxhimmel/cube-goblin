@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Gauge } from "../gauge.tsx";
 import { ManaSymbol } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
-import type { TickLabel } from "./charts.tsx";
+import type { BarFill, TickLabel } from "./charts.tsx";
 import { ChartCard, ColumnChart, CountTable, HeatChart, RowChart } from "./charts.tsx";
 
 interface Scope {
@@ -33,6 +33,20 @@ function colorIcon(id: string): ReactNode {
   ) : (
     <i className={`ms ms-${symbol.toLowerCase()} ms-cost`} aria-hidden="true" />
   );
+}
+
+const MANA_FILLS: Record<string, string> = {
+  W: "var(--mana-w)",
+  U: "var(--mana-u)",
+  B: "var(--mana-b)",
+  R: "var(--mana-r)",
+  G: "var(--mana-g)",
+  multicolored: "var(--mana-m)",
+  colorless: "var(--mana-c)",
+};
+
+function manaFill(row: Count): string {
+  return MANA_FILLS[row.id] ?? "var(--chart-bar)";
 }
 
 const colorTick: TickLabel = (id) => (
@@ -75,12 +89,14 @@ function Bars({
   unit = "cards",
   caption,
   tick,
+  fill,
 }: {
   title: string;
   rows: readonly Count[];
   unit?: string;
   caption?: ReactNode;
   tick?: TickLabel;
+  fill: BarFill;
 }): ReactNode {
   return (
     <ChartCard
@@ -88,7 +104,7 @@ function Bars({
       caption={caption}
       table={<CountTable caption={title} rows={rows} {...(tick ? { head: tick } : {})} />}
     >
-      <RowChart rows={rows} name={title} unit={unit} {...(tick ? { tick } : {})} />
+      <RowChart rows={rows} name={title} unit={unit} fill={fill} {...(tick ? { tick } : {})} />
     </ChartCard>
   );
 }
@@ -157,6 +173,7 @@ export function InsightsPage(): ReactNode {
               name="Mana curve"
               unit="cards"
               category="Mana value"
+              fill="var(--chart-curve)"
               tick={curveTick}
             />
           </ChartCard>
@@ -165,11 +182,12 @@ export function InsightsPage(): ReactNode {
             caption="Nonland cards by color"
             rows={stats.colors}
             tick={colorTick}
+            fill={manaFill}
           />
           <ChartCard
             wide
             title="Color by mana value"
-            caption="Nonland cards; stronger color means more"
+            caption="Nonland cards by color and mana value; stronger color means more"
             table={
               <CountTable
                 caption="Color by mana value"
@@ -187,6 +205,7 @@ export function InsightsPage(): ReactNode {
               columns={CURVE_COLUMNS}
               name="Color by mana value"
               rowTick={colorTick}
+              columnTick={curveTick}
             />
           </ChartCard>
           <Bars
@@ -195,19 +214,30 @@ export function InsightsPage(): ReactNode {
             rows={stats.pips}
             unit="symbols"
             tick={colorTick}
+            fill={manaFill}
           />
-          <Bars title="Card types" rows={stats.types} />
+          <Bars title="Card types" rows={stats.types} fill="var(--chart-types)" />
           <Bars
             title="Functions"
             caption={`Scryfall oracle tags, ${asOf(cube.functionsAsOf)}. Fixing also counts cards that make two or more colors of mana.`}
             rows={stats.functions}
+            fill="var(--chart-functions)"
           />
-          {scope?.id !== "draft" && <Bars title="Status" rows={stats.status} />}
-          {stats.sections.length > 0 && <Bars title="Sections" rows={stats.sections} />}
+          {scope?.id !== "draft" && (
+            <Bars title="Status" rows={stats.status} fill="var(--chart-status)" />
+          )}
+          {stats.sections.length > 0 && (
+            <Bars title="Sections" rows={stats.sections} fill="var(--chart-sections)" />
+          )}
           {TAG_KINDS.map((kind) => {
             const rows = stats.tags.filter((row) => row.kind === kind);
             return rows.length > 0 ? (
-              <Bars key={kind} title={KIND_TITLES[kind]} rows={rows} />
+              <Bars
+                key={kind}
+                title={KIND_TITLES[kind]}
+                rows={rows}
+                fill={`var(--chart-${kind})`}
+              />
             ) : (
               <ChartCard key={kind} title={KIND_TITLES[kind]}>
                 <p className="muted">No {kind} tags yet.</p>

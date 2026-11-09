@@ -191,9 +191,11 @@ h2 {
 }
 
 .large {
-  max-width: 100%;
+  align-self: flex-start;
+  width: min(336px, 100%);
   height: auto;
-  border-radius: 12px;
+  aspect-ratio: 488 / 680;
+  border-radius: 4.75% / 3.4%;
 }
 
 .detail-body {

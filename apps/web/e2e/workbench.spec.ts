@@ -544,6 +544,14 @@ test("mana costs render as symbols with a text alternative", async ({ page, work
   await expect(cost).not.toHaveAccessibleName(/[{}]/u);
 });
 
+test("the large card image keeps the card's shape", async ({ page, workbench }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${workbench.url}#/card/bite-down`);
+  const box = await page.getByRole("img", { name: "Bite Down", exact: true }).boundingBox();
+  expect(box).not.toBeNull();
+  expect((box?.width ?? 0) / (box?.height ?? 1)).toBeCloseTo(488 / 680, 2);
+});
+
 test("card images come from the local image cache", async ({ page, workbench }) => {
   await page.goto(workbench.url);
   const first = page.locator(".grid img").first();

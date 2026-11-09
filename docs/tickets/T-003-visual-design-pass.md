@@ -11,6 +11,7 @@ Give the workbench and the share doc a deliberate look ("fun, simple, juicy, ele
 - Of three directions, the binder palette, plus lift and tilt on hover from the "kitchen table" direction.
 - Layout: the Wall (deck-builder columns by mana value) over a binder of pockets or a two-zone table.
 - The card page becomes a slide-in pane. Its big image stretched on desktop (a flex item stretched to the row height).
+- Wall prototype approved (2026-11-09).
 - Card type groups only; no "makes tokens" group yet ([T-013](T-013-mechanic-detection-wizard.md)).
 
 ## Done when

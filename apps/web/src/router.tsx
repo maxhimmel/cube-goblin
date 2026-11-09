@@ -51,6 +51,12 @@ const cardRoute = createRoute({
 const insightsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/insights",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { scope?: string | undefined; bucket?: string | undefined } => ({
+    ...(typeof search["scope"] === "string" ? { scope: search["scope"] } : {}),
+    ...(typeof search["bucket"] === "string" ? { bucket: search["bucket"] } : {}),
+  }),
   component: InsightsPage,
 });
 

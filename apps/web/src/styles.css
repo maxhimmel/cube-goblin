@@ -365,3 +365,69 @@ textarea {
   height: auto;
   border-radius: 6px;
 }
+
+.mana-cost .ms + .ms {
+  margin-left: 2px;
+}
+
+.grid-layout {
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 900px) {
+  .grid-layout:has(.stats) {
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+
+  .grid-main {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .stats {
+    grid-row: 1;
+    grid-column: 2;
+    position: sticky;
+    top: 60px;
+    align-self: start;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+}
+
+.stats h2 {
+  display: inline;
+  margin: 0;
+}
+
+.stats summary {
+  cursor: pointer;
+}
+
+.stat-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.stat-table caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 4px;
+}
+
+.stat-table th {
+  text-align: left;
+  font-weight: normal;
+}
+
+.stat-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-size [data-verdict="over"],
+.stat-size [data-verdict="under"] {
+  color: var(--cut);
+}

@@ -46,7 +46,7 @@ export function displayFields(card: Card): DisplayFields | undefined {
     typeLine: card.type_line ?? "",
     oracleText: faces.map((face) => face.oracle_text ?? "").join("\n//\n"),
     cmc: card.cmc ?? 0,
-    colors: card.colors ?? card.color_identity,
+    colors: card.colors ?? faces[0]?.colors ?? [],
     image: small,
     imageLarge: large,
     scryfallUri: card.scryfall_uri.split("?")[0] ?? card.scryfall_uri,

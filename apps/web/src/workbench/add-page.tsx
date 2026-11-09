@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { ManaCost } from "../mana.tsx";
 import { queryClient } from "../query-client.ts";
 import { CUBE_QUERY_KEY, addCardRequest, searchCards } from "./api.ts";
 import { editsPending } from "./edits.ts";
@@ -39,6 +40,7 @@ function ResultTile({
   return (
     <li className="result">
       <img src={result.image} alt={result.name} loading="lazy" width={146} height={204} />
+      <ManaCost cost={result.manaCost} />
       <span className="muted">{result.typeLine}</span>
       {result.inCube ? (
         <span className="muted">In cube</span>

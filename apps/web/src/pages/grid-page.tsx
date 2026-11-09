@@ -31,46 +31,49 @@ export function GridPage(): ReactNode {
     (pile) => pile.cards.length > 0 || pile.keepEmpty === true,
   );
   return (
-    <div>
-      <div className="grid-tools">
-        <label>
-          Organize by{" "}
-          <select
-            id={ORGANIZE_ID}
-            aria-label="Organize by"
-            value={organizer?.id}
-            onChange={(event) => {
-              const next = event.target.value;
-              void navigate({
-                to: "/",
-                search: next === DEFAULT_ORGANIZER ? {} : { by: next },
-              });
-            }}
-          >
-            {options.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <mode.BulkBar />
+    <div className="grid-layout">
+      <mode.Stats />
+      <div className="grid-main">
+        <div className="grid-tools">
+          <label>
+            Organize by{" "}
+            <select
+              id={ORGANIZE_ID}
+              aria-label="Organize by"
+              value={organizer?.id}
+              onChange={(event) => {
+                const next = event.target.value;
+                void navigate({
+                  to: "/",
+                  search: next === DEFAULT_ORGANIZER ? {} : { by: next },
+                });
+              }}
+            >
+              {options.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <mode.BulkBar />
+        </div>
+        {piles.map((pile) => (
+          <section key={pile.id} data-pile={pile.id}>
+            <div className="pile-head">
+              <mode.SelectPile slugs={pile.cards.map((card) => card.slug)} label={pile.label} />
+              <h2>
+                {pile.label} <span className="muted">({pile.cards.length})</span>
+              </h2>
+            </div>
+            <ul className="grid">
+              {pile.cards.map((card) => (
+                <Tile key={card.slug} card={card} />
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
-      {piles.map((pile) => (
-        <section key={pile.id} data-pile={pile.id}>
-          <div className="pile-head">
-            <mode.SelectPile slugs={pile.cards.map((card) => card.slug)} label={pile.label} />
-            <h2>
-              {pile.label} <span className="muted">({pile.cards.length})</span>
-            </h2>
-          </div>
-          <ul className="grid">
-            {pile.cards.map((card) => (
-              <Tile key={card.slug} card={card} />
-            ))}
-          </ul>
-        </section>
-      ))}
     </div>
   );
 }

@@ -1,10 +1,11 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const IMAGE_ROUTE = "/api/image";
 const ALLOWED_HOST = "cards.scryfall.io";
 const MAX_PARALLEL = 6;
+const DOWNLOAD_TIMEOUT_MS = 20_000;
 
 export interface CachedImage {
   type: string;
@@ -18,7 +19,7 @@ export function localImageUrl(remote: string): string {
 export function isAllowedImage(remote: string): boolean {
   try {
     const url = new URL(remote);
-    return url.protocol === "https:" && url.hostname === ALLOWED_HOST;
+    return url.protocol === "https:" && url.hostname === ALLOWED_HOST && url.port === "";
   } catch {
     return false;
   }
@@ -67,20 +68,28 @@ export class ImageCache {
     try {
       const response = await this.#fetch(remote, {
         headers: { "User-Agent": this.#userAgent, Accept: "image/*" },
+        redirect: "error",
+        signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
       });
       const type = response.headers.get("content-type") ?? "";
       if (!response.ok || !type.startsWith("image/")) {
         throw new Error(`Image ${remote} failed: ${String(response.status)} ${type}`);
       }
       const body = Buffer.from(await response.arrayBuffer());
-      const length = Number(response.headers.get("content-length") ?? body.length);
-      if (body.length === 0 || body.length !== length) {
+      const declared = response.headers.get("content-length");
+      const compressed = response.headers.get("content-encoding") !== null;
+      if (
+        body.length === 0 ||
+        (!compressed && declared !== null && Number(declared) !== body.length)
+      ) {
         throw new Error(`Image ${remote} was truncated`);
       }
       await mkdir(this.#dir, { recursive: true });
-      await writeFile(`${bodyPath}.tmp`, body);
-      await rename(`${bodyPath}.tmp`, bodyPath);
-      await writeFile(typePath, type);
+      const suffix = `${String(process.pid)}.${randomUUID()}.tmp`;
+      await writeFile(`${typePath}.${suffix}`, type);
+      await rename(`${typePath}.${suffix}`, typePath);
+      await writeFile(`${bodyPath}.${suffix}`, body);
+      await rename(`${bodyPath}.${suffix}`, bodyPath);
       return { body, type };
     } finally {
       this.#release();

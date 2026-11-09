@@ -1,11 +1,19 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
-import type { CubePaths, TagResult, UpdateResult, Workbench, WorkbenchCard } from "@repo/cube";
+import type {
+  BatchResult,
+  CubePaths,
+  TagResult,
+  UpdateResult,
+  Workbench,
+  WorkbenchCard,
+} from "@repo/cube";
 import {
   changeTag,
   createTag,
   cubePaths,
   patchCard,
+  patchCards,
   readCards,
   readSections,
   readTags,
@@ -78,10 +86,21 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
   return { cards: workbenchCards, sections, vocabulary };
 }
 
-type Write = (body: unknown) => Promise<UpdateResult | TagResult>;
+type WriteResult = UpdateResult | TagResult | BatchResult;
+type Write = (body: unknown) => Promise<WriteResult>;
+
+function written(result: Extract<WriteResult, { ok: true }>): unknown {
+  if ("card" in result) {
+    return result.card;
+  }
+  return "cards" in result ? result.cards : result.tag;
+}
 
 function writeRoute(paths: CubePaths) {
   return (url: string, method: string | undefined): Write | undefined => {
+    if (url === "/api/cards" && method === "PATCH") {
+      return (body) => patchCards(paths, body);
+    }
     const card = CARD_ROUTE.exec(url)?.[1];
     if (card !== undefined && method === "PATCH") {
       return (body) => patchCard(paths, card, body);
@@ -149,7 +168,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
             }
             const result = await write(body.value);
             if (result.ok) {
-              send(res, 200, "card" in result ? result.card : result.tag);
+              send(res, 200, written(result));
             } else {
               send(res, result.status, { error: result.error });
             }

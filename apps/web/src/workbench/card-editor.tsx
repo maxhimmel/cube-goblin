@@ -225,7 +225,11 @@ export function CardEditor({
 }): ReactNode {
   const edit = useCardEdit();
   const save: Save = (label, patch, undo) => {
-    edit.mutate({ slug: card.slug, label, patch, undo });
+    edit.mutate({
+      label,
+      changes: [{ slug: card.slug, patch }],
+      undo: [{ slug: card.slug, patch: undo }],
+    });
   };
 
   return (

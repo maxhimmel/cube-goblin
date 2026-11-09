@@ -68,3 +68,11 @@ Two archetypes share some cards or traits, so one deck can draw on both. ([Cube 
 ## Redundancy
 
 Several similar cards in a singleton cube, so an archetype shows up consistently. ([StarCityGames](https://articles.starcitygames.com/magic-the-gathering/how-to-build-an-mtg-cube-with-redundancy-in-mind/))
+
+## Mana value
+
+The total amount of mana in a card's mana cost, regardless of color; X counts as 0. A card with no mana cost, such as a land, has mana value 0. A split card adds up both halves. A double-faced card uses its front face. It replaced the older term "converted mana cost". Scryfall's `cmc` field holds it. ([Comprehensive Rules 202.3](https://media.wizards.com/2026/downloads/MagicCompRules%2020261106.txt))
+
+## Color
+
+A card is the colors of the mana symbols in its mana cost: white, blue, black, red, green. **Monocolored** means exactly one color, **multicolored** two or more, and **colorless** none. Multicolored is not itself a color. A double-faced card has its front face's colors outside the battlefield and stack. Color is not color identity, which also counts mana symbols in rules text. ([Comprehensive Rules 105.2, 712.6a](https://media.wizards.com/2026/downloads/MagicCompRules%2020261106.txt))

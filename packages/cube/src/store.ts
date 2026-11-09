@@ -6,12 +6,15 @@ import type { CardEntry, CubeConfig, Section, Tag } from "./schema.ts";
 import { slugify } from "./slug.ts";
 import { cardEntrySchema, cubeConfigSchema, sectionsFileSchema, tagsFileSchema } from "./schema.ts";
 
+export const WORKBENCH_BATCH = "workbench";
+
 export interface CubePaths {
   root: string;
   cardsDir: string;
   sectionsFile: string;
   tagsFile: string;
   configFile: string;
+  workbenchBatch: string;
 }
 
 export function cubePaths(repoRoot: string): CubePaths {
@@ -21,6 +24,7 @@ export function cubePaths(repoRoot: string): CubePaths {
     sectionsFile: join(repoRoot, "cube", "sections.json"),
     tagsFile: join(repoRoot, "cube", "tags.json"),
     configFile: join(repoRoot, "cube.config.json"),
+    workbenchBatch: join(repoRoot, "cube", "inbox", `${WORKBENCH_BATCH}.txt`),
   };
 }
 

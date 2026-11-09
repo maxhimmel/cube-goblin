@@ -179,3 +179,57 @@ export function cubeStats(
     })),
   };
 }
+
+export const BUCKET_KINDS = [
+  "curve",
+  "color",
+  "colorCurve",
+  "pips",
+  "type",
+  "function",
+  "status",
+  "section",
+  "tag",
+] as const;
+
+export type BucketKind = (typeof BUCKET_KINDS)[number];
+
+export interface Bucket {
+  kind: BucketKind;
+  keys: string[];
+}
+
+export function bucketId(kind: BucketKind, ...keys: string[]): string {
+  return [kind, ...keys].join(":");
+}
+
+export function parseBucket(id: string): Bucket | undefined {
+  const [kind, ...keys] = id.split(":");
+  const known = BUCKET_KINDS.find((candidate) => candidate === kind);
+  return known && keys.length > 0 ? { kind: known, keys } : undefined;
+}
+
+export function inBucket(card: StatCard, bucket: Bucket): boolean {
+  const [first = "", second = ""] = bucket.keys;
+  const spell = !isLand(card);
+  switch (bucket.kind) {
+    case "curve":
+      return spell && curveKey(card) === first;
+    case "color":
+      return spell && colorGroup(card) === first;
+    case "colorCurve":
+      return spell && colorGroup(card) === first && curveKey(card) === second;
+    case "pips":
+      return pipColors(card.manaCost ?? "").includes(first);
+    case "type":
+      return typeKey(card) === first;
+    case "function":
+      return card.functions?.includes(first) ?? false;
+    case "status":
+      return card.status === first;
+    case "section":
+      return card.section === first;
+    case "tag":
+      return card.tags?.includes(first) ?? false;
+  }
+}

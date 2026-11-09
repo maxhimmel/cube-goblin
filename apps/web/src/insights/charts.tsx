@@ -5,7 +5,7 @@ import { scaleBand } from "@tanstack/charts/scales/band";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
 import { tooltip } from "@tanstack/charts/tooltip";
 import type { ReactNode, RefObject } from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type TickLabel = (id: string) => ReactNode;
 
@@ -13,8 +13,9 @@ export type BarFill = string | ((row: Count) => string);
 
 const BAR = "var(--chart-bar)";
 const BAR_THICKNESS = 24;
-const ROW_HEIGHT = 34;
 const TICK_GUTTER = 132;
+const MIN_PLOT_HEIGHT = 120;
+const HEAT_STEPS = 6;
 
 function labelOf(rows: readonly Count[], datum: { id: string }): string {
   return rows.find((row) => row.id === datum.id)?.label ?? datum.id;
@@ -24,14 +25,40 @@ function peak(rows: readonly Count[]): number {
   return Math.max(1, ...rows.map((row) => row.count));
 }
 
-const HEAT_STEPS = 6;
-
 function heatStep(count: number, max: number): number {
   return max === 0 || count === 0 ? 0 : Math.ceil((count / max) * HEAT_STEPS);
 }
 
 function heatFill(step: number): string {
   return step === 0 ? "var(--chart-empty)" : `var(--heat-${String(step)})`;
+}
+
+function dimmed(color: string, on: boolean): string {
+  return on ? color : `color-mix(in oklab, ${color} 30%, transparent)`;
+}
+
+function paint(fill: BarFill, row: Count): string {
+  return typeof fill === "string" ? fill : fill(row);
+}
+
+function usePlotHeight(): [RefObject<HTMLDivElement | null>, number | undefined] {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      const next = Math.floor(entry?.contentRect.height ?? 0);
+      setHeight(next > 0 ? Math.max(MIN_PLOT_HEIGHT, next) : undefined);
+    });
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+  return [ref, height];
 }
 
 interface TickScene {
@@ -99,6 +126,24 @@ function TickOverlay({
   );
 }
 
+interface BarProps {
+  rows: readonly Count[];
+  name: string;
+  unit: string;
+  fill?: BarFill;
+  tick?: TickLabel | undefined;
+  selected?: string | undefined;
+  onPick?: ((id: string) => void) | undefined;
+}
+
+function pickFrom(onPick: ((id: string) => void) | undefined) {
+  return (point: { datum: { id: string } } | null) => {
+    if (point && onPick) {
+      onPick(point.datum.id);
+    }
+  };
+}
+
 export function ColumnChart({
   rows,
   name,
@@ -106,15 +151,11 @@ export function ColumnChart({
   fill = BAR,
   category,
   tick,
-}: {
-  rows: readonly Count[];
-  name: string;
-  unit: string;
-  fill?: BarFill;
-  category: string;
-  tick?: TickLabel;
-}): ReactNode {
+  selected,
+  onPick,
+}: BarProps & { category: string }): ReactNode {
   const overlay = useTickOverlay("x");
+  const [plot, height] = usePlotHeight();
   const definition = useMemo(
     () =>
       defineChart({
@@ -123,7 +164,7 @@ export function ColumnChart({
           barY(rows, {
             x: "id",
             y: "count",
-            fill,
+            fill: (row) => dimmed(paint(fill, row), selected === undefined || row.id === selected),
             maxThickness: BAR_THICKNESS,
             radius: [4, 4, 0, 0],
           }),
@@ -153,10 +194,10 @@ export function ColumnChart({
             `${category} ${labelOf(rows, point.datum)}: ${String(point.datum.count)} ${unit}`,
         },
       }),
-    [category, fill, rows, tick, unit],
+    [category, fill, rows, selected, tick, unit],
   );
   return (
-    <div className="chart-plot">
+    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
       {tick && (
         <TickOverlay
           ids={rows.map((row) => row.id)}
@@ -169,9 +210,10 @@ export function ColumnChart({
       <Chart
         definition={definition}
         ariaLabel={name}
-        height={220}
+        height={height ?? 220}
         initialWidth={420}
         onRender={overlay.onRender}
+        onSelect={pickFrom(onPick)}
       />
     </div>
   );
@@ -183,14 +225,11 @@ export function RowChart({
   unit,
   fill = BAR,
   tick,
-}: {
-  rows: readonly Count[];
-  name: string;
-  unit: string;
-  fill?: BarFill;
-  tick?: TickLabel;
-}): ReactNode {
+  selected,
+  onPick,
+}: BarProps): ReactNode {
   const overlay = useTickOverlay("y");
+  const [plot, height] = usePlotHeight();
   const definition = useMemo(
     () =>
       defineChart({
@@ -199,7 +238,7 @@ export function RowChart({
           barX(rows, {
             x: "count",
             y: "id",
-            fill,
+            fill: (row) => dimmed(paint(fill, row), selected === undefined || row.id === selected),
             maxThickness: BAR_THICKNESS - 4,
             radius: [0, 4, 4, 0],
           }),
@@ -234,10 +273,10 @@ export function RowChart({
           format: (point) => `${labelOf(rows, point.datum)}: ${String(point.datum.count)} ${unit}`,
         },
       }),
-    [fill, rows, tick, unit],
+    [fill, rows, selected, tick, unit],
   );
   return (
-    <div className="chart-plot">
+    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
       {tick && (
         <TickOverlay
           ids={rows.map((row) => row.id)}
@@ -250,9 +289,10 @@ export function RowChart({
       <Chart
         definition={definition}
         ariaLabel={name}
-        height={rows.length * ROW_HEIGHT + 12}
+        height={height ?? rows.length * 34 + 12}
         initialWidth={420}
         onRender={overlay.onRender}
+        onSelect={pickFrom(onPick)}
       />
     </div>
   );
@@ -265,6 +305,8 @@ export function HeatChart({
   name,
   rowTick,
   columnTick,
+  selected,
+  onPick,
 }: {
   cells: readonly GridCell[];
   rows: readonly Omit<Count, "count">[];
@@ -272,9 +314,12 @@ export function HeatChart({
   name: string;
   rowTick: TickLabel;
   columnTick: TickLabel;
+  selected?: { row: string; column: string } | undefined;
+  onPick?: ((row: string, column: string) => void) | undefined;
 }): ReactNode {
   const rowOverlay = useTickOverlay("y");
   const columnOverlay = useTickOverlay("x");
+  const [plot, height] = usePlotHeight();
   const placeRows = rowOverlay.onRender;
   const placeColumns = columnOverlay.onRender;
   const onRender = useCallback(
@@ -285,17 +330,30 @@ export function HeatChart({
     [placeRows, placeColumns],
   );
   const max = Math.max(0, ...cells.map((entry) => entry.count));
+  const isOn = useCallback(
+    (entry: GridCell) =>
+      selected === undefined || (entry.row === selected.row && entry.column === selected.column),
+    [selected],
+  );
   const definition = useMemo(
     () =>
       defineChart({
         margin: { left: TICK_GUTTER, top: 8, bottom: 36 },
         marks: [
           ...Array.from({ length: HEAT_STEPS + 1 }, (_, step) =>
-            cell(
-              cells.filter((entry) => heatStep(entry.count, max) === step),
-              { id: `heat-${String(step)}`, x: "column", y: "row", inset: 1, fill: heatFill(step) },
+            [true, false].map((on) =>
+              cell(
+                cells.filter((entry) => heatStep(entry.count, max) === step && isOn(entry) === on),
+                {
+                  id: `heat-${String(step)}-${String(on)}`,
+                  x: "column",
+                  y: "row",
+                  inset: 1,
+                  fill: dimmed(heatFill(step), on),
+                },
+              ),
             ),
-          ),
+          ).flat(),
           text(
             cells.filter((entry) => entry.count > 0),
             {
@@ -303,7 +361,8 @@ export function HeatChart({
               y: "row",
               text: "count",
               fontSize: 12,
-              fill: (entry) => `var(--heat-ink-${String(heatStep(entry.count, max))})`,
+              fill: (entry) =>
+                isOn(entry) ? `var(--heat-ink-${String(heatStep(entry.count, max))})` : "var(--fg)",
             },
           ),
         ],
@@ -312,11 +371,7 @@ export function HeatChart({
             scale: scaleBand()
               .domain(columns.map((column) => column.id))
               .padding(0.04),
-            axis: {
-              line: false,
-              ticks: { size: 0 },
-              tickLabels: false,
-            },
+            axis: { line: false, ticks: { size: 0 }, tickLabels: false },
           },
           y: {
             scale: scaleBand()
@@ -335,10 +390,10 @@ export function HeatChart({
           },
         },
       }),
-    [cells, columns, max, rows],
+    [cells, columns, isOn, max, rows],
   );
   return (
-    <div className="chart-plot">
+    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
       <TickOverlay
         ids={rows.map((row) => row.id)}
         tick={rowTick}
@@ -356,48 +411,16 @@ export function HeatChart({
       <Chart
         definition={definition}
         ariaLabel={name}
-        height={rows.length * 36 + 44}
+        height={height ?? rows.length * 36 + 44}
         initialWidth={420}
         onRender={onRender}
+        onSelect={(point) => {
+          if (point && onPick) {
+            onPick(point.datum.row, point.datum.column);
+          }
+        }}
       />
     </div>
-  );
-}
-
-export function ChartCard({
-  title,
-  caption,
-  table,
-  children,
-  wide,
-}: {
-  title: string;
-  caption?: ReactNode;
-  table?: ReactNode;
-  children: ReactNode;
-  wide?: boolean;
-}): ReactNode {
-  const [asTable, setAsTable] = useState(false);
-  return (
-    <figure className="chart-card" data-wide={wide === true}>
-      <figcaption>
-        <h2>{title}</h2>
-        {table !== undefined && (
-          <button
-            type="button"
-            className="chart-toggle"
-            aria-pressed={asTable}
-            onClick={() => {
-              setAsTable(!asTable);
-            }}
-          >
-            Table
-          </button>
-        )}
-      </figcaption>
-      {caption !== undefined && <p className="muted chart-caption">{caption}</p>}
-      {asTable ? table : children}
-    </figure>
   );
 }
 
@@ -405,21 +428,42 @@ export function CountTable({
   caption,
   rows,
   head,
+  selected,
+  onPick,
 }: {
   caption: string;
   rows: readonly Count[];
-  head?: TickLabel;
+  head?: TickLabel | undefined;
+  selected?: string | undefined;
+  onPick?: ((id: string) => void) | undefined;
 }): ReactNode {
   return (
     <table className="stat-table">
       <caption>{caption}</caption>
       <tbody>
-        {rows.map((row) => (
-          <tr key={row.id} data-stat={row.id}>
-            <th scope="row">{head ? head(row.id) : row.label}</th>
-            <td>{row.count}</td>
-          </tr>
-        ))}
+        {rows.map((row) => {
+          const label = head ? head(row.id) : row.label;
+          return (
+            <tr key={row.id} data-stat={row.id} aria-current={row.id === selected || undefined}>
+              <th scope="row">
+                {onPick ? (
+                  <button
+                    type="button"
+                    className="stat-pick"
+                    onClick={() => {
+                      onPick(row.id);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ) : (
+                  label
+                )}
+              </th>
+              <td>{row.count}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

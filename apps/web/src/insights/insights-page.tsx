@@ -1,13 +1,19 @@
 import { mode } from "#mode";
-import type { Count, TagKind } from "@repo/cube/browser";
-import { COLOR_GROUPS, CURVE_COLUMNS, TAG_KINDS, cubeStats } from "@repo/cube/browser";
+import type { Bucket, BucketKind, Count, CubeStats } from "@repo/cube/browser";
+import { COLOR_GROUPS, CURVE_COLUMNS, bucketId, cubeStats, parseBucket } from "@repo/cube/browser";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Responsive, useContainerWidth } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { Gauge } from "../gauge.tsx";
 import { ManaSymbol } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
+import { Block } from "./block.tsx";
+import { BucketPanel } from "./bucket-panel.tsx";
 import type { BarFill, TickLabel } from "./charts.tsx";
-import { ChartCard, ColumnChart, CountTable, HeatChart, RowChart } from "./charts.tsx";
+import { ColumnChart, CountTable, HeatChart, RowChart } from "./charts.tsx";
+import type { BlockId, Dashboard } from "./layout.ts";
+import { BLOCKS, BREAKPOINTS, COLS, ROW_HEIGHT, shown, useDashboard } from "./layout.ts";
 
 interface Scope {
   id: string;
@@ -22,18 +28,7 @@ const SCOPES: readonly Scope[] = [
   { id: "selected", label: "Selected", includes: (card, selection) => selection.has(card.slug) },
 ];
 
-const KIND_TITLES: Record<TagKind, string> = { archetype: "Archetypes", group: "Groups" };
-
 const COLOR_SYMBOLS: Record<string, string> = { multicolored: "multicolor", colorless: "C" };
-
-function colorIcon(id: string): ReactNode {
-  const symbol = COLOR_SYMBOLS[id] ?? id;
-  return symbol === "multicolor" ? (
-    <i className="ms ms-multicolor" aria-hidden="true" />
-  ) : (
-    <i className={`ms ms-${symbol.toLowerCase()} ms-cost`} aria-hidden="true" />
-  );
-}
 
 const MANA_FILLS: Record<string, string> = {
   W: "var(--mana-w)",
@@ -49,14 +44,31 @@ function manaFill(row: Count): string {
   return MANA_FILLS[row.id] ?? "var(--chart-bar)";
 }
 
+function colorIcon(id: string): ReactNode {
+  const symbol = COLOR_SYMBOLS[id] ?? id;
+  return symbol === "multicolor" ? (
+    <i className="ms ms-multicolor" aria-hidden="true" />
+  ) : (
+    <i className={`ms ms-${symbol.toLowerCase()} ms-cost`} aria-hidden="true" />
+  );
+}
+
+function colorLabel(id: string): string {
+  return COLOR_GROUPS.find((group) => group.id === id)?.label ?? id;
+}
+
+function curveLabel(id: string): string {
+  return CURVE_COLUMNS.find((column) => column.id === id)?.label ?? id;
+}
+
 const colorTick: TickLabel = (id) => (
   <>
-    {colorIcon(id)} {COLOR_GROUPS.find((group) => group.id === id)?.label ?? id}
+    {colorIcon(id)} {colorLabel(id)}
   </>
 );
 
 const curveTick: TickLabel = (id) => {
-  const label = CURVE_COLUMNS.find((column) => column.id === id)?.label ?? id;
+  const label = curveLabel(id);
   return (
     <>
       <ManaSymbol symbol={id} label={label} />
@@ -83,48 +95,324 @@ function asOf(iso: string | undefined): string {
   return iso === undefined ? "not downloaded yet" : `as of ${iso.slice(0, 10)}`;
 }
 
-function Bars({
-  title,
-  rows,
-  unit = "cards",
-  caption,
-  tick,
-  fill,
-}: {
+interface BarBlock {
+  kind: BucketKind;
   title: string;
-  rows: readonly Count[];
-  unit?: string;
-  caption?: ReactNode;
-  tick?: TickLabel;
+  rows: (stats: CubeStats) => Count[];
   fill: BarFill;
+  caption?: (asOfText: string) => string;
+  tick?: TickLabel;
+  unit?: string;
+  empty?: string;
+}
+
+const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
+  color: {
+    kind: "color",
+    title: "Color",
+    rows: (stats) => stats.colors,
+    fill: manaFill,
+    caption: () => "Nonland cards by color",
+    tick: colorTick,
+  },
+  pips: {
+    kind: "pips",
+    title: "Mana symbols",
+    rows: (stats) => stats.pips,
+    fill: manaFill,
+    caption: () => "Colored symbols in mana costs; hybrid counts for both colors",
+    tick: colorTick,
+    unit: "symbols",
+  },
+  types: {
+    kind: "type",
+    title: "Card types",
+    rows: (stats) => stats.types,
+    fill: "var(--chart-types)",
+  },
+  functions: {
+    kind: "function",
+    title: "Functions",
+    rows: (stats) => stats.functions,
+    fill: "var(--chart-functions)",
+    caption: (when) =>
+      `Scryfall oracle tags, ${when}. Fixing also counts cards that make two or more colors of mana.`,
+  },
+  status: {
+    kind: "status",
+    title: "Status",
+    rows: (stats) => stats.status,
+    fill: "var(--chart-status)",
+  },
+  sections: {
+    kind: "section",
+    title: "Sections",
+    rows: (stats) => stats.sections,
+    fill: "var(--chart-sections)",
+    empty: "No sections yet.",
+  },
+  archetype: {
+    kind: "tag",
+    title: "Archetypes",
+    rows: (stats) => stats.tags.filter((row) => row.kind === "archetype"),
+    fill: "var(--chart-archetype)",
+    empty: "No archetype tags yet.",
+  },
+  group: {
+    kind: "tag",
+    title: "Groups",
+    rows: (stats) => stats.tags.filter((row) => row.kind === "group"),
+    fill: "var(--chart-group)",
+    empty: "No group tags yet.",
+  },
+};
+
+const KIND_TITLES: Record<BucketKind, string> = {
+  curve: "Mana curve",
+  color: "Color",
+  colorCurve: "Color by mana value",
+  pips: "Mana symbols",
+  type: "Card types",
+  function: "Functions",
+  status: "Status",
+  section: "Sections",
+  tag: "Tags",
+};
+
+function bucketLabel(bucket: Bucket, stats: CubeStats): string {
+  const [first = "", second = ""] = bucket.keys;
+  const find = (rows: readonly Count[]): string =>
+    rows.find((row) => row.id === first)?.label ?? first;
+  switch (bucket.kind) {
+    case "curve":
+      return `Mana value ${curveLabel(first)}`;
+    case "color":
+    case "pips":
+      return colorLabel(first);
+    case "colorCurve":
+      return `${colorLabel(first)}, mana value ${curveLabel(second)}`;
+    case "type":
+      return find(stats.types);
+    case "function":
+      return find(stats.functions);
+    case "status":
+      return find(stats.status);
+    case "section":
+      return find(stats.sections);
+    case "tag":
+      return find(stats.tags);
+  }
+}
+
+function selectedIn(bucket: Bucket | undefined, kind: BucketKind): string | undefined {
+  return bucket?.kind === kind ? bucket.keys[0] : undefined;
+}
+
+function DashboardGrid({
+  dashboard,
+  render,
+}: {
+  dashboard: Dashboard;
+  render: (id: BlockId) => ReactNode;
 }): ReactNode {
+  const { width, containerRef, mounted } = useContainerWidth();
   return (
-    <ChartCard
-      title={title}
-      caption={caption}
-      table={<CountTable caption={title} rows={rows} {...(tick ? { head: tick } : {})} />}
-    >
-      <RowChart rows={rows} name={title} unit={unit} fill={fill} {...(tick ? { tick } : {})} />
-    </ChartCard>
+    <div ref={containerRef} className="insights-grid">
+      {mounted && (
+        <Responsive
+          width={width}
+          layouts={shown(dashboard)}
+          breakpoints={BREAKPOINTS}
+          cols={COLS}
+          rowHeight={ROW_HEIGHT}
+          margin={[16, 16]}
+          containerPadding={[0, 0]}
+          dragConfig={{ handle: ".block-head", cancel: "button, select, a, input" }}
+          onLayoutChange={(_, all) => {
+            dashboard.change(all);
+          }}
+        >
+          {BLOCKS.map((block) => (
+            <div key={block.id} className="block-cell" data-block={block.id}>
+              {render(block.id)}
+            </div>
+          ))}
+        </Responsive>
+      )}
+    </div>
   );
 }
 
 export function InsightsPage(): ReactNode {
   const cube = mode.useCube();
   const selection = mode.useSelection();
-  const [scopeId, setScopeId] = useState("draft");
+  const search = useSearch({ from: "/insights" });
+  const navigate = useNavigate();
+  const dashboard = useDashboard();
   if (!cube) {
     return <p className="muted">Loading cube…</p>;
   }
   const scopes = SCOPES.filter((option) => option.id !== "selected" || mode.name === "workbench");
-  const scope = scopes.find((option) => option.id === scopeId) ?? scopes[0];
+  const scope = scopes.find((option) => option.id === search.scope) ?? scopes[0];
   const cards = scope ? cube.cards.filter((card) => scope.includes(card, selection)) : [];
   const stats = cubeStats(cards, cube.vocabulary, cube.sections);
   const drafted = cube.cards.filter((card) => card.status === "draft").length;
   const nonland = stats.total - stats.lands;
+  const bucket = search.bucket === undefined ? undefined : parseBucket(search.bucket);
+  const when = asOf(cube.functionsAsOf);
+
+  const pick = (id: string): void => {
+    void navigate({
+      to: "/insights",
+      search: (prev) => ({ ...prev, bucket: prev.bucket === id ? undefined : id }),
+    });
+  };
+  const closeBucket = (): void => {
+    void navigate({ to: "/insights", search: (prev) => ({ ...prev, bucket: undefined }) });
+  };
+
+  const content = (id: BlockId): ReactNode => {
+    const collapsed = dashboard.collapsed.has(id);
+    const toggle = (): void => {
+      dashboard.toggle(id);
+    };
+    if (id === "summary") {
+      return (
+        <Block title="Summary" collapsed={collapsed} onToggle={toggle}>
+          <div className="stat-tiles" data-testid="stat-tiles">
+            <Tile label="Cards" value={stats.total} />
+            <Tile label="Nonland" value={nonland} />
+            <Tile label="Lands" value={stats.lands} note={percent(stats.lands, stats.total)} />
+            <Tile
+              label="Creatures"
+              value={stats.creatures}
+              note={`${percent(stats.creatures, nonland)} of nonland`}
+            />
+          </div>
+        </Block>
+      );
+    }
+    if (id === "curve") {
+      const selected = selectedIn(bucket, "curve");
+      const onPick = (key: string): void => {
+        pick(bucketId("curve", key));
+      };
+      return (
+        <Block
+          title="Mana curve"
+          caption="Nonland cards by mana value"
+          collapsed={collapsed}
+          onToggle={toggle}
+          table={
+            <CountTable
+              caption="Mana curve"
+              rows={stats.curve}
+              head={curveTick}
+              selected={selected}
+              onPick={onPick}
+            />
+          }
+        >
+          <ColumnChart
+            rows={stats.curve}
+            name="Mana curve"
+            unit="cards"
+            category="Mana value"
+            fill="var(--chart-curve)"
+            tick={curveTick}
+            selected={selected}
+            onPick={onPick}
+          />
+        </Block>
+      );
+    }
+    if (id === "heat") {
+      const selected =
+        bucket?.kind === "colorCurve"
+          ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
+          : undefined;
+      return (
+        <Block
+          title="Color by mana value"
+          caption="Nonland cards by color and mana value; stronger color means more"
+          collapsed={collapsed}
+          onToggle={toggle}
+          table={
+            <CountTable
+              caption="Color by mana value"
+              rows={stats.colorCurve.map((entry) => ({
+                id: bucketId("colorCurve", entry.row, entry.column),
+                label: `${colorLabel(entry.row)}, ${curveLabel(entry.column)}`,
+                count: entry.count,
+              }))}
+              selected={search.bucket}
+              onPick={pick}
+            />
+          }
+        >
+          <HeatChart
+            cells={stats.colorCurve}
+            rows={COLOR_GROUPS}
+            columns={CURVE_COLUMNS}
+            name="Color by mana value"
+            rowTick={colorTick}
+            columnTick={curveTick}
+            selected={selected}
+            onPick={(row, column) => {
+              pick(bucketId("colorCurve", row, column));
+            }}
+          />
+        </Block>
+      );
+    }
+    const spec = BAR_BLOCKS[id];
+    if (!spec) {
+      return null;
+    }
+    const rows = spec.rows(stats);
+    const selected = selectedIn(bucket, spec.kind);
+    const onPick = (key: string): void => {
+      pick(bucketId(spec.kind, key));
+    };
+    return (
+      <Block
+        title={spec.title}
+        caption={spec.caption?.(when)}
+        collapsed={collapsed}
+        onToggle={toggle}
+        {...(rows.length > 0
+          ? {
+              table: (
+                <CountTable
+                  caption={spec.title}
+                  rows={rows}
+                  head={spec.tick}
+                  selected={selected}
+                  onPick={onPick}
+                />
+              ),
+            }
+          : {})}
+      >
+        {rows.length === 0 ? (
+          <p className="muted">{spec.empty}</p>
+        ) : (
+          <RowChart
+            rows={rows}
+            name={spec.title}
+            unit={spec.unit ?? "cards"}
+            fill={spec.fill}
+            tick={spec.tick}
+            selected={selected}
+            onPick={onPick}
+          />
+        )}
+      </Block>
+    );
+  };
 
   return (
-    <div className="insights">
+    <div className="insights" data-panel={bucket !== undefined}>
       <div className="insights-filters">
         <h1>Insights</h1>
         <label>
@@ -133,7 +421,11 @@ export function InsightsPage(): ReactNode {
             aria-label="Count cards in"
             value={scope?.id}
             onChange={(event) => {
-              setScopeId(event.target.value);
+              const next = event.target.value;
+              void navigate({
+                to: "/insights",
+                search: (prev) => ({ ...prev, scope: next === "draft" ? undefined : next }),
+              });
             }}
           >
             {scopes.map((option) => (
@@ -146,106 +438,22 @@ export function InsightsPage(): ReactNode {
           </select>
         </label>
         {cube.size && <Gauge count={drafted} size={cube.size} />}
+        <button type="button" className="toolbar-link" onClick={dashboard.reset}>
+          Reset layout
+        </button>
       </div>
-
-      <div className="stat-tiles" data-testid="stat-tiles">
-        <Tile label="Cards" value={stats.total} />
-        <Tile label="Nonland" value={nonland} />
-        <Tile label="Lands" value={stats.lands} note={percent(stats.lands, stats.total)} />
-        <Tile
-          label="Creatures"
-          value={stats.creatures}
-          note={`${percent(stats.creatures, nonland)} of nonland`}
-        />
+      <div className="insights-body">
+        <DashboardGrid dashboard={dashboard} render={content} />
+        {bucket && (
+          <BucketPanel
+            bucket={bucket}
+            title={KIND_TITLES[bucket.kind]}
+            label={bucketLabel(bucket, stats)}
+            cards={cards}
+            onClose={closeBucket}
+          />
+        )}
       </div>
-
-      {stats.total === 0 ? (
-        <p className="muted">No cards in this scope.</p>
-      ) : (
-        <div className="chart-grid">
-          <ChartCard
-            title="Mana curve"
-            caption="Nonland cards by mana value"
-            table={<CountTable caption="Mana curve" rows={stats.curve} head={curveTick} />}
-          >
-            <ColumnChart
-              rows={stats.curve}
-              name="Mana curve"
-              unit="cards"
-              category="Mana value"
-              fill="var(--chart-curve)"
-              tick={curveTick}
-            />
-          </ChartCard>
-          <Bars
-            title="Color"
-            caption="Nonland cards by color"
-            rows={stats.colors}
-            tick={colorTick}
-            fill={manaFill}
-          />
-          <ChartCard
-            wide
-            title="Color by mana value"
-            caption="Nonland cards by color and mana value; stronger color means more"
-            table={
-              <CountTable
-                caption="Color by mana value"
-                rows={stats.colorCurve.map((entry) => ({
-                  id: `${entry.row}-${entry.column}`,
-                  label: `${COLOR_GROUPS.find((group) => group.id === entry.row)?.label ?? entry.row}, ${CURVE_COLUMNS.find((column) => column.id === entry.column)?.label ?? entry.column}`,
-                  count: entry.count,
-                }))}
-              />
-            }
-          >
-            <HeatChart
-              cells={stats.colorCurve}
-              rows={COLOR_GROUPS}
-              columns={CURVE_COLUMNS}
-              name="Color by mana value"
-              rowTick={colorTick}
-              columnTick={curveTick}
-            />
-          </ChartCard>
-          <Bars
-            title="Mana symbols"
-            caption="Colored symbols in mana costs; hybrid counts for both colors"
-            rows={stats.pips}
-            unit="symbols"
-            tick={colorTick}
-            fill={manaFill}
-          />
-          <Bars title="Card types" rows={stats.types} fill="var(--chart-types)" />
-          <Bars
-            title="Functions"
-            caption={`Scryfall oracle tags, ${asOf(cube.functionsAsOf)}. Fixing also counts cards that make two or more colors of mana.`}
-            rows={stats.functions}
-            fill="var(--chart-functions)"
-          />
-          {scope?.id !== "draft" && (
-            <Bars title="Status" rows={stats.status} fill="var(--chart-status)" />
-          )}
-          {stats.sections.length > 0 && (
-            <Bars title="Sections" rows={stats.sections} fill="var(--chart-sections)" />
-          )}
-          {TAG_KINDS.map((kind) => {
-            const rows = stats.tags.filter((row) => row.kind === kind);
-            return rows.length > 0 ? (
-              <Bars
-                key={kind}
-                title={KIND_TITLES[kind]}
-                rows={rows}
-                fill={`var(--chart-${kind})`}
-              />
-            ) : (
-              <ChartCard key={kind} title={KIND_TITLES[kind]}>
-                <p className="muted">No {kind} tags yet.</p>
-              </ChartCard>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

@@ -81,5 +81,19 @@ test("share doc shows insights from the snapshot", async ({ page }) => {
     "Draft + prospects",
     "All cards",
   ]);
+  await page
+    .getByRole("region", { name: "Card types" })
+    .locator(".ts-chart__bar path")
+    .first()
+    .click();
+  const creatures = snapshot.cards.filter(
+    (card) =>
+      card.status === "draft" &&
+      /\bCreature\b/u.test(card.typeLine.split(" // ")[0] ?? "") &&
+      !/\bLand\b/u.test(card.typeLine.split(" // ")[0] ?? ""),
+  ).length;
+  await expect(
+    page.getByRole("complementary", { name: "Cards in bucket" }).locator(".strip"),
+  ).toHaveCount(creatures);
   expect(errors).toEqual([]);
 });

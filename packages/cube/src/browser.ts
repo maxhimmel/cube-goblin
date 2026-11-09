@@ -48,20 +48,24 @@ export { COLUMN_AXES, colorKey, columnsBy } from "./columns.ts";
 export type { Column, ColumnAxis } from "./columns.ts";
 export { slugify } from "./slug.ts";
 export {
+  BUCKET_KINDS,
   CARD_TYPES,
   COLORS,
   COLOR_GROUPS,
   CURVE_COLUMNS,
   CURVE_TOP,
   LAND,
+  bucketId,
   colorGroup,
   cubeStats,
+  inBucket,
+  parseBucket,
   curveKey,
   isLand,
   pipColors,
   typeKey,
 } from "./stats.ts";
-export type { Count, CubeStats, GridCell, StatCard } from "./stats.ts";
+export type { Bucket, BucketKind, Count, CubeStats, GridCell, StatCard } from "./stats.ts";
 export {
   CARD_FUNCTIONS,
   CARD_FUNCTION_IDS,

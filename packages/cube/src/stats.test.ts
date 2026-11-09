@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { StatCard } from "./stats.ts";
-import { cubeStats, isLand, pipColors } from "./stats.ts";
+import type { BucketKind, Count } from "./stats.ts";
+import { bucketId, cubeStats, inBucket, isLand, parseBucket, pipColors } from "./stats.ts";
 
 function card(overrides: Partial<StatCard>): StatCard {
   return { status: "draft", colors: [], cmc: 0, typeLine: "Instant", tags: [], ...overrides };
@@ -96,5 +97,45 @@ describe("isLand", () => {
     expect(isLand({ typeLine: "Instant // Land" })).toBe(false);
     expect(isLand({ typeLine: "Land Creature — Forest Dryad" })).toBe(true);
     expect(isLand({ typeLine: "Creature — Landfall Elemental" })).toBe(false);
+  });
+});
+
+describe("inBucket", () => {
+  const vocabulary = [{ id: "burn", label: "Burn", kind: "group" as const }];
+  const sections = [{ id: "gold", label: "Gold", header: "Gold" }];
+  const stats = cubeStats(cards, vocabulary, sections);
+  const counted: [BucketKind, Count[]][] = [
+    ["curve", stats.curve],
+    ["color", stats.colors],
+    ["type", stats.types],
+    ["function", stats.functions],
+    ["status", stats.status],
+    ["section", stats.sections],
+    ["tag", stats.tags],
+  ];
+
+  it("lists exactly the cards each bar counts", () => {
+    for (const [kind, rows] of counted) {
+      for (const row of rows) {
+        const bucket = parseBucket(bucketId(kind, row.id));
+        expect(bucket, `${kind}:${row.id}`).toBeDefined();
+        const listed = cards.filter((card) => bucket && inBucket(card, bucket));
+        expect(listed.length, `${kind}:${row.id}`).toBe(row.count);
+      }
+    }
+    for (const cell of stats.colorCurve) {
+      const bucket = parseBucket(bucketId("colorCurve", cell.row, cell.column));
+      expect(cards.filter((card) => bucket && inBucket(card, bucket)).length).toBe(cell.count);
+    }
+  });
+
+  it("lists every card with a symbol for the mana-symbols chart", () => {
+    const bucket = parseBucket("pips:R");
+    expect(bucket && cards.filter((card) => inBucket(card, bucket)).length).toBe(2);
+  });
+
+  it("rejects unknown buckets", () => {
+    expect(parseBucket("nope:1")).toBeUndefined();
+    expect(parseBucket("curve")).toBeUndefined();
   });
 });

@@ -8,8 +8,10 @@ const SPECIAL_CLASSES: Record<string, string> = {
   E: "e",
   CHAOS: "chaos",
   "∞": "infinity",
-  "½": "half",
+  "½": "1-2",
 };
+
+const HALF = /^H([WUBRG])$/u;
 
 const WORDS: Record<string, string> = {
   W: "white",
@@ -19,21 +21,37 @@ const WORDS: Record<string, string> = {
   G: "green",
   C: "colorless",
   S: "snow",
-  P: "Phyrexian",
   T: "tap",
   Q: "untap",
   E: "energy",
+  "½": "half",
+  "∞": "infinity",
 };
 
 export function manaClass(symbol: string): string {
+  const half = HALF.exec(symbol)?.[1];
+  if (half !== undefined) {
+    return `ms-${half.toLowerCase()} ms-half`;
+  }
   return `ms-${SPECIAL_CLASSES[symbol] ?? symbol.replaceAll("/", "").toLowerCase()}`;
 }
 
-function spoken(symbol: string): string {
-  return symbol
-    .split("/")
-    .map((part) => WORDS[part] ?? part)
-    .join(" or ");
+export function spokenSymbol(symbol: string): string {
+  const half = HALF.exec(symbol)?.[1];
+  if (half !== undefined) {
+    return `half ${WORDS[half] ?? half}`;
+  }
+  const parts = symbol.split("/");
+  const phyrexian = parts.at(-1) === "P";
+  const colors = (phyrexian ? parts.slice(0, -1) : parts).map((part) => WORDS[part] ?? part);
+  return `${phyrexian ? "Phyrexian " : ""}${colors.join(" or ")}`;
+}
+
+export function spokenCost(cost: string): string {
+  return cost
+    .split(" // ")
+    .map((face) => manaSymbols(face).map(spokenSymbol).join(", "))
+    .join(", then ");
 }
 
 export function manaSymbols(cost: string): string[] {
@@ -45,8 +63,7 @@ export function ManaSymbol({ symbol, label }: { symbol: string; label?: string }
     <i
       className={`ms ${manaClass(symbol)} ms-cost`}
       role="img"
-      aria-label={label ?? spoken(symbol)}
-      title={`{${symbol}}`}
+      aria-label={label ?? spokenSymbol(symbol)}
     />
   );
 }
@@ -57,7 +74,7 @@ export function ManaCost({ cost }: { cost: string }): ReactNode {
   }
   const faces = cost.split(" // ");
   return (
-    <span className="mana-cost" role="img" aria-label={`Mana cost ${cost}`}>
+    <span className="mana-cost" role="img" aria-label={`Mana cost: ${spokenCost(cost)}`}>
       {faces.map((face, index) => (
         <span key={index} aria-hidden="true">
           {index > 0 && " // "}

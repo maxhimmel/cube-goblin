@@ -380,7 +380,14 @@ textarea {
     grid-template-columns: minmax(0, 1fr) 230px;
   }
 
+  .grid-main {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
   .stats {
+    grid-row: 1;
+    grid-column: 2;
     position: sticky;
     top: 60px;
     align-self: start;
@@ -390,7 +397,12 @@ textarea {
 }
 
 .stats h2 {
-  margin-top: 0;
+  display: inline;
+  margin: 0;
+}
+
+.stats summary {
+  cursor: pointer;
 }
 
 .stat-table {

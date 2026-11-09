@@ -516,7 +516,8 @@ test("stats count the draft against the target and follow edits", async ({ page,
   await expect(stats.getByTestId("stats-total")).toHaveText(`${String(drafted)} cards`);
   const colors = stats.getByRole("table", { name: "Color" }).getByRole("cell");
   const counts = (await colors.allTextContents()).map(Number);
-  expect(counts.reduce((sum, value) => sum + value, 0)).toBe(drafted);
+  const lands = parseInt((await stats.getByTestId("stats-lands").textContent()) ?? "", 10);
+  expect(counts.reduce((sum, value) => sum + value, 0)).toBe(drafted - lands);
 
   const slug = "dancing-from-dark-to-dawn";
   const entry = await readEntry(workbench.cardsDir, slug);
@@ -537,7 +538,8 @@ test("stats count the draft against the target and follow edits", async ({ page,
 
 test("mana costs render as symbols with a text alternative", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/card/banishing-light`);
-  const cost = page.getByRole("img", { name: /^Mana cost \{/u });
+  const cost = page.getByRole("img", { name: /^Mana cost: /u });
   await expect(cost).toBeVisible();
   await expect(cost.locator("i.ms.ms-cost")).not.toHaveCount(0);
+  await expect(cost).not.toHaveAccessibleName(/[{}]/u);
 });

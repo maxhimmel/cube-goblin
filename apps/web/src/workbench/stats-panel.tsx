@@ -89,55 +89,60 @@ export function StatsPanel({ cube }: { cube: Workbench | undefined }): ReactNode
   const stats = cubeStats(cards, cube.vocabulary);
   return (
     <aside className="stats" aria-label="Cube stats">
-      <h2>Stats</h2>
-      <SizeLine cube={cube} />
-      <label>
-        Count{" "}
-        <select
-          aria-label="Count cards in"
-          value={scopeId}
-          onChange={(event) => {
-            setScopeId(event.target.value);
-          }}
-        >
-          {SCOPES.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.id === "selected"
-                ? `${option.label} (${String(selection.size)})`
-                : option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <p className="muted" data-testid="stats-total">
-        {stats.total} {stats.total === 1 ? "card" : "cards"}
-      </p>
-      {scopeId !== "draft" && <CountTable caption="Status" rows={stats.status} />}
-      <CountTable caption="Color" rows={stats.colors} head={colorHead} />
-      <CountTable
-        caption={
-          stats.lands > 0 ? `Mana value (${String(stats.lands)} lands left out)` : "Mana value"
-        }
-        rows={stats.curve}
-        head={(row) => (
-          <>
-            <ManaSymbol symbol={row.id} label={row.id} />
-            {row.label.endsWith("+") && "+"}
-          </>
-        )}
-      />
-      {TAG_KINDS.map((kind) => {
-        const rows = stats.tags.filter((row) => row.kind === kind);
-        return (
-          rows.length > 0 && (
-            <CountTable
-              key={kind}
-              caption={kind === "archetype" ? "Archetypes" : "Groups"}
-              rows={rows}
-            />
-          )
-        );
-      })}
+      <details open>
+        <summary>
+          <h2>Stats</h2>
+        </summary>
+        <SizeLine cube={cube} />
+        <label>
+          Count{" "}
+          <select
+            aria-label="Count cards in"
+            value={scopeId}
+            onChange={(event) => {
+              setScopeId(event.target.value);
+            }}
+          >
+            {SCOPES.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.id === "selected"
+                  ? `${option.label} (${String(selection.size)})`
+                  : option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="muted" data-testid="stats-total">
+          {stats.total} {stats.total === 1 ? "card" : "cards"}
+        </p>
+        <p className="muted" data-testid="stats-lands">
+          {stats.lands} {stats.lands === 1 ? "land" : "lands"}; color and mana value count the rest
+        </p>
+        {scopeId !== "draft" && <CountTable caption="Status" rows={stats.status} />}
+        <CountTable caption="Color" rows={stats.colors} head={colorHead} />
+        <CountTable
+          caption="Mana value"
+          rows={stats.curve}
+          head={(row) => (
+            <>
+              <ManaSymbol symbol={row.id} label={row.id} />
+              {row.label.endsWith("+") && "+"}
+            </>
+          )}
+        />
+        {TAG_KINDS.map((kind) => {
+          const rows = stats.tags.filter((row) => row.kind === kind);
+          return (
+            rows.length > 0 && (
+              <CountTable
+                key={kind}
+                caption={kind === "archetype" ? "Archetypes" : "Groups"}
+                rows={rows}
+              />
+            )
+          );
+        })}
+      </details>
     </aside>
   );
 }

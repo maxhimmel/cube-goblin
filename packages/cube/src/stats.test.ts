@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { StatCard } from "./stats.ts";
-import { cubeStats, isLand } from "./stats.ts";
+import { cubeStats, isLand, pipColors } from "./stats.ts";
 
 function card(overrides: Partial<StatCard>): StatCard {
   return { status: "draft", colors: [], cmc: 0, typeLine: "Instant", tags: [], ...overrides };
 }
 
 const cards: StatCard[] = [
-  card({ colors: ["R"], cmc: 1, tags: ["burn"] }),
+  card({ colors: ["R"], cmc: 1, tags: ["burn"], manaCost: "{R}", functions: ["removal"] }),
   card({ colors: ["R"], cmc: 1, status: "prospect" }),
-  card({ colors: ["U", "R"], cmc: 2, tags: ["burn"] }),
+  card({ colors: ["U", "R"], cmc: 2, tags: ["burn"], manaCost: "{U/R}{R}", section: "gold" }),
   card({ cmc: 9, typeLine: "Artifact Creature — Eldrazi", status: "cut" }),
   card({ typeLine: "Land" }),
   card({ colors: ["G"], cmc: 3, typeLine: "Creature — Elf // Land" }),
@@ -17,7 +17,43 @@ const cards: StatCard[] = [
 ];
 
 describe("cubeStats", () => {
-  const stats = cubeStats(cards, [{ id: "burn", label: "Burn", kind: "group" }]);
+  const stats = cubeStats(
+    cards,
+    [{ id: "burn", label: "Burn", kind: "group" }],
+    [{ id: "gold", label: "Gold", header: "Gold" }],
+  );
+
+  it("counts card types, with lands read from the front face", () => {
+    const types = Object.fromEntries(stats.types.map((row) => [row.id, row.count]));
+    expect(types).toEqual({
+      creature: 2,
+      planeswalker: 0,
+      spell: 4,
+      artifact: 0,
+      enchantment: 0,
+      other: 0,
+      land: 1,
+    });
+    expect(stats.creatures).toBe(2);
+  });
+
+  it("counts functions, sections, and colored mana symbols", () => {
+    expect(stats.functions.find((row) => row.id === "removal")?.count).toBe(1);
+    expect(stats.sections).toEqual([{ id: "gold", label: "Gold", count: 1 }]);
+    const pips = Object.fromEntries(stats.pips.map((row) => [row.id, row.count]));
+    expect(pips).toEqual({ W: 0, U: 1, B: 0, R: 3, G: 0 });
+  });
+
+  it("splits nonland cards by color and mana value, matching both totals", () => {
+    const cell = (row: string, column: string) =>
+      stats.colorCurve.find((entry) => entry.row === row && entry.column === column)?.count;
+    expect(cell("R", "1")).toBe(2);
+    expect(cell("multicolored", "2")).toBe(1);
+    expect(cell("colorless", "7")).toBe(1);
+    expect(stats.colorCurve.reduce((sum, entry) => sum + entry.count, 0)).toBe(
+      stats.total - stats.lands,
+    );
+  });
 
   it("counts every card once by status, and every nonland card once by color", () => {
     expect(stats.total).toBe(7);
@@ -43,6 +79,14 @@ describe("cubeStats", () => {
 
   it("counts tags from the vocabulary", () => {
     expect(stats.tags).toEqual([{ id: "burn", label: "Burn", kind: "group", count: 2 }]);
+  });
+});
+
+describe("pipColors", () => {
+  it("counts hybrid halves and phyrexian symbols, not generic or colorless", () => {
+    expect(pipColors("{2}{W}{W}")).toEqual(["W", "W"]);
+    expect(pipColors("{W/U}{B/P}{2/R}{C}{X}")).toEqual(["W", "U", "B", "R"]);
+    expect(pipColors("")).toEqual([]);
   });
 });
 

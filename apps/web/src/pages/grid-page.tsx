@@ -2,7 +2,7 @@ import { mode } from "#mode";
 import type { SnapshotCard } from "@repo/cube/browser";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { DEFAULT_ORGANIZER, organizers } from "../grid/piles.ts";
+import { DEFAULT_ORGANIZER, ORGANIZE_ID, organizers } from "../grid/piles.ts";
 
 function Tile({ card }: { card: SnapshotCard }): ReactNode {
   const mark = mode.useTileMark(card.slug);
@@ -36,6 +36,7 @@ export function GridPage(): ReactNode {
         <label>
           Organize by{" "}
           <select
+            id={ORGANIZE_ID}
             aria-label="Organize by"
             value={organizer?.id}
             onChange={(event) => {

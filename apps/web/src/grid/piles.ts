@@ -93,6 +93,7 @@ function byTagKind(kind: TagKind): (cube: CubeView) => Pile[] {
 }
 
 export const DEFAULT_ORGANIZER = "overview";
+export const ORGANIZE_ID = "organize-by";
 
 export function organizers(cube: CubeView): Organizer[] {
   return [

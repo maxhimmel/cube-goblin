@@ -1,6 +1,8 @@
 import type { CardChange, CardPatch, Workbench, WorkbenchCard } from "@repo/cube/browser";
 import { CARD_STATUSES } from "@repo/cube/browser";
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { ORGANIZE_ID } from "../grid/piles.ts";
 import { useCardEdit } from "./edits.ts";
 import { clearSelection, setSelected, useSelection } from "./selection.ts";
 import { showToast } from "./toast.tsx";
@@ -41,6 +43,58 @@ export function SelectPile({ slugs, label }: { slugs: string[]; label: string })
   );
 }
 
+interface Option {
+  value: string;
+  label: string;
+}
+
+function ApplySelect({
+  label,
+  placeholder,
+  options,
+  onApply,
+}: {
+  label: string;
+  placeholder: string;
+  options: Option[];
+  onApply: (value: string) => void;
+}): ReactNode {
+  const [value, setValue] = useState("");
+  return (
+    <form
+      className="inline"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (value) {
+          onApply(value);
+          setValue("");
+        }
+      }}
+    >
+      <select
+        aria-label={label}
+        value={value}
+        disabled={options.length === 0}
+        onChange={(event) => {
+          setValue(event.target.value);
+        }}
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <button type="submit" disabled={!value} aria-label={`Apply ${label.toLowerCase()}`}>
+        Apply
+      </button>
+    </form>
+  );
+}
+
 function plural(count: number): string {
   return `${String(count)} card${count === 1 ? "" : "s"}`;
 }
@@ -48,10 +102,10 @@ function plural(count: number): string {
 export function BulkBar({ cube }: { cube: Workbench | undefined }): ReactNode {
   const selection = useSelection();
   const edit = useCardEdit();
-  if (!cube || selection.size === 0) {
+  const cards = cube?.cards.filter((card) => selection.has(card.slug)) ?? [];
+  if (!cube || cards.length === 0) {
     return null;
   }
-  const cards = cube.cards.filter((card) => selection.has(card.slug));
   const present = cube.vocabulary.filter((tag) => cards.some((card) => card.tags.includes(tag.id)));
 
   function bulk(what: string, pick: Choose): void {
@@ -73,7 +127,7 @@ export function BulkBar({ cube }: { cube: Workbench | undefined }): ReactNode {
 
   return (
     <div className="bulk-bar" role="toolbar" aria-label="Bulk edit">
-      <strong data-testid="selected-count">{selection.size} selected</strong>
+      <strong data-testid="selected-count">{cards.length} selected</strong>
       {CARD_STATUSES.map((status) => (
         <button
           key={status}
@@ -87,11 +141,14 @@ export function BulkBar({ cube }: { cube: Workbench | undefined }): ReactNode {
           Set {status}
         </button>
       ))}
-      <select
-        aria-label="Move to section"
-        value=""
-        onChange={(event) => {
-          const value = event.target.value;
+      <ApplySelect
+        label="Move to section"
+        placeholder="Move to section…"
+        options={[
+          ...cube.sections.map((section) => ({ value: section.id, label: section.label })),
+          { value: NO_SECTION, label: "none" },
+        ]}
+        onApply={(value) => {
           const section = value === NO_SECTION ? null : value;
           bulk(`section ${section ?? "none"}`, (card) =>
             (card.section ?? null) === section
@@ -99,58 +156,34 @@ export function BulkBar({ cube }: { cube: Workbench | undefined }): ReactNode {
               : [{ section }, { section: card.section ?? null }],
           );
         }}
-      >
-        <option value="" disabled>
-          Move to section…
-        </option>
-        {cube.sections.map((section) => (
-          <option key={section.id} value={section.id}>
-            {section.label}
-          </option>
-        ))}
-        <option value={NO_SECTION}>none</option>
-      </select>
-      <select
-        aria-label="Add tag to selected"
-        value=""
-        disabled={cube.vocabulary.length === 0}
-        onChange={(event) => {
-          const id = event.target.value;
+      />
+      <ApplySelect
+        label="Add tag to selected"
+        placeholder="Add tag…"
+        options={cube.vocabulary.map((tag) => ({ value: tag.id, label: tag.label }))}
+        onApply={(id) => {
           bulk(`tag ${id}`, (card) =>
             card.tags.includes(id) ? undefined : [{ addTags: [id] }, { removeTags: [id] }],
           );
         }}
-      >
-        <option value="" disabled>
-          Add tag…
-        </option>
-        {cube.vocabulary.map((tag) => (
-          <option key={tag.id} value={tag.id}>
-            {tag.label}
-          </option>
-        ))}
-      </select>
-      <select
-        aria-label="Remove tag from selected"
-        value=""
-        disabled={present.length === 0}
-        onChange={(event) => {
-          const id = event.target.value;
+      />
+      <ApplySelect
+        label="Remove tag from selected"
+        placeholder="Remove tag…"
+        options={present.map((tag) => ({ value: tag.id, label: tag.label }))}
+        onApply={(id) => {
           bulk(`untag ${id}`, (card) =>
             card.tags.includes(id) ? [{ removeTags: [id] }, { addTags: [id] }] : undefined,
           );
         }}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          clearSelection();
+          document.getElementById(ORGANIZE_ID)?.focus();
+        }}
       >
-        <option value="" disabled>
-          Remove tag…
-        </option>
-        {present.map((tag) => (
-          <option key={tag.id} value={tag.id}>
-            {tag.label}
-          </option>
-        ))}
-      </select>
-      <button type="button" onClick={clearSelection}>
         Clear selection
       </button>
     </div>

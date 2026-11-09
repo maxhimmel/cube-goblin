@@ -350,26 +350,31 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
 
   const sections = async (): Promise<(string | undefined)[]> =>
     (await disk()).map((entry) => entry.section);
-  await bar.getByLabel("Move to section").selectOption("vampires");
+  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("vampires");
+  await bar.getByRole("button", { name: "Apply move to section" }).click();
   await expect.poll(sections).toEqual(["vampires", "vampires", "vampires"]);
   await page.getByRole("button", { name: "Undo" }).click();
   await expect.poll(sections).toEqual(before.map((entry) => entry.section));
 
-  await bar.getByLabel("Move to section").selectOption("__none");
+  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("__none");
+  await bar.getByRole("button", { name: "Apply move to section" }).click();
   await expect.poll(sections).toEqual([undefined, undefined, undefined]);
   await page.getByRole("button", { name: "Undo" }).click();
   await expect.poll(sections).toEqual(before.map((entry) => entry.section));
 
-  await bar.getByLabel("Add tag to selected").selectOption("removal");
+  await bar.getByRole("combobox", { name: "Add tag to selected" }).selectOption("removal");
+  await bar.getByRole("button", { name: "Apply add tag to selected" }).click();
   await expect
     .poll(async () => (await disk()).map((entry) => entry.tags))
     .toEqual(before.map((entry) => [...entry.tags, "removal"]));
 
-  await bar.getByLabel("Remove tag from selected").selectOption("removal");
+  await bar.getByRole("combobox", { name: "Remove tag from selected" }).selectOption("removal");
+  await bar.getByRole("button", { name: "Apply remove tag from selected" }).click();
   await expect.poll(disk).toEqual(before);
 
   await bar.getByRole("button", { name: "Clear selection" }).click();
   await expect(bar).toHaveCount(0);
+  await expect(page.getByLabel("Organize by")).toBeFocused();
 });
 
 test("the grid organizes by status, section, and tag kind", async ({ page, workbench }) => {

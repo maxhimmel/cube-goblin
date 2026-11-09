@@ -38,3 +38,10 @@ The branch guard (`scripts/src/branch.ts`) rejects commits on `main`/`master` an
 - **Bundle**: import exact subpaths (`/scales/band`, `/scales/linear`, `/tooltip`); compact scales need no D3 at runtime. A bar chart with a tooltip added 116 KB to the share doc (3.44 → 3.56 MB), and it renders from `file://` (spike, 2026-11-09).
 - **Theming**: marks take CSS variables in `fill`; text and grid follow the container's `color`.
 - **Rejected**: `react-charts` (last release 2023, React 16 peer) and `@tanstack/react-table` (a counts table is a few lines without it).
+
+## Dashboard grid (2026-11-09)
+
+- **`react-grid-layout`** 2.3.0 (pinned): drag, resize, and vertical compaction (blocks move up to fill gaps), with breakpoints and per-breakpoint layouts. v2 is a TypeScript rewrite with `useContainerWidth`; its `css/styles.css` already includes the resize-handle styles ([README](https://github.com/react-grid-layout/react-grid-layout#readme)). TanStack has no layout library; `@dnd-kit/react` (0.5.x) sorts but does not resize.
+- **Gotcha**: `useContainerWidth` attaches its `ResizeObserver` once, on mount. If its container div isn't rendered on that first pass (say, behind a loading state), the width stays at the 1280 px default. Put the hook in a component that mounts with its container.
+- **Gotcha**: children are wrapped and given `style`/`className`/mouse handlers; wrap custom components in a plain `div` rather than forwarding refs.
+- **Not keyboard-operable**: dragging and resizing need a pointer; collapse and "Reset layout" are buttons.

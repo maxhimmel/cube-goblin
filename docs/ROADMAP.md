@@ -17,10 +17,14 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 - [T-002: Trim draft to target size](tickets/T-002-trim-draft-to-target.md)
 - [T-004: Stats and charts](tickets/T-004-stats-and-charts.md)
+- [T-011: Board view](tickets/T-011-board-view.md)
+- [T-012: Tag overlap view](tickets/T-012-tag-overlap-view.md)
+- [T-014: Versions and compare](tickets/T-014-versions-and-compare.md)
 - [T-009: Archive and delete cards](tickets/T-009-archive-and-delete.md)
 
 ## Later
 
+- [T-013: Mechanic detection wizard](tickets/T-013-mechanic-detection-wizard.md)
 - [T-005: Synergy and combo map](tickets/T-005-synergy-and-combo-map.md)
 - [T-006: Share doc polish](tickets/T-006-share-doc-polish.md)
 - [T-007: Winston draft simulator](tickets/T-007-winston-simulator.md)

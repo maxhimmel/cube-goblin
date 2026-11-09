@@ -79,13 +79,12 @@ export class ScryfallClient {
   async #throttle(path: string): Promise<void> {
     const interval = intervalFor(path);
     const last = this.#lastRequestAt.get(interval);
-    if (last !== undefined) {
-      const wait = last + interval - this.#now();
-      if (wait > 0) {
-        await this.#sleep(wait);
-      }
+    const now = this.#now();
+    const slot = last === undefined ? now : Math.max(now, last + interval);
+    this.#lastRequestAt.set(interval, slot);
+    if (slot > now) {
+      await this.#sleep(slot - now);
     }
-    this.#lastRequestAt.set(interval, this.#now());
   }
 
   async #request<S extends z.ZodType>(spec: RequestSpec, schema: S): Promise<z.infer<S>> {

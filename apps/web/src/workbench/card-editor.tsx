@@ -1,5 +1,6 @@
 import type { CardPatch, Section, Tag, WorkbenchCard } from "@repo/cube/browser";
 import { CARD_STATUSES, TAG_KINDS } from "@repo/cube/browser";
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { sendChanges } from "./api.ts";
@@ -274,6 +275,9 @@ export function CardEditor({
           ))}
         </select>
       </label>
+      <Link to="/add" search={{ replaces: card.slug }}>
+        Swap for another card…
+      </Link>
       <TagsField slug={card.slug} tags={card.tags} vocabulary={vocabulary} save={save} />
       <NotesField slug={card.slug} notes={card.notes} save={save} />
     </div>

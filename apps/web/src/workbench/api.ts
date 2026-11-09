@@ -1,5 +1,18 @@
-import type { CardChange, CardEntry, Tag, TagKind, Workbench } from "@repo/cube/browser";
-import { cardEntrySchema, tagSchema, workbenchSchema } from "@repo/cube/browser";
+import type {
+  CardChange,
+  CardEntry,
+  NewCard,
+  SearchResult,
+  Tag,
+  TagKind,
+  Workbench,
+} from "@repo/cube/browser";
+import {
+  cardEntrySchema,
+  searchResultSchema,
+  tagSchema,
+  workbenchSchema,
+} from "@repo/cube/browser";
 
 export const CUBE_QUERY_KEY = ["cube"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
@@ -48,6 +61,19 @@ export async function sendChanges(changes: CardChange[], keepalive = false): Pro
   return cardEntrySchema
     .array()
     .parse(await sendJson("PATCH", "/api/cards", { changes }, keepalive));
+}
+
+export async function searchCards(query: string, signal: AbortSignal): Promise<SearchResult[]> {
+  const url = `/api/search?q=${encodeURIComponent(query)}`;
+  const response = await fetch(url, { signal });
+  if (!response.ok) {
+    throw await failure("GET", url, response);
+  }
+  return searchResultSchema.array().parse(await response.json());
+}
+
+export async function addCardRequest(card: NewCard): Promise<CardEntry> {
+  return cardEntrySchema.parse(await sendJson("POST", "/api/cards", card));
 }
 
 export async function createTagRequest(label: string, kind: TagKind): Promise<Tag> {

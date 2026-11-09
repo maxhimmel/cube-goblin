@@ -38,8 +38,19 @@ const tagsRoute = createRoute({
   component: () => <mode.TagsPage />,
 });
 
+const addRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/add",
+  validateSearch: (search: Record<string, unknown>): { replaces?: string } =>
+    typeof search["replaces"] === "string" ? { replaces: search["replaces"] } : {},
+  component: function AddRoute() {
+    const { replaces } = addRoute.useSearch();
+    return <mode.AddPage replaces={replaces} />;
+  },
+});
+
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([gridRoute, cardRoute, tagsRoute]),
+  routeTree: rootRoute.addChildren([gridRoute, cardRoute, tagsRoute, addRoute]),
   history: createHashHistory(),
 });
 

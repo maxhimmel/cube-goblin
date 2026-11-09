@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { queryClient } from "../query-client.ts";
 import { CUBE_CHANGED_EVENT, CUBE_QUERY_KEY, fetchCube } from "../workbench/api.ts";
+import { AddPage } from "../workbench/add-page.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor } from "../workbench/card-editor.tsx";
 import { editsPending, useSaving } from "../workbench/edits.ts";
@@ -34,6 +35,7 @@ function Toolbar(): ReactNode {
   return (
     <>
       <span className="badge">workbench · live</span>
+      <Link to="/add">Add card</Link>
       <Link to="/tags">Tags</Link>
       <span className="muted" data-testid="save-state">
         {saving ? "saving…" : "all changes saved"}
@@ -82,4 +84,7 @@ export const mode: Mode = {
   SelectCard,
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,
+  AddPage: ({ replaces }) => (
+    <AddPage key={replaces ?? ""} cube={useWorkbench()} replaces={replaces} />
+  ),
 };

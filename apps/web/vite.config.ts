@@ -15,6 +15,7 @@ export default defineConfig(({ command }) => ({
     workbench({
       repoRoot: process.env["CUBE_REPO_ROOT"] ?? REPO_ROOT,
       cacheDir: fileURLToPath(new URL("../../.cache/scryfall", import.meta.url)),
+      imageCacheDir: fileURLToPath(new URL("../../.cache/scryfall-images", import.meta.url)),
     }),
   ],
   resolve: {

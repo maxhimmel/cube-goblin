@@ -1,62 +1,71 @@
 import { mode } from "#mode";
 import type { SnapshotCard } from "@repo/cube/browser";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import type { CubeView } from "../modes/mode.ts";
-
-interface Group {
-  id: string;
-  label: string;
-  cards: SnapshotCard[];
-}
-
-function groups(cube: CubeView): Group[] {
-  const live = cube.cards.filter((card) => card.status !== "cut");
-  return [
-    { id: "draft", label: "Draft", cards: live.filter((card) => card.status === "draft") },
-    ...cube.sections.map((section) => ({
-      id: section.id,
-      label: `Prospects: ${section.label}`,
-      cards: live.filter((card) => card.status !== "draft" && card.section === section.id),
-    })),
-    {
-      id: "prospects-other",
-      label: "Prospects: other",
-      cards: live.filter(
-        (card) =>
-          card.status === "prospect" &&
-          !cube.sections.some((section) => section.id === card.section),
-      ),
-    },
-    { id: "cut", label: "Cut", cards: cube.cards.filter((card) => card.status === "cut") },
-  ].filter((group) => group.cards.length > 0 || group.id === "draft");
-}
+import { DEFAULT_ORGANIZER, ORGANIZE_ID, organizers } from "../grid/piles.ts";
 
 function Tile({ card }: { card: SnapshotCard }): ReactNode {
   const mark = mode.useTileMark(card.slug);
   return (
-    <li>
+    <li className="tile-cell">
       <Link to="/card/$slug" params={{ slug: card.slug }} className="tile" {...mark}>
         <img src={card.image} alt={card.name} loading="lazy" width={146} height={204} />
       </Link>
+      <mode.SelectCard slug={card.slug} name={card.name} />
     </li>
   );
 }
 
 export function GridPage(): ReactNode {
   const cube = mode.useCube();
+  const { by } = useSearch({ from: "/" });
+  const navigate = useNavigate();
   if (!cube) {
     return <p className="muted">Loading cube…</p>;
   }
+  const options = organizers(cube);
+  const organizer =
+    options.find((option) => option.id === by) ??
+    options.find((option) => option.id === DEFAULT_ORGANIZER);
+  const piles = (organizer?.piles(cube) ?? []).filter(
+    (pile) => pile.cards.length > 0 || pile.keepEmpty === true,
+  );
   return (
     <div>
-      {groups(cube).map((group) => (
-        <section key={group.id} data-group={group.id}>
-          <h2>
-            {group.label} <span className="muted">({group.cards.length})</span>
-          </h2>
+      <div className="grid-tools">
+        <label>
+          Organize by{" "}
+          <select
+            id={ORGANIZE_ID}
+            aria-label="Organize by"
+            value={organizer?.id}
+            onChange={(event) => {
+              const next = event.target.value;
+              void navigate({
+                to: "/",
+                search: next === DEFAULT_ORGANIZER ? {} : { by: next },
+              });
+            }}
+          >
+            {options.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <mode.BulkBar />
+      </div>
+      {piles.map((pile) => (
+        <section key={pile.id} data-pile={pile.id}>
+          <div className="pile-head">
+            <mode.SelectPile slugs={pile.cards.map((card) => card.slug)} label={pile.label} />
+            <h2>
+              {pile.label} <span className="muted">({pile.cards.length})</span>
+            </h2>
+          </div>
           <ul className="grid">
-            {group.cards.map((card) => (
+            {pile.cards.map((card) => (
               <Tile key={card.slug} card={card} />
             ))}
           </ul>

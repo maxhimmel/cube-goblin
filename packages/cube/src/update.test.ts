@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { CardEntry } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
 import { cubePaths, writeCard } from "./store.ts";
-import { patchCard, updateCard } from "./update.ts";
+import { patchCard, patchCards, updateCard } from "./update.ts";
 
 const shock: CardEntry = {
   name: "Shock",
@@ -132,5 +132,45 @@ describe("patchCard", () => {
       ok: false,
       status: 404,
     });
+  });
+});
+
+describe("patchCards", () => {
+  it("applies every change and writes each card once", async () => {
+    const result = await patchCards(paths, {
+      changes: [
+        { slug: "shock", patch: { status: "cut", addTags: ["a"] } },
+        { slug: "opt", patch: { addTags: ["a"] } },
+        { slug: "shock", patch: { addTags: ["b"] } },
+      ],
+    });
+    expect(result).toMatchObject({ ok: true });
+    expect(await onDisk("shock")).toEqual({ ...shock, status: "cut", tags: ["a", "b"] });
+    expect(await onDisk("opt")).toEqual({ ...opt, tags: ["a"] });
+  });
+
+  it("writes nothing when any change is invalid", async () => {
+    for (const changes of [
+      [
+        { slug: "shock", patch: { status: "cut" } },
+        { slug: "opt", patch: { addTags: ["elves"] } },
+      ],
+      [
+        { slug: "shock", patch: { status: "cut" } },
+        { slug: "bolt", patch: { status: "cut" } },
+      ],
+      [{ slug: "shock", patch: { name: "Bolt" } }],
+      [],
+    ]) {
+      const result = await patchCards(paths, { changes });
+      expect(result).toMatchObject({ ok: false });
+    }
+    expect(await onDisk("shock")).toEqual(shock);
+    expect(await onDisk("opt")).toEqual(opt);
+  });
+
+  it("returns 404 for an unknown card", async () => {
+    const result = await patchCards(paths, { changes: [{ slug: "bolt", patch: {} }] });
+    expect(result).toMatchObject({ ok: false, status: 404 });
   });
 });

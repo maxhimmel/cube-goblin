@@ -21,12 +21,23 @@ export type {
 export {
   CARD_STATUSES,
   TAG_KINDS,
+  applyCardPatch,
   applyTagChanges,
+  cardChangeSchema,
+  cardChangesSchema,
   cardEntrySchema,
   cardPatchSchema,
   newTagSchema,
   tagChangeSchema,
   tagSchema,
 } from "./schema.ts";
-export type { CardEntry, CardPatch, CardStatus, Section, Tag, TagKind } from "./schema.ts";
+export type {
+  CardChange,
+  CardEntry,
+  CardPatch,
+  CardStatus,
+  Section,
+  Tag,
+  TagKind,
+} from "./schema.ts";
 export { slugify } from "./slug.ts";

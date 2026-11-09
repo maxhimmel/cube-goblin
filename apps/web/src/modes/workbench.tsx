@@ -4,8 +4,10 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { queryClient } from "../query-client.ts";
 import { CUBE_CHANGED_EVENT, CUBE_QUERY_KEY, fetchCube } from "../workbench/api.ts";
+import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor } from "../workbench/card-editor.tsx";
 import { editsPending, useSaving } from "../workbench/edits.ts";
+import { useSelection } from "../workbench/selection.ts";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
@@ -61,10 +63,23 @@ export const mode: Mode = {
   name: "workbench",
   useCube: () => {
     const data = useWorkbench();
-    return data && { cards: data.cards, sections: data.sections, label: "live from cube/cards" };
+    return (
+      data && {
+        cards: data.cards,
+        sections: data.sections,
+        vocabulary: data.vocabulary,
+        label: "live from cube/cards",
+      }
+    );
   },
-  useTileMark: (slug) => ({ "data-status": useWorkbenchCard(slug)?.status }),
+  useTileMark: (slug) => ({
+    "data-status": useWorkbenchCard(slug)?.status,
+    "data-selected": useSelection().has(slug) ? "true" : undefined,
+  }),
   Toolbar,
   CardPanel,
   TagsPage: () => <TagsPage cube={useWorkbench()} />,
+  SelectCard,
+  SelectPile,
+  BulkBar: () => <BulkBar cube={useWorkbench()} />,
 };

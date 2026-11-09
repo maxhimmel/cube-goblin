@@ -35,6 +35,35 @@ export function applyTagChanges(tags: readonly string[], patch: CardPatch): stri
   return [...kept, ...added];
 }
 
+interface PatchableCard {
+  status: CardStatus;
+  section?: string | undefined;
+  tags: string[];
+  notes: string;
+}
+
+export function applyCardPatch<T extends PatchableCard>(card: T, patch: CardPatch): T {
+  const { section, ...rest } = card;
+  const nextSection = patch.section === undefined ? section : (patch.section ?? undefined);
+  const next: PatchableCard = {
+    ...rest,
+    status: patch.status ?? card.status,
+    notes: patch.notes ?? card.notes,
+    tags: applyTagChanges(card.tags, patch),
+    ...(nextSection === undefined ? {} : { section: nextSection }),
+  };
+  return next as T;
+}
+
+export const cardChangeSchema = z.strictObject({
+  slug: z.string(),
+  patch: cardPatchSchema,
+});
+
+export const cardChangesSchema = z.strictObject({
+  changes: z.array(cardChangeSchema).min(1),
+});
+
 export const sectionSchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9-]+$/u),
   label: z.string().min(1),
@@ -73,6 +102,7 @@ export const cubeConfigSchema = z.strictObject({
 export type CardStatus = z.infer<typeof cardStatusSchema>;
 export type CardEntry = z.infer<typeof cardEntrySchema>;
 export type CardPatch = z.infer<typeof cardPatchSchema>;
+export type CardChange = z.infer<typeof cardChangeSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type TagKind = z.infer<typeof tagKindSchema>;
 export type Tag = z.infer<typeof tagSchema>;

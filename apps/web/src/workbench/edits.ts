@@ -1,39 +1,30 @@
-import type { CardEntry, CardPatch, Workbench, WorkbenchCard } from "@repo/cube/browser";
-import { applyTagChanges } from "@repo/cube/browser";
+import type { CardChange, CardEntry, Workbench } from "@repo/cube/browser";
+import { applyCardPatch } from "@repo/cube/browser";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { MutationObserver, useIsMutating, useMutation } from "@tanstack/react-query";
 import { queryClient } from "../query-client.ts";
-import { CUBE_QUERY_KEY, sendPatch } from "./api.ts";
+import { CUBE_QUERY_KEY, sendChanges } from "./api.ts";
 import { showToast } from "./toast.tsx";
 
 export interface CardEdit {
-  slug: string;
   label: string;
-  patch: CardPatch;
-  undo?: CardPatch;
+  changes: CardChange[];
+  undo?: CardChange[];
 }
 
 const CARD_EDIT_KEY = ["card-edit"] as const;
 
-export function applyPatch(card: WorkbenchCard, patch: CardPatch): WorkbenchCard {
-  const { section, ...rest } = card;
-  const nextSection = patch.section === undefined ? section : (patch.section ?? undefined);
-  return {
-    ...rest,
-    status: patch.status ?? card.status,
-    notes: patch.notes ?? card.notes,
-    tags: applyTagChanges(card.tags, patch),
-    ...(nextSection === undefined ? {} : { section: nextSection }),
-  };
-}
-
-function patchCached(slug: string, patch: CardPatch): void {
+function patchCached(changes: readonly CardChange[]): void {
   queryClient.setQueryData<Workbench>(
     CUBE_QUERY_KEY,
     (cube) =>
       cube && {
         ...cube,
-        cards: cube.cards.map((card) => (card.slug === slug ? applyPatch(card, patch) : card)),
+        cards: cube.cards.map((card) =>
+          changes
+            .filter((change) => change.slug === card.slug)
+            .reduce((next, change) => applyCardPatch(next, change.patch), card),
+        ),
       },
   );
 }
@@ -45,18 +36,15 @@ export function editsPending(): boolean {
 const cardEditOptions = {
   mutationKey: CARD_EDIT_KEY,
   scope: { id: "card-edit" },
-  mutationFn: ({ slug, patch }: CardEdit): Promise<CardEntry> => sendPatch(slug, patch),
-  onMutate: async ({ slug, patch }: CardEdit): Promise<void> => {
+  mutationFn: ({ changes }: CardEdit): Promise<CardEntry[]> => sendChanges(changes),
+  onMutate: async ({ changes }: CardEdit): Promise<void> => {
     await queryClient.cancelQueries({ queryKey: CUBE_QUERY_KEY });
-    patchCached(slug, patch);
+    patchCached(changes);
   },
-  onError: (error: Error, edit: CardEdit): void => {
-    if (edit.undo !== undefined) {
-      patchCached(edit.slug, edit.undo);
-    }
+  onError: (error: Error): void => {
     showToast({ message: error.message, tone: "error" });
   },
-  onSuccess: (_entry: CardEntry, edit: CardEdit): void => {
+  onSuccess: (_entries: CardEntry[], edit: CardEdit): void => {
     const { undo } = edit;
     if (undo === undefined) {
       showToast({ message: `Undid ${edit.label}`, tone: "info" });
@@ -68,7 +56,7 @@ const cardEditOptions = {
       action: {
         label: "Undo",
         run: () => {
-          runCardEdit({ slug: edit.slug, label: edit.label, patch: undo });
+          runCardEdit({ label: edit.label, changes: undo });
         },
       },
     });
@@ -84,7 +72,7 @@ export function runCardEdit(edit: CardEdit): void {
   new MutationObserver(queryClient, cardEditOptions).mutate(edit).catch(() => undefined);
 }
 
-export function useCardEdit(): UseMutationResult<CardEntry, Error, CardEdit> {
+export function useCardEdit(): UseMutationResult<CardEntry[], Error, CardEdit> {
   return useMutation(cardEditOptions);
 }
 

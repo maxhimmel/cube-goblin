@@ -83,8 +83,8 @@ test("an edit on disk shows up without a reload", async ({ page, workbench }) =>
   await expect(page.getByLabel("Notes")).toHaveValue("edited on disk");
 
   await page.getByRole("link", { name: "← all cards" }).click();
-  await expect(page.locator('[data-group="cut"] img[alt="Abrade"]')).toBeVisible();
-  await expect(page.locator('[data-group="draft"] img[alt="Abrade"]')).toHaveCount(0);
+  await expect(page.locator('[data-pile="cut"] img[alt="Abrade"]')).toBeVisible();
+  await expect(page.locator('[data-pile="draft"] img[alt="Abrade"]')).toHaveCount(0);
 });
 
 test("the write API validates and lands edits on disk", async ({ page, workbench }) => {
@@ -220,7 +220,7 @@ test("leaving the card right after typing keeps every edit", async ({ page, work
   await page.getByRole("button", { name: "cut", exact: true }).click();
   await page.getByLabel("Notes").fill("left in a hurry");
   await page.getByRole("link", { name: "← all cards" }).click();
-  await expect(page.locator('[data-group="cut"] img[alt="Essence Scatter"]')).toBeVisible();
+  await expect(page.locator('[data-pile="cut"] img[alt="Essence Scatter"]')).toBeVisible();
   await expect.poll(async () => (await disk()).notes).toBe("left in a hurry");
   expect((await disk()).status).toBe("cut");
   await page.locator('img[alt="Essence Scatter"]').click();
@@ -315,4 +315,104 @@ test("the tags page renames a tag without touching card files", async ({ page, w
   await expect
     .poll(async () => (await readEntry(workbench.cardsDir, "abrade")).tags)
     .toContain("card-draw");
+});
+
+test("bulk edits land on every selected card and undo as one", async ({ page, workbench }) => {
+  const slugs = ["auroral-procession", "bake-into-a-pie", "carnage-tyrant"];
+  const names = ["Auroral Procession", "Bake into a Pie", "Carnage Tyrant"];
+  const before = await Promise.all(slugs.map((slug) => readEntry(workbench.cardsDir, slug)));
+  const disk = (): Promise<CardEntry[]> =>
+    Promise.all(slugs.map((slug) => readEntry(workbench.cardsDir, slug)));
+  await page.goto(workbench.url);
+
+  for (const name of names) {
+    await page
+      .getByRole("checkbox", { name: `Select ${name}`, exact: true })
+      .first()
+      .check();
+  }
+  const bar = page.getByRole("toolbar", { name: "Bulk edit" });
+  await expect(bar.getByTestId("selected-count")).toHaveText("3 selected");
+
+  await bar.getByRole("button", { name: "Set prospect" }).click();
+  await expect
+    .poll(async () => (await disk()).map((entry) => entry.status))
+    .toEqual(["prospect", "prospect", "prospect"]);
+  const moved = before.filter((entry) => entry.status !== "prospect").length;
+  await expect(page.getByRole("status")).toContainText(
+    `Saved status prospect on ${String(moved)} cards`,
+  );
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect
+    .poll(async () => (await disk()).map((entry) => entry.status))
+    .toEqual(before.map((entry) => entry.status));
+
+  const sections = async (): Promise<(string | undefined)[]> =>
+    (await disk()).map((entry) => entry.section);
+  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("vampires");
+  await bar.getByRole("button", { name: "Apply move to section" }).click();
+  await expect.poll(sections).toEqual(["vampires", "vampires", "vampires"]);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(sections).toEqual(before.map((entry) => entry.section));
+
+  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("__none");
+  await bar.getByRole("button", { name: "Apply move to section" }).click();
+  await expect.poll(sections).toEqual([undefined, undefined, undefined]);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(sections).toEqual(before.map((entry) => entry.section));
+
+  await bar.getByRole("combobox", { name: "Add tag to selected" }).selectOption("removal");
+  await bar.getByRole("button", { name: "Apply add tag to selected" }).click();
+  await expect
+    .poll(async () => (await disk()).map((entry) => entry.tags))
+    .toEqual(before.map((entry) => [...entry.tags, "removal"]));
+
+  await bar.getByRole("combobox", { name: "Remove tag from selected" }).selectOption("removal");
+  await bar.getByRole("button", { name: "Apply remove tag from selected" }).click();
+  await expect.poll(disk).toEqual(before);
+
+  await bar.getByRole("button", { name: "Clear selection" }).click();
+  await expect(bar).toHaveCount(0);
+  await expect(page.getByLabel("Organize by")).toBeFocused();
+});
+
+test("the grid organizes by status, section, and tag kind", async ({ page, workbench }) => {
+  const slug = "clarion-conqueror";
+  const created = await page.request.post(`${workbench.url}api/tags`, {
+    data: { label: "Pile test", kind: "archetype" },
+  });
+  expect(created.status()).toBe(200);
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug, patch: { addTags: ["pile-test", "removal"], section: "pirates" } }] },
+  });
+  expect(patched.status()).toBe(200);
+  await page.goto(workbench.url);
+  const organize = page.getByLabel("Organize by");
+  const tile = (pile: string) => page.locator(`[data-pile="${pile}"] img[alt="Clarion Conqueror"]`);
+
+  await organize.selectOption("archetype");
+  await expect(tile("tag-pile-test")).toBeVisible();
+  await expect(tile("no-archetype")).toHaveCount(0);
+  await expect(page).toHaveURL(/by=archetype/u);
+
+  await organize.selectOption("group");
+  await expect(tile("tag-removal")).toBeVisible();
+  await expect(tile("no-group")).toHaveCount(0);
+  await page.reload();
+  await expect(organize).toHaveValue("group");
+  await expect(tile("tag-removal")).toBeVisible();
+
+  await organize.selectOption("section");
+  await expect(tile("pirates")).toBeVisible();
+
+  await organize.selectOption("status");
+  const draft = page.locator('[data-pile="draft"]');
+  await draft.getByRole("checkbox", { name: "Select all in Draft" }).check();
+  const count = await draft.locator(".tile").count();
+  await expect(page.getByTestId("selected-count")).toHaveText(`${String(count)} selected`);
+  await page.getByRole("button", { name: "Clear selection" }).click();
+
+  await organize.selectOption("overview");
+  await expect(page).not.toHaveURL(/by=/u);
 });

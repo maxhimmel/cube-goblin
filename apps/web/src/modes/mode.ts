@@ -1,9 +1,12 @@
-import type { Section, SnapshotCard } from "@repo/cube/browser";
+import type { Section, SnapshotCard, Tag } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 
+export type GridCard = SnapshotCard & { tags?: string[] };
+
 export interface CubeView {
-  cards: SnapshotCard[];
+  cards: GridCard[];
   sections: Section[];
+  vocabulary: Tag[];
   label: string;
 }
 
@@ -14,4 +17,7 @@ export interface Mode {
   Toolbar: () => ReactNode;
   CardPanel: (props: { slug: string }) => ReactNode;
   TagsPage: () => ReactNode;
+  SelectCard: (props: { slug: string; name: string }) => ReactNode;
+  SelectPile: (props: { slugs: string[]; label: string }) => ReactNode;
+  BulkBar: () => ReactNode;
 }

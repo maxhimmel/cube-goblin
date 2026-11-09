@@ -1,4 +1,4 @@
-import type { CardEntry, CardPatch, Tag, TagKind, Workbench } from "@repo/cube/browser";
+import type { CardChange, CardEntry, Tag, TagKind, Workbench } from "@repo/cube/browser";
 import { cardEntrySchema, tagSchema, workbenchSchema } from "@repo/cube/browser";
 
 export const CUBE_QUERY_KEY = ["cube"] as const;
@@ -26,27 +26,15 @@ export async function fetchCube(): Promise<Workbench> {
   return workbenchSchema.parse(await response.json());
 }
 
-export async function sendPatch(
-  slug: string,
-  patch: CardPatch,
+async function sendJson(
+  method: string,
+  url: string,
+  body: unknown,
   keepalive = false,
-): Promise<CardEntry> {
-  const url = `/api/cards/${slug}`;
-  const response = await fetch(url, {
-    method: "PATCH",
-    keepalive,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(patch),
-  });
-  if (!response.ok) {
-    throw await failure("PATCH", url, response);
-  }
-  return cardEntrySchema.parse(await response.json());
-}
-
-async function sendJson(method: string, url: string, body: unknown): Promise<unknown> {
+): Promise<unknown> {
   const response = await fetch(url, {
     method,
+    keepalive,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -54,6 +42,12 @@ async function sendJson(method: string, url: string, body: unknown): Promise<unk
     throw await failure(method, url, response);
   }
   return response.json();
+}
+
+export async function sendChanges(changes: CardChange[], keepalive = false): Promise<CardEntry[]> {
+  return cardEntrySchema
+    .array()
+    .parse(await sendJson("PATCH", "/api/cards", { changes }, keepalive));
 }
 
 export async function createTagRequest(label: string, kind: TagKind): Promise<Tag> {

@@ -15,6 +15,6 @@ export {
 export { changeTag, createTag } from "./tags.ts";
 export type { TagResult } from "./tags.ts";
 export type { CubePaths } from "./store.ts";
-export { patchCard, updateCard } from "./update.ts";
-export type { UpdateResult } from "./update.ts";
+export { patchCard, patchCards, updateCard } from "./update.ts";
+export type { BatchResult, UpdateResult } from "./update.ts";
 export { validateCube } from "./validate.ts";

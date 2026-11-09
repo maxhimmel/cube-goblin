@@ -1,21 +1,46 @@
 :root {
   --chart-bar: var(--accent);
-  --chart-on-bar: var(--on-accent);
   --chart-surface: var(--strip);
   --chart-empty: color-mix(in oklab, var(--line) 35%, var(--strip));
-  --chart-grid: var(--line);
+  --chart-curve: #2a78d6;
+  --chart-types: #1baf7a;
+  --chart-functions: #eb6834;
+  --chart-sections: #e87ba4;
+  --chart-archetype: #008300;
+  --chart-group: #eda100;
+  --chart-status: #6250d6;
+  --chart-heat: #2a78d6;
+  --heat-1: color-mix(in oklab, var(--chart-heat) 20%, var(--chart-surface));
+  --heat-2: color-mix(in oklab, var(--chart-heat) 35%, var(--chart-surface));
+  --heat-3: color-mix(in oklab, var(--chart-heat) 50%, var(--chart-surface));
+  --heat-4: color-mix(in oklab, var(--chart-heat) 65%, var(--chart-surface));
+  --heat-5: color-mix(in oklab, var(--chart-heat) 80%, var(--chart-surface));
+  --heat-6: var(--chart-heat);
   --heat-ink-1: var(--fg);
   --heat-ink-2: var(--fg);
   --heat-ink-3: var(--fg);
   --heat-ink-4: var(--fg);
   --heat-ink-5: var(--fg);
-  --heat-ink-6: var(--chart-on-bar);
+  --heat-ink-6: #fff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --heat-ink-4: var(--chart-on-bar);
-    --heat-ink-5: var(--chart-on-bar);
+    --chart-curve: #3987e5;
+    --chart-types: #199e70;
+    --chart-functions: #d95926;
+    --chart-sections: #d55181;
+    --chart-archetype: #008300;
+    --chart-group: #c98500;
+    --chart-status: #9085e9;
+    --chart-heat: #3987e5;
+    --heat-6: color-mix(in oklab, var(--chart-heat) 85%, var(--chart-surface));
+    --heat-ink-1: #fff;
+    --heat-ink-2: #fff;
+    --heat-ink-3: #fff;
+    --heat-ink-4: #fff;
+    --heat-ink-5: #fff;
+    --heat-ink-6: #fff;
   }
 }
 

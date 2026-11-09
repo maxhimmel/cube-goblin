@@ -9,6 +9,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 export type TickLabel = (id: string) => ReactNode;
 
+export type BarFill = string | ((row: Count) => string);
+
 const BAR = "var(--chart-bar)";
 const BAR_THICKNESS = 24;
 const ROW_HEIGHT = 34;
@@ -22,16 +24,14 @@ function peak(rows: readonly Count[]): number {
   return Math.max(1, ...rows.map((row) => row.count));
 }
 
-const HEAT_LEVELS = [0, 20, 35, 50, 65, 80, 100];
+const HEAT_STEPS = 6;
 
 function heatStep(count: number, max: number): number {
-  return max === 0 || count === 0 ? 0 : Math.ceil((count / max) * (HEAT_LEVELS.length - 1));
+  return max === 0 || count === 0 ? 0 : Math.ceil((count / max) * HEAT_STEPS);
 }
 
 function heatFill(step: number): string {
-  return step === 0
-    ? "var(--chart-empty)"
-    : `color-mix(in oklab, var(--chart-bar) ${String(HEAT_LEVELS[step] ?? 100)}%, var(--chart-surface))`;
+  return step === 0 ? "var(--chart-empty)" : `var(--heat-${String(step)})`;
 }
 
 interface TickScene {
@@ -103,12 +103,14 @@ export function ColumnChart({
   rows,
   name,
   unit,
+  fill = BAR,
   category,
   tick,
 }: {
   rows: readonly Count[];
   name: string;
   unit: string;
+  fill?: BarFill;
   category: string;
   tick?: TickLabel;
 }): ReactNode {
@@ -121,7 +123,7 @@ export function ColumnChart({
           barY(rows, {
             x: "id",
             y: "count",
-            fill: BAR,
+            fill,
             maxThickness: BAR_THICKNESS,
             radius: [4, 4, 0, 0],
           }),
@@ -151,7 +153,7 @@ export function ColumnChart({
             `${category} ${labelOf(rows, point.datum)}: ${String(point.datum.count)} ${unit}`,
         },
       }),
-    [category, rows, tick, unit],
+    [category, fill, rows, tick, unit],
   );
   return (
     <div className="chart-plot">
@@ -179,11 +181,13 @@ export function RowChart({
   rows,
   name,
   unit,
+  fill = BAR,
   tick,
 }: {
   rows: readonly Count[];
   name: string;
   unit: string;
+  fill?: BarFill;
   tick?: TickLabel;
 }): ReactNode {
   const overlay = useTickOverlay("y");
@@ -195,7 +199,7 @@ export function RowChart({
           barX(rows, {
             x: "count",
             y: "id",
-            fill: BAR,
+            fill,
             maxThickness: BAR_THICKNESS - 4,
             radius: [0, 4, 4, 0],
           }),
@@ -230,7 +234,7 @@ export function RowChart({
           format: (point) => `${labelOf(rows, point.datum)}: ${String(point.datum.count)} ${unit}`,
         },
       }),
-    [rows, tick, unit],
+    [fill, rows, tick, unit],
   );
   return (
     <div className="chart-plot">
@@ -260,21 +264,33 @@ export function HeatChart({
   columns,
   name,
   rowTick,
+  columnTick,
 }: {
   cells: readonly GridCell[];
   rows: readonly Omit<Count, "count">[];
   columns: readonly Omit<Count, "count">[];
   name: string;
   rowTick: TickLabel;
+  columnTick: TickLabel;
 }): ReactNode {
-  const overlay = useTickOverlay("y");
+  const rowOverlay = useTickOverlay("y");
+  const columnOverlay = useTickOverlay("x");
+  const placeRows = rowOverlay.onRender;
+  const placeColumns = columnOverlay.onRender;
+  const onRender = useCallback(
+    (context: TickScene) => {
+      placeRows(context);
+      placeColumns(context);
+    },
+    [placeRows, placeColumns],
+  );
   const max = Math.max(0, ...cells.map((entry) => entry.count));
   const definition = useMemo(
     () =>
       defineChart({
-        margin: { left: TICK_GUTTER, top: 8 },
+        margin: { left: TICK_GUTTER, top: 8, bottom: 36 },
         marks: [
-          ...HEAT_LEVELS.map((_, step) =>
+          ...Array.from({ length: HEAT_STEPS + 1 }, (_, step) =>
             cell(
               cells.filter((entry) => heatStep(entry.count, max) === step),
               { id: `heat-${String(step)}`, x: "column", y: "row", inset: 1, fill: heatFill(step) },
@@ -298,11 +314,8 @@ export function HeatChart({
               .padding(0.04),
             axis: {
               line: false,
-              ticks: {
-                size: 0,
-                format: (id: string) => columns.find((column) => column.id === id)?.label ?? id,
-              },
-              label: "Mana value",
+              ticks: { size: 0 },
+              tickLabels: false,
             },
           },
           y: {
@@ -330,15 +343,22 @@ export function HeatChart({
         ids={rows.map((row) => row.id)}
         tick={rowTick}
         axis="y"
-        overlayRef={overlay.ref}
+        overlayRef={rowOverlay.ref}
         label={`${name} rows`}
+      />
+      <TickOverlay
+        ids={columns.map((column) => column.id)}
+        tick={columnTick}
+        axis="x"
+        overlayRef={columnOverlay.ref}
+        label={`${name} columns`}
       />
       <Chart
         definition={definition}
         ariaLabel={name}
-        height={rows.length * 36 + 48}
+        height={rows.length * 36 + 44}
         initialWidth={420}
-        onRender={overlay.onRender}
+        onRender={onRender}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import type { CardEntry } from "./schema.ts";
-import { applyCardPatch, cardChangesSchema, cardEntrySchema, cardPatchSchema } from "./schema.ts";
+import { applyCardPatch, cardChangesSchema, cardEntrySchema } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
 import { slugify } from "./slug.ts";
 import { readCards, readSections, readTags, writeCard } from "./store.ts";
@@ -47,22 +47,6 @@ export async function updateCard(
   return { ok: true, card };
 }
 
-export async function patchCard(
-  paths: CubePaths,
-  slug: string,
-  input: unknown,
-): Promise<UpdateResult> {
-  const parsed = cardPatchSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, status: 400, error: parsed.error.message };
-  }
-  const current = (await readCards(paths)).find((card) => slugify(card.name) === slug);
-  if (!current) {
-    return { ok: false, status: 404, error: `No card "${slug}"` };
-  }
-  return updateCard(paths, slug, applyCardPatch(current, parsed.data));
-}
-
 export type BatchResult =
   { ok: true; cards: CardEntry[] } | { ok: false; status: 400 | 404; error: string };
 
@@ -94,4 +78,17 @@ export async function patchCards(paths: CubePaths, input: unknown): Promise<Batc
     await writeCard(paths, card);
   }
   return { ok: true, cards: [...changed.values()] };
+}
+
+export async function patchCard(
+  paths: CubePaths,
+  slug: string,
+  input: unknown,
+): Promise<UpdateResult> {
+  const result = await patchCards(paths, { changes: [{ slug, patch: input }] });
+  if (!result.ok) {
+    return result;
+  }
+  const [card] = result.cards;
+  return card ? { ok: true, card } : { ok: false, status: 404, error: `No card "${slug}"` };
 }

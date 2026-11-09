@@ -2,7 +2,7 @@ import type { CardPatch, Section, Tag, WorkbenchCard } from "@repo/cube/browser"
 import { CARD_STATUSES, TAG_KINDS } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { sendPatch } from "./api.ts";
+import { sendChanges } from "./api.ts";
 import { useCardEdit } from "./edits.ts";
 import { findTag, useCreateTag } from "./tags.ts";
 
@@ -35,7 +35,7 @@ function NotesField({ slug, notes, save }: { slug: string; notes: string; save: 
       const value = latest.current;
       if (before.current !== undefined && value !== undefined && value !== before.current) {
         before.current = undefined;
-        void sendPatch(slug, { notes: value }, true).catch(() => undefined);
+        void sendChanges([{ slug, patch: { notes: value } }], true).catch(() => undefined);
       }
     }
     window.addEventListener("pagehide", persistOnExit);

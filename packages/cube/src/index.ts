@@ -1,9 +1,12 @@
 export * from "./browser.ts";
+export { addCard } from "./add.ts";
+export type { AddResult, NameLookup } from "./add.ts";
 export { isSectionHeader, parseBatch } from "./parse.ts";
 export type { BatchLine, ParsedBatch } from "./parse.ts";
 export { cardStatusSchema, cubeConfigSchema, sectionSchema, sectionsFileSchema } from "./schema.ts";
 export type { CubeConfig } from "./schema.ts";
 export {
+  WORKBENCH_BATCH,
   cubePaths,
   readCards,
   readConfig,

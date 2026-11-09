@@ -115,4 +115,5 @@ export const mode: Mode = {
   SelectCard: () => null,
   SelectPile: () => null,
   BulkBar: () => null,
+  AddPage: () => <p className="muted">Cards are added in the workbench.</p>,
 };

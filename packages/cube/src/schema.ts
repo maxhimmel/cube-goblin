@@ -64,6 +64,14 @@ export const cardChangesSchema = z.strictObject({
   changes: z.array(cardChangeSchema).min(1),
 });
 
+export const newCardSchema = z.strictObject({
+  oracleId: z.uuid(),
+  status: cardStatusSchema,
+  section: z.string().optional(),
+  replaces: z.string().optional(),
+  copyTags: z.boolean().optional(),
+});
+
 export const sectionSchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9-]+$/u),
   label: z.string().min(1),
@@ -102,6 +110,7 @@ export const cubeConfigSchema = z.strictObject({
 export type CardStatus = z.infer<typeof cardStatusSchema>;
 export type CardEntry = z.infer<typeof cardEntrySchema>;
 export type CardPatch = z.infer<typeof cardPatchSchema>;
+export type NewCard = z.infer<typeof newCardSchema>;
 export type CardChange = z.infer<typeof cardChangeSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type TagKind = z.infer<typeof tagKindSchema>;

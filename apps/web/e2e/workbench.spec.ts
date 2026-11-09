@@ -416,3 +416,81 @@ test("the grid organizes by status, section, and tag kind", async ({ page, workb
   await organize.selectOption("overview");
   await expect(page).not.toHaveURL(/by=/u);
 });
+
+test("adding a card from Scryfall writes it and a workbench batch line", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(workbench.url);
+  await page.getByRole("link", { name: "Add card" }).click();
+  await page.getByRole("button", { name: "draft", exact: true }).click();
+  await page.getByLabel("Search Scryfall").fill('!"Lightning Bolt"');
+  await page.getByRole("button", { name: "Add Lightning Bolt", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "Lightning Bolt" })).toBeVisible();
+  const entry = await readEntry(workbench.cardsDir, "lightning-bolt");
+  expect(entry).toMatchObject({
+    status: "draft",
+    tags: [],
+    notes: "",
+    source: { batch: "workbench", input: "[  ] Lightning Bolt" },
+  });
+  const batch = await readFile(join(workbench.cardsDir, "..", "inbox", "workbench.txt"), "utf8");
+  expect(batch.split("\n")[entry.source.line - 1]).toBe("[  ] Lightning Bolt");
+
+  await page.getByRole("link", { name: "Add card" }).click();
+  await page.getByLabel("Search Scryfall").fill('!"Lightning Bolt"');
+  const results = page.getByRole("list", { name: "Search results" });
+  const bolt = results
+    .getByRole("listitem")
+    .filter({ has: page.getByAltText("Lightning Bolt", { exact: true }) });
+  await expect(bolt.getByText("In cube")).toBeVisible();
+  await expect(bolt.getByRole("button")).toHaveCount(0);
+});
+
+test("swapping keeps the old card as cut and can carry its tags", async ({ page, workbench }) => {
+  const slug = "daring-saboteur";
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug, patch: { addTags: ["removal"], notes: "too slow" } }] },
+  });
+  expect(patched.status()).toBe(200);
+  const before = await readEntry(workbench.cardsDir, slug);
+
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await page.getByRole("link", { name: "Swap for another card…" }).click();
+  await expect(page.getByRole("heading", { name: "Swap out Daring Saboteur" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "prospect", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByLabel("Section")).toHaveValue("pirates");
+  await page.getByLabel("Search Scryfall").fill('!"Counterspell"');
+  await page.getByRole("button", { name: "Swap in Counterspell", exact: true }).click();
+
+  await expect(page.getByRole("heading", { name: "Counterspell" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Daring Saboteur is now cut");
+  expect(await readEntry(workbench.cardsDir, slug)).toEqual({ ...before, status: "cut" });
+  expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({
+    status: "prospect",
+    section: "pirates",
+    tags: before.tags,
+    notes: "",
+  });
+});
+
+test("a swap opened by URL starts from the old card's status and section", async ({
+  page,
+  workbench,
+}) => {
+  const slug = "deathgorge-scavenger";
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug, patch: { status: "draft", section: "dinosaurs" } }] },
+  });
+  expect(patched.status()).toBe(200);
+  await page.goto(`${workbench.url}#/add?replaces=${slug}`);
+  await expect(page.getByRole("button", { name: "draft", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByLabel("Section")).toHaveValue("dinosaurs");
+});

@@ -85,6 +85,25 @@ describe("ScryfallClient", () => {
     expect(sleeps).toEqual([CARD_ENDPOINT_INTERVAL_MS]);
   });
 
+  it("spaces out concurrent card endpoint requests", async () => {
+    const calls: Call[] = [];
+    const sleeps: number[] = [];
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      fetch: fakeFetch(
+        ["Entomb", "Reanimate", "Exhume"].map((name) => ({ status: 200, body: { ...card, name } })),
+        calls,
+      ),
+      now: () => 0,
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+    });
+    await Promise.all([client.named("Entomb"), client.named("Reanimate"), client.named("Exhume")]);
+    expect(sleeps).toEqual([CARD_ENDPOINT_INTERVAL_MS, 2 * CARD_ENDPOINT_INTERVAL_MS]);
+  });
+
   it("throws ScryfallError with the API error details", async () => {
     const client = new ScryfallClient({
       userAgent: "Test/1.0",

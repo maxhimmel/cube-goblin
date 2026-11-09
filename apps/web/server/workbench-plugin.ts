@@ -1,14 +1,17 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { resolve, sep } from "node:path";
 import type {
+  AddResult,
   BatchResult,
   CubePaths,
+  SearchResult,
   TagResult,
   UpdateResult,
   Workbench,
   WorkbenchCard,
 } from "@repo/cube";
 import {
+  addCard,
   changeTag,
   createTag,
   cubePaths,
@@ -19,7 +22,7 @@ import {
   readTags,
   slugify,
 } from "@repo/cube";
-import { FileCache, ScryfallClient, displayFields } from "@repo/scryfall";
+import { FileCache, ScryfallClient, ScryfallError, displayFields } from "@repo/scryfall";
 import type { Plugin } from "vite";
 
 const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
@@ -27,6 +30,7 @@ const CUBE_CHANGED_EVENT = "cube:changed";
 const CARD_ROUTE = /^\/api\/cards\/([a-z0-9-]+)$/u;
 const TAG_ROUTE = /^\/api\/tags\/([a-z0-9-]+)$/u;
 const CHANGE_DEBOUNCE_MS = 100;
+const SEARCH_LIMIT = 24;
 
 export interface WorkbenchOptions {
   repoRoot: string;
@@ -86,7 +90,7 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
   return { cards: workbenchCards, sections, vocabulary };
 }
 
-type WriteResult = UpdateResult | TagResult | BatchResult;
+type WriteResult = UpdateResult | TagResult | BatchResult | AddResult;
 type Write = (body: unknown) => Promise<WriteResult>;
 
 function written(result: Extract<WriteResult, { ok: true }>): unknown {
@@ -96,8 +100,52 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   return "cards" in result ? result.cards : result.tag;
 }
 
-function writeRoute(paths: CubePaths) {
+function scryfallStatus(status: number): number {
+  return status === 400 || status === 404 || status === 429 ? status : 502;
+}
+
+async function search(
+  paths: CubePaths,
+  client: ScryfallClient,
+  query: string,
+): Promise<SearchResult[]> {
+  if (query.trim().length === 0) {
+    return [];
+  }
+  const inCube = new Set((await readCards(paths)).map((card) => card.oracleId));
+  let found;
+  try {
+    found = await client.search(query, { limit: SEARCH_LIMIT });
+  } catch (error) {
+    if (error instanceof ScryfallError && error.status === 404) {
+      return [];
+    }
+    throw error;
+  }
+  const results: SearchResult[] = [];
+  for (const card of found) {
+    const fields = displayFields(card);
+    if (card.oracle_id !== undefined && fields) {
+      results.push({
+        oracleId: card.oracle_id,
+        name: card.name,
+        manaCost: fields.manaCost,
+        typeLine: fields.typeLine,
+        image: fields.image,
+        inCube: inCube.has(card.oracle_id),
+      });
+    }
+  }
+  return results;
+}
+
+function writeRoute(paths: CubePaths, client: ScryfallClient) {
+  const lookup = async (oracleId: string): Promise<string | undefined> =>
+    (await client.collection([{ oracle_id: oracleId }])).cards[0]?.name;
   return (url: string, method: string | undefined): Write | undefined => {
+    if (url === "/api/cards" && method === "POST") {
+      return (body) => addCard(paths, body, lookup);
+    }
     if (url === "/api/cards" && method === "PATCH") {
       return (body) => patchCards(paths, body);
     }
@@ -126,7 +174,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
         userAgent: USER_AGENT,
         cache: new FileCache(options.cacheDir),
       });
-      const route = writeRoute(paths);
+      const route = writeRoute(paths, client);
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
 
@@ -146,7 +194,20 @@ export function workbench(options: WorkbenchOptions): Plugin {
       });
 
       server.middlewares.use((req, res, next) => {
-        const url = req.url?.split("?")[0] ?? "";
+        const requestUrl = new URL(req.url ?? "/", "http://workbench.local");
+        const url = requestUrl.pathname;
+        if (url === "/api/search" && req.method === "GET") {
+          search(paths, client, requestUrl.searchParams.get("q") ?? "").then(
+            (results) => {
+              send(res, 200, results);
+            },
+            (error: unknown) => {
+              const status = error instanceof ScryfallError ? scryfallStatus(error.status) : 502;
+              send(res, status, { error: error instanceof Error ? error.message : String(error) });
+            },
+          );
+          return;
+        }
         if (url === "/api/cube" && req.method === "GET") {
           loadWorkbench(paths, client).then(
             (data) => {

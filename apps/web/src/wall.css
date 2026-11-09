@@ -241,14 +241,9 @@
   transition: width 300ms var(--lift);
 }
 
-.gauge[data-verdict="over"] .gauge-fill,
-.gauge[data-verdict="under"] .gauge-fill {
-  background: var(--cut);
-}
-
 .gauge[data-verdict="over"] strong,
 .gauge[data-verdict="under"] strong {
-  color: var(--cut);
+  color: var(--accent);
 }
 
 .gauge[data-verdict="ok"] strong {

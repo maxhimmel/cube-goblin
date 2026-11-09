@@ -2,7 +2,7 @@ import type { CardPatch, Section, Tag, WorkbenchCard } from "@repo/cube/browser"
 import { CARD_STATUSES, TAG_KINDS } from "@repo/cube/browser";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { sendChanges } from "./api.ts";
 import { useCardEdit } from "./edits.ts";
 import { findTag, useCreateTag } from "./tags.ts";
@@ -89,6 +89,8 @@ function TagsField({
 }): ReactNode {
   const [input, setInput] = useState("");
   const [creating, setCreating] = useState<string | undefined>(undefined);
+  const [active, setActive] = useState(-1);
+  const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const createTag = useCreateTag();
 
@@ -102,6 +104,15 @@ function TagsField({
     .filter((tag) => !tags.includes(tag.id))
     .filter((tag) => tag.label.toLowerCase().includes(query) || tag.id.includes(query))
     .slice(0, MAX_SUGGESTIONS);
+  const current = active < suggestions.length ? active : -1;
+  const optionId = (index: number): string => `${listId}-${String(index)}`;
+
+  function pick(tag: Tag): void {
+    setInput("");
+    setCreating(undefined);
+    setActive(-1);
+    add(tag.id);
+  }
 
   function add(id: string): void {
     if (!tags.includes(id)) {
@@ -152,36 +163,62 @@ function TagsField({
       >
         <input
           ref={inputRef}
+          role="combobox"
           aria-label="Tag name"
+          aria-autocomplete="list"
+          aria-expanded={suggestions.length > 0}
+          aria-controls={listId}
+          aria-activedescendant={current >= 0 ? optionId(current) : undefined}
           value={input}
           onChange={(event) => {
             setInput(event.target.value);
             setCreating(undefined);
+            setActive(-1);
+          }}
+          onKeyDown={(event) => {
+            const count = suggestions.length;
+            if (event.key === "ArrowDown" && count > 0) {
+              event.preventDefault();
+              setActive((current + 1) % count);
+            } else if (event.key === "ArrowUp" && count > 0) {
+              event.preventDefault();
+              setActive(current <= 0 ? count - 1 : current - 1);
+            } else if (event.key === "Enter" && current >= 0) {
+              const tag = suggestions[current];
+              if (tag) {
+                event.preventDefault();
+                pick(tag);
+              }
+            } else if (event.key === "Escape" && (current >= 0 || input !== "")) {
+              event.preventDefault();
+              setActive(-1);
+              setInput("");
+            }
           }}
           placeholder="pick a tag"
         />
         <button type="submit">Add tag</button>
       </form>
-      {suggestions.length > 0 && (
-        <ul className="suggestions" aria-label="Suggested tags">
-          {suggestions.map((tag) => (
-            <li key={tag.id}>
-              <button
-                type="button"
-                className="suggestion"
-                data-kind={tag.kind}
-                onClick={() => {
-                  setInput("");
-                  setCreating(undefined);
-                  add(tag.id);
-                }}
-              >
-                + {tag.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="suggestions" id={listId} role="listbox" aria-label="Suggested tags">
+        {suggestions.map((tag, index) => (
+          <li
+            key={tag.id}
+            id={optionId(index)}
+            role="option"
+            aria-selected={index === current}
+            className="suggestion"
+            data-kind={tag.kind}
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+            onClick={() => {
+              pick(tag);
+            }}
+          >
+            + {tag.label}
+          </li>
+        ))}
+      </ul>
       <div aria-live="polite">
         {creating !== undefined && (
           <div className="create-tag" role="group" aria-label="Create tag">

@@ -109,7 +109,7 @@ function AddForm({
       if (!editsPending()) {
         await queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
       }
-      await navigate({ to: "/card/$slug", params: { slug: slugify(card.name) } });
+      await navigate({ to: "/", search: { card: slugify(card.name) } });
     },
     onError: (error: Error) => {
       showToast({ message: error.message, tone: "error" });
@@ -118,7 +118,7 @@ function AddForm({
 
   return (
     <div className="add-page">
-      <Link to="/">← all cards</Link>
+      <Link to="/">← back to the Wall</Link>
       <h1>{outgoing ? `Swap out ${outgoing.name}` : "Add a card"}</h1>
       {outgoing && (
         <p className="muted">

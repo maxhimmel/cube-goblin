@@ -14,7 +14,7 @@ test("share doc is one self-contained file", async () => {
   expect(html).not.toMatch(/<script[^>]+src=/u);
   expect(html).not.toMatch(/<link[^>]+rel="stylesheet"/u);
   expect(html).not.toContain("/api/cube");
-  expect(html.match(/data:font\/[a-z0-9+-]+/gu) ?? []).toEqual(["data:font/woff2"]);
+  expect(new Set(html.match(/data:font\/[a-z0-9+-]+/gu))).toEqual(new Set(["data:font/woff2"]));
   const { size } = await stat(DIST);
   console.log(`dist/index.html: ${(size / 1024 / 1024).toFixed(2)} MB`);
 });
@@ -26,12 +26,12 @@ test("friend reviews from file://, saves a copy, and the copy carries the review
   if (!FIRST) {
     throw new Error("empty snapshot");
   }
-  await page.goto(DOC_URL);
+  await page.goto(`${DOC_URL}#/cards`);
   await expect(page.locator(".grid img")).toHaveCount(snapshot.cards.length);
 
   await page.getByLabel("Your name").fill("Sam");
   await page.locator(".grid a").first().click();
-  await expect(page).toHaveURL(new RegExp(`#/card/${FIRST.slug}$`, "u"));
+  await expect(page).toHaveURL(new RegExp(`#/cards\\?card=${FIRST.slug}$`, "u"));
   await expect(page.getByRole("heading", { name: FIRST.name })).toBeVisible();
 
   await page.getByRole("button", { name: "cut" }).click();

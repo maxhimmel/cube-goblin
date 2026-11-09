@@ -5,12 +5,19 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
 } from "@tanstack/react-router";
-import { CardPage } from "./pages/card-page.tsx";
 import { GridPage } from "./pages/grid-page.tsx";
+import { WallPage } from "./pages/wall-page.tsx";
 import { Shell } from "./shell.tsx";
 
+function byParam(search: Record<string, unknown>): { by?: string | undefined } {
+  return typeof search["by"] === "string" ? { by: search["by"] } : {};
+}
+
 const rootRoute = createRootRoute({
+  validateSearch: (search: Record<string, unknown>): { card?: string | undefined } =>
+    typeof search["card"] === "string" ? { card: search["card"] } : {},
   component: () => (
     <Shell>
       <Outlet />
@@ -18,18 +25,26 @@ const rootRoute = createRootRoute({
   ),
 });
 
-const gridRoute = createRoute({
+const wallRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  validateSearch: (search: Record<string, unknown>): { by?: string } =>
-    typeof search["by"] === "string" ? { by: search["by"] } : {},
+  validateSearch: byParam,
+  component: WallPage,
+});
+
+const gridRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/cards",
+  validateSearch: byParam,
   component: GridPage,
 });
 
 const cardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/card/$slug",
-  component: CardPage,
+  beforeLoad: ({ params }) => {
+    redirect({ to: "/", search: { card: params.slug }, replace: true, throw: true });
+  },
 });
 
 const tagsRoute = createRoute({
@@ -50,7 +65,7 @@ const addRoute = createRoute({
 });
 
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([gridRoute, cardRoute, tagsRoute, addRoute]),
+  routeTree: rootRoute.addChildren([wallRoute, gridRoute, cardRoute, tagsRoute, addRoute]),
   history: createHashHistory(),
 });
 

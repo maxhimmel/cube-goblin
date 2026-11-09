@@ -7,7 +7,10 @@ import { queryClient } from "./query-client.ts";
 import { router } from "./router.tsx";
 import "mana-font/css/mana.css";
 import "./mana.css";
+import "./fonts.css";
 import "./styles.css";
+import "./wall.css";
+import "./pane.css";
 
 const root = document.getElementById("root");
 if (!root) {

@@ -7,7 +7,7 @@ import { CUBE_CHANGED_EVENT, CUBE_QUERY_KEY, fetchCube } from "../workbench/api.
 import { AddPage } from "../workbench/add-page.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor } from "../workbench/card-editor.tsx";
-import { editsPending, useSaving } from "../workbench/edits.ts";
+import { editsPending, runCardEdit, useSaving } from "../workbench/edits.ts";
 import { useSelection } from "../workbench/selection.ts";
 import { StatsPanel } from "../workbench/stats-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
@@ -42,8 +42,12 @@ function Toolbar(): ReactNode {
   return (
     <>
       <span className="badge">workbench · live</span>
-      <Link to="/add">Add card</Link>
-      <Link to="/tags">Tags</Link>
+      <Link to="/add" className="toolbar-link">
+        Add card
+      </Link>
+      <Link to="/tags" className="toolbar-link">
+        Tags
+      </Link>
       <span className="muted" data-testid="save-state">
         {saving ? "saving…" : "all changes saved"}
       </span>
@@ -70,6 +74,16 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
 
 export const mode: Mode = {
   name: "workbench",
+  moveCard: (card, status) => {
+    if (card.status === status) {
+      return;
+    }
+    runCardEdit({
+      label: `${card.name} → ${status}`,
+      changes: [{ slug: card.slug, patch: { status } }],
+      undo: [{ slug: card.slug, patch: { status: card.status } }],
+    });
+  },
   useCube: () => {
     const data = useWorkbench();
     return (
@@ -78,6 +92,7 @@ export const mode: Mode = {
         sections: data.sections,
         vocabulary: data.vocabulary,
         label: "live from cube/cards",
+        size: data.size,
       }
     );
   },

@@ -1,7 +1,7 @@
 ---
 id: T-001
 title: Editing workbench
-status: doing
+status: done
 ---
 
 Edit the cube in a local web app instead of hand-editing JSON. Edits save to `cube/cards/*.json`, so git history is the edit log. Goals: [VISION.md](../VISION.md).

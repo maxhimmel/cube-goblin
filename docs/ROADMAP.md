@@ -6,15 +6,12 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 - **Updated**: 2026-11-09
 - **State**: `main` has the monorepo, CLI, first batch (143 cards), share doc, roadmap, and all six T-001 slices. `pnpm dev` runs the workbench on live `cube/cards` data. Layout and look follow [views.md](design/views.md) (T-003): the home view is the Wall (columns by mana value, color, or card type; card strips show name, cost, and color; hover shows the whole card), with a draft-size gauge and a prospects tray; dragging a strip between them changes its status. `?card=<slug>` opens a slide-in detail pane over any view (`#/card/<slug>` redirects to it); the pane edits status, section, tags (keyboard combobox), and notes with auto-save and undo. Tags come from `cube/tags.json` (kinds `archetype`/`group`); `#/tags` renames tags and changes their kind. The vocabulary is still empty. The image grid lives at `#/cards`, with "Organize by" (`?by=`) and checkbox multi-select with a bulk bar (status, section, add/remove tag, one undo). `#/add` searches Scryfall (full search syntax) and adds a card; `#/add?replaces=<slug>` (the "Swap for another card…" link) swaps one: the old card becomes cut and keeps its notes, and tags copy if you tick the box. Adds append a line to `cube/inbox/workbench.txt`, which the card's `source` points to. A stats panel beside the grid shows the draft count against the target size in `cube.config.json`, plus counts by status, color, mana value (nonland cards) and tag, for draft / draft+prospects / all / selected cards. Card images come from a local disk cache (`/api/image`; [rendering-and-sharing.md](research/rendering-and-sharing.md#workbench-dev-server-2026-11-08)) and fall back to the card name. Mana costs render with the Mana font ([mana-font.md](research/mana-font.md)); the share doc inlines only woff2 fonts (about 3.4 MB in total). Palette: binder navy with a violet accent, Rubik (Latin subset only, inlined in the share doc). Decisions: [T-001](tickets/T-001-editing-workbench.md#decisions-user-2026-11-09), [T-003](tickets/T-003-visual-design-pass.md#decisions-user-2026-11-09). `eslint-plugin-react-hooks` recommended rules lint every package, and `lint` fails on any warning ([tooling.md](research/tooling.md#gotchas)). Scryfall card data is cached per oracle id (`ScryfallClient.byOracleIds`), so an add fetches only the new card. E2E runs in Chromium only (user, 2026-11-09). A change on disk during the first page load used to be dropped (the intermittent "write API" e2e failure); the workbench now cancels and refetches. Known gaps: a cut card shows "In cube" in search and comes back by changing its status, not by re-adding; Scryfall `reversible_card` layouts (no top-level oracle id) don't show in search; tag-removal undo re-appends the tag at the end; an edit queued behind a failed one keeps an undo built from the failed state; a disk failure mid-write can leave a partial batch or an orphan batch line. Design notes: [rendering-and-sharing.md](research/rendering-and-sharing.md#workbench-dev-server-2026-11-08).
-- **Next step**: the user tries the new workbench (`pnpm dev`), which closes [T-001](tickets/T-001-editing-workbench.md) and checks T-003. Then, in Next order: [T-002](tickets/T-002-trim-draft-to-target.md) (draft is over target); [T-009](tickets/T-009-archive-and-delete.md) needs the user's answers.
+- **Next step**: T-001 and T-003 are done (the user tried the workbench, 2026-11-09). A draft over target is normal while tweaking; the gauge shows it in the accent color, not red. Next is [T-004](tickets/T-004-stats-and-charts.md) (Insights view), then the rest of Next in order; [T-009](tickets/T-009-archive-and-delete.md) needs the user's answers. [T-002](tickets/T-002-trim-draft-to-target.md) moved to Later.
 
 ## Now
 
-- [T-001: Editing workbench](tickets/T-001-editing-workbench.md)
-
 ## Next
 
-- [T-002: Trim draft to target size](tickets/T-002-trim-draft-to-target.md)
 - [T-004: Stats and charts](tickets/T-004-stats-and-charts.md)
 - [T-011: Board view](tickets/T-011-board-view.md)
 - [T-012: Tag overlap view](tickets/T-012-tag-overlap-view.md)
@@ -23,6 +20,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Later
 
+- [T-002: Trim draft to target size](tickets/T-002-trim-draft-to-target.md)
 - [T-013: Mechanic detection wizard](tickets/T-013-mechanic-detection-wizard.md)
 - [T-005: Synergy and combo map](tickets/T-005-synergy-and-combo-map.md)
 - [T-006: Share doc polish](tickets/T-006-share-doc-polish.md)
@@ -30,6 +28,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-001: Editing workbench](tickets/T-001-editing-workbench.md)
 - [T-003: Visual design pass](tickets/T-003-visual-design-pass.md)
 - [T-008: React hooks lint rules](tickets/T-008-react-hooks-lint.md)
 - [T-010: Per-card Scryfall cache](tickets/T-010-per-card-scryfall-cache.md)

@@ -1,9 +1,10 @@
 import { mode } from "#mode";
 import type { Column, ColumnAxis } from "@repo/cube/browser";
 import { COLUMN_AXES, colorKey, columnsBy } from "@repo/cube/browser";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { CSSProperties, PointerEvent, ReactNode } from "react";
 import { useState } from "react";
+import { CardLink } from "../card-pane.tsx";
 import { ManaCost, ManaSymbol } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
 
@@ -61,9 +62,8 @@ function Strip({
 }): ReactNode {
   return (
     <li className="strip-cell">
-      <Link
-        to="/card/$slug"
-        params={{ slug: card.slug }}
+      <CardLink
+        slug={card.slug}
         className="strip"
         style={{ "--stripe": stripe(card) } as CSSProperties}
         onPointerEnter={(event: PointerEvent<HTMLAnchorElement>) => {
@@ -83,7 +83,7 @@ function Strip({
       >
         <span className="strip-name">{card.name}</span>
         <ManaCost cost={card.manaCost} />
-      </Link>
+      </CardLink>
     </li>
   );
 }
@@ -141,7 +141,7 @@ function Columns({
 
 export function WallPage(): ReactNode {
   const cube = mode.useCube();
-  const { by } = useSearch({ from: "/wall" });
+  const { by } = useSearch({ from: "/" });
   const navigate = useNavigate();
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [trayOpen, setTrayOpen] = useState(true);
@@ -177,7 +177,10 @@ export function WallPage(): ReactNode {
               type="button"
               aria-pressed={option.id === axis}
               onClick={() => {
-                void navigate({ to: "/wall", search: option.id === "mv" ? {} : { by: option.id } });
+                void navigate({
+                  to: "/",
+                  search: (prev) => ({ ...prev, by: option.id === "mv" ? undefined : option.id }),
+                });
               }}
             >
               {option.label}

@@ -1,17 +1,18 @@
 import { mode } from "#mode";
 import type { SnapshotCard } from "@repo/cube/browser";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { CardImage } from "../card-image.tsx";
+import { CardLink } from "../card-pane.tsx";
 import { DEFAULT_ORGANIZER, ORGANIZE_ID, organizers } from "../grid/piles.ts";
 
 function Tile({ card }: { card: SnapshotCard }): ReactNode {
   const mark = mode.useTileMark(card.slug);
   return (
     <li className="tile-cell">
-      <Link to="/card/$slug" params={{ slug: card.slug }} className="tile" {...mark}>
+      <CardLink slug={card.slug} className="tile" {...mark}>
         <CardImage key={card.image} src={card.image} alt={card.name} width={146} height={204} />
-      </Link>
+      </CardLink>
       <mode.SelectCard slug={card.slug} name={card.name} />
     </li>
   );
@@ -19,7 +20,7 @@ function Tile({ card }: { card: SnapshotCard }): ReactNode {
 
 export function GridPage(): ReactNode {
   const cube = mode.useCube();
-  const { by } = useSearch({ from: "/" });
+  const { by } = useSearch({ from: "/cards" });
   const navigate = useNavigate();
   if (!cube) {
     return <p className="muted">Loading cube…</p>;
@@ -45,8 +46,11 @@ export function GridPage(): ReactNode {
               onChange={(event) => {
                 const next = event.target.value;
                 void navigate({
-                  to: "/",
-                  search: next === DEFAULT_ORGANIZER ? {} : { by: next },
+                  to: "/cards",
+                  search: (prev) => ({
+                    ...prev,
+                    by: next === DEFAULT_ORGANIZER ? undefined : next,
+                  }),
                 });
               }}
             >

@@ -62,7 +62,7 @@ async function readEntry(cardsDir: string, slug: string): Promise<CardEntry> {
 
 test("workbench shows live data from cube/cards", async ({ page, workbench }) => {
   const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
-  await page.goto(workbench.url);
+  await page.goto(`${workbench.url}#/cards`);
   await expect(page.getByTestId("cube-label")).toContainText("live");
   await expect(page.locator(".grid img")).toHaveCount(files.length);
   await expect(page.getByLabel("Your name")).toHaveCount(0);
@@ -82,7 +82,7 @@ test("an edit on disk shows up without a reload", async ({ page, workbench }) =>
   await pressed("cut");
   await expect(page.getByLabel("Notes")).toHaveValue("edited on disk");
 
-  await page.getByRole("link", { name: "← all cards" }).click();
+  await page.getByRole("link", { name: "Cards", exact: true }).click();
   await expect(page.locator('[data-pile="cut"] img[alt="Abrade"]')).toBeVisible();
   await expect(page.locator('[data-pile="draft"] img[alt="Abrade"]')).toHaveCount(0);
 });
@@ -219,7 +219,7 @@ test("leaving the card right after typing keeps every edit", async ({ page, work
   await page.goto(`${workbench.url}#/card/${slug}`);
   await page.getByRole("button", { name: "cut", exact: true }).click();
   await page.getByLabel("Notes").fill("left in a hurry");
-  await page.getByRole("link", { name: "← all cards" }).click();
+  await page.getByRole("link", { name: "Cards", exact: true }).click();
   await expect(page.locator('[data-pile="cut"] img[alt="Essence Scatter"]')).toBeVisible();
   await expect.poll(async () => (await disk()).notes).toBe("left in a hurry");
   expect((await disk()).status).toBe("cut");
@@ -323,7 +323,7 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
   const before = await Promise.all(slugs.map((slug) => readEntry(workbench.cardsDir, slug)));
   const disk = (): Promise<CardEntry[]> =>
     Promise.all(slugs.map((slug) => readEntry(workbench.cardsDir, slug)));
-  await page.goto(workbench.url);
+  await page.goto(`${workbench.url}#/cards`);
 
   for (const name of names) {
     await page
@@ -387,7 +387,7 @@ test("the grid organizes by status, section, and tag kind", async ({ page, workb
     data: { changes: [{ slug, patch: { addTags: ["pile-test", "removal"], section: "pirates" } }] },
   });
   expect(patched.status()).toBe(200);
-  await page.goto(workbench.url);
+  await page.goto(`${workbench.url}#/cards`);
   const organize = page.getByLabel("Organize by");
   const tile = (pile: string) => page.locator(`[data-pile="${pile}"] img[alt="Clarion Conqueror"]`);
 
@@ -421,7 +421,7 @@ test("adding a card from Scryfall writes it and a workbench batch line", async (
   page,
   workbench,
 }) => {
-  await page.goto(workbench.url);
+  await page.goto(`${workbench.url}#/cards`);
   await page.getByRole("link", { name: "Add card" }).click();
   await page.getByRole("button", { name: "draft", exact: true }).click();
   await page.getByLabel("Search Scryfall").fill('!"Lightning Bolt"');
@@ -507,7 +507,7 @@ test("stats count the draft against the target and follow edits", async ({ page,
   const config = JSON.parse(
     await readFile(join(workbench.cardsDir, "..", "..", "cube.config.json"), "utf8"),
   ) as { size: { min: number; max: number } };
-  await page.goto(workbench.url);
+  await page.goto(`${workbench.url}#/cards`);
   const stats = page.getByRole("complementary", { name: "Cube stats" });
   const drafted = await draftCount(workbench.cardsDir);
   await expect(stats.getByTestId("draft-size")).toContainText(
@@ -538,7 +538,7 @@ test("stats count the draft against the target and follow edits", async ({ page,
 
 test("mana costs render as symbols with a text alternative", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/card/banishing-light`);
-  const cost = page.getByRole("img", { name: /^Mana cost: /u });
+  const cost = page.getByRole("complementary").getByRole("img", { name: /^Mana cost: /u });
   await expect(cost).toBeVisible();
   await expect(cost.locator("i.ms.ms-cost")).not.toHaveCount(0);
   await expect(cost).not.toHaveAccessibleName(/[{}]/u);
@@ -552,8 +552,37 @@ test("the large card image keeps the card's shape", async ({ page, workbench }) 
   expect((box?.width ?? 0) / (box?.height ?? 1)).toBeCloseTo(488 / 680, 2);
 });
 
-test("card images come from the local image cache", async ({ page, workbench }) => {
+test("the Wall shows names and costs, previews on hover, and opens the pane", async ({
+  page,
+  workbench,
+}) => {
   await page.goto(workbench.url);
+  const strip = page.getByRole("link", { name: /^Bite Down/u });
+  await expect(strip).toBeVisible();
+  await expect(strip.getByRole("img", { name: /^Mana cost: /u })).toBeVisible();
+  await expect(page.locator('[data-column="1"] .column-count').first()).not.toHaveText("0");
+
+  await strip.hover();
+  await expect(page.locator("img.preview")).toBeVisible();
+
+  await strip.click();
+  await expect(page).toHaveURL(/[?&]card=bite-down/u);
+  const pane = page.getByRole("complementary", { name: "Bite Down" });
+  await expect(pane.getByRole("heading", { name: "Bite Down" })).toBeFocused();
+  await expect(strip).toHaveAttribute("aria-current", "page");
+
+  await page.getByRole("button", { name: "Color" }).click();
+  await expect(page).toHaveURL(/by=color/u);
+  await expect(pane).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(pane).toHaveCount(0);
+  await expect(page).not.toHaveURL(/card=/u);
+  await expect(page).toHaveURL(/by=color/u);
+});
+
+test("card images come from the local image cache", async ({ page, workbench }) => {
+  await page.goto(`${workbench.url}#/cards`);
   const first = page.locator(".grid img").first();
   await expect(first).toHaveAttribute("src", /^\/api\/image\?u=https%3A%2F%2Fcards\.scryfall\.io/u);
   await expect

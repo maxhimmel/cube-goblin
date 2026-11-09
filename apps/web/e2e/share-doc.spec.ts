@@ -26,12 +26,12 @@ test("friend reviews from file://, saves a copy, and the copy carries the review
   if (!FIRST) {
     throw new Error("empty snapshot");
   }
-  await page.goto(DOC_URL);
+  await page.goto(`${DOC_URL}#/cards`);
   await expect(page.locator(".grid img")).toHaveCount(snapshot.cards.length);
 
   await page.getByLabel("Your name").fill("Sam");
   await page.locator(".grid a").first().click();
-  await expect(page).toHaveURL(new RegExp(`#/card/${FIRST.slug}$`, "u"));
+  await expect(page).toHaveURL(new RegExp(`#/cards\\?card=${FIRST.slug}$`, "u"));
   await expect(page.getByRole("heading", { name: FIRST.name })).toBeVisible();
 
   await page.getByRole("button", { name: "cut" }).click();

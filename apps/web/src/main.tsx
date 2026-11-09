@@ -10,6 +10,7 @@ import "./mana.css";
 import "./fonts.css";
 import "./styles.css";
 import "./wall.css";
+import "./pane.css";
 
 const root = document.getElementById("root");
 if (!root) {

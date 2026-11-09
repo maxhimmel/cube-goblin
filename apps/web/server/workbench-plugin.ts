@@ -18,6 +18,7 @@ import {
   patchCard,
   patchCards,
   readCards,
+  readConfig,
   readSections,
   readTags,
   slugify,
@@ -60,10 +61,11 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
 }
 
 async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<Workbench> {
-  const [entries, sections, vocabulary] = await Promise.all([
+  const [entries, sections, vocabulary, config] = await Promise.all([
     readCards(paths),
     readSections(paths),
     readTags(paths),
+    readConfig(paths),
   ]);
   const { cards } = await client.collection(
     entries.map((entry) => ({ oracle_id: entry.oracleId })),
@@ -87,7 +89,7 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
       notes: entry.notes,
     });
   }
-  return { cards: workbenchCards, sections, vocabulary };
+  return { cards: workbenchCards, sections, vocabulary, size: config.size };
 }
 
 type WriteResult = UpdateResult | TagResult | BatchResult | AddResult;

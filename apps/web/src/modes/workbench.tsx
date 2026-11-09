@@ -9,6 +9,7 @@ import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor } from "../workbench/card-editor.tsx";
 import { editsPending, useSaving } from "../workbench/edits.ts";
 import { useSelection } from "../workbench/selection.ts";
+import { StatsPanel } from "../workbench/stats-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
@@ -84,6 +85,7 @@ export const mode: Mode = {
   SelectCard,
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,
+  Stats: () => <StatsPanel cube={useWorkbench()} />,
   AddPage: ({ replaces }) => (
     <AddPage key={replaces ?? ""} cube={useWorkbench()} replaces={replaces} />
   ),

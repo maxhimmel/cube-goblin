@@ -5,6 +5,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { queryClient } from "./query-client.ts";
 import { router } from "./router.tsx";
+import "mana-font/css/mana.css";
+import "./mana.css";
 import "./styles.css";
 
 const root = document.getElementById("root");

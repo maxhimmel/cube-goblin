@@ -20,5 +20,6 @@ export interface Mode {
   SelectCard: (props: { slug: string; name: string }) => ReactNode;
   SelectPile: (props: { slugs: string[]; label: string }) => ReactNode;
   BulkBar: () => ReactNode;
+  Stats: () => ReactNode;
   AddPage: (props: { replaces: string | undefined }) => ReactNode;
 }

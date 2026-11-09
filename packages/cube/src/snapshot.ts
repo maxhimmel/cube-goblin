@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cardStatusSchema, sectionSchema, tagSchema } from "./schema.ts";
+import { cardStatusSchema, cubeConfigSchema, sectionSchema, tagSchema } from "./schema.ts";
 
 export const snapshotCardSchema = z.strictObject({
   slug: z.string(),
@@ -33,6 +33,7 @@ export const workbenchSchema = z.strictObject({
   cards: z.array(workbenchCardSchema),
   sections: z.array(sectionSchema),
   vocabulary: z.array(tagSchema),
+  size: cubeConfigSchema.shape.size,
 });
 
 export const searchResultSchema = z.strictObject({

@@ -2,12 +2,14 @@ import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
+import { manaFontWoff2Only } from "./server/mana-font-plugin.ts";
 import { workbench } from "./server/workbench-plugin.ts";
 
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
 export default defineConfig(({ command }) => ({
   plugins: [
+    manaFontWoff2Only(),
     react(),
     viteSingleFile(),
     workbench({

@@ -14,6 +14,7 @@ test("share doc is one self-contained file", async () => {
   expect(html).not.toMatch(/<script[^>]+src=/u);
   expect(html).not.toMatch(/<link[^>]+rel="stylesheet"/u);
   expect(html).not.toContain("/api/cube");
+  expect(html.match(/data:font\/[a-z0-9+-]+/gu) ?? []).toEqual(["data:font/woff2"]);
   const { size } = await stat(DIST);
   console.log(`dist/index.html: ${(size / 1024 / 1024).toFixed(2)} MB`);
 });

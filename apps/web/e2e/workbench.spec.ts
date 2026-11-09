@@ -494,3 +494,50 @@ test("a swap opened by URL starts from the old card's status and section", async
   );
   await expect(page.getByLabel("Section")).toHaveValue("dinosaurs");
 });
+
+async function draftCount(cardsDir: string): Promise<number> {
+  const files = (await readdir(cardsDir)).filter((file) => file.endsWith(".json"));
+  const entries = await Promise.all(
+    files.map((file) => readEntry(cardsDir, file.replace(/\.json$/u, ""))),
+  );
+  return entries.filter((entry) => entry.status === "draft").length;
+}
+
+test("stats count the draft against the target and follow edits", async ({ page, workbench }) => {
+  const config = JSON.parse(
+    await readFile(join(workbench.cardsDir, "..", "..", "cube.config.json"), "utf8"),
+  ) as { size: { min: number; max: number } };
+  await page.goto(workbench.url);
+  const stats = page.getByRole("complementary", { name: "Cube stats" });
+  const drafted = await draftCount(workbench.cardsDir);
+  await expect(stats.getByTestId("draft-size")).toContainText(
+    `${String(drafted)} in draft · target ${String(config.size.min)}–${String(config.size.max)}`,
+  );
+  await expect(stats.getByTestId("stats-total")).toHaveText(`${String(drafted)} cards`);
+  const colors = stats.getByRole("table", { name: "Color" }).getByRole("cell");
+  const counts = (await colors.allTextContents()).map(Number);
+  expect(counts.reduce((sum, value) => sum + value, 0)).toBe(drafted);
+
+  const slug = "dancing-from-dark-to-dawn";
+  const entry = await readEntry(workbench.cardsDir, slug);
+  const next = entry.status === "draft" ? "cut" : "draft";
+  await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug, patch: { status: next } }] },
+  });
+  const after = drafted + (next === "draft" ? 1 : -1);
+  await expect(stats.getByTestId("draft-size")).toContainText(`${String(after)} in draft`);
+
+  await stats.getByLabel("Count cards in").selectOption("all");
+  await expect(stats.getByRole("table", { name: "Status" })).toBeVisible();
+  await page.getByRole("checkbox", { name: "Select Abrade", exact: true }).first().check();
+  await stats.getByLabel("Count cards in").selectOption("selected");
+  await expect(stats.getByTestId("stats-total")).toHaveText("1 card");
+  await page.getByRole("button", { name: "Clear selection" }).click();
+});
+
+test("mana costs render as symbols with a text alternative", async ({ page, workbench }) => {
+  await page.goto(`${workbench.url}#/card/banishing-light`);
+  const cost = page.getByRole("img", { name: /^Mana cost \{/u });
+  await expect(cost).toBeVisible();
+  await expect(cost.locator("i.ms.ms-cost")).not.toHaveCount(0);
+});

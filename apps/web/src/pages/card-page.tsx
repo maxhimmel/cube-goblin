@@ -1,6 +1,7 @@
 import { mode } from "#mode";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { ManaCost } from "../mana.tsx";
 
 export function CardPage(): ReactNode {
   const { slug } = useParams({ from: "/card/$slug" });
@@ -24,7 +25,8 @@ export function CardPage(): ReactNode {
         <Link to="/">← all cards</Link>
         <h1>{card.name}</h1>
         <p className="muted">
-          {card.manaCost} · {card.typeLine}
+          <ManaCost cost={card.manaCost} /> {card.manaCost && "· "}
+          {card.typeLine}
         </p>
         <p className="oracle">{card.oracleText}</p>
         <a href={card.scryfallUri} target="_blank" rel="noreferrer">

@@ -2,7 +2,7 @@ import type { CardPatch, Section, Tag, WorkbenchCard } from "@repo/cube/browser"
 import { CARD_STATUSES, TAG_KINDS } from "@repo/cube/browser";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { sendChanges } from "./api.ts";
 import { useCardEdit } from "./edits.ts";
 import { findTag, useCreateTag } from "./tags.ts";
@@ -18,7 +18,9 @@ function NotesField({ slug, notes, save }: { slug: string; notes: string; save: 
   const latest = useRef<string | undefined>(undefined);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const saveRef = useRef(save);
-  saveRef.current = save;
+  useLayoutEffect(() => {
+    saveRef.current = save;
+  }, [save]);
 
   function flush(): void {
     clearTimeout(timer.current);

@@ -16,6 +16,7 @@ Set up 2026-11-08. The config is the source of truth: `package.json` files, `tur
 - **zx doesn't run `.ts` natively on Node 22.** Run TS through `tsx`; zx is imported as a library ([zx TypeScript docs](https://google.github.io/zx/typescript)).
 - **ESLint TS configs** (`eslint.config.ts`) need `jiti` installed.
 - **Type-aware lint**: `typescript-eslint` `strictTypeChecked` + `stylisticTypeChecked` with `projectService` ([typed linting](https://typescript-eslint.io/getting-started/typed-linting)). The strict configs aren't semver-stable, so upgrades may add errors.
+- **React hooks lint**: `eslint-plugin-react-hooks` `configs.flat.recommended` (rules of hooks plus React Compiler rules; [README](https://github.com/facebook/react/tree/main/packages/eslint-plugin-react-hooks), [rules](https://react.dev/reference/eslint-plugin-react-hooks)). Some rules default to `warn`, so every `lint` script runs `eslint . --max-warnings 0`.
 - **Custom rule `repo/no-comments`** enforces the no-comments convention. ESLint directives and shebangs are exempt.
 - **markdownlint**: `extends` resolves the npm package `@repo/markdownlint-config`; verified working. MD013 (line length) is off.
 - **pnpm 10** blocks build scripts by default; `esbuild` and `lefthook` are allowed in `pnpm-workspace.yaml`. Lefthook's postinstall installs the hooks ([lefthook npm docs](https://github.com/evilmartians/lefthook/blob/master/docs/installation/node.md)).

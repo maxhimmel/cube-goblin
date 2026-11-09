@@ -14,11 +14,17 @@ import { TagsPage } from "../workbench/tags-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
 
+async function refetchCube(): Promise<void> {
+  if (editsPending()) {
+    return;
+  }
+  await queryClient.cancelQueries({ queryKey: CUBE_QUERY_KEY });
+  await queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
+}
+
 if (import.meta.hot) {
   import.meta.hot.on(CUBE_CHANGED_EVENT, () => {
-    if (!editsPending()) {
-      void queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
-    }
+    void refetchCube();
   });
 }
 

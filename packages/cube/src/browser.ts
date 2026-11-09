@@ -49,3 +49,11 @@ export type { Column, ColumnAxis } from "./columns.ts";
 export { slugify } from "./slug.ts";
 export { COLORS, CURVE_TOP, cubeStats, isLand } from "./stats.ts";
 export type { Count, CubeStats, StatCard } from "./stats.ts";
+export {
+  CARD_FUNCTIONS,
+  CARD_FUNCTION_IDS,
+  FUNCTION_ORACLE_TAG_IDS,
+  cardFunctions,
+  producesFixing,
+} from "./functions.ts";
+export type { CardFunction } from "./functions.ts";

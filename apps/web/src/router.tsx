@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { CardPage } from "./pages/card-page.tsx";
 import { GridPage } from "./pages/grid-page.tsx";
+import { WallPage } from "./pages/wall-page.tsx";
 import { Shell } from "./shell.tsx";
 
 const rootRoute = createRootRoute({
@@ -32,6 +33,14 @@ const cardRoute = createRoute({
   component: CardPage,
 });
 
+const wallRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/wall",
+  validateSearch: (search: Record<string, unknown>): { by?: string } =>
+    typeof search["by"] === "string" ? { by: search["by"] } : {},
+  component: WallPage,
+});
+
 const tagsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tags",
@@ -50,7 +59,7 @@ const addRoute = createRoute({
 });
 
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([gridRoute, cardRoute, tagsRoute, addRoute]),
+  routeTree: rootRoute.addChildren([gridRoute, wallRoute, cardRoute, tagsRoute, addRoute]),
   history: createHashHistory(),
 });
 

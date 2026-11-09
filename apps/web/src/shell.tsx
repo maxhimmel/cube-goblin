@@ -14,6 +14,7 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
         <span className="muted" data-testid="cube-label">
           {cube ? `${String(cube.cards.length)} cards · ${cube.label}` : "loading…"}
         </span>
+        <Link to="/wall">Wall</Link>
         <mode.Toolbar />
       </header>
       <main>{children}</main>

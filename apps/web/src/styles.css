@@ -373,6 +373,13 @@ textarea {
   cursor: pointer;
 }
 
+.suggestion[aria-selected="true"] {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 .suggestion[data-kind="archetype"] {
   border-color: var(--accent);
 }

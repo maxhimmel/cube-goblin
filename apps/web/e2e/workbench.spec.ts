@@ -263,12 +263,46 @@ test("a tag outside the vocabulary needs an explicit create", async ({ page, wor
   });
   await page.getByLabel("Tag name").fill("can");
   await page
-    .getByRole("list", { name: "Suggested tags" })
-    .getByRole("button", { name: "+ Cantrip" })
+    .getByRole("listbox", { name: "Suggested tags" })
+    .getByRole("option", { name: "+ Cantrip" })
     .click();
   await expect
     .poll(async () => (await disk()).tags)
     .toEqual([...before, "artifact-hate", "cantrip"]);
+});
+
+test("the tag picker works from the keyboard", async ({ page, workbench }) => {
+  const slug = "negate";
+  const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
+  const before = (await disk()).tags;
+  await page.goto(`${workbench.url}#/?card=${slug}`);
+  const input = page.getByRole("combobox", { name: "Tag name" });
+  const options = page.getByRole("listbox", { name: "Suggested tags" }).getByRole("option");
+  const { tags: vocabulary } = (await readVocabulary(workbench.cardsDir)) as {
+    tags: { id: string }[];
+  };
+  const first = vocabulary.find((tag) => !before.includes(tag.id));
+  if (!first) {
+    throw new Error("test vocabulary has no free tag");
+  }
+
+  await input.focus();
+  await input.press("ArrowUp");
+  await expect(options.last()).toHaveAttribute("aria-selected", "true");
+  await expect(input).toHaveAttribute(
+    "aria-activedescendant",
+    (await options.last().getAttribute("id")) ?? "",
+  );
+  await input.press("ArrowDown");
+  await expect(options.first()).toHaveAttribute("aria-selected", "true");
+  await input.press("Escape");
+  await expect(page.getByRole("complementary")).toBeVisible();
+  await expect(options.first()).toHaveAttribute("aria-selected", "false");
+
+  await input.press("ArrowDown");
+  await input.press("Enter");
+  await expect.poll(async () => (await disk()).tags).toEqual([...before, first.id]);
+  await expect(input).toBeFocused();
 });
 
 test("the tags page renames a tag without touching card files", async ({ page, workbench }) => {

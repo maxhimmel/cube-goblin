@@ -114,6 +114,27 @@ describe("addCard", () => {
     ).toMatchObject({ ok: false, status: 404 });
   });
 
+  it("rejects swapping out a card that is already cut", async () => {
+    await writeCard(paths, { ...shock, status: "cut" });
+    const result = await addCard(
+      paths,
+      { oracleId: BOLT_ID, status: "draft", replaces: "shock" },
+      lookup,
+    );
+    expect(result).toMatchObject({ ok: false, status: 400 });
+    expect(await readCards(paths)).toHaveLength(1);
+  });
+
+  it("does not look up a card that is already in the cube", async () => {
+    let lookups = 0;
+    const counting: NameLookup = (id) => {
+      lookups += 1;
+      return lookup(id);
+    };
+    await addCard(paths, { oracleId: shock.oracleId, status: "draft" }, counting);
+    expect(lookups).toBe(0);
+  });
+
   it("rejects an unknown section", async () => {
     const result = await addCard(
       paths,

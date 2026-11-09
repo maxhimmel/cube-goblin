@@ -36,6 +36,10 @@ export async function addCard(
     readSections(paths),
     readTags(paths),
   ]);
+  const already = cards.find((card) => card.oracleId === request.oracleId);
+  if (already) {
+    return { ok: false, status: 400, error: `${already.name} is already in the cube` };
+  }
   const name = await lookup(request.oracleId);
   if (name === undefined) {
     return { ok: false, status: 404, error: `No Scryfall card with oracle id ${request.oracleId}` };
@@ -46,6 +50,9 @@ export async function addCard(
       : cards.find((card) => slugify(card.name) === request.replaces);
   if (request.replaces !== undefined && outgoing === undefined) {
     return { ok: false, status: 404, error: `No card "${request.replaces}"` };
+  }
+  if (outgoing?.status === "cut") {
+    return { ok: false, status: 400, error: `${outgoing.name} is already cut` };
   }
   const replaced: CardEntry | undefined = outgoing && { ...outgoing, status: "cut" };
 
@@ -71,12 +78,11 @@ export async function addCard(
   if (problems.length > 0) {
     return { ok: false, status: 400, error: problems.join("\n") };
   }
+  if (replaced) {
+    await writeCard(paths, replaced);
+  }
   await mkdir(dirname(paths.workbenchBatch), { recursive: true });
   await appendFile(paths.workbenchBatch, `${prefix}${text}\n`);
   await writeCard(paths, card);
-  if (replaced) {
-    await writeCard(paths, replaced);
-    return { ok: true, card, replaced };
-  }
-  return { ok: true, card };
+  return replaced ? { ok: true, card, replaced } : { ok: true, card };
 }

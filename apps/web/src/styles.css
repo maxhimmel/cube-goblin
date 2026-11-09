@@ -532,7 +532,7 @@ textarea {
 
 .stat-size [data-verdict="over"],
 .stat-size [data-verdict="under"] {
-  color: var(--cut);
+  color: var(--accent);
 }
 
 .card-fallback {

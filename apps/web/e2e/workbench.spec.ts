@@ -543,3 +543,25 @@ test("mana costs render as symbols with a text alternative", async ({ page, work
   await expect(cost.locator("i.ms.ms-cost")).not.toHaveCount(0);
   await expect(cost).not.toHaveAccessibleName(/[{}]/u);
 });
+
+test("card images come from the local image cache", async ({ page, workbench }) => {
+  await page.goto(workbench.url);
+  const first = page.locator(".grid img").first();
+  await expect(first).toHaveAttribute("src", /^\/api\/image\?u=https%3A%2F%2Fcards\.scryfall\.io/u);
+  await expect
+    .poll(() => first.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0);
+
+  const outside = await page.request.get(
+    `${workbench.url}api/image?u=${encodeURIComponent("https://example.com/x.jpg")}`,
+  );
+  expect(outside.status()).toBe(400);
+});
+
+test("a card image that keeps failing shows the card name", async ({ page, workbench }) => {
+  await page.route("**/api/image?**", (route) => route.fulfill({ status: 502, body: "" }));
+  await page.goto(`${workbench.url}#/card/abrade`);
+  await expect(page.locator(".card-fallback").filter({ hasText: "Abrade" })).toBeVisible({
+    timeout: 10_000,
+  });
+});

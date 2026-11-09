@@ -2,6 +2,7 @@ import { mode } from "#mode";
 import type { SnapshotCard } from "@repo/cube/browser";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { CardImage } from "../card-image.tsx";
 import { DEFAULT_ORGANIZER, ORGANIZE_ID, organizers } from "../grid/piles.ts";
 
 function Tile({ card }: { card: SnapshotCard }): ReactNode {
@@ -9,7 +10,7 @@ function Tile({ card }: { card: SnapshotCard }): ReactNode {
   return (
     <li className="tile-cell">
       <Link to="/card/$slug" params={{ slug: card.slug }} className="tile" {...mark}>
-        <img src={card.image} alt={card.name} loading="lazy" width={146} height={204} />
+        <CardImage src={card.image} alt={card.name} width={146} height={204} />
       </Link>
       <mode.SelectCard slug={card.slug} name={card.name} />
     </li>

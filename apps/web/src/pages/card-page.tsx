@@ -1,6 +1,7 @@
 import { mode } from "#mode";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { CardImage } from "../card-image.tsx";
 import { ManaCost } from "../mana.tsx";
 
 export function CardPage(): ReactNode {
@@ -20,7 +21,15 @@ export function CardPage(): ReactNode {
 
   return (
     <article className="detail">
-      <img src={card.imageLarge} alt={card.name} className="large" width={336} height={468} />
+      <CardImage
+        key={card.imageLarge}
+        src={card.imageLarge}
+        alt={card.name}
+        className="large"
+        width={336}
+        height={468}
+        lazy={false}
+      />
       <div className="detail-body">
         <Link to="/">← all cards</Link>
         <h1>{card.name}</h1>

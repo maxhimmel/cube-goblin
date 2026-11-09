@@ -477,3 +477,20 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
     notes: "",
   });
 });
+
+test("a swap opened by URL starts from the old card's status and section", async ({
+  page,
+  workbench,
+}) => {
+  const slug = "deathgorge-scavenger";
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug, patch: { status: "draft", section: "dinosaurs" } }] },
+  });
+  expect(patched.status()).toBe(200);
+  await page.goto(`${workbench.url}#/add?replaces=${slug}`);
+  await expect(page.getByRole("button", { name: "draft", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByLabel("Section")).toHaveValue("dinosaurs");
+});

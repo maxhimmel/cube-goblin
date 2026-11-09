@@ -58,7 +58,27 @@ export function AddPage({
   cube: Workbench | undefined;
   replaces: string | undefined;
 }): ReactNode {
-  const outgoing: WorkbenchCard | undefined = cube?.cards.find((card) => card.slug === replaces);
+  if (!cube) {
+    return <p className="muted">Loading cube…</p>;
+  }
+  const outgoing = cube.cards.find((card) => card.slug === replaces);
+  if (replaces !== undefined && !outgoing) {
+    return (
+      <p>
+        Unknown card to swap. <Link to="/">Back</Link>
+      </p>
+    );
+  }
+  return <AddForm cube={cube} outgoing={outgoing} />;
+}
+
+function AddForm({
+  cube,
+  outgoing,
+}: {
+  cube: Workbench;
+  outgoing: WorkbenchCard | undefined;
+}): ReactNode {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CardStatus>(outgoing?.status ?? "prospect");
   const [section, setSection] = useState(outgoing?.section ?? "");
@@ -70,6 +90,7 @@ export function AddPage({
     queryKey: ["search", settled],
     queryFn: ({ signal }) => searchCards(settled, signal),
     enabled,
+    retry: false,
     staleTime: Number.POSITIVE_INFINITY,
   });
   const add = useMutation({
@@ -91,17 +112,6 @@ export function AddPage({
       showToast({ message: error.message, tone: "error" });
     },
   });
-
-  if (!cube) {
-    return <p className="muted">Loading cube…</p>;
-  }
-  if (replaces !== undefined && !outgoing) {
-    return (
-      <p>
-        Unknown card to swap. <Link to="/">Back</Link>
-      </p>
-    );
-  }
 
   return (
     <div className="add-page">

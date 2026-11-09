@@ -275,9 +275,11 @@ export function CardEditor({
           ))}
         </select>
       </label>
-      <Link to="/add" search={{ replaces: card.slug }}>
-        Swap for another card…
-      </Link>
+      {card.status !== "cut" && (
+        <Link to="/add" search={{ replaces: card.slug }}>
+          Swap for another card…
+        </Link>
+      )}
       <TagsField slug={card.slug} tags={card.tags} vocabulary={vocabulary} save={save} />
       <NotesField slug={card.slug} notes={card.notes} save={save} />
     </div>

@@ -100,6 +100,10 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   return "cards" in result ? result.cards : result.tag;
 }
 
+function scryfallStatus(status: number): number {
+  return status === 400 || status === 404 || status === 429 ? status : 502;
+}
+
 async function search(
   paths: CubePaths,
   client: ScryfallClient,
@@ -198,7 +202,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
               send(res, 200, results);
             },
             (error: unknown) => {
-              const status = error instanceof ScryfallError ? 400 : 500;
+              const status = error instanceof ScryfallError ? scryfallStatus(error.status) : 502;
               send(res, status, { error: error instanceof Error ? error.message : String(error) });
             },
           );

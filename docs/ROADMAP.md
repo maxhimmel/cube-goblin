@@ -14,10 +14,10 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Next
 
-- [T-002: Trim draft to target size](tickets/T-002-trim-draft-to-target.md)
-- [T-003: Visual design pass](tickets/T-003-visual-design-pass.md)
-- [T-004: Stats and charts](tickets/T-004-stats-and-charts.md)
 - [T-008: React hooks lint rules](tickets/T-008-react-hooks-lint.md)
+- [T-003: Visual design pass](tickets/T-003-visual-design-pass.md)
+- [T-002: Trim draft to target size](tickets/T-002-trim-draft-to-target.md)
+- [T-004: Stats and charts](tickets/T-004-stats-and-charts.md)
 - [T-009: Archive and delete cards](tickets/T-009-archive-and-delete.md)
 
 ## Later

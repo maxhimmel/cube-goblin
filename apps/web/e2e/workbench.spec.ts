@@ -581,6 +581,58 @@ test("the Wall shows names and costs, previews on hover, and opens the pane", as
   await expect(page).toHaveURL(/by=color/u);
 });
 
+test("dragging a card between the Wall and the tray changes its status", async ({
+  page,
+  workbench,
+}) => {
+  const config = JSON.parse(
+    await readFile(join(workbench.cardsDir, "..", "..", "cube.config.json"), "utf8"),
+  ) as { size: { min: number; max: number } };
+  const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
+  const entries = await Promise.all(
+    files.map(async (file) => ({
+      slug: file.replace(/\.json$/u, ""),
+      ...(await readEntry(workbench.cardsDir, file.replace(/\.json$/u, ""))),
+    })),
+  );
+  const prospect = entries.find((entry) => entry.status === "prospect");
+  if (!prospect) {
+    throw new Error("fixture has no prospect");
+  }
+  const drafted = await draftCount(workbench.cardsDir);
+
+  await page.goto(workbench.url);
+  const gauge = page.getByTestId("draft-gauge");
+  await expect(gauge).toContainText(`target ${String(config.size.min)}–${String(config.size.max)}`);
+  await expect(page.getByRole("meter", { name: "Draft size" })).toHaveAttribute(
+    "aria-valuenow",
+    String(drafted),
+  );
+
+  const strip = page.locator(
+    `.tray .strip:has(.strip-name:text-is(${JSON.stringify(prospect.name)}))`,
+  );
+  await strip.dragTo(page.locator(".wall-body"));
+  await expect(
+    page.locator(`.wall-body .strip:has(.strip-name:text-is(${JSON.stringify(prospect.name)}))`),
+  ).toBeVisible();
+  await expect(page.getByRole("meter", { name: "Draft size" })).toHaveAttribute(
+    "aria-valuenow",
+    String(drafted + 1),
+  );
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
+    .toBe("draft");
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
+    .toBe("prospect");
+  await expect(
+    page.locator(`.tray .strip:has(.strip-name:text-is(${JSON.stringify(prospect.name)}))`),
+  ).toBeVisible();
+});
+
 test("card images come from the local image cache", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/cards`);
   const first = page.locator(".grid img").first();

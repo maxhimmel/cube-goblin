@@ -204,3 +204,63 @@
     overflow: visible;
   }
 }
+
+.gauge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.gauge-track {
+  position: relative;
+  width: clamp(120px, 18vw, 220px);
+  height: 10px;
+  border-radius: 99px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.gauge-band {
+  position: absolute;
+  z-index: 1;
+  inset-block: 0;
+  box-sizing: border-box;
+  border-inline: 2px solid var(--keep);
+  background: color-mix(in oklab, var(--keep) 25%, transparent);
+}
+
+.gauge-fill {
+  position: absolute;
+  inset-block: 2px;
+  left: 2px;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width 300ms var(--lift);
+}
+
+.gauge[data-verdict="over"] .gauge-fill,
+.gauge[data-verdict="under"] .gauge-fill {
+  background: var(--cut);
+}
+
+.gauge[data-verdict="over"] strong,
+.gauge[data-verdict="under"] strong {
+  color: var(--cut);
+}
+
+.gauge[data-verdict="ok"] strong {
+  color: var(--keep);
+}
+
+.wall-body[data-drop="over"],
+.tray[data-drop="over"] {
+  outline: 3px dashed var(--accent);
+  outline-offset: -3px;
+}
+
+.strip[draggable="true"] {
+  cursor: grab;
+}

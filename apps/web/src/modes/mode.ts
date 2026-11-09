@@ -1,4 +1,4 @@
-import type { Section, SnapshotCard, Tag } from "@repo/cube/browser";
+import type { CardStatus, Section, SnapshotCard, Tag } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 
 export type GridCard = SnapshotCard & { tags?: string[] };
@@ -8,6 +8,7 @@ export interface CubeView {
   sections: Section[];
   vocabulary: Tag[];
   label: string;
+  size?: { min: number; max: number } | undefined;
 }
 
 export interface Mode {
@@ -22,4 +23,5 @@ export interface Mode {
   BulkBar: () => ReactNode;
   Stats: () => ReactNode;
   AddPage: (props: { replaces: string | undefined }) => ReactNode;
+  moveCard?: (card: GridCard, status: CardStatus) => void;
 }

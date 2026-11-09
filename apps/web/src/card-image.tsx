@@ -40,7 +40,7 @@ export function CardImage({
       loading={lazy ? "lazy" : "eager"}
       decoding="async"
       onError={() => {
-        if (attempt === "first") {
+        if (attempt === "first" && !src.startsWith("data:")) {
           setTimeout(() => {
             setAttempt("retry");
           }, RETRY_DELAY_MS);

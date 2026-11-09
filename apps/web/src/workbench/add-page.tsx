@@ -40,7 +40,7 @@ function ResultTile({
 }): ReactNode {
   return (
     <li className="result">
-      <CardImage src={result.image} alt={result.name} width={146} height={204} />
+      <CardImage key={result.image} src={result.image} alt={result.name} width={146} height={204} />
       <ManaCost cost={result.manaCost} />
       <span className="muted">{result.typeLine}</span>
       {result.inCube ? (

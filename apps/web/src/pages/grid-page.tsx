@@ -10,7 +10,7 @@ function Tile({ card }: { card: SnapshotCard }): ReactNode {
   return (
     <li className="tile-cell">
       <Link to="/card/$slug" params={{ slug: card.slug }} className="tile" {...mark}>
-        <CardImage src={card.image} alt={card.name} width={146} height={204} />
+        <CardImage key={card.image} src={card.image} alt={card.name} width={146} height={204} />
       </Link>
       <mode.SelectCard slug={card.slug} name={card.name} />
     </li>

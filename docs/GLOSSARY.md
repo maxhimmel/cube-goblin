@@ -76,3 +76,18 @@ The total amount of mana in a card's mana cost, regardless of color; X counts as
 ## Color
 
 A card is the colors of the mana symbols in its mana cost (white, blue, black, red, green), plus any color set by a color indicator or a characteristic-defining ability (so Dryad Arbor is green, and a devoid card is colorless). Scryfall's `colors` field holds the result. **Monocolored** means exactly one color, **multicolored** two or more, and **colorless** none. Multicolored is not itself a color. A double-faced card has its front face's colors outside the battlefield and stack. Color is not color identity, which also counts mana symbols in rules text. ([Comprehensive Rules 105.2, 204, 712.6a](https://media.wizards.com/2026/downloads/MagicCompRules%2020261106.txt))
+
+## Oracle tag
+
+A community tag from Scryfall's Tagger project that describes what a card does, such as removal, ramp, or draw. Tags form a tree; a parent tag covers every card under its children. Searchable on Scryfall as `otag:` or `function:`. Not the same as a [Tag](#tag), which the designer sets. ([Scryfall tags](https://scryfall.com/docs/api/tags), [syntax](https://scryfall.com/docs/syntax)) Notes: [research/oracle-tags.md](research/oracle-tags.md).
+
+## Function
+
+What a card does for a deck. Insights counts these functions, each read from an [Oracle tag](#oracle-tag) except fixing:
+
+- **Removal**: a spell or ability that removes a permanent for good, by destroying, exiling, or similar. ([mtg.wiki](https://mtg.wiki/page/Removal))
+- **Board wipe**: an instant or sorcery that destroys or exiles all permanents of a type. Scryfall's tag is `sweeper`. ([mtg.wiki](https://mtg.wiki/page/Board_wipe))
+- **Counterspell**: counters a spell. ([mtg.wiki](<https://mtg.wiki/page/Counter_(keyword_action)>))
+- **Ramp**: speeds up mana, such as mana creatures, extra land drops, or land search, so expensive cards come out sooner. ([mtg.wiki](https://mtg.wiki/page/Mana_acceleration))
+- **Draw**: draws extra cards beyond the one per turn. ([mtg.wiki](https://mtg.wiki/page/Draw))
+- **Fixing**: helps cast spells of different colors. Here: a card whose Scryfall `produced_mana` lists two or more colors, or one tagged `fetchland`. ([mtg.wiki](https://mtg.wiki/page/Mana_fixing))

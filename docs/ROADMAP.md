@@ -10,9 +10,10 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-004: Stats and charts](tickets/T-004-stats-and-charts.md)
+
 ## Next
 
-- [T-004: Stats and charts](tickets/T-004-stats-and-charts.md)
 - [T-011: Board view](tickets/T-011-board-view.md)
 - [T-012: Tag overlap view](tickets/T-012-tag-overlap-view.md)
 - [T-014: Versions and compare](tickets/T-014-versions-and-compare.md)

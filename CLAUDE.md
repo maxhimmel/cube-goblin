@@ -15,7 +15,7 @@ Speak concisely; sacrifice grammar.
 
 ## Commands
 
-- `pnpm check`: every guard (format, markdown, cube data, lint, typecheck, test, build, cross-browser e2e, no shell scripts). Must pass before claiming done.
+- `pnpm check`: every guard (format, markdown, cube data, lint, typecheck, test, build, Chromium e2e, no shell scripts). Must pass before claiming done.
 - `pnpm fix`: auto-fix what can be fixed, then re-run `pnpm check`.
 - `pnpm cube --help`: card data CLI (Scryfall). Use it for every card lookup, batch add, and review import.
 - `pnpm export`: build the single-file share doc into `exports/`. `pnpm dev`: run the web app locally.

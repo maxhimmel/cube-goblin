@@ -21,7 +21,7 @@ Researched 2026-11-08. Versions from `npm view` on that date. Plan discussion ha
 
 ## Proof-of-concept results (2026-11-08)
 
-`apps/web/e2e/share-doc.spec.ts` covers all of this in Chromium, Firefox, and WebKit:
+`apps/web/e2e/share-doc.spec.ts` covers all of this in Chromium (Firefox and WebKit were dropped 2026-11-09: the user is the main user and runs Chrome):
 
 - **`file://` + hash routing + `localStorage`** work in all three. The `vite-plugin-singlefile` README says the same, and warns that history routing and lazy `import()` chunks don't work ([README](https://www.npmjs.com/package/vite-plugin-singlefile)).
 - **Size**: about 2.9 MB for 143 cards with embedded `small` images (146×204 JPEG), 2 MB gzipped. Large images on the card page are hotlinked, so they need internet.

@@ -29,8 +29,14 @@ export function SelectCard({ slug, name }: { slug: string; name: string }): Reac
 export function SelectPile({ slugs, label }: { slugs: string[]; label: string }): ReactNode {
   const selection = useSelection();
   const all = slugs.length > 0 && slugs.every((slug) => selection.has(slug));
+  const some = !all && slugs.some((slug) => selection.has(slug));
   return (
     <input
+      ref={(element) => {
+        if (element) {
+          element.indeterminate = some;
+        }
+      }}
       type="checkbox"
       className="select-pile"
       aria-label={`Select all in ${label}`}

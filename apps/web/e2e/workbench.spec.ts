@@ -633,6 +633,22 @@ test("dragging a card between the Wall and the tray changes its status", async (
   ).toBeVisible();
 });
 
+test("a pile checkbox shows when only some of its cards are selected", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(`${workbench.url}#/cards`);
+  const draft = page.locator('[data-pile="draft"]');
+  const pile = draft.getByRole("checkbox", { name: "Select all in Draft" });
+  await expect(pile).toHaveJSProperty("indeterminate", false);
+  await draft.locator(".tile-cell .select").first().check();
+  await expect(pile).toHaveJSProperty("indeterminate", true);
+  await expect(pile).not.toBeChecked();
+  await pile.check();
+  await expect(pile).toHaveJSProperty("indeterminate", false);
+  await expect(pile).toBeChecked();
+});
+
 test("card images come from the local image cache", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/cards`);
   const first = page.locator(".grid img").first();

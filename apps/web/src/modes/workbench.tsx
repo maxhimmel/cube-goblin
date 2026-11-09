@@ -42,8 +42,12 @@ function Toolbar(): ReactNode {
   return (
     <>
       <span className="badge">workbench · live</span>
-      <Link to="/add">Add card</Link>
-      <Link to="/tags">Tags</Link>
+      <Link to="/add" className="toolbar-link">
+        Add card
+      </Link>
+      <Link to="/tags" className="toolbar-link">
+        Tags
+      </Link>
       <span className="muted" data-testid="save-state">
         {saving ? "saving…" : "all changes saved"}
       </span>

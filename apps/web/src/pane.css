@@ -6,6 +6,17 @@
   border-radius: 999px;
 }
 
+.topbar > a:not(.brand),
+.toolbar-link {
+  color: var(--fg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.topbar a:not(.brand):hover {
+  color: var(--accent);
+}
+
 .views a {
   padding: 3px 12px;
   border-radius: 999px;

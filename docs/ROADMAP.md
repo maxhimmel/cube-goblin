@@ -10,11 +10,11 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-003: Visual design pass](tickets/T-003-visual-design-pass.md)
 - [T-001: Editing workbench](tickets/T-001-editing-workbench.md)
 
 ## Next
 
-- [T-003: Visual design pass](tickets/T-003-visual-design-pass.md)
 - [T-002: Trim draft to target size](tickets/T-002-trim-draft-to-target.md)
 - [T-004: Stats and charts](tickets/T-004-stats-and-charts.md)
 - [T-009: Archive and delete cards](tickets/T-009-archive-and-delete.md)

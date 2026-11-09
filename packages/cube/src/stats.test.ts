@@ -19,12 +19,12 @@ const cards: StatCard[] = [
 describe("cubeStats", () => {
   const stats = cubeStats(cards, [{ id: "burn", label: "Burn", kind: "group" }]);
 
-  it("counts every card once by status and by color", () => {
+  it("counts every card once by status, and every nonland card once by color", () => {
     expect(stats.total).toBe(7);
     expect(stats.status.map((row) => row.count)).toEqual([5, 1, 1]);
     const colors = Object.fromEntries(stats.colors.map((row) => [row.id, row.count]));
-    expect(colors).toEqual({ W: 0, U: 0, B: 0, R: 2, G: 2, multicolored: 1, colorless: 2 });
-    expect(stats.colors.reduce((sum, row) => sum + row.count, 0)).toBe(stats.total);
+    expect(colors).toEqual({ W: 0, U: 0, B: 0, R: 2, G: 2, multicolored: 1, colorless: 1 });
+    expect(stats.colors.reduce((sum, row) => sum + row.count, 0)).toBe(stats.total - stats.lands);
   });
 
   it("builds the curve from nonland cards and caps it at 7+", () => {

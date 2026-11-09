@@ -56,17 +56,17 @@ export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]
       ...COLORS.map((color) => ({
         id: color.id,
         label: color.label,
-        count: count(cards, (card) => card.colors.length === 1 && card.colors[0] === color.id),
+        count: count(spells, (card) => card.colors.length === 1 && card.colors[0] === color.id),
       })),
       {
         id: "multicolored",
         label: "Multicolored",
-        count: count(cards, (card) => card.colors.length > 1),
+        count: count(spells, (card) => card.colors.length > 1),
       },
       {
         id: "colorless",
         label: "Colorless",
-        count: count(cards, (card) => card.colors.length === 0),
+        count: count(spells, (card) => card.colors.length === 0),
       },
     ],
     curve: Array.from({ length: CURVE_TOP + 1 }, (_, value) => ({

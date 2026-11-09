@@ -31,3 +31,10 @@ Chosen over simple-git-hooks and husky on 2026-11-08:
 - Comparisons: [pkgpulse](https://www.pkgpulse.com/guides/husky-vs-lefthook-vs-lint-staged-git-hooks-nodejs-2026), [DEV](https://dev.to/quave/lefthook-benefits-vs-husky-and-how-to-use-30je).
 
 The branch guard (`scripts/src/branch.ts`) rejects commits on `main`/`master` and branch names that don't match `<type>/<slug>`. The types are the Conventional Commits set.
+
+## Charts (2026-11-09)
+
+- **`@tanstack/charts`** (with `@tanstack/charts/react`): TanStack's chart grammar, first published 2026-07. SVG by default, keyboard focus, built-in tooltip, React 18/19 peers ([npm](https://www.npmjs.com/package/@tanstack/charts), [repo](https://github.com/TanStack/charts)). Young and fast-moving (about 40 releases in 3 months). From 1.0 its [compatibility contract](https://tanstack.com/charts/latest/docs/compatibility) holds breaking changes for majors; pinned exactly at 1.5.0 anyway.
+- **Bundle**: import exact subpaths (`/scales/band`, `/scales/linear`, `/tooltip`); compact scales need no D3 at runtime. A bar chart with a tooltip added 116 KB to the share doc (3.44 → 3.56 MB), and it renders from `file://` (spike, 2026-11-09).
+- **Theming**: marks take CSS variables in `fill`; text and grid follow the container's `color`.
+- **Rejected**: `react-charts` (last release 2023, React 16 peer) and `@tanstack/react-table` (a counts table is a few lines without it).

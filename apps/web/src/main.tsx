@@ -11,6 +11,7 @@ import "./fonts.css";
 import "./styles.css";
 import "./wall.css";
 import "./pane.css";
+import "./insights/insights.css";
 
 const root = document.getElementById("root");
 if (!root) {

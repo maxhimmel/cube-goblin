@@ -29,6 +29,7 @@ export interface DisplayFields {
   oracleText: string;
   cmc: number;
   colors: string[];
+  producedMana: string[];
   image: string;
   imageLarge: string;
   scryfallUri: string;
@@ -47,6 +48,7 @@ export function displayFields(card: Card): DisplayFields | undefined {
     oracleText: faces.map((face) => face.oracle_text ?? "").join("\n//\n"),
     cmc: card.cmc ?? 0,
     colors: card.colors ?? faces[0]?.colors ?? [],
+    producedMana: card.produced_mana ?? [],
     image: small,
     imageLarge: large,
     scryfallUri: card.scryfall_uri.split("?")[0] ?? card.scryfall_uri,

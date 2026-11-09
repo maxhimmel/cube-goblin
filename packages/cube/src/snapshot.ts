@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CARD_FUNCTION_IDS } from "./functions.ts";
 import { cardStatusSchema, cubeConfigSchema, sectionSchema, tagSchema } from "./schema.ts";
 
 export const snapshotCardSchema = z.strictObject({
@@ -12,6 +13,7 @@ export const snapshotCardSchema = z.strictObject({
   oracleText: z.string(),
   cmc: z.number(),
   colors: z.array(z.string()),
+  functions: z.array(z.enum(CARD_FUNCTION_IDS)),
   image: z.string(),
   imageLarge: z.string(),
   scryfallUri: z.string(),
@@ -22,6 +24,7 @@ export const snapshotSchema = z.strictObject({
   createdAt: z.string(),
   cards: z.array(snapshotCardSchema),
   sections: z.array(sectionSchema),
+  functionsAsOf: z.string().optional(),
 });
 
 export const workbenchCardSchema = snapshotCardSchema.extend({
@@ -34,6 +37,7 @@ export const workbenchSchema = z.strictObject({
   sections: z.array(sectionSchema),
   vocabulary: z.array(tagSchema),
   size: cubeConfigSchema.shape.size,
+  functionsAsOf: z.string().optional(),
 });
 
 export const searchResultSchema = z.strictObject({

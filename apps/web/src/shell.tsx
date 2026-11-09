@@ -42,6 +42,9 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
           <Link to="/cards" activeOptions={{ includeSearch: false }}>
             Cards
           </Link>
+          <Link to="/insights" activeOptions={{ includeSearch: false }}>
+            Insights
+          </Link>
         </nav>
         <mode.Toolbar />
       </header>

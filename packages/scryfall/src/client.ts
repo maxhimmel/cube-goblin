@@ -1,13 +1,14 @@
 import type { z } from "zod";
 import type { Cache } from "./cache.ts";
 import { MemoryCache } from "./cache.ts";
-import type { Card, CardList } from "./schemas.ts";
-import { cardListSchema, cardSchema, errorSchema } from "./schemas.ts";
+import type { BulkData, Card, CardList } from "./schemas.ts";
+import { bulkDataSchema, cardListSchema, cardSchema, errorSchema } from "./schemas.ts";
 
 export const API_BASE = "https://api.scryfall.com";
 export const COLLECTION_MAX_IDENTIFIERS = 75;
 export const CARD_ENDPOINT_INTERVAL_MS = 500;
 export const DEFAULT_INTERVAL_MS = 100;
+export const BULK_HOST = "data.scryfall.io";
 
 export class ScryfallError extends Error {
   readonly status: number;
@@ -212,5 +213,21 @@ export class ScryfallClient {
       cards: unique.flatMap((oracleId) => found.get(oracleId) ?? []),
       missing: unique.filter((oracleId) => !found.has(oracleId)),
     };
+  }
+
+  bulkData(type: string): Promise<BulkData> {
+    return this.#request({ path: `/bulk-data/${type}`, cache: false }, bulkDataSchema);
+  }
+
+  async download(uri: string): Promise<Uint8Array> {
+    const url = new URL(uri);
+    if (url.protocol !== "https:" || url.hostname !== BULK_HOST) {
+      throw new Error(`Refusing to download from ${url.hostname}`);
+    }
+    const response = await this.#fetch(url, { headers: { "User-Agent": this.#userAgent } });
+    if (!response.ok) {
+      throw new ScryfallError(response.status, "download", response.statusText);
+    }
+    return new Uint8Array(await response.arrayBuffer());
   }
 }

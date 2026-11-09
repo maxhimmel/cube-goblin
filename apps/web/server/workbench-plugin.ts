@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import type {
   AddResult,
   BatchResult,
@@ -11,7 +11,9 @@ import type {
   WorkbenchCard,
 } from "@repo/cube";
 import {
+  FUNCTION_ORACLE_TAG_IDS,
   addCard,
+  cardFunctions,
   changeTag,
   createTag,
   cubePaths,
@@ -23,7 +25,13 @@ import {
   readTags,
   slugify,
 } from "@repo/cube";
-import { FileCache, ScryfallClient, ScryfallError, displayFields } from "@repo/scryfall";
+import {
+  FileCache,
+  OracleTagStore,
+  ScryfallClient,
+  ScryfallError,
+  displayFields,
+} from "@repo/scryfall";
 import type { Plugin } from "vite";
 import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
 
@@ -62,14 +70,21 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
   }
 }
 
-async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<Workbench> {
+async function loadWorkbench(
+  paths: CubePaths,
+  client: ScryfallClient,
+  oracleTags: OracleTagStore,
+): Promise<Workbench> {
   const [entries, sections, vocabulary, config] = await Promise.all([
     readCards(paths),
     readSections(paths),
     readTags(paths),
     readConfig(paths),
   ]);
-  const { cards } = await client.byOracleIds(entries.map((entry) => entry.oracleId));
+  const [{ cards }, tags] = await Promise.all([
+    client.byOracleIds(entries.map((entry) => entry.oracleId)),
+    oracleTags.load(FUNCTION_ORACLE_TAG_IDS),
+  ]);
   const byOracle = new Map(cards.map((card) => [card.oracle_id, card]));
   const workbenchCards: WorkbenchCard[] = [];
   for (const entry of entries) {
@@ -78,20 +93,30 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
     if (!fields) {
       throw new Error(`Missing Scryfall data or image for ${entry.name}`);
     }
+    const { producedMana, ...display } = fields;
     workbenchCards.push({
       slug: slugify(entry.name),
       name: entry.name,
       oracleId: entry.oracleId,
       status: entry.status,
       ...(entry.section === undefined ? {} : { section: entry.section }),
-      ...fields,
+      ...display,
+      functions: cardFunctions({ oracleId: entry.oracleId, producedMana }, tags.index),
       image: localImageUrl(fields.image),
       imageLarge: localImageUrl(fields.imageLarge),
       tags: entry.tags,
       notes: entry.notes,
     });
   }
-  return { cards: workbenchCards, sections, vocabulary, size: config.size };
+  return {
+    cards: workbenchCards,
+    sections,
+    vocabulary,
+    size: config.size,
+    ...(tags.fetchedAt === undefined
+      ? {}
+      : { functionsAsOf: new Date(tags.fetchedAt).toISOString() }),
+  };
 }
 
 type WriteResult = UpdateResult | TagResult | BatchResult | AddResult;
@@ -178,6 +203,10 @@ export function workbench(options: WorkbenchOptions): Plugin {
         userAgent: USER_AGENT,
         cache: new FileCache(options.cacheDir),
       });
+      const oracleTags = new OracleTagStore({
+        client,
+        file: join(options.cacheDir, "oracle-tags.json"),
+      });
       const images = new ImageCache(options.imageCacheDir, USER_AGENT);
       const route = writeRoute(paths, client);
       const cubeRoot = resolve(paths.root) + sep;
@@ -233,7 +262,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
           return;
         }
         if (url === "/api/cube" && req.method === "GET") {
-          loadWorkbench(paths, client).then(
+          loadWorkbench(paths, client, oracleTags).then(
             (data) => {
               send(res, 200, data);
             },

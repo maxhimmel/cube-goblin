@@ -9,6 +9,7 @@ export interface CubeView {
   vocabulary: Tag[];
   label: string;
   size?: { min: number; max: number } | undefined;
+  functionsAsOf?: string | undefined;
 }
 
 export interface Mode {
@@ -21,7 +22,7 @@ export interface Mode {
   SelectCard: (props: { slug: string; name: string }) => ReactNode;
   SelectPile: (props: { slugs: string[]; label: string }) => ReactNode;
   BulkBar: () => ReactNode;
-  Stats: () => ReactNode;
+  useSelection: () => ReadonlySet<string>;
   AddPage: (props: { replaces: string | undefined }) => ReactNode;
   moveCard?: (card: GridCard, status: CardStatus) => void;
 }

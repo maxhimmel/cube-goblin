@@ -36,6 +36,7 @@ export const cardSchema = z.looseObject({
   loyalty: z.string().optional(),
   colors: z.array(z.string()).optional(),
   color_identity: z.array(z.string()),
+  produced_mana: z.array(z.string()).optional(),
   keywords: z.array(z.string()).optional(),
   rarity: z.string(),
   set: z.string(),
@@ -68,8 +69,28 @@ function listSchema<T extends z.ZodType>(item: T) {
 
 export const cardListSchema = listSchema(cardSchema);
 
+export const bulkDataSchema = z.looseObject({
+  object: z.literal("bulk_data"),
+  type: z.string(),
+  updated_at: z.string(),
+  download_uri: z.string().optional(),
+  jsonl_download_uri: z.string().optional(),
+});
+
+export const tagSchema = z.looseObject({
+  object: z.literal("tag"),
+  id: z.string(),
+  slug: z.string(),
+  label: z.string(),
+  type: z.string(),
+  child_ids: z.array(z.string()).nullish(),
+  taggings: z.array(z.looseObject({ oracle_id: z.string().nullish() })),
+});
+
 export type Card = z.infer<typeof cardSchema>;
 export type CardFace = z.infer<typeof cardFaceSchema>;
 export type ImageUris = z.infer<typeof imageUrisSchema>;
 export type ScryfallErrorBody = z.infer<typeof errorSchema>;
 export type CardList = z.infer<typeof cardListSchema>;
+export type BulkData = z.infer<typeof bulkDataSchema>;
+export type ScryfallTag = z.infer<typeof tagSchema>;

@@ -47,5 +47,26 @@ export type {
 export { COLUMN_AXES, colorKey, columnsBy } from "./columns.ts";
 export type { Column, ColumnAxis } from "./columns.ts";
 export { slugify } from "./slug.ts";
-export { COLORS, CURVE_TOP, cubeStats, isLand } from "./stats.ts";
-export type { Count, CubeStats, StatCard } from "./stats.ts";
+export {
+  CARD_TYPES,
+  COLORS,
+  COLOR_GROUPS,
+  CURVE_COLUMNS,
+  CURVE_TOP,
+  LAND,
+  colorGroup,
+  cubeStats,
+  curveKey,
+  isLand,
+  pipColors,
+  typeKey,
+} from "./stats.ts";
+export type { Count, CubeStats, GridCell, StatCard } from "./stats.ts";
+export {
+  CARD_FUNCTIONS,
+  CARD_FUNCTION_IDS,
+  FUNCTION_ORACLE_TAG_IDS,
+  cardFunctions,
+  producesFixing,
+} from "./functions.ts";
+export type { CardFunction } from "./functions.ts";

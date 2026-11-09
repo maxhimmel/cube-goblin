@@ -7,6 +7,7 @@ import {
   createRouter,
   redirect,
 } from "@tanstack/react-router";
+import { InsightsPage } from "./insights/insights-page.tsx";
 import { GridPage } from "./pages/grid-page.tsx";
 import { WallPage } from "./pages/wall-page.tsx";
 import { Shell } from "./shell.tsx";
@@ -47,6 +48,12 @@ const cardRoute = createRoute({
   },
 });
 
+const insightsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/insights",
+  component: InsightsPage,
+});
+
 const tagsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tags",
@@ -65,7 +72,14 @@ const addRoute = createRoute({
 });
 
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([wallRoute, gridRoute, cardRoute, tagsRoute, addRoute]),
+  routeTree: rootRoute.addChildren([
+    wallRoute,
+    gridRoute,
+    insightsRoute,
+    cardRoute,
+    tagsRoute,
+    addRoute,
+  ]),
   history: createHashHistory(),
 });
 

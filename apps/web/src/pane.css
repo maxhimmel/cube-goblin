@@ -116,3 +116,15 @@
     margin-right: 460px;
   }
 }
+
+@media (max-width: 899px) {
+  .grid-layout > .stats {
+    order: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  [data-testid="cube-label"] {
+    display: none;
+  }
+}

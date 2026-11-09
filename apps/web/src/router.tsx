@@ -21,6 +21,8 @@ const rootRoute = createRootRoute({
 const gridRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
+  validateSearch: (search: Record<string, unknown>): { by?: string } =>
+    typeof search["by"] === "string" ? { by: search["by"] } : {},
   component: GridPage,
 });
 

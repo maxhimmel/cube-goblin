@@ -14,6 +14,7 @@ import type { CubeView, Mode } from "./mode.ts";
 const view: CubeView = {
   cards: snapshot.cards,
   sections: snapshot.sections,
+  vocabulary: [],
   label: `snapshot ${snapshot.id}`,
 };
 
@@ -111,4 +112,7 @@ export const mode: Mode = {
   Toolbar,
   CardPanel,
   TagsPage: () => <p className="muted">Tags are edited in the workbench.</p>,
+  SelectCard: () => null,
+  SelectPile: () => null,
+  BulkBar: () => null,
 };

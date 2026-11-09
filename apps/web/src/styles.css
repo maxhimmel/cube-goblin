@@ -289,3 +289,44 @@ textarea {
 .suggestion[data-kind="archetype"] {
   border-color: var(--accent);
 }
+
+.grid-tools {
+  position: sticky;
+  top: 52px;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+  background: var(--bg);
+}
+
+.bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.tile-cell {
+  position: relative;
+}
+
+.tile-cell .select {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 18px;
+  height: 18px;
+}
+
+.tile[data-selected="true"] {
+  outline-color: var(--accent);
+}
+
+.pile-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

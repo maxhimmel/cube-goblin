@@ -95,3 +95,5 @@ export {
 } from "./board.ts";
 export { CARD_SORTS, isCardSort, sortCards } from "./sort.ts";
 export type { CardSort } from "./sort.ts";
+export { matchesTags, overlapFilter, overlapKey, parseTagList, tagOverlaps } from "./overlaps.ts";
+export type { Overlap, TagFilter, Tagged } from "./overlaps.ts";

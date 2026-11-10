@@ -17,7 +17,8 @@
         "shock",
         "murder",
         "tweeze"
-      ]
+      ],
+      "tags": []
     },
     {
       "id": "mwaxzbxq-4uttae",
@@ -30,7 +31,8 @@
         "heartwood-crafter-soul-tether",
         "environmental-scientist",
         "tenured-tethermage"
-      ]
+      ],
+      "tags": []
     }
   ]
 }

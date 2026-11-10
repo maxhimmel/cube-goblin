@@ -2,7 +2,7 @@
   "name": "Hollowmurk Siege",
   "oracleId": "31061e34-042e-40c3-99ab-752795ab4324",
   "status": "draft",
-  "tags": [],
+  "tags": ["counters", "payoff", "enabler"],
   "notes": "",
   "source": {
     "batch": "batch-001",

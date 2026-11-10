@@ -2,7 +2,7 @@
   "name": "Yathan Tombguard",
   "oracleId": "2321b4fc-6b73-4d1a-84cc-13524adb0899",
   "status": "draft",
-  "tags": [],
+  "tags": ["payoff", "counters"],
   "notes": "",
   "source": {
     "batch": "batch-001",

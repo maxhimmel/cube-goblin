@@ -2,7 +2,7 @@
   "name": "Mabel, Valley Hero",
   "oracleId": "ab56f7cf-9538-45b5-a657-1e2ebef1e92b",
   "status": "draft",
-  "tags": [],
+  "tags": ["counters", "enabler"],
   "notes": "",
   "source": {
     "batch": "batch-001",

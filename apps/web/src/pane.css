@@ -123,11 +123,32 @@
   }
 }
 
-.printing-field {
+.large-figure {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 6px 10px;
+  gap: 4px;
+  margin: 0;
+}
+
+.large-figure figcaption:empty {
+  display: none;
+}
+
+.printing-caption {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .printings {

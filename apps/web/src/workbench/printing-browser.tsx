@@ -159,22 +159,23 @@ function PrintingBrowser({
   );
 }
 
-export function PrintingField({ card, save }: { card: WorkbenchCard; save: Save }): ReactNode {
+export function PrintingCaption({ card, save }: { card: WorkbenchCard; save: Save }): ReactNode {
   const [open, setOpen] = useState(false);
   return (
-    <div className="field printing-field">
-      <span>Printing</span>
+    <p className="printing-caption">
       <span data-testid="shown-printing">
-        {card.shown.setName} <span className="muted">#{card.shown.collectorNumber}</span>
-        {card.printing === undefined && <span className="muted"> · default</span>}
+        {card.shown.setName} #{card.shown.collectorNumber}
       </span>
+      {" · "}
       <button
         type="button"
+        className="link-button"
+        aria-label="Change printing…"
         onClick={() => {
           setOpen(true);
         }}
       >
-        Change printing…
+        change
       </button>
       {open && (
         <PrintingBrowser
@@ -185,6 +186,6 @@ export function PrintingField({ card, save }: { card: WorkbenchCard; save: Save 
           }}
         />
       )}
-    </div>
+    </p>
   );
 }

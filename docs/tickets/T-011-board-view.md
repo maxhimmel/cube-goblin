@@ -13,6 +13,8 @@ The Board in [views.md](../design/views.md): drag cards into buckets on a big gr
 - A promoted bin stays on the Board, linked to its tag. Adding cards later offers "Tag N more".
 - The boxes are called bins, since "bucket" already means a chart bucket in Insights.
 
+- "Sort cards by … then …" (Added, Name, Mana value, Color, Card type; `?sort=color.mv`) orders the cards in every bin and the pool. It changes the view only; `board.json` keeps the order cards were added (user, 2026-11-10).
+
 ## Done when
 
 - Buckets and their cards survive a reload.

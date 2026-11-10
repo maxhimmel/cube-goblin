@@ -90,3 +90,5 @@ export {
   takeCard,
   validateBoard,
 } from "./board.ts";
+export { CARD_SORTS, isCardSort, sortCards } from "./sort.ts";
+export type { CardSort } from "./sort.ts";

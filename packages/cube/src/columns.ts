@@ -17,7 +17,7 @@ export interface Column<T> {
 
 type ColumnCard = Pick<StatCard, "colors" | "cmc" | "typeLine"> & { name: string };
 
-const COLOR_ORDER = [...COLORS.map((color) => color.id), "M", "C"];
+export const COLOR_ORDER = [...COLORS.map((color) => color.id), "M", "C"];
 
 export function colorKey(card: Pick<StatCard, "colors">): string {
   if (card.colors.length === 0) {

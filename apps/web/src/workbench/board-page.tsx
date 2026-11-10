@@ -1,14 +1,18 @@
-import type { Bin, TagKind, Workbench, WorkbenchCard } from "@repo/cube/browser";
+import type { Bin, CardSort, TagKind, Workbench, WorkbenchCard } from "@repo/cube/browser";
 import {
+  CARD_SORTS,
   TAG_KINDS,
   addBin,
   changeBin,
   moveCard,
   putCard,
+  isCardSort,
   removeBin,
   restoreBin,
+  sortCards,
   takeCard,
 } from "@repo/cube/browser";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { DragEvent, ReactNode } from "react";
 import { useState } from "react";
 import type { Hover } from "../strip.tsx";
@@ -196,6 +200,7 @@ function AddToBin({ bin, pool }: { bin: Bin; pool: readonly WorkbenchCard[] }): 
 
 function BinBox({
   bin,
+  sort,
   index,
   cube,
   pool,
@@ -203,6 +208,7 @@ function BinBox({
   onHover,
 }: {
   bin: Bin;
+  sort: readonly CardSort[];
   index: number;
   cube: Workbench;
   pool: readonly WorkbenchCard[];
@@ -217,7 +223,10 @@ function BinBox({
     );
   });
   const bySlug = new Map(cube.cards.map((card) => [card.slug, card]));
-  const cards = bin.cards.flatMap((slug) => bySlug.get(slug) ?? []);
+  const cards = sortCards(
+    bin.cards.flatMap((slug) => bySlug.get(slug) ?? []),
+    sort,
+  );
   return (
     <section className="bin" data-bin={bin.id} aria-label={`Bin ${bin.label}`} {...drop}>
       <header className="bin-head">
@@ -378,8 +387,70 @@ function NewBin({
   );
 }
 
+const NO_SORT = "";
+
+function parseSort(param: string | undefined): CardSort[] {
+  return (param ?? "").split(".").filter(isCardSort).slice(0, 2);
+}
+
+function SortPicker({ sort }: { sort: readonly CardSort[] }): ReactNode {
+  const navigate = useNavigate();
+  const [first = "added", second] = sort;
+  const choose = (keys: string[]): void => {
+    const kept = keys.filter((key) => key !== NO_SORT);
+    void navigate({
+      to: "/board",
+      search: (prev) => ({
+        ...prev,
+        sort: kept.length === 0 || kept[0] === "added" ? undefined : kept.join("."),
+      }),
+    });
+  };
+  return (
+    <div className="board-sort" role="group" aria-label="Sort cards">
+      <label>
+        Sort cards by{" "}
+        <select
+          aria-label="Sort cards by"
+          value={first}
+          onChange={(event) => {
+            choose([event.target.value, second ?? NO_SORT]);
+          }}
+        >
+          {CARD_SORTS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        then{" "}
+        <select
+          aria-label="Then by"
+          value={second ?? NO_SORT}
+          disabled={first === "added"}
+          onChange={(event) => {
+            choose([first, event.target.value]);
+          }}
+        >
+          <option value={NO_SORT}>—</option>
+          {CARD_SORTS.filter((option) => option.id !== "added" && option.id !== first).map(
+            (option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ),
+          )}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode {
   const { board, error } = useBoard();
+  const sort = parseSort(useSearch({ from: "/board" }).sort);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [fresh, setFresh] = useState<string | undefined>(undefined);
   if (error) {
@@ -392,35 +463,42 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
   if (!cube || !board) {
     return <p className="muted">Loading board…</p>;
   }
-  const pool = cube.cards
-    .filter((card) => POOL_STATUSES.has(card.status))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const pool = sortCards(
+    cube.cards
+      .filter((card) => POOL_STATUSES.has(card.status))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    sort,
+  );
   const binned = new Set(board.bins.flatMap((bin) => bin.cards));
   return (
     <div className="board">
-      <ul className="board-help" aria-label="Board controls">
-        <li>
-          <strong>Drag in</strong> adds a card (it can sit in several bins)
-        </li>
-        <li>
-          <strong>Between bins</strong> moves, <kbd>⌥ Alt</kbd> copies
-        </li>
-        <li>
-          <strong>Back to the pool</strong> takes it out
-        </li>
-        <li>
-          <strong>Onto New bin</strong> starts a bin
-        </li>
-        <li>
-          <strong>Make tag</strong> tags every card, with Undo
-        </li>
-      </ul>
+      <div className="board-top">
+        <ul className="board-help" aria-label="Board controls">
+          <li>
+            <strong>Drag in</strong> adds a card (it can sit in several bins)
+          </li>
+          <li>
+            <strong>Between bins</strong> moves, <kbd>⌥ Alt</kbd> copies
+          </li>
+          <li>
+            <strong>Back to the pool</strong> takes it out
+          </li>
+          <li>
+            <strong>Onto New bin</strong> starts a bin
+          </li>
+          <li>
+            <strong>Make tag</strong> tags every card, with Undo
+          </li>
+        </ul>
+        <SortPicker sort={sort} />
+      </div>
       <Pool pool={pool} binned={binned} onHover={setHover} />
       <div className="bins">
         {board.bins.map((bin, index) => (
           <BinBox
             key={bin.id}
             bin={bin}
+            sort={sort}
             index={index}
             cube={cube}
             pool={pool}

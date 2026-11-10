@@ -924,3 +924,28 @@ test("promoting a bin tags its cards as one undoable edit", async ({ page, workb
   expect((await readEntry(workbench.cardsDir, "lasting-tarfire")).tags).not.toContain("burn");
   await expect(burn.getByRole("button", { name: "Tag 2 more" })).toBeVisible();
 });
+
+test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(`${workbench.url}#/board`);
+  const burn = page.getByRole("region", { name: "Bin Burn" });
+  const names = (scope: Locator) => scope.locator(".strip-name").allTextContents();
+  await expect.poll(() => names(burn)).toEqual(["Lasting Tarfire", "Shock"]);
+
+  await page.getByLabel("Sort cards by").selectOption("mv");
+  await expect.poll(() => names(burn)).toEqual(["Shock", "Lasting Tarfire"]);
+  await page.getByLabel("Then by").selectOption("color");
+  await expect(page).toHaveURL(/sort=mv\.color/u);
+  await page.reload();
+  await expect.poll(() => names(burn)).toEqual(["Shock", "Lasting Tarfire"]);
+
+  await page.getByLabel("Sort cards by").selectOption("added");
+  await expect.poll(() => names(burn)).toEqual(["Lasting Tarfire", "Shock"]);
+  await expect(page.getByLabel("Then by")).toBeDisabled();
+  expect((await readBoard(workbench.cardsDir)).bins[0]?.cards).toEqual([
+    "lasting-tarfire",
+    "shock",
+  ]);
+});

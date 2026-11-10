@@ -69,6 +69,8 @@ const tagsRoute = createRoute({
 const boardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/board",
+  validateSearch: (search: Record<string, unknown>): { sort?: string | undefined } =>
+    typeof search["sort"] === "string" ? { sort: search["sort"] } : {},
   component: () => <mode.BoardPage />,
 });
 

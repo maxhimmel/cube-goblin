@@ -44,7 +44,11 @@ export function CardPane({ slug }: { slug: string }): ReactNode {
 
   useEffect(() => {
     function onKey(event: KeyboardEvent): void {
-      if (event.key === "Escape" && !event.defaultPrevented) {
+      if (
+        event.key === "Escape" &&
+        !event.defaultPrevented &&
+        document.querySelector("dialog[open]") === null
+      ) {
         close();
       }
     }

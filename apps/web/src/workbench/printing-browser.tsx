@@ -29,13 +29,7 @@ function PrintingTile({
   const year = printing.releasedAt.slice(0, 4);
   return (
     <li>
-      <button
-        type="button"
-        className="printing"
-        aria-pressed={chosen}
-        aria-label={`${printing.setName} #${printing.collectorNumber}`}
-        onClick={onChoose}
-      >
+      <button type="button" className="printing" aria-pressed={chosen} onClick={onChoose}>
         <img src={printing.image} alt="" loading="lazy" width={146} height={204} />
         <span className="printing-set">
           {printing.setName} <span className="muted">#{printing.collectorNumber}</span>
@@ -161,22 +155,31 @@ function PrintingBrowser({
 
 export function PrintingCaption({ card, save }: { card: WorkbenchCard; save: Save }): ReactNode {
   const [open, setOpen] = useState(false);
+  const unavailable = card.printing !== undefined && card.printing !== card.shown.id;
   return (
-    <p className="printing-caption">
-      <span data-testid="shown-printing">
-        {card.shown.setName} #{card.shown.collectorNumber}
-      </span>
-      {" · "}
-      <button
-        type="button"
-        className="link-button"
-        aria-label="Change printing…"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        change
-      </button>
+    <>
+      <p className="printing-caption">
+        <span data-testid="shown-printing">
+          {card.shown.setName} #{card.shown.collectorNumber}
+        </span>
+        {unavailable && (
+          <span className="printing-warning" role="note">
+            {" "}
+            (chosen printing unavailable)
+          </span>
+        )}
+        {" · "}
+        <button
+          type="button"
+          className="link-button"
+          aria-label="Change printing…"
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          change
+        </button>
+      </p>
       {open && (
         <PrintingBrowser
           card={card}
@@ -186,6 +189,6 @@ export function PrintingCaption({ card, save }: { card: WorkbenchCard; save: Sav
           }}
         />
       )}
-    </p>
+    </>
   );
 }

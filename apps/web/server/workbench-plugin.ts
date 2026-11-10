@@ -4,7 +4,6 @@ import type {
   AddResult,
   BatchResult,
   BoardResult,
-  CardEntry,
   CubePaths,
   Printing,
   SearchResult,
@@ -16,7 +15,9 @@ import type {
 import {
   FUNCTION_ORACLE_TAG_IDS,
   addCard,
+  cardChangesSchema,
   cardFunctions,
+  cardPatchSchema,
   changeTag,
   createTag,
   cubePaths,
@@ -38,6 +39,7 @@ import {
   displayFields,
   printingSummary,
 } from "@repo/scryfall";
+import type { Card } from "@repo/scryfall";
 import type { Plugin } from "vite";
 import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
 
@@ -88,10 +90,15 @@ async function loadWorkbench(
     readTags(paths),
     readConfig(paths),
   ]);
-  const [{ cards: byOracle }, tags] = await Promise.all([
+  const [{ cards: byOracle, unresolved }, tags] = await Promise.all([
     client.forEntries(entries),
     oracleTags.load(FUNCTION_ORACLE_TAG_IDS),
   ]);
+  if (unresolved.length > 0) {
+    console.warn(
+      `Showing the default printing for ${String(unresolved.length)} card(s) whose chosen printing could not be loaded`,
+    );
+  }
   const workbenchCards: WorkbenchCard[] = [];
   for (const entry of entries) {
     const card = byOracle.get(entry.oracleId);
@@ -187,37 +194,58 @@ async function listPrintings(
   paths: CubePaths,
   client: ScryfallClient,
   slug: string,
-  remembered: Map<string, Printing[]>,
+  remembered: Map<string, Card[]>,
 ): Promise<Printing[] | undefined> {
   const entry = (await readCards(paths)).find((card) => slugify(card.name) === slug);
   if (!entry) {
     return undefined;
   }
-  const known = remembered.get(entry.oracleId);
-  if (known) {
-    return known;
+  let cards = remembered.get(entry.oracleId);
+  if (!cards) {
+    cards = await client.printings(entry.oracleId);
+    remembered.set(entry.oracleId, cards);
   }
-  const printings = (await client.printings(entry.oracleId)).flatMap(
-    (card) => printingSummary(card) ?? [],
-  );
-  remembered.set(entry.oracleId, printings);
-  return printings;
+  return cards.flatMap((card) => printingSummary(card) ?? []);
+}
+
+function chosenPrintings(body: unknown): string[] {
+  const changes = cardChangesSchema.safeParse(body);
+  const patches = changes.success
+    ? changes.data.changes.map((change) => change.patch)
+    : [cardPatchSchema.safeParse(body).data];
+  return patches.flatMap((patch) => (typeof patch?.printing === "string" ? [patch.printing] : []));
 }
 
 async function keepPrintings(
-  entries: readonly CardEntry[],
+  ids: readonly string[],
   client: ScryfallClient,
-  images: ImageCache,
-): Promise<void> {
-  const ids = entries.flatMap((entry) => entry.printing ?? []);
-  if (ids.length === 0) {
-    return;
+  remembered: Map<string, Card[]>,
+): Promise<Card[]> {
+  const known = new Map([...remembered.values()].flat().map((card) => [card.id, card]));
+  const cards: Card[] = [];
+  const unknown: string[] = [];
+  for (const id of ids) {
+    const card = known.get(id);
+    if (card) {
+      await client.rememberPrinting(card);
+      cards.push(card);
+    } else {
+      unknown.push(id);
+    }
   }
-  const { cards } = await client.byIds(ids);
+  if (unknown.length > 0) {
+    cards.push(...(await client.byIds(unknown)).cards);
+  }
+  return cards;
+}
+
+function warmImages(cards: readonly Card[], images: ImageCache): void {
   for (const card of cards) {
     const fields = displayFields(card);
     if (fields) {
-      await Promise.all([images.get(fields.image), images.get(fields.imageLarge)]);
+      void Promise.all([images.get(fields.image), images.get(fields.imageLarge)]).catch(
+        () => undefined,
+      );
     }
   }
 }
@@ -266,7 +294,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
       });
       const images = new ImageCache(options.imageCacheDir, USER_AGENT);
       const route = writeRoute(paths, client);
-      const remembered = new Map<string, Printing[]>();
+      const remembered = new Map<string, Card[]>();
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
 
@@ -368,9 +396,12 @@ export function workbench(options: WorkbenchOptions): Plugin {
             }
             const result = await write(body.value);
             if (result.ok) {
-              const saved =
-                "cards" in result ? result.cards : "card" in result ? [result.card] : [];
-              void keepPrintings(saved, client, images).catch(() => undefined);
+              const kept = await keepPrintings(
+                chosenPrintings(body.value),
+                client,
+                remembered,
+              ).catch(() => []);
+              warmImages(kept, images);
               send(res, 200, written(result));
             } else {
               send(res, result.status, { error: result.error });

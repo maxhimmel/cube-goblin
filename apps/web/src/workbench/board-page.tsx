@@ -335,21 +335,6 @@ function Pool({
           <Strip key={card.slug} card={card} onHover={onHover} />
         ))}
       </ul>
-      <details className="board-help">
-        <summary>Controls</summary>
-        <dl>
-          <dt>Drag into a bin</dt>
-          <dd>adds the card; a card can sit in several bins</dd>
-          <dt>Drag between bins</dt>
-          <dd>moves it; hold Alt (⌥) to copy</dd>
-          <dt>Drag back to the pool</dt>
-          <dd>takes it out of that bin</dd>
-          <dt>Drop on New bin</dt>
-          <dd>starts a bin with that card</dd>
-          <dt>Make tag</dt>
-          <dd>tags every card in the bin, with Undo</dd>
-        </dl>
-      </details>
     </aside>
   );
 }
@@ -409,19 +394,38 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
   return (
     <div className="board">
       <Pool pool={pool} binned={binned} onHover={setHover} />
-      <div className="bins">
-        {board.bins.map((bin, index) => (
-          <BinBox
-            key={bin.id}
-            bin={bin}
-            index={index}
-            cube={cube}
-            pool={pool}
-            fresh={bin.id === fresh}
-            onHover={setHover}
-          />
-        ))}
-        <NewBin bins={board.bins} onCreate={setFresh} />
+      <div className="board-main">
+        <ul className="board-help" aria-label="Board controls">
+          <li>
+            <strong>Drag in</strong> adds a card (it can sit in several bins)
+          </li>
+          <li>
+            <strong>Between bins</strong> moves, <kbd>⌥ Alt</kbd> copies
+          </li>
+          <li>
+            <strong>Back to the pool</strong> takes it out
+          </li>
+          <li>
+            <strong>Onto New bin</strong> starts a bin
+          </li>
+          <li>
+            <strong>Make tag</strong> tags every card, with Undo
+          </li>
+        </ul>
+        <div className="bins">
+          {board.bins.map((bin, index) => (
+            <BinBox
+              key={bin.id}
+              bin={bin}
+              index={index}
+              cube={cube}
+              pool={pool}
+              fresh={bin.id === fresh}
+              onHover={setHover}
+            />
+          ))}
+          <NewBin bins={board.bins} onCreate={setFresh} />
+        </div>
       </div>
       <datalist id={POOL_LIST_ID}>
         {pool.map((card) => (

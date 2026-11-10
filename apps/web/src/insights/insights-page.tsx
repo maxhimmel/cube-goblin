@@ -423,7 +423,7 @@ export function InsightsPage(): ReactNode {
       return (
         <Block
           title="Power and toughness"
-          caption="Creatures by power (rows) and toughness (columns); * is a power or toughness that varies"
+          caption="Creatures by power and toughness; * means it varies, like */* or 1+*"
           collapsed={collapsed}
           onToggle={toggle}
           table={
@@ -448,6 +448,8 @@ export function InsightsPage(): ReactNode {
             name="Power and toughness"
             rowTick={ptTick}
             columnTick={ptTick}
+            rowTitle="Power"
+            columnTitle="Toughness"
             selected={selected}
             onPick={(row, column) => {
               pick(bucketId("pt", row, column));

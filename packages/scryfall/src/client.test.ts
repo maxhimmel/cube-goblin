@@ -134,6 +134,70 @@ describe("ScryfallClient", () => {
     });
   });
 
+  it("uses a chosen printing when it matches the card, else the default printing", async () => {
+    const calls: Call[] = [];
+    const print = (id: string, oracleId: string, set: string) => ({
+      ...card,
+      id,
+      oracle_id: oracleId,
+      set,
+    });
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new MemoryCache(),
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [
+          {
+            status: 200,
+            body: { object: "list", data: [print("d1", "a", "dmr"), print("d2", "b", "dmr")] },
+          },
+          {
+            status: 200,
+            body: { object: "list", data: [print("p1", "a", "spg"), print("p2", "z", "sld")] },
+          },
+        ],
+        calls,
+      ),
+    });
+    const { cards, missing } = await client.forEntries([
+      { oracleId: "a", printing: "p1" },
+      { oracleId: "b", printing: "p2" },
+    ]);
+    expect(cards.get("a")?.set).toBe("spg");
+    expect(cards.get("b")?.id).toBe("d2");
+    expect(missing).toEqual([]);
+    expect(JSON.parse(calls[1]?.init?.body as string)).toEqual({
+      identifiers: [{ id: "p1" }, { id: "p2" }],
+    });
+  });
+
+  it("lists every paper printing of a card across pages", async () => {
+    const calls: Call[] = [];
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [
+          { status: 200, body: { object: "list", data: [card], has_more: true } },
+          { status: 200, body: { object: "list", data: [{ ...card, id: "2" }] } },
+        ],
+        calls,
+      ),
+    });
+    expect((await client.printings("abc")).map((printing) => printing.id)).toEqual(["1", "2"]);
+    const url = new URL(calls[0]?.url ?? "");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      q: "oracleid:abc game:paper",
+      unique: "prints",
+      include_variations: "true",
+      order: "released",
+      dir: "desc",
+      page: "1",
+    });
+    expect(new URL(calls[1]?.url ?? "").searchParams.get("page")).toBe("2");
+  });
+
   it("throws ScryfallError with the API error details", async () => {
     const client = new ScryfallClient({
       userAgent: "Test/1.0",

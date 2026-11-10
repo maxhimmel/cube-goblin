@@ -9,9 +9,9 @@ export {
   ScryfallError,
   chunk,
 } from "./client.ts";
-export type { CardIdentifier, ScryfallClientOptions } from "./client.ts";
-export { cardFaces, displayFields, imageUrl } from "./card.ts";
-export type { DisplayFields } from "./card.ts";
+export type { CardIdentifier, PrintedEntry, ScryfallClientOptions } from "./client.ts";
+export { cardFaces, displayFields, imageUrl, printingLabels, printingSummary } from "./card.ts";
+export type { DisplayFields, Printing } from "./card.ts";
 export type { BulkData, Card, CardFace, CardList, ImageUris, ScryfallTag } from "./schemas.ts";
 export {
   ORACLE_TAGS_BULK_TYPE,

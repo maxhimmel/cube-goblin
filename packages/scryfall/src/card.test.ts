@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displayFields } from "./card.ts";
+import { displayFields, printingLabels } from "./card.ts";
 import type { Card } from "./schemas.ts";
 
 const images = { small: "s.jpg", large: "l.jpg" };
@@ -28,5 +28,24 @@ describe("displayFields", () => {
 
   it("prefers top-level colors when Scryfall gives them", () => {
     expect(displayFields({ ...base, colors: ["G", "R"] })?.colors).toEqual(["G", "R"]);
+  });
+});
+
+describe("printingLabels", () => {
+  it("names the frame, border, and special printings a player would recognize", () => {
+    expect(
+      printingLabels({
+        ...base,
+        set: "spg",
+        border_color: "borderless",
+        frame_effects: ["showcase", "extendedart", "legendary"],
+        full_art: true,
+      }),
+    ).toEqual(["borderless", "showcase", "extended art", "full art", "special guest"]);
+    expect(printingLabels({ ...base, frame: "1993", promo_types: ["sldbonus"] })).toEqual([
+      "retro frame",
+      "bonus",
+    ]);
+    expect(printingLabels(base)).toEqual([]);
   });
 });

@@ -136,29 +136,39 @@
   flex: 1;
 }
 
+.board-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.board-main .bins {
+  flex: 1;
+}
+
 .board-help {
-  padding: 6px 10px 10px;
-  border-top: 1px solid var(--line);
-  font-size: 0.78rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding: 8px 12px;
+  list-style: none;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
-.board-help summary {
-  cursor: pointer;
-}
-
-.board-help dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 3px 8px;
-  margin: 6px 0 0;
-}
-
-.board-help dt {
-  font-weight: 600;
+.board-help strong {
   color: var(--fg);
+  font-weight: 600;
 }
 
-.board-help dd {
-  margin: 0;
+.board-help kbd {
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--field);
+  font: inherit;
 }

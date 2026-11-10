@@ -1,7 +1,7 @@
 ---
 id: T-020
 title: Color presence and heavy pips
-status: todo
+status: done
 ---
 
 The Mana symbols chart counts raw pips, which says little (user, 2026-11-10).

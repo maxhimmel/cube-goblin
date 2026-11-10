@@ -85,6 +85,10 @@ The total amount of mana in a card's mana cost, regardless of color; X counts as
 
 A card is the colors of the mana symbols in its mana cost (white, blue, black, red, green), plus any color set by a color indicator or a characteristic-defining ability (so Dryad Arbor is green, and a devoid card is colorless). Scryfall's `colors` field holds the result. **Monocolored** means exactly one color, **multicolored** two or more, and **colorless** none. Multicolored is not itself a color. A double-faced card has its front face's colors outside the battlefield and stack. Color is not color identity, which also counts mana symbols in rules text. ([Comprehensive Rules 105.2, 204, 712.6a](https://media.wizards.com/2026/downloads/MagicCompRules%2020261106.txt))
 
+## Pip
+
+An informal term for a non-generic mana symbol in a card's mana cost, counted to judge how hard the cost is on a mana base: Invoke the Winds' four blue pips are harder to cast than Mind Control's two. A hybrid symbol counts as a pip of each of its colors. **Heavy pips** (project term): two or more pips of one color on one face, like `{R}{R}`. **Color presence** (project term): the cards of a color, where a multicolored card counts for each of its colors. ([mtg.wiki](https://mtg.wiki/page/Mana_cost#Description))
+
 ## Oracle tag
 
 A community tag from Scryfall's Tagger project that describes what a card does, such as removal, ramp, or draw. Tags form a tree; a parent tag covers every card under its children. Searchable on Scryfall as `otag:` or `function:`. Not the same as a [Tag](#tag), which the designer sets. ([Scryfall tags](https://scryfall.com/docs/api/tags), [syntax](https://scryfall.com/docs/syntax)) Notes: [research/oracle-tags.md](research/oracle-tags.md).

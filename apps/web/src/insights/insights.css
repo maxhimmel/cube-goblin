@@ -13,7 +13,8 @@
   --chart-band: color-mix(in oklab, var(--chart-curve) 16%, var(--chart-surface));
   --chart-range: color-mix(in oklab, var(--chart-curve) 30%, var(--chart-surface));
   --chart-median: var(--fg);
-  --chart-outlier: var(--chart-functions);
+  --chart-above: #12a06c;
+  --chart-below: var(--chart-functions);
   --heat-1: color-mix(in oklab, var(--chart-heat) 20%, var(--chart-surface));
   --heat-2: color-mix(in oklab, var(--chart-heat) 35%, var(--chart-surface));
   --heat-3: color-mix(in oklab, var(--chart-heat) 50%, var(--chart-surface));
@@ -37,6 +38,10 @@
     --chart-group: #c98500;
     --chart-status: #9085e9;
     --chart-heat: #3987e5;
+    --chart-above: #2fc48b;
+    --chart-band: color-mix(in oklab, var(--chart-curve) 30%, var(--chart-surface));
+    --chart-range: color-mix(in oklab, var(--chart-curve) 50%, var(--chart-surface));
+    --chart-below: #f07a45;
     --heat-6: color-mix(in oklab, var(--chart-heat) 85%, var(--chart-surface));
     --heat-ink-1: #fff;
     --heat-ink-2: #fff;
@@ -455,6 +460,15 @@
   width: 14px;
   height: 10px;
   border-radius: 3px;
+}
+
+.legend-swatch[data-shape="dot"] {
+  width: 10px;
+  border-radius: 50%;
+}
+
+.legend-swatch[data-shape="line"] {
+  height: 2px;
 }
 
 .body-link {

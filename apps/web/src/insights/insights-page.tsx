@@ -1,5 +1,5 @@
 import { mode } from "#mode";
-import type { Body, Bucket, BucketKind, Count, CubeStats } from "@repo/cube/browser";
+import type { Body, Bucket, BucketKind, Count, CubeStats, Spread } from "@repo/cube/browser";
 import {
   COLORS,
   COLOR_GROUPS,
@@ -132,7 +132,36 @@ function BodyLink({ entry }: { entry: Body<GridCard> | undefined }): ReactNode {
   );
 }
 
-function CreatureBalanceView({ cards }: { cards: readonly GridCard[] }): ReactNode {
+const LEGEND = [
+  {
+    shape: "dot",
+    color: "var(--chart-above)",
+    label: "big for its mana value (above the middle half)",
+  },
+  { shape: "dot", color: "var(--chart-dot)", label: "in the middle half" },
+  {
+    shape: "dot",
+    color: "var(--chart-below)",
+    label: "small for its mana value (below the middle half)",
+  },
+  { shape: "band", color: "var(--chart-band)", label: "middle half" },
+  { shape: "line", color: "var(--chart-median)", label: "median: this cube’s typical size" },
+] as const;
+
+function placeIn(total: number, range: Spread | undefined): "above" | "within" | "below" {
+  if (range === undefined || (total >= range.q1 && total <= range.q3)) {
+    return "within";
+  }
+  return total > range.q3 ? "above" : "below";
+}
+
+function CreatureBalanceView({
+  cards,
+  selected,
+}: {
+  cards: readonly GridCard[];
+  selected: string | undefined;
+}): ReactNode {
   const balance = creatureBalance(cards);
   const navigate = useNavigate();
   const rows = balance.curve.filter((row) => row.count > 0);
@@ -150,6 +179,7 @@ function CreatureBalanceView({ cards }: { cards: readonly GridCard[] }): ReactNo
       body: `${String(entry.power)}/${String(entry.toughness)}`,
       mv: Number(key),
       size: total,
+      place: placeIn(total, range),
       outlier: range !== undefined && isOutlier(total, range),
     };
   });
@@ -192,37 +222,23 @@ function CreatureBalanceView({ cards }: { cards: readonly GridCard[] }): ReactNo
       </div>
       <figure className="creature-figure">
         <ul className="creature-legend" aria-hidden="true">
-          <li>
-            <span
-              className="legend-swatch"
-              style={{ background: "var(--chart-dot)", borderRadius: "50%", width: 10 }}
-            />
-            a creature (power + toughness)
-          </li>
-          <li>
-            <span className="legend-swatch" style={{ background: "var(--chart-band)" }} />
-            middle half of each mana value
-          </li>
-          <li>
-            <span
-              className="legend-swatch"
-              style={{ background: "var(--chart-median)", height: 2 }}
-            />
-            median: this cube&apos;s typical rate
-          </li>
-          <li>
-            <span
-              className="legend-swatch"
-              style={{ background: "var(--chart-outlier)", borderRadius: "50%", width: 10 }}
-            />
-            outlier, far from its mana value&apos;s middle half
-          </li>
+          {LEGEND.map((entry) => (
+            <li key={entry.label}>
+              <span
+                className="legend-swatch"
+                data-shape={entry.shape}
+                style={{ background: entry.color }}
+              />
+              {entry.label}
+            </li>
+          ))}
         </ul>
         <CreatureChart
           points={points}
           columns={columns}
           name="Creature size by mana value"
           tick={curveTick}
+          selected={selected}
           onPick={(slug) => {
             void navigate({
               to: ".",
@@ -586,7 +602,7 @@ export function InsightsPage(): ReactNode {
           collapsed={collapsed}
           onToggle={toggle}
         >
-          <CreatureBalanceView cards={cards} />
+          <CreatureBalanceView cards={cards} selected={search.card} />
         </Block>
       );
     }

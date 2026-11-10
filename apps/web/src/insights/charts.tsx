@@ -651,6 +651,7 @@ export interface CreaturePoint {
   body: string;
   mv: number;
   size: number;
+  place: "above" | "within" | "below";
   outlier: boolean;
 }
 
@@ -664,6 +665,12 @@ export interface CreatureColumn {
 }
 
 const JITTER = 0.07;
+
+const PLACES = [
+  { id: "within", fill: "var(--chart-dot)" },
+  { id: "above", fill: "var(--chart-above)" },
+  { id: "below", fill: "var(--chart-below)" },
+] as const;
 const BAND_HALF = 0.34;
 
 function spreadOut(points: readonly CreaturePoint[]): (CreaturePoint & { x: number })[] {
@@ -688,9 +695,11 @@ export function CreatureChart({
   columns,
   name,
   tick,
+  selected,
   onPick,
 }: {
   points: readonly CreaturePoint[];
+  selected?: string | undefined;
   columns: readonly CreatureColumn[];
   name: string;
   tick: TickLabel;
@@ -738,29 +747,33 @@ export function CreatureChart({
               strokeWidth: 2,
             }),
           ),
-          dot(
-            placed.filter((point) => !point.outlier),
-            {
-              id: "creatures",
-              x: "x",
-              y: "size",
-              r: 4,
-              fill: "var(--chart-dot)",
-              stroke: "var(--chart-surface)",
-              strokeWidth: 1,
-            },
+          ...PLACES.map((place) =>
+            dot(
+              placed.filter((point) => point.place === place.id),
+              {
+                id: `creatures-${place.id}`,
+                x: "x",
+                y: "size",
+                r: 4.5,
+                fill: place.fill,
+                stroke: "var(--chart-surface)",
+                strokeWidth: 1,
+              },
+            ),
           ),
-          dot(
-            placed.filter((point) => point.outlier),
-            {
-              id: "outliers",
-              x: "x",
-              y: "size",
-              r: 5,
-              fill: "var(--chart-outlier)",
-              stroke: "var(--chart-surface)",
-              strokeWidth: 1,
-            },
+          decorative(
+            dot(
+              placed.filter((point) => point.slug === selected),
+              {
+                id: "selected",
+                x: "x",
+                y: "size",
+                r: 9,
+                fill: "none",
+                stroke: "var(--fg)",
+                strokeWidth: 2,
+              },
+            ),
           ),
           text(
             placed.filter((point) => point.outlier),
@@ -788,12 +801,13 @@ export function CreatureChart({
         },
         tooltip: {
           use: tooltip,
+          sticky: false,
           placement: ["top", "bottom"],
           format: (point) =>
             "slug" in point.datum ? `${point.datum.name} ${point.datum.body}` : "",
         },
       }),
-    [columns, ids, placed, top],
+    [columns, ids, placed, selected, top],
   );
   return (
     <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>

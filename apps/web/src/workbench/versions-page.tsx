@@ -1,13 +1,12 @@
 import type {
   CardDiff,
-  CardStatus,
   CubeDiff,
   SectionDiff,
   Tag,
   VersionSummary,
   Workbench,
 } from "@repo/cube/browser";
-import { CARD_STATUSES, CURRENT, tagLabel } from "@repo/cube/browser";
+import { CARD_STATUSES, CARD_STATUS_LABELS, CURRENT, tagLabel } from "@repo/cube/browser";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -16,12 +15,6 @@ import { CardLink } from "../card-pane.tsx";
 import { queryClient } from "../query-client.ts";
 import { VERSIONS_QUERY_KEY, compareRequest, fetchVersions, saveVersionRequest } from "./api.ts";
 import { showToast } from "./toast.tsx";
-
-const STATUS_LABELS: Record<CardStatus, string> = {
-  draft: "Draft",
-  prospect: "Prospect",
-  cut: "Cut",
-};
 
 function versionName(id: string, versions: readonly VersionSummary[]): string {
   return id === CURRENT
@@ -83,7 +76,7 @@ function VersionList({ versions }: { versions: readonly VersionSummary[] }): Rea
           <th>Version</th>
           <th>Saved</th>
           {CARD_STATUSES.map((status) => (
-            <th key={status}>{STATUS_LABELS[status]}</th>
+            <th key={status}>{CARD_STATUS_LABELS[status]}</th>
           ))}
           <th>Compare</th>
         </tr>
@@ -162,8 +155,14 @@ function VersionSelect({
   );
 }
 
-function CardName({ slug, name }: { slug: string; name: string }): ReactNode {
-  return <CardLink slug={slug}>{name}</CardLink>;
+function CardName({
+  card,
+  live,
+}: {
+  card: Pick<CardDiff, "slug" | "name">;
+  live: ReadonlySet<string>;
+}): ReactNode {
+  return live.has(card.slug) ? <CardLink slug={card.slug}>{card.name}</CardLink> : card.name;
 }
 
 function TagChanges({
@@ -211,12 +210,20 @@ function DiffGroup({
 }
 
 function statusMove(card: CardDiff): string {
-  const from = card.before === undefined ? "Not in cube" : STATUS_LABELS[card.before];
-  const to = card.after === undefined ? "Not in cube" : STATUS_LABELS[card.after];
+  const from = card.before === undefined ? "Not in cube" : CARD_STATUS_LABELS[card.before];
+  const to = card.after === undefined ? "Not in cube" : CARD_STATUS_LABELS[card.after];
   return `${from} → ${to}`;
 }
 
-function CardGroups({ diff, vocabulary }: { diff: CubeDiff; vocabulary: readonly Tag[] }) {
+function CardGroups({
+  diff,
+  vocabulary,
+  live,
+}: {
+  diff: CubeDiff;
+  vocabulary: readonly Tag[];
+  live: ReadonlySet<string>;
+}) {
   const moved = diff.cards.filter(
     (card) => card.before !== undefined && card.after !== undefined && card.before !== card.after,
   );
@@ -226,7 +233,8 @@ function CardGroups({ diff, vocabulary }: { diff: CubeDiff; vocabulary: readonly
     (card) =>
       card.before !== undefined &&
       card.after !== undefined &&
-      (card.tagsAdded.length + card.tagsRemoved.length > 0 ||
+      (card.renamedFrom !== undefined ||
+        card.tagsAdded.length + card.tagsRemoved.length > 0 ||
         card.notesChanged ||
         card.printingChanged),
   );
@@ -242,8 +250,8 @@ function CardGroups({ diff, vocabulary }: { diff: CubeDiff; vocabulary: readonly
           <ul className="diff-cards">
             {added.map((card) => (
               <li key={card.slug}>
-                <CardName slug={card.slug} name={card.name} />
-                {card.after && <span className="muted"> as {STATUS_LABELS[card.after]}</span>}
+                <CardName card={card} live={live} />
+                {card.after && <span className="muted"> as {CARD_STATUS_LABELS[card.after]}</span>}
               </li>
             ))}
           </ul>
@@ -254,7 +262,7 @@ function CardGroups({ diff, vocabulary }: { diff: CubeDiff; vocabulary: readonly
           <ul className="diff-cards">
             {cards.map((card) => (
               <li key={card.slug}>
-                <CardName slug={card.slug} name={card.name} />
+                <CardName card={card} live={live} />
               </li>
             ))}
           </ul>
@@ -264,7 +272,9 @@ function CardGroups({ diff, vocabulary }: { diff: CubeDiff; vocabulary: readonly
         <DiffGroup title="Gone" count={removed.length}>
           <ul className="diff-cards">
             {removed.map((card) => (
-              <li key={card.slug}>{card.name}</li>
+              <li key={card.slug}>
+                <CardName card={card} live={live} />
+              </li>
             ))}
           </ul>
         </DiffGroup>
@@ -274,14 +284,17 @@ function CardGroups({ diff, vocabulary }: { diff: CubeDiff; vocabulary: readonly
           <ul className="diff-cards">
             {edited.map((card) => (
               <li key={card.slug}>
-                <CardName slug={card.slug} name={card.name} />
+                <CardName card={card} live={live} />
                 <TagChanges
                   added={card.tagsAdded}
                   removed={card.tagsRemoved}
                   vocabulary={vocabulary}
                 />
-                {card.notesChanged && <span className="diff-chip">notes</span>}
-                {card.printingChanged && <span className="diff-chip">printing</span>}
+                {card.renamedFrom !== undefined && (
+                  <span className="diff-chip">was {card.renamedFrom}</span>
+                )}
+                {card.notesChanged && <span className="diff-chip">notes edited</span>}
+                {card.printingChanged && <span className="diff-chip">printing changed</span>}
               </li>
             ))}
           </ul>
@@ -394,20 +407,21 @@ function Comparison({
   if (!diff) {
     return <p className="muted">Comparing…</p>;
   }
-  const vocabulary = [...cube.vocabulary, ...diff.tags.removed];
-  const names = new Map(cube.cards.map((card) => [card.slug, card.name]));
+  const vocabulary = diff.vocabulary;
+  const names = new Map(Object.entries(diff.names));
+  const live = new Set(cube.cards.map((card) => card.slug));
   const empty =
     diff.cards.length === 0 &&
     diff.sections.length === 0 &&
     diff.tags.added.length + diff.tags.removed.length + diff.tags.changed.length === 0;
   return (
-    <div className="comparison" aria-label="Comparison">
+    <section className="comparison" aria-label="Comparison">
       <table className="tag-table diff-counts" aria-label="Card counts">
         <thead>
           <tr>
-            <th />
+            <td />
             {CARD_STATUSES.map((status) => (
-              <th key={status}>{STATUS_LABELS[status]}</th>
+              <th key={status}>{CARD_STATUS_LABELS[status]}</th>
             ))}
           </tr>
         </thead>
@@ -430,7 +444,7 @@ function Comparison({
         <p className="muted">No changes.</p>
       ) : (
         <div className="diff-groups">
-          <CardGroups diff={diff} vocabulary={vocabulary} />
+          <CardGroups diff={diff} vocabulary={vocabulary} live={live} />
           <TagGroup tags={diff.tags} />
           {diff.sections.length > 0 && (
             <DiffGroup title="Board sections" count={diff.sections.length}>
@@ -448,7 +462,7 @@ function Comparison({
           )}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -468,8 +482,10 @@ export function VersionsPage({ cube }: { cube: Workbench | undefined }): ReactNo
       <p className="muted">Loading versions…</p>
     );
   }
-  const from = search.from ?? versions[0]?.id;
-  const to = search.to ?? CURRENT;
+  const known = (id: string | undefined): id is string =>
+    id === CURRENT || versions.some((version) => version.id === id);
+  const from = known(search.from) ? search.from : versions[0]?.id;
+  const to = known(search.to) ? search.to : CURRENT;
   const pick = (next: { from?: string; to?: string }): void => {
     void navigate({
       to: "/versions",

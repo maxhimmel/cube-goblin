@@ -10,7 +10,6 @@ export const BLOCKS = [
   { id: "types", span: 4, h: 12, minH: 6 },
   { id: "functions", span: 4, h: 12, minH: 6 },
   { id: "status", span: 4, h: 8, minH: 5 },
-  { id: "sections", span: 4, h: 8, minH: 5 },
   { id: "archetype", span: 4, h: 6, minH: 4 },
   { id: "group", span: 4, h: 6, minH: 4 },
 ] as const;

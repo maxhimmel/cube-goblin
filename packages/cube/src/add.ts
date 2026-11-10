@@ -4,7 +4,7 @@ import type { CardEntry } from "./schema.ts";
 import { newCardSchema } from "./schema.ts";
 import { slugify } from "./slug.ts";
 import type { CubePaths } from "./store.ts";
-import { WORKBENCH_BATCH, readCards, readSections, readTags, writeCard } from "./store.ts";
+import { WORKBENCH_BATCH, readCards, readTags, writeCard } from "./store.ts";
 import { validateCube } from "./validate.ts";
 
 export type AddResult =
@@ -31,11 +31,7 @@ export async function addCard(
     return { ok: false, status: 400, error: parsed.error.message };
   }
   const request = parsed.data;
-  const [cards, sections, tags] = await Promise.all([
-    readCards(paths),
-    readSections(paths),
-    readTags(paths),
-  ]);
+  const [cards, tags] = await Promise.all([readCards(paths), readTags(paths)]);
   const already = cards.find((card) => card.oracleId === request.oracleId);
   if (already) {
     return { ok: false, status: 400, error: `${already.name} is already in the cube` };
@@ -64,7 +60,6 @@ export async function addCard(
     name,
     oracleId: request.oracleId,
     status: request.status,
-    ...(request.section === undefined ? {} : { section: request.section }),
     tags: request.copyTags === true && outgoing ? outgoing.tags : [],
     notes: "",
     source: { batch: WORKBENCH_BATCH, line, input: text },
@@ -74,7 +69,7 @@ export async function addCard(
     ...cards.map((existing) => (replaced && existing === outgoing ? replaced : existing)),
     card,
   ];
-  const problems = validateCube(next, sections, tags);
+  const problems = validateCube(next, tags);
   if (problems.length > 0) {
     return { ok: false, status: 400, error: problems.join("\n") };
   }

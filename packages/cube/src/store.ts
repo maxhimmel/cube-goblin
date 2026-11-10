@@ -3,22 +3,15 @@ import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
 import { EMPTY_BOARD } from "./board.ts";
-import type { Board, CardEntry, CubeConfig, Section, Tag } from "./schema.ts";
+import type { Board, CardEntry, CubeConfig, Tag } from "./schema.ts";
 import { slugify } from "./slug.ts";
-import {
-  boardSchema,
-  cardEntrySchema,
-  cubeConfigSchema,
-  sectionsFileSchema,
-  tagsFileSchema,
-} from "./schema.ts";
+import { boardSchema, cardEntrySchema, cubeConfigSchema, tagsFileSchema } from "./schema.ts";
 
 export const WORKBENCH_BATCH = "workbench";
 
 export interface CubePaths {
   root: string;
   cardsDir: string;
-  sectionsFile: string;
   tagsFile: string;
   boardFile: string;
   configFile: string;
@@ -29,7 +22,6 @@ export function cubePaths(repoRoot: string): CubePaths {
   return {
     root: join(repoRoot, "cube"),
     cardsDir: join(repoRoot, "cube", "cards"),
-    sectionsFile: join(repoRoot, "cube", "sections.json"),
     tagsFile: join(repoRoot, "cube", "tags.json"),
     boardFile: join(repoRoot, "cube", "board.json"),
     configFile: join(repoRoot, "cube.config.json"),
@@ -48,10 +40,6 @@ async function readJson<S extends z.ZodType>(path: string, schema: S): Promise<z
 
 export function readConfig(paths: CubePaths): Promise<CubeConfig> {
   return readJson(paths.configFile, cubeConfigSchema);
-}
-
-export async function readSections(paths: CubePaths): Promise<Section[]> {
-  return (await readJson(paths.sectionsFile, sectionsFileSchema)).sections;
 }
 
 export async function readTags(paths: CubePaths): Promise<Tag[]> {

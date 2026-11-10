@@ -1,4 +1,4 @@
-import type { CardPatch, Section, Tag, WorkbenchCard } from "@repo/cube/browser";
+import type { CardPatch, Tag, WorkbenchCard } from "@repo/cube/browser";
 import { CARD_STATUSES, TAG_KINDS } from "@repo/cube/browser";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -273,11 +273,9 @@ export function CardPrinting({ card }: { card: WorkbenchCard }): ReactNode {
 
 export function CardEditor({
   card,
-  sections,
   vocabulary,
 }: {
   card: WorkbenchCard;
-  sections: Section[];
   vocabulary: Tag[];
 }): ReactNode {
   const edit = useCardEdit();
@@ -310,27 +308,6 @@ export function CardEditor({
           ))}
         </div>
       </fieldset>
-      <label className="field">
-        Section
-        <select
-          aria-label="Section"
-          value={card.section ?? ""}
-          onChange={(event) => {
-            save(
-              "section",
-              { section: event.target.value || null },
-              { section: card.section ?? null },
-            );
-          }}
-        >
-          <option value="">none</option>
-          {sections.map((section) => (
-            <option key={section.id} value={section.id}>
-              {section.label}
-            </option>
-          ))}
-        </select>
-      </label>
       {card.status !== "cut" && (
         <Link to="/add" search={{ replaces: card.slug }}>
           Swap for another card…

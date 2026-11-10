@@ -6,7 +6,6 @@ import {
   FUNCTION_ORACLE_TAG_IDS,
   cardFunctions,
   readCards,
-  readSections,
   slugify,
   snapshotSchema,
 } from "@repo/cube";
@@ -17,7 +16,7 @@ import { imageDataUri } from "../images.ts";
 import { CUBE_PATHS, SNAPSHOT_FILE } from "../paths.ts";
 
 export async function snapshot(): Promise<number> {
-  const [entries, sections] = await Promise.all([readCards(CUBE_PATHS), readSections(CUBE_PATHS)]);
+  const entries = await readCards(CUBE_PATHS);
   const client = createClient();
   const { cards: byOracle, missing: notFound, unresolved } = await client.forEntries(entries);
   if (unresolved.length > 0) {
@@ -51,7 +50,6 @@ export async function snapshot(): Promise<number> {
       name: entry.name,
       oracleId: entry.oracleId,
       status: entry.status,
-      ...(entry.section === undefined ? {} : { section: entry.section }),
       ...display,
       functions: cardFunctions({ oracleId: entry.oracleId, producedMana }, oracleTags.index),
       image: await imageDataUri(fields.image, `${card.id}-small`, USER_AGENT),
@@ -67,7 +65,6 @@ export async function snapshot(): Promise<number> {
     id,
     createdAt: new Date().toISOString(),
     cards: snapshotCards,
-    sections,
     ...(oracleTags.fetchedAt === undefined
       ? {}
       : { functionsAsOf: new Date(oracleTags.fetchedAt).toISOString() }),

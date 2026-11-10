@@ -1,5 +1,5 @@
 import { CARD_FUNCTIONS } from "./functions.ts";
-import type { CardStatus, Section, Tag } from "./schema.ts";
+import type { CardStatus, Tag } from "./schema.ts";
 import { CARD_STATUSES } from "./schema.ts";
 
 export const COLORS = [
@@ -29,7 +29,6 @@ export interface StatCard {
   cmc: number;
   typeLine: string;
   manaCost?: string | undefined;
-  section?: string | undefined;
   tags?: string[] | undefined;
   functions?: readonly string[] | undefined;
 }
@@ -57,7 +56,6 @@ export interface CubeStats {
   creatures: number;
   types: Count[];
   functions: Count[];
-  sections: Count[];
   tags: (Count & { kind: Tag["kind"] })[];
 }
 
@@ -118,11 +116,7 @@ function count<T>(cards: readonly T[], test: (card: T) => boolean): number {
   return cards.filter(test).length;
 }
 
-export function cubeStats(
-  cards: readonly StatCard[],
-  vocabulary: readonly Tag[],
-  sections: readonly Section[] = [],
-): CubeStats {
+export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]): CubeStats {
   const spells = cards.filter((card) => !isLand(card));
   const pips = cards.flatMap((card) => pipColors(card.manaCost ?? ""));
   return {
@@ -166,11 +160,6 @@ export function cubeStats(
       label,
       count: count(cards, (card) => card.functions?.includes(id) ?? false),
     })),
-    sections: sections.map((section) => ({
-      id: section.id,
-      label: section.label,
-      count: count(cards, (card) => card.section === section.id),
-    })),
     tags: vocabulary.map((tag) => ({
       id: tag.id,
       label: tag.label,
@@ -188,7 +177,6 @@ export const BUCKET_KINDS = [
   "type",
   "function",
   "status",
-  "section",
   "tag",
 ] as const;
 
@@ -227,8 +215,6 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
       return card.functions?.includes(first) ?? false;
     case "status":
       return card.status === first;
-    case "section":
-      return card.section === first;
     case "tag":
       return card.tags?.includes(first) ?? false;
   }

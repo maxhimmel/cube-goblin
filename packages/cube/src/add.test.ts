@@ -16,7 +16,6 @@ const shock: CardEntry = {
   name: "Shock",
   oracleId: "8b4b6b0e-0000-4000-8000-000000000001",
   status: "prospect",
-  section: "pirates",
   tags: ["burn"],
   notes: "fine",
   source: { batch: "test", line: 1, input: "Shock" },
@@ -39,10 +38,6 @@ beforeEach(async () => {
   paths = cubePaths(await mkdtemp(join(tmpdir(), "cube-add-")));
   await mkdir(paths.root, { recursive: true });
   await writeFile(
-    paths.sectionsFile,
-    JSON.stringify({ sections: [{ id: "pirates", label: "Pirates", header: "x" }] }),
-  );
-  await writeFile(
     paths.tagsFile,
     JSON.stringify({ tags: [{ id: "burn", label: "Burn", kind: "group" }] }),
   );
@@ -52,24 +47,19 @@ beforeEach(async () => {
 describe("addCard", () => {
   it("writes the card and a workbench batch line it points to", async () => {
     const first = await addCard(paths, { oracleId: BOLT_ID, status: "draft" }, lookup);
-    const second = await addCard(
-      paths,
-      { oracleId: OPT_ID, status: "prospect", section: "pirates" },
-      lookup,
-    );
+    const second = await addCard(paths, { oracleId: OPT_ID, status: "prospect" }, lookup);
     expect(first).toMatchObject({ ok: true });
     expect(second).toMatchObject({ ok: true });
     expect(await card("opt")).toEqual({
       name: "Opt",
       oracleId: OPT_ID,
       status: "prospect",
-      section: "pirates",
       tags: [],
       notes: "",
       source: { batch: "workbench", line: 2, input: "[  ] Opt" },
     });
     const batch = parseBatch(await readFile(paths.workbenchBatch, "utf8"));
-    expect(batch.entries.map((entry) => [entry.line, entry.name])).toEqual([
+    expect(batch.map((entry) => [entry.line, entry.name])).toEqual([
       [1, "Lightning Bolt"],
       [2, "Opt"],
     ]);
@@ -81,7 +71,6 @@ describe("addCard", () => {
       {
         oracleId: BOLT_ID,
         status: "prospect",
-        section: "pirates",
         replaces: "shock",
         copyTags: true,
       },
@@ -91,7 +80,6 @@ describe("addCard", () => {
     expect(await card("shock")).toEqual({ ...shock, status: "cut" });
     expect(await card("lightning-bolt")).toMatchObject({
       status: "prospect",
-      section: "pirates",
       tags: ["burn"],
       notes: "",
     });
@@ -135,10 +123,10 @@ describe("addCard", () => {
     expect(lookups).toBe(0);
   });
 
-  it("rejects an unknown section", async () => {
+  it("rejects a section field", async () => {
     const result = await addCard(
       paths,
-      { oracleId: BOLT_ID, status: "prospect", section: "elves" },
+      { oracleId: BOLT_ID, status: "prospect", section: "pirates" },
       lookup,
     );
     expect(result).toMatchObject({ ok: false, status: 400 });

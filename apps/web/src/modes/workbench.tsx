@@ -74,9 +74,7 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
   if (!data || !card) {
     return null;
   }
-  return (
-    <CardEditor key={slug} card={card} sections={data.sections} vocabulary={data.vocabulary} />
-  );
+  return <CardEditor key={slug} card={card} vocabulary={data.vocabulary} />;
 }
 
 export const mode: Mode = {
@@ -96,7 +94,6 @@ export const mode: Mode = {
     return (
       data && {
         cards: data.cards,
-        sections: data.sections,
         vocabulary: data.vocabulary,
         label: "live from cube/cards",
         size: data.size,

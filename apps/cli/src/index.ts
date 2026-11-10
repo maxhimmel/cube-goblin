@@ -17,7 +17,7 @@ Commands:
   cards <name...>      Look up many cards at once
   search <query>       Scryfall search syntax, e.g. "o:graveyard t:sorcery"
   add <batch-file>     Parse a batch list, resolve on Scryfall, write cube/cards/*.json
-  validate             Check cube files: schema, singleton, sections, size
+  validate             Check cube files: schema, singleton, tags, board, size
   pin-printings        Save each card's current printing so Scryfall can't change it
   snapshot             Bake cube + Scryfall data + images for the share doc build
   review import <src>  Import a friend's review (saved .html, code, or .json)

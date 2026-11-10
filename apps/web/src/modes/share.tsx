@@ -13,7 +13,6 @@ import type { CubeView, Mode } from "./mode.ts";
 
 const view: CubeView = {
   cards: snapshot.cards,
-  sections: snapshot.sections,
   vocabulary: [],
   label: `snapshot ${snapshot.id}`,
   functionsAsOf: snapshot.functionsAsOf,

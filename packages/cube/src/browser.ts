@@ -46,7 +46,6 @@ export type {
   CardPatch,
   CardStatus,
   NewCard,
-  Section,
   Tag,
   TagKind,
 } from "./schema.ts";

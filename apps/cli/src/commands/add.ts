@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import type { CardEntry } from "@repo/cube";
-import { parseBatch, readCards, readSections, writeCard } from "@repo/cube";
+import { parseBatch, readCards, writeCard } from "@repo/cube";
 import { chalk } from "zx";
 import { createClient } from "../client.ts";
 import { CUBE_PATHS } from "../paths.ts";
@@ -13,28 +13,11 @@ export interface AddOptions {
 
 export async function addBatch(file: string, options: AddOptions): Promise<number> {
   const batch = basename(file, extname(file));
-  const parsed = parseBatch(await readFile(file, "utf8"));
-  const sections = await readSections(CUBE_PATHS);
-  const sectionByHeader = new Map(sections.map((section) => [section.header, section]));
-
-  const unknownHeaders = parsed.headers.filter((header) => !sectionByHeader.has(header));
-  if (unknownHeaders.length > 0) {
-    console.error(
-      chalk.red(
-        `Unknown section headers; add them to cube/sections.json: ${unknownHeaders.join(", ")}`,
-      ),
-    );
-    return 1;
-  }
-
+  const lines = parseBatch(await readFile(file, "utf8"));
   const existing = new Map((await readCards(CUBE_PATHS)).map((card) => [card.oracleId, card]));
-  const { resolved, unresolved } = await resolveEntries(
-    createClient(),
-    parsed.entries,
-    (done, total) => {
-      process.stderr.write(`\rResolving ${String(done)}/${String(total)}`);
-    },
-  );
+  const { resolved, unresolved } = await resolveEntries(createClient(), lines, (done, total) => {
+    process.stderr.write(`\rResolving ${String(done)}/${String(total)}`);
+  });
   process.stderr.write("\n");
 
   const written: CardEntry[] = [];
@@ -52,13 +35,10 @@ export async function addBatch(file: string, options: AddOptions): Promise<numbe
       );
       continue;
     }
-    const section =
-      entry.sectionHeader === undefined ? undefined : sectionByHeader.get(entry.sectionHeader);
     const cardEntry: CardEntry = {
       name: card.name,
       oracleId,
-      status: section ? "prospect" : "draft",
-      ...(section ? { section: section.id } : {}),
+      status: "draft",
       tags: [],
       notes: "",
       source: { batch, line: entry.line, input: entry.input },
@@ -73,11 +53,8 @@ export async function addBatch(file: string, options: AddOptions): Promise<numbe
     }
   }
 
-  const drafts = written.filter((card) => card.status === "draft").length;
   console.log(
-    chalk.green(
-      `${options.dryRun ? "Would add" : "Added"} ${String(written.length)} cards (${String(drafts)} draft, ${String(written.length - drafts)} prospect)`,
-    ),
+    chalk.green(`${options.dryRun ? "Would add" : "Added"} ${String(written.length)} draft cards`),
   );
   for (const line of skipped) {
     console.log(chalk.dim(`skip: ${line}`));

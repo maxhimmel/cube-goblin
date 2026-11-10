@@ -28,10 +28,6 @@ beforeEach(async () => {
   paths = cubePaths(await mkdtemp(join(tmpdir(), "cube-update-")));
   await mkdir(paths.root, { recursive: true });
   await writeFile(
-    paths.sectionsFile,
-    JSON.stringify({ sections: [{ id: "pirates", label: "Pirates", header: "x" }] }),
-  );
-  await writeFile(
     paths.tagsFile,
     JSON.stringify({
       tags: ["removal", "burn", "a", "b"].map((id) => ({ id, label: id, kind: "group" })),
@@ -43,7 +39,7 @@ beforeEach(async () => {
 
 describe("updateCard", () => {
   it("writes a valid edit to the card file", async () => {
-    const edited = { ...shock, status: "cut", notes: "too narrow", section: "pirates" };
+    const edited = { ...shock, status: "cut", notes: "too narrow" };
     expect(await updateCard(paths, "shock", edited)).toEqual({ ok: true, card: edited });
     expect(await onDisk("shock")).toEqual(edited);
   });
@@ -88,8 +84,10 @@ describe("updateCard", () => {
   });
 
   it("rejects edits that break cube rules", async () => {
-    const unknownSection = await updateCard(paths, "shock", { ...shock, section: "elves" });
-    expect(unknownSection).toMatchObject({ ok: false, status: 400 });
+    const unknownTag = await updateCard(paths, "shock", { ...shock, tags: ["elves"] });
+    expect(unknownTag).toMatchObject({ ok: false, status: 400 });
+    const withSection = await updateCard(paths, "shock", { ...shock, section: "pirates" });
+    expect(withSection).toMatchObject({ ok: false, status: 400 });
     expect(await onDisk("shock")).toEqual(shock);
     expect(await onDisk("opt")).toEqual(opt);
   });
@@ -97,8 +95,8 @@ describe("updateCard", () => {
 
 describe("patchCard", () => {
   it("merges editable fields into the card on disk", async () => {
-    const result = await patchCard(paths, "shock", { status: "prospect", section: "pirates" });
-    const expected = { ...shock, status: "prospect", section: "pirates" };
+    const result = await patchCard(paths, "shock", { status: "prospect" });
+    const expected = { ...shock, status: "prospect" };
     expect(result).toEqual({ ok: true, card: expected });
     expect(await onDisk("shock")).toEqual(expected);
 
@@ -112,12 +110,6 @@ describe("patchCard", () => {
     expect(await onDisk("shock")).toMatchObject({ tags: ["a", "b"] });
     await patchCard(paths, "shock", { removeTags: ["a"] });
     expect(await onDisk("shock")).toMatchObject({ tags: ["b"] });
-  });
-
-  it("clears the section with null", async () => {
-    await patchCard(paths, "shock", { section: "pirates" });
-    await patchCard(paths, "shock", { section: null });
-    expect(await onDisk("shock")).toEqual(shock);
   });
 
   it("sets a printing and clears it with null", async () => {

@@ -10,7 +10,7 @@ function card(overrides: Partial<StatCard>): StatCard {
 const cards: StatCard[] = [
   card({ colors: ["R"], cmc: 1, tags: ["burn"], manaCost: "{R}", functions: ["removal"] }),
   card({ colors: ["R"], cmc: 1, status: "prospect" }),
-  card({ colors: ["U", "R"], cmc: 2, tags: ["burn"], manaCost: "{U/R}{R}", section: "gold" }),
+  card({ colors: ["U", "R"], cmc: 2, tags: ["burn"], manaCost: "{U/R}{R}" }),
   card({ cmc: 9, typeLine: "Artifact Creature — Eldrazi", status: "cut" }),
   card({ typeLine: "Land" }),
   card({ colors: ["G"], cmc: 3, typeLine: "Creature — Elf // Land" }),
@@ -18,11 +18,7 @@ const cards: StatCard[] = [
 ];
 
 describe("cubeStats", () => {
-  const stats = cubeStats(
-    cards,
-    [{ id: "burn", label: "Burn", kind: "group" }],
-    [{ id: "gold", label: "Gold", header: "Gold" }],
-  );
+  const stats = cubeStats(cards, [{ id: "burn", label: "Burn", kind: "group" }]);
 
   it("counts card types, with lands read from the front face", () => {
     const types = Object.fromEntries(stats.types.map((row) => [row.id, row.count]));
@@ -38,9 +34,8 @@ describe("cubeStats", () => {
     expect(stats.creatures).toBe(2);
   });
 
-  it("counts functions, sections, and colored mana symbols", () => {
+  it("counts functions and colored mana symbols", () => {
     expect(stats.functions.find((row) => row.id === "removal")?.count).toBe(1);
-    expect(stats.sections).toEqual([{ id: "gold", label: "Gold", count: 1 }]);
     const pips = Object.fromEntries(stats.pips.map((row) => [row.id, row.count]));
     expect(pips).toEqual({ W: 0, U: 1, B: 0, R: 3, G: 0 });
   });
@@ -102,15 +97,13 @@ describe("isLand", () => {
 
 describe("inBucket", () => {
   const vocabulary = [{ id: "burn", label: "Burn", kind: "group" as const }];
-  const sections = [{ id: "gold", label: "Gold", header: "Gold" }];
-  const stats = cubeStats(cards, vocabulary, sections);
+  const stats = cubeStats(cards, vocabulary);
   const counted: [BucketKind, Count[]][] = [
     ["curve", stats.curve],
     ["color", stats.colors],
     ["type", stats.types],
     ["function", stats.functions],
     ["status", stats.status],
-    ["section", stats.sections],
     ["tag", stats.tags],
   ];
 

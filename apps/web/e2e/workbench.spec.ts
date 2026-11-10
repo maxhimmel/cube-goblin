@@ -132,7 +132,7 @@ test("parallel writes leave a valid card file", async ({ page, workbench }) => {
   expect(leftovers).toEqual([]);
 });
 
-test("editing status, section, tags and notes auto-saves to disk", async ({ page, workbench }) => {
+test("editing status, tags and notes auto-saves to disk", async ({ page, workbench }) => {
   const slug = "banishing-light";
   const entry = await readEntry(workbench.cardsDir, slug);
   const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
@@ -140,9 +140,6 @@ test("editing status, section, tags and notes auto-saves to disk", async ({ page
 
   await page.getByRole("button", { name: "prospect", exact: true }).click();
   await expect.poll(async () => (await disk()).status).toBe("prospect");
-
-  await page.getByLabel("Section").selectOption("pirates");
-  await expect.poll(async () => (await disk()).section).toBe("pirates");
 
   await page.getByLabel("Tag name").fill("removal");
   await page.getByRole("button", { name: "Add tag" }).click();
@@ -162,8 +159,7 @@ test("editing status, section, tags and notes auto-saves to disk", async ({ page
 
   await page.getByRole("button", { name: "Remove tag Removal" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual(entry.tags);
-  await page.getByLabel("Section").selectOption("");
-  await expect.poll(async () => (await disk()).section).toBeUndefined();
+  await expect(page.getByLabel("Section")).toHaveCount(0);
 });
 
 test("undo reverts the last save on disk", async ({ page, workbench }) => {
@@ -390,20 +386,6 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
     .poll(async () => (await disk()).map((entry) => entry.status))
     .toEqual(before.map((entry) => entry.status));
 
-  const sections = async (): Promise<(string | undefined)[]> =>
-    (await disk()).map((entry) => entry.section);
-  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("vampires");
-  await bar.getByRole("button", { name: "Apply move to section" }).click();
-  await expect.poll(sections).toEqual(["vampires", "vampires", "vampires"]);
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect.poll(sections).toEqual(before.map((entry) => entry.section));
-
-  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("__none");
-  await bar.getByRole("button", { name: "Apply move to section" }).click();
-  await expect.poll(sections).toEqual([undefined, undefined, undefined]);
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect.poll(sections).toEqual(before.map((entry) => entry.section));
-
   await bar.getByRole("combobox", { name: "Add tag to selected" }).selectOption("removal");
   await bar.getByRole("button", { name: "Apply add tag to selected" }).click();
   await expect
@@ -419,14 +401,14 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
   await expect(page.getByLabel("Organize by")).toBeFocused();
 });
 
-test("the grid organizes by status, section, and tag kind", async ({ page, workbench }) => {
+test("the grid organizes by status and tag kind", async ({ page, workbench }) => {
   const slug = "clarion-conqueror";
   const created = await page.request.post(`${workbench.url}api/tags`, {
     data: { label: "Pile test", kind: "archetype" },
   });
   expect(created.status()).toBe(200);
   const patched = await page.request.patch(`${workbench.url}api/cards`, {
-    data: { changes: [{ slug, patch: { addTags: ["pile-test", "removal"], section: "pirates" } }] },
+    data: { changes: [{ slug, patch: { addTags: ["pile-test", "removal"] } }] },
   });
   expect(patched.status()).toBe(200);
   await page.goto(`${workbench.url}#/cards`);
@@ -445,8 +427,7 @@ test("the grid organizes by status, section, and tag kind", async ({ page, workb
   await expect(organize).toHaveValue("group");
   await expect(tile("tag-removal")).toBeVisible();
 
-  await organize.selectOption("section");
-  await expect(tile("pirates")).toBeVisible();
+  await expect(organize.locator('option[value="section"]')).toHaveCount(0);
 
   await organize.selectOption("status");
   const draft = page.locator('[data-pile="draft"]');
@@ -505,7 +486,6 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
     "aria-pressed",
     "true",
   );
-  await expect(page.getByLabel("Section")).toHaveValue("pirates");
   await page.getByLabel("Search Scryfall").fill('!"Counterspell"');
   await page.getByRole("button", { name: "Swap in Counterspell", exact: true }).click();
 
@@ -514,19 +494,15 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
   expect(await readEntry(workbench.cardsDir, slug)).toEqual({ ...before, status: "cut" });
   expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({
     status: before.status,
-    section: "pirates",
     tags: before.tags,
     notes: "",
   });
 });
 
-test("a swap opened by URL starts from the old card's status and section", async ({
-  page,
-  workbench,
-}) => {
+test("a swap opened by URL starts from the old card's status", async ({ page, workbench }) => {
   const slug = "deathgorge-scavenger";
   const patched = await page.request.patch(`${workbench.url}api/cards`, {
-    data: { changes: [{ slug, patch: { status: "draft", section: "dinosaurs" } }] },
+    data: { changes: [{ slug, patch: { status: "draft" } }] },
   });
   expect(patched.status()).toBe(200);
   await page.goto(`${workbench.url}#/add?replaces=${slug}`);
@@ -534,7 +510,6 @@ test("a swap opened by URL starts from the old card's status and section", async
     "aria-pressed",
     "true",
   );
-  await expect(page.getByLabel("Section")).toHaveValue("dinosaurs");
 });
 
 async function draftCount(cardsDir: string): Promise<number> {

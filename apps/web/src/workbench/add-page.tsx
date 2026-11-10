@@ -72,19 +72,12 @@ export function AddPage({
       </p>
     );
   }
-  return <AddForm cube={cube} outgoing={outgoing} />;
+  return <AddForm outgoing={outgoing} />;
 }
 
-function AddForm({
-  cube,
-  outgoing,
-}: {
-  cube: Workbench;
-  outgoing: WorkbenchCard | undefined;
-}): ReactNode {
+function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNode {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CardStatus>(outgoing?.status ?? "prospect");
-  const [section, setSection] = useState(outgoing?.section ?? "");
   const [copyTags, setCopyTags] = useState(true);
   const navigate = useNavigate();
   const settled = useDebounced(query.trim());
@@ -122,8 +115,7 @@ function AddForm({
       <h1>{outgoing ? `Swap out ${outgoing.name}` : "Add a card"}</h1>
       {outgoing && (
         <p className="muted">
-          {outgoing.name} becomes cut and keeps its notes. The new card takes the status and section
-          below.
+          {outgoing.name} becomes cut and keeps its notes. The new card takes the status below.
         </p>
       )}
       <div className="add-options">
@@ -144,23 +136,6 @@ function AddForm({
             ))}
           </div>
         </fieldset>
-        <label className="field">
-          Section
-          <select
-            aria-label="Section"
-            value={section}
-            onChange={(event) => {
-              setSection(event.target.value);
-            }}
-          >
-            <option value="">none</option>
-            {cube.sections.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
         {outgoing && outgoing.tags.length > 0 && (
           <label>
             <input
@@ -204,7 +179,6 @@ function AddForm({
                 add.mutate({
                   oracleId: result.oracleId,
                   status,
-                  ...(section ? { section } : {}),
                   ...(outgoing ? { replaces: outgoing.slug, copyTags } : {}),
                 });
               }}

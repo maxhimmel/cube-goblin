@@ -35,7 +35,7 @@ const test = base.extend<object, { workbench: Workbench }>({
         join(root, "cube", "tags.json"),
         `${JSON.stringify({ tags: TEST_VOCABULARY }, null, 2)}\n`,
       );
-      await writeFile(join(root, "cube", "board.json"), `${JSON.stringify({ bins: [] })}\n`);
+      await writeFile(join(root, "cube", "board.json"), `${JSON.stringify({ sections: [] })}\n`);
       const cardsDir = join(root, "cube", "cards");
       for (const file of await readdir(cardsDir)) {
         const path = join(cardsDir, file);
@@ -132,7 +132,7 @@ test("parallel writes leave a valid card file", async ({ page, workbench }) => {
   expect(leftovers).toEqual([]);
 });
 
-test("editing status, section, tags and notes auto-saves to disk", async ({ page, workbench }) => {
+test("editing status, tags and notes auto-saves to disk", async ({ page, workbench }) => {
   const slug = "banishing-light";
   const entry = await readEntry(workbench.cardsDir, slug);
   const disk = (): Promise<CardEntry> => readEntry(workbench.cardsDir, slug);
@@ -140,9 +140,6 @@ test("editing status, section, tags and notes auto-saves to disk", async ({ page
 
   await page.getByRole("button", { name: "prospect", exact: true }).click();
   await expect.poll(async () => (await disk()).status).toBe("prospect");
-
-  await page.getByLabel("Section").selectOption("pirates");
-  await expect.poll(async () => (await disk()).section).toBe("pirates");
 
   await page.getByLabel("Tag name").fill("removal");
   await page.getByRole("button", { name: "Add tag" }).click();
@@ -162,8 +159,7 @@ test("editing status, section, tags and notes auto-saves to disk", async ({ page
 
   await page.getByRole("button", { name: "Remove tag Removal" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual(entry.tags);
-  await page.getByLabel("Section").selectOption("");
-  await expect.poll(async () => (await disk()).section).toBeUndefined();
+  await expect(page.getByLabel("Section")).toHaveCount(0);
 });
 
 test("undo reverts the last save on disk", async ({ page, workbench }) => {
@@ -390,20 +386,6 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
     .poll(async () => (await disk()).map((entry) => entry.status))
     .toEqual(before.map((entry) => entry.status));
 
-  const sections = async (): Promise<(string | undefined)[]> =>
-    (await disk()).map((entry) => entry.section);
-  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("vampires");
-  await bar.getByRole("button", { name: "Apply move to section" }).click();
-  await expect.poll(sections).toEqual(["vampires", "vampires", "vampires"]);
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect.poll(sections).toEqual(before.map((entry) => entry.section));
-
-  await bar.getByRole("combobox", { name: "Move to section" }).selectOption("__none");
-  await bar.getByRole("button", { name: "Apply move to section" }).click();
-  await expect.poll(sections).toEqual([undefined, undefined, undefined]);
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect.poll(sections).toEqual(before.map((entry) => entry.section));
-
   await bar.getByRole("combobox", { name: "Add tag to selected" }).selectOption("removal");
   await bar.getByRole("button", { name: "Apply add tag to selected" }).click();
   await expect
@@ -419,14 +401,14 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
   await expect(page.getByLabel("Organize by")).toBeFocused();
 });
 
-test("the grid organizes by status, section, and tag kind", async ({ page, workbench }) => {
+test("the grid organizes by status and tag kind", async ({ page, workbench }) => {
   const slug = "clarion-conqueror";
   const created = await page.request.post(`${workbench.url}api/tags`, {
     data: { label: "Pile test", kind: "archetype" },
   });
   expect(created.status()).toBe(200);
   const patched = await page.request.patch(`${workbench.url}api/cards`, {
-    data: { changes: [{ slug, patch: { addTags: ["pile-test", "removal"], section: "pirates" } }] },
+    data: { changes: [{ slug, patch: { addTags: ["pile-test", "removal"] } }] },
   });
   expect(patched.status()).toBe(200);
   await page.goto(`${workbench.url}#/cards`);
@@ -445,8 +427,7 @@ test("the grid organizes by status, section, and tag kind", async ({ page, workb
   await expect(organize).toHaveValue("group");
   await expect(tile("tag-removal")).toBeVisible();
 
-  await organize.selectOption("section");
-  await expect(tile("pirates")).toBeVisible();
+  await expect(organize.locator('option[value="section"]')).toHaveCount(0);
 
   await organize.selectOption("status");
   const draft = page.locator('[data-pile="draft"]');
@@ -505,7 +486,6 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
     "aria-pressed",
     "true",
   );
-  await expect(page.getByLabel("Section")).toHaveValue("pirates");
   await page.getByLabel("Search Scryfall").fill('!"Counterspell"');
   await page.getByRole("button", { name: "Swap in Counterspell", exact: true }).click();
 
@@ -514,19 +494,15 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
   expect(await readEntry(workbench.cardsDir, slug)).toEqual({ ...before, status: "cut" });
   expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({
     status: before.status,
-    section: "pirates",
     tags: before.tags,
     notes: "",
   });
 });
 
-test("a swap opened by URL starts from the old card's status and section", async ({
-  page,
-  workbench,
-}) => {
+test("a swap opened by URL starts from the old card's status", async ({ page, workbench }) => {
   const slug = "deathgorge-scavenger";
   const patched = await page.request.patch(`${workbench.url}api/cards`, {
-    data: { changes: [{ slug, patch: { status: "draft", section: "dinosaurs" } }] },
+    data: { changes: [{ slug, patch: { status: "draft" } }] },
   });
   expect(patched.status()).toBe(200);
   await page.goto(`${workbench.url}#/add?replaces=${slug}`);
@@ -534,7 +510,6 @@ test("a swap opened by URL starts from the old card's status and section", async
     "aria-pressed",
     "true",
   );
-  await expect(page.getByLabel("Section")).toHaveValue("dinosaurs");
 });
 
 async function draftCount(cardsDir: string): Promise<number> {
@@ -816,9 +791,9 @@ test("a card image that keeps failing shows the card name", async ({ page, workb
 
 async function readBoard(
   cardsDir: string,
-): Promise<{ bins: { label: string; cards: string[]; tag?: string }[] }> {
+): Promise<{ sections: { label: string; cards: string[]; tag?: string }[] }> {
   return JSON.parse(await readFile(join(cardsDir, "..", "board.json"), "utf8")) as {
-    bins: { label: string; cards: string[]; tag?: string }[];
+    sections: { label: string; cards: string[]; tag?: string }[];
   };
 }
 
@@ -826,7 +801,7 @@ function strip(scope: Locator, name: string): Locator {
   return scope.locator(`.strip:has(.strip-name:text-is(${JSON.stringify(name)}))`);
 }
 
-test("board bins hold dragged cards and survive a reload", async ({ page, workbench }) => {
+test("board sections hold dragged cards and survive a reload", async ({ page, workbench }) => {
   const patched = await page.request.patch(`${workbench.url}api/cards`, {
     data: {
       changes: ["shock", "lasting-tarfire", "murder"].map((slug) => ({
@@ -839,11 +814,11 @@ test("board bins hold dragged cards and survive a reload", async ({ page, workbe
   await page.goto(`${workbench.url}#/board`);
   const pool = page.getByRole("complementary", { name: "Card pool" });
 
-  await page.getByRole("button", { name: /New bin/u }).click();
-  await expect(page.getByLabel("Bin name")).toBeFocused();
-  await page.getByLabel("Bin name").fill("Burn");
-  await page.getByLabel("Bin name").press("Enter");
-  const burn = page.getByRole("region", { name: "Bin Burn" });
+  await page.getByRole("button", { name: /New section/u }).click();
+  await expect(page.getByLabel("Section name")).toBeFocused();
+  await page.getByLabel("Section name").fill("Burn");
+  await page.getByLabel("Section name").press("Enter");
+  const burn = page.getByRole("region", { name: "Section Burn" });
 
   await strip(pool, "Shock").dragTo(burn);
   await expect(strip(burn, "Shock")).toBeVisible();
@@ -851,8 +826,8 @@ test("board bins hold dragged cards and survive a reload", async ({ page, workbe
   await burn.getByLabel("Add card to Burn").press("Enter");
   await expect(strip(burn, "Lasting Tarfire")).toBeVisible();
 
-  await strip(pool, "Murder").dragTo(page.getByRole("button", { name: /New bin/u }));
-  const second = page.getByRole("region", { name: "Bin Bin 2" });
+  await strip(pool, "Murder").dragTo(page.getByRole("button", { name: /New section/u }));
+  const second = page.getByRole("region", { name: "Section Section 2" });
   await expect(strip(second, "Murder")).toBeVisible();
   await strip(burn, "Shock").dragTo(second);
   await expect(strip(second, "Shock")).toBeVisible();
@@ -863,17 +838,17 @@ test("board bins hold dragged cards and survive a reload", async ({ page, workbe
   await expect(strip(burn, "Shock")).toBeVisible();
 
   await expect
-    .poll(async () => (await readBoard(workbench.cardsDir)).bins)
+    .poll(async () => (await readBoard(workbench.cardsDir)).sections)
     .toEqual([
       expect.objectContaining({ label: "Burn", cards: ["lasting-tarfire", "shock"] }),
-      expect.objectContaining({ label: "Bin 2", cards: ["murder"] }),
+      expect.objectContaining({ label: "Section 2", cards: ["murder"] }),
     ]);
   await page.reload();
   await expect(strip(burn, "Shock")).toBeVisible();
   await expect(strip(burn, "Lasting Tarfire")).toBeVisible();
   await expect(strip(second, "Murder")).toBeVisible();
 
-  await second.getByRole("button", { name: "Delete bin Bin 2" }).click();
+  await second.getByRole("button", { name: "Delete section Section 2" }).click();
   await expect(second).toHaveCount(0);
   await burn.getByLabel("Add card to Burn").fill("Opt");
   await burn.getByLabel("Add card to Burn").press("Enter");
@@ -882,8 +857,10 @@ test("board bins hold dragged cards and survive a reload", async ({ page, workbe
   await expect(strip(second, "Murder")).toBeVisible();
   await expect(strip(burn, "Opt")).toBeVisible();
   await expect
-    .poll(async () => (await readBoard(workbench.cardsDir)).bins.map((bin) => bin.label))
-    .toEqual(["Burn", "Bin 2"]);
+    .poll(async () =>
+      (await readBoard(workbench.cardsDir)).sections.map((section) => section.label),
+    )
+    .toEqual(["Burn", "Section 2"]);
   await burn.getByRole("button", { name: "Take Opt out of Burn" }).click();
   await expect(strip(burn, "Opt")).toHaveCount(0);
 });
@@ -906,10 +883,10 @@ test("the board pool filters by status and the board lists its controls", async 
 
   for (const width of [1440, 1000]) {
     await page.setViewportSize({ width, height: 800 });
-    const burn = page.getByRole("region", { name: "Bin Burn" });
+    const burn = page.getByRole("region", { name: "Section Burn" });
     const firstPool = await pool.locator(".strip").first().boundingBox();
-    const firstBin = await burn.locator(".strip").first().boundingBox();
-    expect(Math.abs((firstPool?.y ?? 0) - (firstBin?.y ?? 1))).toBeLessThan(1);
+    const firstSection = await burn.locator(".strip").first().boundingBox();
+    expect(Math.abs((firstPool?.y ?? 0) - (firstSection?.y ?? 1))).toBeLessThan(1);
     const box = await burn.boundingBox();
     for (const remove of await burn.locator(".strip-remove").all()) {
       const edge = await remove.boundingBox();
@@ -920,9 +897,9 @@ test("the board pool filters by status and the board lists its controls", async 
   }
 });
 
-test("promoting a bin tags its cards as one undoable edit", async ({ page, workbench }) => {
+test("promoting a section tags its cards as one undoable edit", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/board`);
-  const burn = page.getByRole("region", { name: "Bin Burn" });
+  const burn = page.getByRole("region", { name: "Section Burn" });
   await expect(strip(burn, "Shock")).toBeVisible();
 
   await burn.getByLabel("Tag kind for Burn").selectOption("archetype");
@@ -935,7 +912,7 @@ test("promoting a bin tags its cards as one undoable edit", async ({ page, workb
   expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
     tags: expect.arrayContaining([{ id: "burn", label: "Burn", kind: "archetype" }]),
   });
-  expect((await readBoard(workbench.cardsDir)).bins[0]?.tag).toBe("burn");
+  expect((await readBoard(workbench.cardsDir)).sections[0]?.tag).toBe("burn");
 
   await page.getByRole("button", { name: "Undo" }).click();
   await expect
@@ -950,7 +927,7 @@ test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
   workbench,
 }) => {
   await page.goto(`${workbench.url}#/board`);
-  const burn = page.getByRole("region", { name: "Bin Burn" });
+  const burn = page.getByRole("region", { name: "Section Burn" });
   const names = (scope: Locator) => scope.locator(".strip-name").allTextContents();
   await expect.poll(() => names(burn)).toEqual(["Lasting Tarfire", "Shock"]);
 
@@ -964,7 +941,7 @@ test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
   await page.getByLabel("Sort cards by").selectOption("added");
   await expect.poll(() => names(burn)).toEqual(["Lasting Tarfire", "Shock"]);
   await expect(page.getByLabel("Then by")).toBeDisabled();
-  expect((await readBoard(workbench.cardsDir)).bins[0]?.cards).toEqual([
+  expect((await readBoard(workbench.cardsDir)).sections[0]?.cards).toEqual([
     "lasting-tarfire",
     "shock",
   ]);

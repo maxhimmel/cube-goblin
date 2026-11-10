@@ -28,19 +28,10 @@ function overview(cube: CubeView): Pile[] {
       cards: live.filter((card) => card.status === "draft"),
       keepEmpty: true,
     },
-    ...cube.sections.map((section) => ({
-      id: section.id,
-      label: `Prospects: ${section.label}`,
-      cards: live.filter((card) => card.status !== "draft" && card.section === section.id),
-    })),
     {
-      id: "prospects-other",
-      label: "Prospects: other",
-      cards: live.filter(
-        (card) =>
-          card.status === "prospect" &&
-          !cube.sections.some((section) => section.id === card.section),
-      ),
+      id: "prospect",
+      label: "Prospects",
+      cards: live.filter((card) => card.status === "prospect"),
     },
     { id: "cut", label: "Cut", cards: cube.cards.filter((card) => card.status === "cut") },
   ];
@@ -52,22 +43,6 @@ function byStatus(cube: CubeView): Pile[] {
     label: capitalize(status),
     cards: cube.cards.filter((card) => card.status === status),
   }));
-}
-
-function bySection(cube: CubeView): Pile[] {
-  const known = new Set(cube.sections.map((section) => section.id));
-  return [
-    ...cube.sections.map((section) => ({
-      id: section.id,
-      label: section.label,
-      cards: cube.cards.filter((card) => card.section === section.id),
-    })),
-    {
-      id: "no-section",
-      label: "No section",
-      cards: cube.cards.filter((card) => card.section === undefined || !known.has(card.section)),
-    },
-  ];
 }
 
 function hasTag(card: GridCard, id: string): boolean {
@@ -99,7 +74,6 @@ export function organizers(cube: CubeView): Organizer[] {
   return [
     { id: DEFAULT_ORGANIZER, label: "Overview", piles: overview },
     { id: "status", label: "Status", piles: byStatus },
-    { id: "section", label: "Section", piles: bySection },
     ...TAG_KINDS.filter((kind) => cube.vocabulary.some((tag) => tag.kind === kind)).map((kind) => ({
       id: kind,
       label: capitalize(kind),

@@ -3,19 +3,16 @@ import type { CardEntry } from "./schema.ts";
 import { slugify } from "./slug.ts";
 import { validateCube } from "./validate.ts";
 
-function card(name: string, oracleId: string, section?: string): CardEntry {
+function card(name: string, oracleId: string): CardEntry {
   return {
     name,
     oracleId,
     status: "draft",
-    ...(section === undefined ? {} : { section }),
     tags: [],
     notes: "",
     source: { batch: "test", line: 1, input: name },
   };
 }
-
-const sections = [{ id: "pirates", label: "Pirates", header: "🏴‍☠️" }];
 
 describe("validateCube", () => {
   it("accepts a clean cube", () => {
@@ -23,26 +20,23 @@ describe("validateCube", () => {
       validateCube(
         [
           card("Shock", "8b4b6b0e-0000-4000-8000-000000000001"),
-          card("Opt", "8b4b6b0e-0000-4000-8000-000000000002", "pirates"),
+          card("Opt", "8b4b6b0e-0000-4000-8000-000000000002"),
         ],
-        sections,
         [],
       ),
     ).toEqual([]);
   });
 
-  it("flags duplicate cards and unknown sections", () => {
+  it("flags duplicate cards", () => {
     const problems = validateCube(
       [
         card("Shock", "8b4b6b0e-0000-4000-8000-000000000001"),
-        card("Shock", "8b4b6b0e-0000-4000-8000-000000000001", "vampires"),
+        card("Shock", "8b4b6b0e-0000-4000-8000-000000000001"),
       ],
-      sections,
       [],
     );
-    expect(problems).toHaveLength(2);
+    expect(problems).toHaveLength(1);
     expect(problems[0]).toMatch(/Singleton/u);
-    expect(problems[1]).toMatch(/unknown section/u);
   });
 
   it("flags tags missing from the vocabulary, repeated tags, and duplicate tag ids", () => {
@@ -55,7 +49,7 @@ describe("validateCube", () => {
       { id: "burn", label: "Burn again", kind: "archetype" as const },
       { id: "shock", label: "burn", kind: "group" as const },
     ];
-    const problems = validateCube([tagged], sections, vocabulary);
+    const problems = validateCube([tagged], vocabulary);
     expect(problems).toEqual([
       'Duplicate tag "burn" in tags.json',
       'Duplicate tag label "burn" in tags.json',

@@ -26,9 +26,9 @@ A label on a card. A card can carry many tags. Every tag has a kind, either **ar
 
 A project-defined term with no outside source: a tag of kind `group`, meaning a set of cards the designer wants to see together that isn't an archetype, such as removal or card draw. Groups can overlap. See [Tag](#tag).
 
-## Bin
+## Section
 
-A project-defined term with no outside source: a named box on the workbench Board that holds cards while the designer sketches a [Group](#group) or [Archetype](#archetype) before tagging. A card can sit in several bins. Bins live in `cube/board.json`, apart from tags; promoting a bin turns it into a [Tag](#tag) on its cards. Not the same as a bucket in Insights, which is one bar or cell of a chart.
+A project-defined term with no outside source: a named box on the workbench Board that holds cards while the designer sketches a [Group](#group) or [Archetype](#archetype) before tagging. A card can sit in several sections. Sections live in `cube/board.json`, apart from tags; promoting a section turns it into a [Tag](#tag) on its cards. Not the same as a bucket in Insights, which is one bar or cell of a chart. Called a bin until [T-018](tickets/T-018-sections-on-the-board.md); before that, "section" was a card field naming the deck a card was imported from, now a `Deck: <name>` line in its notes.
 
 ## Enabler / payoff
 

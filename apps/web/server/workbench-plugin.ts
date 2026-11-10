@@ -26,7 +26,6 @@ import {
   loadBoard,
   readCards,
   readConfig,
-  readSections,
   readTags,
   saveBoard,
   slugify,
@@ -84,9 +83,8 @@ async function loadWorkbench(
   client: ScryfallClient,
   oracleTags: OracleTagStore,
 ): Promise<Workbench> {
-  const [entries, sections, vocabulary, config] = await Promise.all([
+  const [entries, vocabulary, config] = await Promise.all([
     readCards(paths),
-    readSections(paths),
     readTags(paths),
     readConfig(paths),
   ]);
@@ -112,7 +110,6 @@ async function loadWorkbench(
       name: entry.name,
       oracleId: entry.oracleId,
       status: entry.status,
-      ...(entry.section === undefined ? {} : { section: entry.section }),
       ...(entry.printing === undefined ? {} : { printing: entry.printing }),
       shown: {
         id: card.id,
@@ -129,7 +126,6 @@ async function loadWorkbench(
   }
   return {
     cards: workbenchCards,
-    sections,
     vocabulary,
     size: config.size,
     ...(tags.fetchedAt === undefined

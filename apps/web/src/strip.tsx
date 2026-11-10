@@ -9,7 +9,7 @@ const PREVIEW_WIDTH = 250;
 const PREVIEW_HEIGHT = Math.round((PREVIEW_WIDTH * 680) / 488);
 const GAP = 14;
 export const DRAG_TYPE = "application/x-cube-card";
-export const BIN_DRAG_TYPE = "application/x-cube-bin";
+export const SECTION_DRAG_TYPE = "application/x-cube-section";
 
 const MANA_VAR: Record<string, string> = {
   W: "var(--mana-w)",
@@ -67,7 +67,7 @@ export function Strip({
         onDragStart={(event: DragEvent<HTMLAnchorElement>) => {
           event.dataTransfer.setData(DRAG_TYPE, card.slug);
           if (dragFrom !== undefined) {
-            event.dataTransfer.setData(BIN_DRAG_TYPE, dragFrom);
+            event.dataTransfer.setData(SECTION_DRAG_TYPE, dragFrom);
           }
           event.dataTransfer.effectAllowed = "copyMove";
           onHover(undefined);

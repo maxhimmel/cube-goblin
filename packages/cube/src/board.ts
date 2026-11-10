@@ -1,7 +1,7 @@
-import type { Bin, Board, CardEntry, Tag } from "./schema.ts";
+import type { Section, Board, CardEntry, Tag } from "./schema.ts";
 import { slugify } from "./slug.ts";
 
-export const EMPTY_BOARD: Board = { bins: [] };
+export const EMPTY_BOARD: Board = { sections: [] };
 
 export function validateBoard(
   board: Board,
@@ -11,22 +11,24 @@ export function validateBoard(
   const problems: string[] = [];
   const slugs = new Set(cards.map((card) => slugify(card.name)));
   const tagIds = new Set(tags.map((tag) => tag.id));
-  const binIds = new Set<string>();
-  for (const bin of board.bins) {
-    if (binIds.has(bin.id)) {
-      problems.push(`Duplicate bin "${bin.id}" in board.json`);
+  const sectionIds = new Set<string>();
+  for (const section of board.sections) {
+    if (sectionIds.has(section.id)) {
+      problems.push(`Duplicate section "${section.id}" in board.json`);
     }
-    binIds.add(bin.id);
-    for (const slug of bin.cards) {
+    sectionIds.add(section.id);
+    for (const slug of section.cards) {
       if (!slugs.has(slug)) {
-        problems.push(`Bin "${bin.label}" holds "${slug}", which is not in cube/cards`);
+        problems.push(`Section "${section.label}" holds "${slug}", which is not in cube/cards`);
       }
     }
-    if (new Set(bin.cards).size !== bin.cards.length) {
-      problems.push(`Bin "${bin.label}" lists a card more than once`);
+    if (new Set(section.cards).size !== section.cards.length) {
+      problems.push(`Section "${section.label}" lists a card more than once`);
     }
-    if (bin.tag !== undefined && !tagIds.has(bin.tag)) {
-      problems.push(`Bin "${bin.label}" links tag "${bin.tag}", which is not in tags.json`);
+    if (section.tag !== undefined && !tagIds.has(section.tag)) {
+      problems.push(
+        `Section "${section.label}" links tag "${section.tag}", which is not in tags.json`,
+      );
     }
   }
   return problems;
@@ -36,57 +38,61 @@ export function pruneBoard(board: Board, cards: readonly CardEntry[], tags: read
   const slugs = new Set(cards.map((card) => slugify(card.name)));
   const tagIds = new Set(tags.map((tag) => tag.id));
   return {
-    bins: board.bins.map(({ tag, ...bin }) => ({
-      ...bin,
-      cards: [...new Set(bin.cards)].filter((slug) => slugs.has(slug)),
+    sections: board.sections.map(({ tag, ...section }) => ({
+      ...section,
+      cards: [...new Set(section.cards)].filter((slug) => slugs.has(slug)),
       ...(tag !== undefined && tagIds.has(tag) ? { tag } : {}),
     })),
   };
 }
 
-function mapBin(board: Board, id: string, change: (bin: Bin) => Bin): Board {
-  const bins = board.bins.map((bin) => (bin.id === id ? change(bin) : bin));
-  return bins.every((bin, index) => bin === board.bins[index]) ? board : { bins };
+function mapSection(board: Board, id: string, change: (section: Section) => Section): Board {
+  const sections = board.sections.map((section) => (section.id === id ? change(section) : section));
+  return sections.every((section, index) => section === board.sections[index])
+    ? board
+    : { sections };
 }
 
-export function addBin(board: Board, bin: Bin): Board {
-  return { bins: [...board.bins, bin] };
+export function addSection(board: Board, section: Section): Board {
+  return { sections: [...board.sections, section] };
 }
 
-export function restoreBin(board: Board, bin: Bin, index: number): Board {
-  if (board.bins.some((other) => other.id === bin.id)) {
+export function restoreSection(board: Board, section: Section, index: number): Board {
+  if (board.sections.some((other) => other.id === section.id)) {
     return board;
   }
-  const bins = [...board.bins];
-  bins.splice(index, 0, bin);
-  return { bins };
+  const sections = [...board.sections];
+  sections.splice(index, 0, section);
+  return { sections };
 }
 
-export function removeBin(board: Board, id: string): Board {
-  return { bins: board.bins.filter((bin) => bin.id !== id) };
+export function removeSection(board: Board, id: string): Board {
+  return { sections: board.sections.filter((section) => section.id !== id) };
 }
 
-export function changeBin(
+export function changeSection(
   board: Board,
   id: string,
-  change: Partial<Pick<Bin, "label" | "tag">>,
+  change: Partial<Pick<Section, "label" | "tag">>,
 ): Board {
-  return mapBin(board, id, (bin) =>
-    (Object.keys(change) as (keyof typeof change)[]).every((key) => bin[key] === change[key])
-      ? bin
-      : { ...bin, ...change },
+  return mapSection(board, id, (section) =>
+    (Object.keys(change) as (keyof typeof change)[]).every((key) => section[key] === change[key])
+      ? section
+      : { ...section, ...change },
   );
 }
 
 export function putCard(board: Board, id: string, slug: string): Board {
-  return mapBin(board, id, (bin) =>
-    bin.cards.includes(slug) ? bin : { ...bin, cards: [...bin.cards, slug] },
+  return mapSection(board, id, (section) =>
+    section.cards.includes(slug) ? section : { ...section, cards: [...section.cards, slug] },
   );
 }
 
 export function takeCard(board: Board, id: string, slug: string): Board {
-  return mapBin(board, id, (bin) =>
-    bin.cards.includes(slug) ? { ...bin, cards: bin.cards.filter((card) => card !== slug) } : bin,
+  return mapSection(board, id, (section) =>
+    section.cards.includes(slug)
+      ? { ...section, cards: section.cards.filter((card) => card !== slug) }
+      : section,
   );
 }
 

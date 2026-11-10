@@ -7,8 +7,6 @@ import { useCardEdit } from "./edits.ts";
 import { clearSelection, setSelected, useSelection } from "./selection.ts";
 import { showToast } from "./toast.tsx";
 
-const NO_SECTION = "__none";
-
 type Choose = (card: WorkbenchCard) => [CardPatch, CardPatch] | undefined;
 
 export function SelectCard({ slug, name }: { slug: string; name: string }): ReactNode {
@@ -147,22 +145,6 @@ export function BulkBar({ cube }: { cube: Workbench | undefined }): ReactNode {
           Set {status}
         </button>
       ))}
-      <ApplySelect
-        label="Move to section"
-        placeholder="Move to section…"
-        options={[
-          ...cube.sections.map((section) => ({ value: section.id, label: section.label })),
-          { value: NO_SECTION, label: "none" },
-        ]}
-        onApply={(value) => {
-          const section = value === NO_SECTION ? null : value;
-          bulk(`section ${section ?? "none"}`, (card) =>
-            (card.section ?? null) === section
-              ? undefined
-              : [{ section }, { section: card.section ?? null }],
-          );
-        }}
-      />
       <ApplySelect
         label="Add tag to selected"
         placeholder="Add tag…"

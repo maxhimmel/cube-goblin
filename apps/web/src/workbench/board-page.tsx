@@ -1,14 +1,14 @@
-import type { Bin, CardSort, TagKind, Workbench, WorkbenchCard } from "@repo/cube/browser";
+import type { Section, CardSort, TagKind, Workbench, WorkbenchCard } from "@repo/cube/browser";
 import {
   CARD_SORTS,
   TAG_KINDS,
-  addBin,
-  changeBin,
+  addSection,
+  changeSection,
   moveCard,
   putCard,
   isCardSort,
-  removeBin,
-  restoreBin,
+  removeSection,
+  restoreSection,
   sortCards,
   takeCard,
 } from "@repo/cube/browser";
@@ -16,8 +16,8 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { DragEvent, ReactNode } from "react";
 import { useState } from "react";
 import type { Hover } from "../strip.tsx";
-import { BIN_DRAG_TYPE, DRAG_TYPE, Preview, Strip } from "../strip.tsx";
-import { editBoard, editBoardWithUndo, promoteBin, untagged, useBoard } from "./board.ts";
+import { SECTION_DRAG_TYPE, DRAG_TYPE, Preview, Strip } from "../strip.tsx";
+import { editBoard, editBoardWithUndo, promoteSection, untagged, useBoard } from "./board.ts";
 import { findTag } from "./tags.ts";
 
 const POOL_STATUSES = new Set(["draft", "prospect"]);
@@ -49,8 +49,8 @@ function useDrop(accept: (dropped: Dropped) => void): DropTarget {
     onDragOver: (event) => {
       if (event.dataTransfer.types.includes(DRAG_TYPE)) {
         event.preventDefault();
-        const fromBin = event.dataTransfer.types.includes(BIN_DRAG_TYPE);
-        event.dataTransfer.dropEffect = fromBin && !event.altKey ? "move" : "copy";
+        const fromSection = event.dataTransfer.types.includes(SECTION_DRAG_TYPE);
+        event.dataTransfer.dropEffect = fromSection && !event.altKey ? "move" : "copy";
         setOver(true);
       }
     },
@@ -64,7 +64,7 @@ function useDrop(accept: (dropped: Dropped) => void): DropTarget {
       event.stopPropagation();
       setOver(false);
       const slug = event.dataTransfer.getData(DRAG_TYPE);
-      const from = event.dataTransfer.getData(BIN_DRAG_TYPE);
+      const from = event.dataTransfer.getData(SECTION_DRAG_TYPE);
       if (slug) {
         accept({ slug, from: from || undefined, copy: event.altKey });
       }
@@ -72,36 +72,36 @@ function useDrop(accept: (dropped: Dropped) => void): DropTarget {
   };
 }
 
-function nextLabel(bins: readonly Bin[]): string {
-  const taken = new Set(bins.map((bin) => bin.label.toLowerCase()));
-  let index = bins.length + 1;
-  while (taken.has(`bin ${String(index)}`)) {
+function nextLabel(sections: readonly Section[]): string {
+  const taken = new Set(sections.map((section) => section.label.toLowerCase()));
+  let index = sections.length + 1;
+  while (taken.has(`section ${String(index)}`)) {
     index += 1;
   }
-  return `Bin ${String(index)}`;
+  return `Section ${String(index)}`;
 }
 
-function newBin(bins: readonly Bin[], cards: string[] = []): Bin {
+function newSection(sections: readonly Section[], cards: string[] = []): Section {
   const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  return { id, label: nextLabel(bins), cards };
+  return { id, label: nextLabel(sections), cards };
 }
 
-function BinLabel({ bin, autoFocus }: { bin: Bin; autoFocus: boolean }): ReactNode {
+function SectionLabel({ section, autoFocus }: { section: Section; autoFocus: boolean }): ReactNode {
   const [label, setLabel] = useState<string | undefined>(undefined);
 
   function commit(): void {
     const next = label?.trim();
     setLabel(undefined);
-    if (next && next !== bin.label) {
-      editBoard((board) => changeBin(board, bin.id, { label: next }));
+    if (next && next !== section.label) {
+      editBoard((board) => changeSection(board, section.id, { label: next }));
     }
   }
 
   return (
     <input
-      className="bin-label"
-      aria-label="Bin name"
-      value={label ?? bin.label}
+      className="board-section-label"
+      aria-label="Section name"
+      value={label ?? section.label}
       autoFocus={autoFocus}
       onFocus={(event) => {
         event.currentTarget.select();
@@ -122,17 +122,17 @@ function BinLabel({ bin, autoFocus }: { bin: Bin; autoFocus: boolean }): ReactNo
   );
 }
 
-function BinTag({ bin, cube }: { bin: Bin; cube: Workbench }): ReactNode {
+function SectionTag({ section, cube }: { section: Section; cube: Workbench }): ReactNode {
   const [kind, setKind] = useState<TagKind>("group");
-  const linked = cube.vocabulary.find((tag) => tag.id === bin.tag);
-  const known = linked ?? findTag(cube.vocabulary, bin.label);
-  const missing = linked ? untagged(bin, cube).length : bin.cards.length;
+  const linked = cube.vocabulary.find((tag) => tag.id === section.tag);
+  const known = linked ?? findTag(cube.vocabulary, section.label);
+  const missing = linked ? untagged(section, cube).length : section.cards.length;
   const promote = (): void => {
-    void promoteBin(bin.id, kind);
+    void promoteSection(section.id, kind);
   };
   if (linked) {
     return (
-      <div className="bin-tag">
+      <div className="board-section-tag">
         <span className="chip" data-kind={linked.kind}>
           tag · {linked.label}
         </span>
@@ -145,12 +145,12 @@ function BinTag({ bin, cube }: { bin: Bin; cube: Workbench }): ReactNode {
     );
   }
   return (
-    <div className="bin-tag">
+    <div className="board-section-tag">
       {known ? (
         <span className="muted">Tag {known.label} exists</span>
       ) : (
         <select
-          aria-label={`Tag kind for ${bin.label}`}
+          aria-label={`Tag kind for ${section.label}`}
           value={kind}
           onChange={(event) => {
             setKind(event.target.value as TagKind);
@@ -163,30 +163,36 @@ function BinTag({ bin, cube }: { bin: Bin; cube: Workbench }): ReactNode {
           ))}
         </select>
       )}
-      <button type="button" disabled={bin.cards.length === 0} onClick={promote}>
+      <button type="button" disabled={section.cards.length === 0} onClick={promote}>
         {known ? `Tag cards ${known.label}` : "Make tag"}
       </button>
     </div>
   );
 }
 
-function AddToBin({ bin, pool }: { bin: Bin; pool: readonly WorkbenchCard[] }): ReactNode {
+function AddToSection({
+  section,
+  pool,
+}: {
+  section: Section;
+  pool: readonly WorkbenchCard[];
+}): ReactNode {
   const [name, setName] = useState("");
   return (
     <form
-      className="bin-add"
+      className="board-section-add"
       onSubmit={(event) => {
         event.preventDefault();
         const wanted = name.trim().toLowerCase();
         const card = pool.find((candidate) => candidate.name.toLowerCase() === wanted);
         if (card) {
-          editBoard((board) => putCard(board, bin.id, card.slug));
+          editBoard((board) => putCard(board, section.id, card.slug));
           setName("");
         }
       }}
     >
       <input
-        aria-label={`Add card to ${bin.label}`}
+        aria-label={`Add card to ${section.label}`}
         placeholder="Add card…"
         list={POOL_LIST_ID}
         value={name}
@@ -198,8 +204,8 @@ function AddToBin({ bin, pool }: { bin: Bin; pool: readonly WorkbenchCard[] }): 
   );
 }
 
-function BinBox({
-  bin,
+function SectionBox({
+  section,
   sort,
   index,
   cube,
@@ -207,7 +213,7 @@ function BinBox({
   fresh,
   onHover,
 }: {
-  bin: Bin;
+  section: Section;
   sort: readonly CardSort[];
   index: number;
   cube: Workbench;
@@ -218,50 +224,55 @@ function BinBox({
   const drop = useDrop(({ slug, from, copy }) => {
     editBoard((board) =>
       from !== undefined && !copy
-        ? moveCard(board, from, bin.id, slug)
-        : putCard(board, bin.id, slug),
+        ? moveCard(board, from, section.id, slug)
+        : putCard(board, section.id, slug),
     );
   });
   const bySlug = new Map(cube.cards.map((card) => [card.slug, card]));
   const cards = sortCards(
-    bin.cards.flatMap((slug) => bySlug.get(slug) ?? []),
+    section.cards.flatMap((slug) => bySlug.get(slug) ?? []),
     sort,
   );
   return (
-    <section className="bin" data-bin={bin.id} aria-label={`Bin ${bin.label}`} {...drop}>
-      <header className="bin-head">
-        <BinLabel bin={bin} autoFocus={fresh} />
+    <section
+      className="board-section"
+      data-section={section.id}
+      aria-label={`Section ${section.label}`}
+      {...drop}
+    >
+      <header className="board-section-head">
+        <SectionLabel section={section} autoFocus={fresh} />
         <span className="column-count">{cards.length}</span>
         <button
           type="button"
-          className="bin-delete"
-          aria-label={`Delete bin ${bin.label}`}
+          className="board-section-delete"
+          aria-label={`Delete section ${section.label}`}
           onClick={() => {
             editBoardWithUndo(
-              `Deleted bin ${bin.label}`,
-              (board) => removeBin(board, bin.id),
-              (board) => restoreBin(board, bin, index),
+              `Deleted section ${section.label}`,
+              (board) => removeSection(board, section.id),
+              (board) => restoreSection(board, section, index),
             );
           }}
         >
           ×
         </button>
       </header>
-      <BinTag bin={bin} cube={cube} />
-      <ul className="stack bin-cards">
+      <SectionTag section={section} cube={cube} />
+      <ul className="stack board-section-cards">
         {cards.map((card) => (
           <Strip
             key={card.slug}
             card={card}
             onHover={onHover}
-            dragFrom={bin.id}
+            dragFrom={section.id}
             after={
               <button
                 type="button"
                 className="strip-remove"
-                aria-label={`Take ${card.name} out of ${bin.label}`}
+                aria-label={`Take ${card.name} out of ${section.label}`}
                 onClick={() => {
-                  editBoard((board) => takeCard(board, bin.id, card.slug));
+                  editBoard((board) => takeCard(board, section.id, card.slug));
                 }}
               >
                 ×
@@ -270,18 +281,18 @@ function BinBox({
           />
         ))}
       </ul>
-      <AddToBin bin={bin} pool={pool} />
+      <AddToSection section={section} pool={pool} />
     </section>
   );
 }
 
 function Pool({
   pool,
-  binned,
+  placed,
   onHover,
 }: {
   pool: readonly WorkbenchCard[];
-  binned: ReadonlySet<string>;
+  placed: ReadonlySet<string>;
   onHover: (hover: Hover | undefined) => void;
 }): ReactNode {
   const [filter, setFilter] = useState("");
@@ -297,7 +308,7 @@ function Pool({
     (card) =>
       card.name.toLowerCase().includes(wanted) &&
       (status === "all" || card.status === status) &&
-      !(loose && binned.has(card.slug)),
+      !(loose && placed.has(card.slug)),
   );
   return (
     <aside className="pool" aria-label="Card pool" {...drop}>
@@ -335,12 +346,12 @@ function Pool({
             type="button"
             className="pool-loose"
             aria-pressed={loose}
-            title="Only cards in no bin"
+            title="Only cards in no section"
             onClick={() => {
               setLoose(!loose);
             }}
           >
-            No bin
+            No section
           </button>
         </div>
       </div>
@@ -353,35 +364,35 @@ function Pool({
   );
 }
 
-function NewBin({
-  bins,
+function NewSection({
+  sections,
   onCreate,
 }: {
-  bins: readonly Bin[];
+  sections: readonly Section[];
   onCreate: (id: string) => void;
 }): ReactNode {
   const create = (cards: string[]): void => {
-    const bin = newBin(bins, cards);
-    editBoard((board) => addBin(board, bin));
-    onCreate(bin.id);
+    const section = newSection(sections, cards);
+    editBoard((board) => addSection(board, section));
+    onCreate(section.id);
   };
   const drop = useDrop(({ slug, from, copy }) => {
-    const bin = newBin(bins, [slug]);
+    const section = newSection(sections, [slug]);
     editBoard((board) => {
-      const added = addBin(board, bin);
+      const added = addSection(board, section);
       return from !== undefined && !copy ? takeCard(added, from, slug) : added;
     });
   });
   return (
     <button
       type="button"
-      className="bin bin-new"
+      className="board-section board-section-new"
       onClick={() => {
         create([]);
       }}
       {...drop}
     >
-      + New bin
+      + New section
       <span className="muted">or drop a card here</span>
     </button>
   );
@@ -469,22 +480,22 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
       .sort((a, b) => a.name.localeCompare(b.name)),
     sort,
   );
-  const binned = new Set(board.bins.flatMap((bin) => bin.cards));
+  const placed = new Set(board.sections.flatMap((section) => section.cards));
   return (
     <div className="board">
       <div className="board-top">
         <ul className="board-help" aria-label="Board controls">
           <li>
-            <strong>Drag in</strong> adds a card (it can sit in several bins)
+            <strong>Drag in</strong> adds a card (it can sit in several sections)
           </li>
           <li>
-            <strong>Between bins</strong> moves, <kbd>⌥ Alt</kbd> copies
+            <strong>Between sections</strong> moves, <kbd>⌥ Alt</kbd> copies
           </li>
           <li>
             <strong>Back to the pool</strong> takes it out
           </li>
           <li>
-            <strong>Onto New bin</strong> starts a bin
+            <strong>Onto New section</strong> starts a section
           </li>
           <li>
             <strong>Make tag</strong> tags every card, with Undo
@@ -492,21 +503,21 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
         </ul>
         <SortPicker sort={sort} />
       </div>
-      <Pool pool={pool} binned={binned} onHover={setHover} />
-      <div className="bins">
-        {board.bins.map((bin, index) => (
-          <BinBox
-            key={bin.id}
-            bin={bin}
+      <Pool pool={pool} placed={placed} onHover={setHover} />
+      <div className="board-sections">
+        {board.sections.map((section, index) => (
+          <SectionBox
+            key={section.id}
+            section={section}
             sort={sort}
             index={index}
             cube={cube}
             pool={pool}
-            fresh={bin.id === fresh}
+            fresh={section.id === fresh}
             onHover={setHover}
           />
         ))}
-        <NewBin bins={board.bins} onCreate={setFresh} />
+        <NewSection sections={board.sections} onCreate={setFresh} />
       </div>
       <datalist id={POOL_LIST_ID}>
         {pool.map((card) => (

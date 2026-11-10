@@ -1,8 +1,0 @@
-{
-  "sections": [
-    { "id": "pirates", "label": "Pirates", "header": ":pirate_flag:🪎" },
-    { "id": "vampires", "label": "Vampires", "header": ":bat::drop_of_blood:" },
-    { "id": "dinosaurs", "label": "Dinosaurs", "header": ":t-rex::bone:" },
-    { "id": "merfolk", "label": "Merfolk", "header": ":merman::ocean:" }
-  ]
-}

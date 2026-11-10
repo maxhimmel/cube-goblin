@@ -8,7 +8,7 @@ Save versions of the cube and compare things side by side: two cards, two groups
 
 ## Open questions
 
-- What a version holds: the card list and statuses, or tags, sections, and notes too.
+- What a version holds: the card list and statuses, or tags, notes, and Board sections too.
 - Whether a version is a git commit, a file under `cube/`, or both.
 
 ## Done when

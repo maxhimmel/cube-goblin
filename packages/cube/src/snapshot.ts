@@ -1,13 +1,12 @@
 import { z } from "zod";
 import { CARD_FUNCTION_IDS } from "./functions.ts";
-import { cardStatusSchema, cubeConfigSchema, sectionSchema, tagSchema } from "./schema.ts";
+import { cardStatusSchema, cubeConfigSchema, tagSchema } from "./schema.ts";
 
 export const snapshotCardSchema = z.strictObject({
   slug: z.string(),
   name: z.string(),
   oracleId: z.string(),
   status: cardStatusSchema,
-  section: z.string().optional(),
   manaCost: z.string(),
   typeLine: z.string(),
   oracleText: z.string(),
@@ -23,7 +22,6 @@ export const snapshotSchema = z.strictObject({
   id: z.string(),
   createdAt: z.string(),
   cards: z.array(snapshotCardSchema),
-  sections: z.array(sectionSchema),
   functionsAsOf: z.string().optional(),
 });
 
@@ -48,7 +46,6 @@ export const workbenchCardSchema = snapshotCardSchema.extend({
 
 export const workbenchSchema = z.strictObject({
   cards: z.array(workbenchCardSchema),
-  sections: z.array(sectionSchema),
   vocabulary: z.array(tagSchema),
   size: cubeConfigSchema.shape.size,
   functionsAsOf: z.string().optional(),

@@ -144,13 +144,6 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
     rows: (stats) => stats.status,
     fill: "var(--chart-status)",
   },
-  sections: {
-    kind: "section",
-    title: "Sections",
-    rows: (stats) => stats.sections,
-    fill: "var(--chart-sections)",
-    empty: "No sections yet.",
-  },
   archetype: {
     kind: "tag",
     title: "Archetypes",
@@ -175,7 +168,6 @@ const KIND_TITLES: Record<BucketKind, string> = {
   type: "Card types",
   function: "Functions",
   status: "Status",
-  section: "Sections",
   tag: "Tags",
 };
 
@@ -197,8 +189,6 @@ function bucketLabel(bucket: Bucket, stats: CubeStats): string {
       return find(stats.functions);
     case "status":
       return find(stats.status);
-    case "section":
-      return find(stats.sections);
     case "tag":
       return find(stats.tags);
   }
@@ -255,7 +245,7 @@ export function InsightsPage(): ReactNode {
   const scopes = SCOPES.filter((option) => option.id !== "selected" || mode.name === "workbench");
   const scope = scopes.find((option) => option.id === search.scope) ?? scopes[0];
   const cards = scope ? cube.cards.filter((card) => scope.includes(card, selection)) : [];
-  const stats = cubeStats(cards, cube.vocabulary, cube.sections);
+  const stats = cubeStats(cards, cube.vocabulary);
   const drafted = cube.cards.filter((card) => card.status === "draft").length;
   const nonland = stats.total - stats.lands;
   const bucket = search.bucket === undefined ? undefined : parseBucket(search.bucket);

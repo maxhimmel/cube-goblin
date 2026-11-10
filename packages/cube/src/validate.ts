@@ -1,11 +1,7 @@
-import type { CardEntry, Section, Tag } from "./schema.ts";
+import type { CardEntry, Tag } from "./schema.ts";
 import { slugify } from "./slug.ts";
 
-export function validateCube(
-  cards: readonly CardEntry[],
-  sections: readonly Section[],
-  tags: readonly Tag[],
-): string[] {
+export function validateCube(cards: readonly CardEntry[], tags: readonly Tag[]): string[] {
   const problems: string[] = [];
   const tagIds = new Set<string>();
   const tagLabels = new Set<string>();
@@ -20,7 +16,6 @@ export function validateCube(
     }
     tagLabels.add(label);
   }
-  const sectionIds = new Set(sections.map((section) => section.id));
   const byOracle = new Map<string, string>();
   const bySlug = new Map<string, string>();
 
@@ -37,10 +32,6 @@ export function validateCube(
       problems.push(`Slug collision: "${card.name}" and "${sameSlug}"`);
     }
     bySlug.set(slug, card.name);
-
-    if (card.section !== undefined && !sectionIds.has(card.section)) {
-      problems.push(`"${card.name}" has unknown section "${card.section}"`);
-    }
 
     for (const tag of card.tags) {
       if (!tagIds.has(tag)) {

@@ -1,5 +1,5 @@
-import type { Bin, Board, CardChange, Tag, TagKind, Workbench } from "@repo/cube/browser";
-import { EMPTY_BOARD, changeBin } from "@repo/cube/browser";
+import type { Section, Board, CardChange, Tag, TagKind, Workbench } from "@repo/cube/browser";
+import { EMPTY_BOARD, changeSection } from "@repo/cube/browser";
 import { MutationObserver, useQuery } from "@tanstack/react-query";
 import { queryClient } from "../query-client.ts";
 import {
@@ -95,47 +95,47 @@ function plural(count: number): string {
   return `${String(count)} card${count === 1 ? "" : "s"}`;
 }
 
-export function untagged(bin: Bin, cube: Workbench): string[] {
+export function untagged(section: Section, cube: Workbench): string[] {
   const bySlug = new Map(cube.cards.map((card) => [card.slug, card]));
-  return bin.cards.filter((slug) => {
+  return section.cards.filter((slug) => {
     const card = bySlug.get(slug);
-    return card !== undefined && bin.tag !== undefined && !card.tags.includes(bin.tag);
+    return card !== undefined && section.tag !== undefined && !card.tags.includes(section.tag);
   });
 }
 
-async function binTag(bin: Bin, cube: Workbench, kind: TagKind): Promise<Tag> {
-  const linked = cube.vocabulary.find((tag) => tag.id === bin.tag);
+async function sectionTag(section: Section, cube: Workbench, kind: TagKind): Promise<Tag> {
+  const linked = cube.vocabulary.find((tag) => tag.id === section.tag);
   if (linked) {
     return linked;
   }
-  const known = findTag(cube.vocabulary, bin.label);
+  const known = findTag(cube.vocabulary, section.label);
   if (known) {
     return known;
   }
-  const created = await createTagRequest(bin.label, kind);
+  const created = await createTagRequest(section.label, kind);
   cacheTag(created);
   return created;
 }
 
-export async function promoteBin(id: string, kind: TagKind): Promise<void> {
+export async function promoteSection(id: string, kind: TagKind): Promise<void> {
   const cube = queryClient.getQueryData<Workbench>(CUBE_QUERY_KEY);
-  const bin = currentBoard().bins.find((candidate) => candidate.id === id);
-  if (!cube || !bin) {
+  const section = currentBoard().sections.find((candidate) => candidate.id === id);
+  if (!cube || !section) {
     return;
   }
   let tag: Tag;
   try {
-    tag = await binTag(bin, cube, kind);
-    if (bin.tag !== tag.id) {
-      await save((board) => changeBin(board, id, { tag: tag.id }));
+    tag = await sectionTag(section, cube, kind);
+    if (section.tag !== tag.id) {
+      await save((board) => changeSection(board, id, { tag: tag.id }));
     }
   } catch (error) {
     showToast({ message: error instanceof Error ? error.message : String(error), tone: "error" });
     return;
   }
-  const slugs = untagged({ ...bin, tag: tag.id }, cube);
+  const slugs = untagged({ ...section, tag: tag.id }, cube);
   if (slugs.length === 0) {
-    showToast({ message: `Every card in ${bin.label} has tag ${tag.label}`, tone: "info" });
+    showToast({ message: `Every card in ${section.label} has tag ${tag.label}`, tone: "info" });
     return;
   }
   const changes: CardChange[] = slugs.map((slug) => ({ slug, patch: { addTags: [tag.id] } }));

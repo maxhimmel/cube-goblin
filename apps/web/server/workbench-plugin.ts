@@ -4,7 +4,9 @@ import type {
   AddResult,
   BatchResult,
   BoardResult,
+  CardEntry,
   CubePaths,
+  Printing,
   SearchResult,
   TagResult,
   UpdateResult,
@@ -34,6 +36,7 @@ import {
   ScryfallClient,
   ScryfallError,
   displayFields,
+  printingSummary,
 } from "@repo/scryfall";
 import type { Plugin } from "vite";
 import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
@@ -42,6 +45,7 @@ const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
 const CUBE_CHANGED_EVENT = "cube:changed";
 const CARD_ROUTE = /^\/api\/cards\/([a-z0-9-]+)$/u;
 const TAG_ROUTE = /^\/api\/tags\/([a-z0-9-]+)$/u;
+const PRINTINGS_ROUTE = /^\/api\/cards\/([a-z0-9-]+)\/printings$/u;
 const CHANGE_DEBOUNCE_MS = 100;
 const SEARCH_LIMIT = 24;
 
@@ -84,16 +88,15 @@ async function loadWorkbench(
     readTags(paths),
     readConfig(paths),
   ]);
-  const [{ cards }, tags] = await Promise.all([
-    client.byOracleIds(entries.map((entry) => entry.oracleId)),
+  const [{ cards: byOracle }, tags] = await Promise.all([
+    client.forEntries(entries),
     oracleTags.load(FUNCTION_ORACLE_TAG_IDS),
   ]);
-  const byOracle = new Map(cards.map((card) => [card.oracle_id, card]));
   const workbenchCards: WorkbenchCard[] = [];
   for (const entry of entries) {
     const card = byOracle.get(entry.oracleId);
     const fields = card ? displayFields(card) : undefined;
-    if (!fields) {
+    if (!card || !fields) {
       throw new Error(`Missing Scryfall data or image for ${entry.name}`);
     }
     const { producedMana, ...display } = fields;
@@ -103,6 +106,12 @@ async function loadWorkbench(
       oracleId: entry.oracleId,
       status: entry.status,
       ...(entry.section === undefined ? {} : { section: entry.section }),
+      ...(entry.printing === undefined ? {} : { printing: entry.printing }),
+      shown: {
+        id: card.id,
+        setName: card.set_name ?? card.set,
+        collectorNumber: card.collector_number,
+      },
       ...display,
       functions: cardFunctions({ oracleId: entry.oracleId, producedMana }, tags.index),
       image: localImageUrl(fields.image),
@@ -174,6 +183,45 @@ async function search(
   return results;
 }
 
+async function listPrintings(
+  paths: CubePaths,
+  client: ScryfallClient,
+  slug: string,
+  remembered: Map<string, Printing[]>,
+): Promise<Printing[] | undefined> {
+  const entry = (await readCards(paths)).find((card) => slugify(card.name) === slug);
+  if (!entry) {
+    return undefined;
+  }
+  const known = remembered.get(entry.oracleId);
+  if (known) {
+    return known;
+  }
+  const printings = (await client.printings(entry.oracleId)).flatMap(
+    (card) => printingSummary(card) ?? [],
+  );
+  remembered.set(entry.oracleId, printings);
+  return printings;
+}
+
+async function keepPrintings(
+  entries: readonly CardEntry[],
+  client: ScryfallClient,
+  images: ImageCache,
+): Promise<void> {
+  const ids = entries.flatMap((entry) => entry.printing ?? []);
+  if (ids.length === 0) {
+    return;
+  }
+  const { cards } = await client.byIds(ids);
+  for (const card of cards) {
+    const fields = displayFields(card);
+    if (fields) {
+      await Promise.all([images.get(fields.image), images.get(fields.imageLarge)]);
+    }
+  }
+}
+
 function writeRoute(paths: CubePaths, client: ScryfallClient) {
   const lookup = async (oracleId: string): Promise<string | undefined> =>
     (await client.byOracleIds([oracleId])).cards[0]?.name;
@@ -218,6 +266,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
       });
       const images = new ImageCache(options.imageCacheDir, USER_AGENT);
       const route = writeRoute(paths, client);
+      const remembered = new Map<string, Printing[]>();
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
 
@@ -281,6 +330,23 @@ export function workbench(options: WorkbenchOptions): Plugin {
           );
           return;
         }
+        const printingsOf = PRINTINGS_ROUTE.exec(url)?.[1];
+        if (printingsOf !== undefined && req.method === "GET") {
+          listPrintings(paths, client, printingsOf, remembered).then(
+            (printings) => {
+              if (printings === undefined) {
+                send(res, 404, { error: `No card "${printingsOf}"` });
+              } else {
+                send(res, 200, printings);
+              }
+            },
+            (error: unknown) => {
+              const status = error instanceof ScryfallError ? scryfallStatus(error.status) : 502;
+              send(res, status, { error: error instanceof Error ? error.message : String(error) });
+            },
+          );
+          return;
+        }
         if (url === "/api/cube" && req.method === "GET") {
           loadWorkbench(paths, client, oracleTags).then(
             (data) => {
@@ -302,6 +368,9 @@ export function workbench(options: WorkbenchOptions): Plugin {
             }
             const result = await write(body.value);
             if (result.ok) {
+              const saved =
+                "cards" in result ? result.cards : "card" in result ? [result.card] : [];
+              void keepPrintings(saved, client, images).catch(() => undefined);
               send(res, 200, written(result));
             } else {
               send(res, result.status, { error: result.error });

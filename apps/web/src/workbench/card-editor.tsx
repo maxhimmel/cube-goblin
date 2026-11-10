@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { sendChanges } from "./api.ts";
 import { useCardEdit } from "./edits.ts";
+import { PrintingField } from "./printing-browser.tsx";
 import { findTag, useCreateTag } from "./tags.ts";
 
 const NOTES_DEBOUNCE_MS = 600;
@@ -319,6 +320,7 @@ export function CardEditor({
           Swap for another card…
         </Link>
       )}
+      <PrintingField card={card} save={save} />
       <TagsField slug={card.slug} tags={card.tags} vocabulary={vocabulary} save={save} />
       <NotesField slug={card.slug} notes={card.notes} save={save} />
     </div>

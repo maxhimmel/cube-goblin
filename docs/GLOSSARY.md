@@ -73,6 +73,10 @@ Two archetypes share some cards or traits, so one deck can draw on both. ([Cube 
 
 Several similar cards in a singleton cube, so an archetype shows up consistently. ([StarCityGames](https://articles.starcitygames.com/magic-the-gathering/how-to-build-an-mtg-cube-with-redundancy-in-mind/))
 
+## Overlap
+
+The cards that carry exactly one combination of the tags picked in the Tags view: every picked tag in the combination, and none of the others. Each card falls in one overlap only, and "none of these" is an overlap too. This is how UpSet reads its rows ("shared by sets A and B, but not with C"), and it is one region of a Venn diagram. UpSet suggests a Venn diagram for fewer than four sets and its matrix of combinations beyond that. In code: `tagOverlaps` (`packages/cube/src/overlaps.ts`). ([UpSet](https://upset.app/))
+
 ## Printing
 
 One release of a card in a particular set, with its own collector number, art, frame, and border. A card that appears again in a later set is a reprint, so one card can have many printings: alternate art, borderless, showcase, Special Guests, and so on. Scryfall gives each printing its own ID and lists them with `unique=prints`. Each cube card stores the printing it shows in `printing`. ([mtg.wiki](https://mtg.wiki/page/Reprint), [Scryfall](https://scryfall.com/docs/api/cards/search)) Notes: [research/scryfall-api.md](research/scryfall-api.md#printings).

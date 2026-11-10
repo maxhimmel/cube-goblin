@@ -13,7 +13,7 @@ Every view shares a top bar (view switcher, filter, draft count against the targ
 | Scan card images, bulk edit         | **Cards** (`/cards`): the image grid, organized by status or tag, with multi-select and a bulk bar. Its numbers live in Insights.                  | [T-001](../tickets/T-001-editing-workbench.md)    |
 | Inspect or edit a card              | **Detail pane**.                                                                                                                                   | [T-003](../tickets/T-003-visual-design-pass.md)   |
 | Sketch groups before tagging        | **Board** (`/board`, workbench only): a grid of [sections](../GLOSSARY.md#section) to drag cards into, next to a pool of draft and prospect cards. | [T-011](../tickets/T-011-board-view.md)           |
-| Explore tag overlaps                | **Tags**: a Venn diagram for two or three tags, a matrix of combinations for more. A region filters the Wall.                                      | [T-012](../tickets/T-012-tag-overlap-view.md)     |
+| Explore tag overlaps                | **Tags** (`/tags`): pick tags; a Venn diagram for two or three, and a matrix of every [overlap](../GLOSSARY.md#overlap). One filters the Wall.     | [T-012](../tickets/T-012-tag-overlap-view.md)     |
 | Read the numbers                    | **Insights** (`/insights`): counts and charts for a scope (draft, draft + prospects, all, or the Cards selection). The share doc gets it too.      | [T-004](../tickets/T-004-stats-and-charts.md)     |
 | Compare cards, groups, and versions | **Compare**: side by side, with what changed.                                                                                                      | [T-014](../tickets/T-014-versions-and-compare.md) |
 

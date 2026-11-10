@@ -10,5 +10,13 @@
       "#mode": ["./src/modes/share.tsx"]
     }
   },
-  "include": ["src", "server", "e2e", "eslint.config.ts", "vite.config.ts", "playwright.config.ts"]
+  "include": [
+    "src",
+    "server",
+    "e2e",
+    "eslint.config.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ]
 }

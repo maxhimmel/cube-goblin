@@ -1015,6 +1015,18 @@ export function MatchupChart({
     () => fanned(points, open === undefined ? [] : (groups.get(open) ?? [])),
     [groups, open, points],
   );
+  const labelled = useMemo(
+    () =>
+      [...groups].flatMap(([key, members]) => {
+        const inside = placed.filter((point) => members.includes(point.id));
+        if (inside.length < 2 || key === open) {
+          return inside.map((point) => ({ ...point, label: point.body }));
+        }
+        const lead = [...inside].sort((a, b) => b.count - a.count || b.kills - a.kills)[0];
+        return lead ? [{ ...lead, label: `${lead.body} +${String(inside.length - 1)}` }] : [];
+      }),
+    [groups, open, placed],
+  );
   const bounds = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const placeLabels = useCallback(({ scene }: TickScene) => {
     const { x, y, height: h } = scene.chart;
@@ -1114,11 +1126,11 @@ export function MatchupChart({
             ),
           ),
           decorative(
-            text(placed, {
+            text(labelled, {
               key: "id",
               x: "x",
               y: "y",
-              text: "body",
+              text: "label",
               dy: (point) => -(radius(point) + 7),
               fontSize: 11,
               fill: "currentColor",
@@ -1157,7 +1169,7 @@ export function MatchupChart({
             `${point.datum.body} \u00b7 ${String(point.datum.count)} creature${point.datum.count === 1 ? "" : "s"}: ${point.datum.names}\nKills ${String(Math.round(point.datum.kills))}%, survives ${String(Math.round(point.datum.survives))}%`,
         },
       }),
-    [placed, selected],
+    [labelled, placed, selected],
   );
   return (
     <div

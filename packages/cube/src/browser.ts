@@ -50,6 +50,8 @@ export type {
   TagKind,
 } from "./schema.ts";
 export { COLUMN_AXES, colorKey, columnsBy } from "./columns.ts";
+export { creatureBalance } from "./creatures.ts";
+export type { Body, CreatureBalance, CurveBodies } from "./creatures.ts";
 export type { Column, ColumnAxis } from "./columns.ts";
 export { slugify } from "./slug.ts";
 export {

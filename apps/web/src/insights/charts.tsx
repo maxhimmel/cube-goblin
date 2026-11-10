@@ -1,16 +1,5 @@
 import type { Count, GridCell } from "@repo/cube/browser";
-import {
-  barX,
-  barY,
-  cell,
-  defineChart,
-  dot,
-  lineY,
-  rect,
-  ruleX,
-  ruleY,
-  text,
-} from "@tanstack/charts";
+import { barX, barY, cell, defineChart, dot, lineY, link, rect, text } from "@tanstack/charts";
 import { Chart } from "@tanstack/charts/react";
 import { scaleBand } from "@tanstack/charts/scales/band";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
@@ -848,35 +837,139 @@ export interface MatchupPoint {
   survives: number;
 }
 
+const MID = 50;
+const LOW = -4;
+const HIGH = 104;
+
 const CORNERS = [
   {
     id: "wins",
+    title: "Wins most fights",
+    hint: "kills and survives most",
     fill: "var(--chart-above)",
-    test: (p: MatchupPoint) => p.kills >= 50 && p.survives >= 50,
+    x1: MID,
+    x2: HIGH,
+    y1: MID,
+    y2: HIGH,
+    test: (p: MatchupPoint) => p.kills >= MID && p.survives >= MID,
   },
   {
     id: "wall",
+    title: "Walls",
+    hint: "survive, rarely kill",
     fill: "var(--chart-dot)",
-    test: (p: MatchupPoint) => p.kills < 50 && p.survives >= 50,
+    x1: LOW,
+    x2: MID,
+    y1: MID,
+    y2: HIGH,
+    test: (p: MatchupPoint) => p.kills < MID && p.survives >= MID,
   },
   {
     id: "cannon",
+    title: "Glass cannons",
+    hint: "kill, then die",
     fill: "var(--chart-below)",
-    test: (p: MatchupPoint) => p.kills >= 50 && p.survives < 50,
+    x1: MID,
+    x2: HIGH,
+    y1: LOW,
+    y2: MID,
+    test: (p: MatchupPoint) => p.kills >= MID && p.survives < MID,
   },
   {
     id: "chump",
+    title: "Chump blockers",
+    hint: "lose most fights",
     fill: "var(--chart-chump)",
-    test: (p: MatchupPoint) => p.kills < 50 && p.survives < 50,
+    x1: LOW,
+    x2: MID,
+    y1: LOW,
+    y2: MID,
+    test: (p: MatchupPoint) => p.kills < MID && p.survives < MID,
   },
 ] as const;
 
-const CORNER_LABELS = [
-  { x: 52, y: 103, text: "Wins most fights \u2192", anchor: "start" },
-  { x: 48, y: 103, text: "\u2190 Walls: survive, rarely kill", anchor: "end" },
-  { x: 52, y: -3, text: "Glass cannons: kill, then die \u2192", anchor: "start" },
-  { x: 48, y: -3, text: "\u2190 Chump blockers", anchor: "end" },
-] as const;
+const NEAR_X = 2.5;
+const NEAR_Y = 4;
+const FAN_X = 4;
+const FAN_Y = 9;
+
+function radius(point: MatchupPoint): number {
+  return 4 + Math.sqrt(point.count) * 3;
+}
+
+function clusters(points: readonly MatchupPoint[]): Map<string, string[]> {
+  const parent = new Map(points.map((point) => [point.id, point.id]));
+  const root = (id: string): string => {
+    const up = parent.get(id) ?? id;
+    return up === id ? id : root(up);
+  };
+  for (const a of points) {
+    for (const b of points) {
+      if (
+        a.id < b.id &&
+        Math.abs(a.kills - b.kills) < NEAR_X &&
+        Math.abs(a.survives - b.survives) < NEAR_Y
+      ) {
+        parent.set(root(b.id), root(a.id));
+      }
+    }
+  }
+  const groups = new Map<string, string[]>();
+  for (const point of points) {
+    const key = root(point.id);
+    groups.set(key, [...(groups.get(key) ?? []), point.id]);
+  }
+  return groups;
+}
+
+function fanned(
+  points: readonly MatchupPoint[],
+  members: readonly string[],
+): (MatchupPoint & { x: number; y: number; moved: boolean })[] {
+  const inside = points.filter((point) => members.includes(point.id));
+  const cx = inside.reduce((sum, point) => sum + point.kills, 0) / Math.max(1, inside.length);
+  const cy = inside.reduce((sum, point) => sum + point.survives, 0) / Math.max(1, inside.length);
+  return points.map((point) => {
+    const index = members.indexOf(point.id);
+    if (index < 0 || members.length < 2) {
+      return { ...point, x: point.kills, y: point.survives, moved: false };
+    }
+    const angle = Math.PI + (2 * Math.PI * index) / members.length;
+    return {
+      ...point,
+      x: cx + Math.cos(angle) * FAN_X,
+      y: cy - Math.sin(angle) * FAN_Y,
+      moved: true,
+    };
+  });
+}
+
+const OPEN_WITHIN = 18;
+const STAY_WITHIN = 70;
+
+function nearestPile(
+  piles: readonly { key: string; kills: number; survives: number }[],
+  area: { x: number; y: number; w: number; h: number },
+  px: number,
+  py: number,
+  open: string | undefined,
+): string | undefined {
+  const span = HIGH - LOW;
+  const distance = (pile: { kills: number; survives: number }): number =>
+    Math.hypot(
+      area.x + ((pile.kills - LOW) / span) * area.w - px,
+      area.y + ((HIGH - pile.survives) / span) * area.h - py,
+    );
+  const current = piles.find((pile) => pile.key === open);
+  if (current && distance(current) <= STAY_WITHIN) {
+    return open;
+  }
+  const near = piles
+    .map((pile) => ({ key: pile.key, gap: distance(pile) }))
+    .filter((entry) => entry.gap <= OPEN_WITHIN)
+    .sort((a, b) => a.gap - b.gap)[0];
+  return near?.key;
+}
 
 export function MatchupChart({
   points,
@@ -890,44 +983,116 @@ export function MatchupChart({
   onPick?: ((id: string) => void) | undefined;
 }): ReactNode {
   const [plot, height] = usePlotHeight();
+  const labels = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState<string | undefined>(undefined);
+  const groups = useMemo(() => clusters(points), [points]);
+  const piles = useMemo(
+    () =>
+      [...groups]
+        .filter(([, members]) => members.length > 1)
+        .map(([key, members]) => {
+          const inside = points.filter((point) => members.includes(point.id));
+          return {
+            key,
+            kills: inside.reduce((sum, point) => sum + point.kills, 0) / inside.length,
+            survives: inside.reduce((sum, point) => sum + point.survives, 0) / inside.length,
+          };
+        }),
+    [groups, points],
+  );
+  const placed = useMemo(
+    () => fanned(points, open === undefined ? [] : (groups.get(open) ?? [])),
+    [groups, open, points],
+  );
+  const bounds = useRef({ x: 0, y: 0, w: 0, h: 0 });
+  const placeLabels = useCallback(({ scene }: TickScene) => {
+    const { x, y, height: h } = scene.chart;
+    const w = (scene.chart as { width?: number }).width ?? 0;
+    bounds.current = { x, y, w, h };
+    const layer = labels.current;
+    if (!layer) {
+      return;
+    }
+    const span = HIGH - LOW;
+    for (const element of Array.from(layer.children)) {
+      if (!(element instanceof HTMLElement)) {
+        continue;
+      }
+      const corner = CORNERS.find((entry) => entry.id === element.dataset["corner"]);
+      if (!corner) {
+        continue;
+      }
+      const left = corner.x1 === LOW;
+      const top = corner.y2 === HIGH;
+      element.style.left = `${String(x + (left ? 10 : ((MID - LOW) / span) * w + 10))}px`;
+      element.style.top = `${String(top ? y + 8 : y + ((HIGH - MID) / span) * h + 8)}px`;
+    }
+    layer.dataset["ready"] = "true";
+  }, []);
   const definition = useMemo(
     () =>
       defineChart({
-        margin: { top: 12, bottom: 44, right: 16, left: 52 },
+        margin: { top: 8, bottom: 40, right: 16, left: 56 },
         focusRing: FOCUS_RING,
         marks: [
-          decorative(ruleX([50], { stroke: "var(--line)", strokeDasharray: "4 4" })),
-          decorative(ruleY([50], { stroke: "var(--line)", strokeDasharray: "4 4" })),
+          ...CORNERS.map((corner) =>
+            decorative(
+              rect([corner], {
+                id: `corner-${corner.id}`,
+                x1: "x1",
+                x2: "x2",
+                y1: "y1",
+                y2: "y2",
+                fill: `color-mix(in oklab, ${corner.fill} 12%, transparent)`,
+                inset: 1,
+              }),
+            ),
+          ),
           decorative(
-            text(CORNER_LABELS, {
-              x: "x",
-              y: "y",
-              text: "text",
-              anchor: (label) => label.anchor,
-              fontSize: 11,
-              fill: "var(--muted)",
-            }),
+            link(
+              placed.filter((point) => point.moved),
+              {
+                id: "leaders",
+                x1: "kills",
+                y1: "survives",
+                x2: "x",
+                y2: "y",
+                stroke: "var(--muted)",
+                strokeWidth: 1,
+              },
+            ),
+          ),
+          decorative(
+            dot(
+              placed.filter((point) => point.moved),
+              {
+                id: "origins",
+                x: "kills",
+                y: "survives",
+                r: 2.5,
+                fill: "var(--muted)",
+              },
+            ),
           ),
           ...CORNERS.map((corner) =>
-            dot(points.filter(corner.test), {
+            dot(placed.filter(corner.test), {
               id: `matchups-${corner.id}`,
-              x: "kills",
-              y: "survives",
-              r: (point) => 4 + Math.sqrt(point.count) * 3,
+              x: "x",
+              y: "y",
+              r: radius,
               fill: corner.fill,
-              fillOpacity: 0.85,
               stroke: "var(--chart-surface)",
-              strokeWidth: 1,
+              strokeWidth: 1.5,
             }),
           ),
           decorative(
             dot(
-              points.filter((point) => point.id === selected),
+              placed.filter((point) => point.id === selected),
               {
                 id: "matchup-selected",
-                x: "kills",
-                y: "survives",
-                r: (point) => 8 + Math.sqrt(point.count) * 3,
+                x: "x",
+                y: "y",
+                r: (point) => radius(point) + 4,
                 fill: "none",
                 stroke: "var(--fg)",
                 strokeWidth: 2,
@@ -935,11 +1100,11 @@ export function MatchupChart({
             ),
           ),
           decorative(
-            text(points, {
-              x: "kills",
-              y: "survives",
+            text(placed, {
+              x: "x",
+              y: "y",
               text: "body",
-              dy: (point) => -(9 + Math.sqrt(point.count) * 3),
+              dy: (point) => -(radius(point) + 7),
               fontSize: 11,
               fill: "currentColor",
             }),
@@ -947,26 +1112,23 @@ export function MatchupChart({
         ],
         scales: {
           x: {
-            scale: scaleLinear().domain([-4, 104]),
+            scale: scaleLinear().domain([LOW, HIGH]),
             axis: {
               line: false,
-              label: "Kills: % of creatures it kills when they block or are blocked",
               ticks: {
                 size: 0,
-                values: [0, 25, 50, 75, 100],
+                values: [0, MID, 100],
                 format: (value: number) => `${String(value)}%`,
               },
             },
           },
           y: {
-            scale: scaleLinear().domain([-4, 104]),
-            grid: true,
+            scale: scaleLinear().domain([LOW, HIGH]),
             axis: {
               line: false,
-              label: "Survives: % of creatures it survives",
               ticks: {
                 size: 0,
-                values: [0, 25, 50, 75, 100],
+                values: [0, MID, 100],
                 format: (value: number) => `${String(value)}%`,
               },
             },
@@ -980,15 +1142,52 @@ export function MatchupChart({
             `${point.datum.body} \u00b7 ${String(point.datum.count)} creature${point.datum.count === 1 ? "" : "s"}: ${point.datum.names}\nKills ${String(Math.round(point.datum.kills))}%, survives ${String(Math.round(point.datum.survives))}%`,
         },
       }),
-    [points, selected],
+    [placed, selected],
   );
   return (
-    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
+    <div
+      className="chart-plot matchup-plot"
+      ref={plot}
+      data-pickable={onPick !== undefined}
+      onPointerLeave={() => {
+        setOpen(undefined);
+      }}
+      onPointerMove={(event) => {
+        const box = event.currentTarget.getBoundingClientRect();
+        const next = nearestPile(
+          piles,
+          bounds.current,
+          event.clientX - box.left,
+          event.clientY - box.top,
+          open,
+        );
+        if (next !== open) {
+          setOpen(next);
+        }
+      }}
+    >
+      <div ref={labels} className="corner-labels" aria-hidden="true">
+        {CORNERS.map((corner) => (
+          <span key={corner.id} data-corner={corner.id} className="corner-label">
+            <span className="corner-title" style={{ color: corner.fill }}>
+              {corner.title}
+            </span>
+            <span className="corner-hint">{corner.hint}</span>
+          </span>
+        ))}
+      </div>
+      <span className="axis-title" data-axis="y" aria-hidden="true">
+        Survives
+      </span>
+      <span className="axis-title" data-axis="x" aria-hidden="true">
+        Kills
+      </span>
       <Chart
         definition={definition}
         ariaLabel={name}
-        height={height ?? 360}
+        height={height ?? 420}
         initialWidth={720}
+        onRender={placeLabels}
         onSelect={(point) => {
           if (point && onPick) {
             onPick(point.datum.id);

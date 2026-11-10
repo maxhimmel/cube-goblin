@@ -493,3 +493,42 @@
   text-align: left;
   padding-right: 16px;
 }
+
+.matchup-plot {
+  --tick-gutter: 56px;
+}
+
+.matchup-plot .axis-title[data-axis="y"] {
+  left: 0;
+  bottom: 40px;
+}
+
+.corner-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.corner-labels[data-ready="true"] {
+  visibility: visible;
+}
+
+.corner-label {
+  position: absolute;
+  display: grid;
+  gap: 1px;
+}
+
+.corner-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.corner-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}

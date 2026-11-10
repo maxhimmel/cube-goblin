@@ -13,6 +13,8 @@ const opt = card("Opt", 1, ["U"], "Instant");
 const wurm = card("Craterclaw Colossus", 6, ["G"], "Creature — Wurm");
 const charm = card("Prismari Charm", 2, ["U", "R"], "Instant");
 const glass = card("Magnifying Glass", 3, [], "Artifact");
+const rite = card("Rite of Flame", 1, ["R"], "Sorcery");
+const golem = card("Steel Golem", 3, [], "Artifact Creature — Golem");
 const cards = [shock, opt, wurm, charm, glass];
 
 describe("sortCards", () => {
@@ -38,5 +40,9 @@ describe("sortCards", () => {
   it("combines keys and breaks remaining ties by name", () => {
     expect(sortCards(cards, ["mv", "color"])).toEqual([opt, shock, charm, glass, wurm]);
     expect(sortCards(cards, ["type", "mv"])).toEqual([wurm, opt, shock, charm, glass]);
+  });
+
+  it("sorts instants before sorceries, and an artifact creature with creatures", () => {
+    expect(sortCards([glass, rite, golem, shock], ["type"])).toEqual([golem, shock, rite, glass]);
   });
 });

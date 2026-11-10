@@ -15,13 +15,22 @@ export const CURVE_TOP = 7;
 export const CARD_TYPES = [
   { id: "creature", label: "Creature", word: /\bCreature\b/u },
   { id: "planeswalker", label: "Planeswalker", word: /\bPlaneswalker\b/u },
-  { id: "spell", label: "Instant & sorcery", word: /\b(Instant|Sorcery)\b/u },
+  { id: "instant", label: "Instant", word: /\bInstant\b/u },
+  { id: "sorcery", label: "Sorcery", word: /\bSorcery\b/u },
   { id: "artifact", label: "Artifact", word: /\bArtifact\b/u },
   { id: "enchantment", label: "Enchantment", word: /\bEnchantment\b/u },
-  { id: "other", label: "Other", word: /./u },
+  { id: "battle", label: "Battle", word: /\bBattle\b/u },
 ] as const;
 
+export const OTHER_TYPE = { id: "other", label: "Other" } as const;
+
 export const LAND = { id: "land", label: "Land" } as const;
+
+export const TYPE_COLUMNS: readonly Omit<Count, "count">[] = [
+  ...CARD_TYPES.map(({ id, label }) => ({ id, label })),
+  OTHER_TYPE,
+  LAND,
+];
 
 export interface StatCard {
   status: CardStatus;
@@ -67,12 +76,17 @@ export function isLand(card: Pick<StatCard, "typeLine">): boolean {
   return /\bLand\b/u.test(frontType(card));
 }
 
-export function typeKey(card: Pick<StatCard, "typeLine">): string {
-  if (isLand(card)) {
-    return LAND.id;
-  }
+export function typeKeys(card: Pick<StatCard, "typeLine">): string[] {
   const front = frontType(card);
-  return CARD_TYPES.find((type) => type.word.test(front))?.id ?? "other";
+  const keys: string[] = CARD_TYPES.filter((type) => type.word.test(front)).map((type) => type.id);
+  if (isLand(card)) {
+    keys.push(LAND.id);
+  }
+  return keys.length > 0 ? keys : [OTHER_TYPE.id];
+}
+
+export function typeKey(card: Pick<StatCard, "typeLine">): string {
+  return isLand(card) ? LAND.id : (typeKeys(card)[0] ?? OTHER_TYPE.id);
 }
 
 export function colorGroup(card: Pick<StatCard, "colors">): string {
@@ -149,11 +163,11 @@ export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]
       })),
     ),
     lands: cards.length - spells.length,
-    creatures: count(spells, (card) => typeKey(card) === "creature"),
-    types: [...CARD_TYPES, LAND].map(({ id, label }) => ({
+    creatures: count(cards, (card) => typeKeys(card).includes("creature")),
+    types: TYPE_COLUMNS.map(({ id, label }) => ({
       id,
       label,
-      count: count(cards, (card) => typeKey(card) === id),
+      count: count(cards, (card) => typeKeys(card).includes(id)),
     })),
     functions: CARD_FUNCTIONS.map(({ id, label }) => ({
       id,
@@ -210,7 +224,7 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
     case "pips":
       return pipColors(card.manaCost ?? "").includes(first);
     case "type":
-      return typeKey(card) === first;
+      return typeKeys(card).includes(first);
     case "function":
       return card.functions?.includes(first) ?? false;
     case "status":

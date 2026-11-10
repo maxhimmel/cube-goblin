@@ -60,6 +60,8 @@ export {
   CURVE_COLUMNS,
   CURVE_TOP,
   LAND,
+  OTHER_TYPE,
+  TYPE_COLUMNS,
   bucketId,
   colorGroup,
   cubeStats,
@@ -69,6 +71,7 @@ export {
   isLand,
   pipColors,
   typeKey,
+  typeKeys,
 } from "./stats.ts";
 export type { Bucket, BucketKind, Count, CubeStats, GridCell, StatCard } from "./stats.ts";
 export {

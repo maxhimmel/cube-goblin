@@ -18,6 +18,9 @@ const cards: Card[] = [
   card("Forest", { typeLine: "Basic Land — Forest" }),
   card("Elf", { colors: ["G"], cmc: 1, typeLine: "Creature — Elf // Land" }),
   card("Sol Ring", { cmc: 1, typeLine: "Artifact" }),
+  card("Steel Golem", { cmc: 3, typeLine: "Artifact Creature — Golem" }),
+  card("Dryad Arbor", { colors: ["G"], typeLine: "Land Creature — Forest Dryad" }),
+  card("Rite", { colors: ["R"], cmc: 1, typeLine: "Sorcery" }),
   card("Walker", { colors: ["W"], cmc: 4, typeLine: "Legendary Planeswalker — Gideon" }),
 ];
 
@@ -28,8 +31,8 @@ function names(axis: ColumnAxis): Record<string, string[]> {
 }
 
 describe("columnsBy", () => {
-  it("puts every card in exactly one column on every axis", () => {
-    for (const axis of ["mv", "color", "type"] as const) {
+  it("puts every card in exactly one column by mana value and by color", () => {
+    for (const axis of ["mv", "color"] as const) {
       const placed = columnsBy(cards, axis).flatMap((column) => column.cards);
       expect(placed).toHaveLength(cards.length);
       expect(new Set(placed).size).toBe(cards.length);
@@ -54,15 +57,24 @@ describe("columnsBy", () => {
   });
 
   it("sorts a mana value column by color, then name", () => {
-    expect(names("mv")["1"]).toEqual(["Shock", "Elf", "Sol Ring"]);
+    expect(names("mv")["1"]).toEqual(["Rite", "Shock", "Elf", "Sol Ring"]);
   });
 
-  it("types a card by its front face, creature before artifact", () => {
+  it("puts a card under every type on its front face", () => {
     const type = names("type");
-    expect(type["creature"]).toEqual(["Elf", "Ulamog"]);
-    expect(type["artifact"]).toEqual(["Sol Ring"]);
-    expect(type["spell"]).toEqual(["Shock", "Abrade", "Electrolyze"]);
+    expect(type["creature"]).toEqual(["Dryad Arbor", "Elf", "Steel Golem", "Ulamog"]);
+    expect(type["artifact"]).toEqual(["Sol Ring", "Steel Golem"]);
+    expect(type["instant"]).toEqual(["Shock", "Abrade", "Electrolyze"]);
+    expect(type["sorcery"]).toEqual(["Rite"]);
     expect(type["planeswalker"]).toEqual(["Walker"]);
-    expect(type["land"]).toEqual(["Forest"]);
+    expect(type["land"]).toEqual(["Dryad Arbor", "Forest"]);
+    expect(type["other"]).toEqual([]);
+  });
+
+  it("matches the stats card-type counts", () => {
+    const stats = cubeStats(cards, []);
+    expect(columnsBy(cards, "type").map((c) => c.cards.length)).toEqual(
+      stats.types.map((row) => row.count),
+    );
   });
 });

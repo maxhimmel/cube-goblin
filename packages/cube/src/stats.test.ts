@@ -20,14 +20,16 @@ const cards: StatCard[] = [
 describe("cubeStats", () => {
   const stats = cubeStats(cards, [{ id: "burn", label: "Burn", kind: "group" }]);
 
-  it("counts card types, with lands read from the front face", () => {
+  it("counts every card type a card has, read from the front face", () => {
     const types = Object.fromEntries(stats.types.map((row) => [row.id, row.count]));
     expect(types).toEqual({
       creature: 2,
       planeswalker: 0,
-      spell: 4,
-      artifact: 0,
+      instant: 4,
+      sorcery: 0,
+      artifact: 1,
       enchantment: 0,
+      battle: 0,
       other: 0,
       land: 1,
     });

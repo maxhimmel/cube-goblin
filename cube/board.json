@@ -13,7 +13,18 @@
         "coerced-to-kill",
         "felling-blow",
         "lightning-strike",
-        "luminous-rebuke"
+        "luminous-rebuke",
+        "shock"
+      ]
+    },
+    {
+      "id": "mwaxzbxq-4uttae",
+      "label": "Ramp",
+      "cards": [
+        "aerid-konstrari",
+        "biotech-specialist",
+        "llanowar-elves",
+        "loot-exuberant-explorer"
       ]
     }
   ]

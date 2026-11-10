@@ -54,6 +54,13 @@ function printKey(id: string): string {
   return `print:${id}`;
 }
 
+export function isUnreachable(error: unknown): boolean {
+  if (error instanceof ScryfallError) {
+    return error.status === 429 || error.status >= 500;
+  }
+  return error instanceof TypeError || (error instanceof Error && error.name === "TimeoutError");
+}
+
 export interface PrintedEntry {
   oracleId: string;
   printing?: string | undefined;
@@ -226,6 +233,9 @@ export class ScryfallClient {
         }
       }
     } catch (error) {
+      if (!isUnreachable(error)) {
+        throw error;
+      }
       for (const id of toFetch.filter((candidate) => !found.has(candidate))) {
         const stale = cardSchema.safeParse(await this.#cache.peek(keyOf(id)));
         if (!stale.success) {
@@ -252,25 +262,38 @@ export class ScryfallClient {
 
   async forEntries(
     entries: readonly PrintedEntry[],
-  ): Promise<{ cards: Map<string, Card>; missing: string[] }> {
+  ): Promise<{ cards: Map<string, Card>; missing: string[]; unresolved: string[] }> {
     const chosen = entries.flatMap((entry) => entry.printing ?? []);
     const [defaults, printed] = await Promise.all([
       this.#byKeys(
         entries.map((entry) => entry.oracleId),
         "oracle_id",
       ),
-      this.#byKeys(chosen, "id"),
+      this.#byKeys(chosen, "id").catch((error: unknown) => {
+        if (isUnreachable(error)) {
+          return { cards: new Map<string, Card>(), missing: chosen };
+        }
+        throw error;
+      }),
     ]);
     const cards = new Map<string, Card>();
+    const unresolved: string[] = [];
     for (const entry of entries) {
       const printing = entry.printing === undefined ? undefined : printed.cards.get(entry.printing);
-      const card =
-        printing?.oracle_id === entry.oracleId ? printing : defaults.cards.get(entry.oracleId);
+      const matches = printing?.oracle_id === entry.oracleId;
+      if (entry.printing !== undefined && !matches) {
+        unresolved.push(entry.oracleId);
+      }
+      const card = matches ? printing : defaults.cards.get(entry.oracleId);
       if (card) {
         cards.set(entry.oracleId, card);
       }
     }
-    return { cards, missing: defaults.missing };
+    return { cards, missing: defaults.missing, unresolved };
+  }
+
+  async rememberPrinting(card: Card): Promise<void> {
+    await this.#cache.set(printKey(card.id), card);
   }
 
   async printings(oracleId: string): Promise<Card[]> {
@@ -278,21 +301,29 @@ export class ScryfallClient {
     let page = 1;
     let hasMore = true;
     while (hasMore) {
-      const list: CardList = await this.#request(
-        {
-          path: "/cards/search",
-          params: {
-            q: `oracleid:${oracleId} game:paper`,
-            unique: "prints",
-            include_variations: "true",
-            order: "released",
-            dir: "desc",
-            page: String(page),
+      let list: CardList;
+      try {
+        list = await this.#request(
+          {
+            path: "/cards/search",
+            params: {
+              q: `oracleid:${oracleId} game:paper`,
+              unique: "prints",
+              include_variations: "true",
+              order: "released",
+              dir: "desc",
+              page: String(page),
+            },
+            cache: false,
           },
-          cache: false,
-        },
-        cardListSchema,
-      );
+          cardListSchema,
+        );
+      } catch (error) {
+        if (error instanceof ScryfallError && error.status === 404) {
+          return cards;
+        }
+        throw error;
+      }
       cards.push(...list.data);
       hasMore = list.has_more;
       page += 1;

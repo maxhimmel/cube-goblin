@@ -163,13 +163,14 @@ describe("ScryfallClient", () => {
         calls,
       ),
     });
-    const { cards, missing } = await client.forEntries([
+    const { cards, missing, unresolved } = await client.forEntries([
       { oracleId: "a", printing: "p1" },
       { oracleId: "b", printing: "p2" },
     ]);
     expect(cards.get("a")?.set).toBe("spg");
     expect(cards.get("b")?.id).toBe("d2");
     expect(missing).toEqual([]);
+    expect(unresolved).toEqual(["b"]);
     expect(JSON.parse(calls[1]?.init?.body as string)).toEqual({
       identifiers: [{ id: "p1" }, { id: "p2" }],
     });
@@ -187,6 +188,51 @@ describe("ScryfallClient", () => {
     });
     expect((await offline.byIds(["p1"])).cards.map((found) => found.id)).toEqual(["p1"]);
     await expect(offline.byIds(["p2"])).rejects.toThrow("fetch failed");
+    const fresh = await offline
+      .forEntries([{ oracleId: "a", printing: "p2" }])
+      .catch((error: unknown) => error);
+    expect(fresh).toBeInstanceOf(TypeError);
+  });
+
+  it("falls back to the default when a new printing can't be fetched offline", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-offline-"));
+    await new FileCache(dir).set("oracle:a", { ...card, id: "d1", oracle_id: "a" });
+    const offline = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new FileCache(dir),
+      sleep: () => Promise.resolve(),
+      fetch: () => Promise.reject(new TypeError("fetch failed")),
+    });
+    const { cards, unresolved } = await offline.forEntries([{ oracleId: "a", printing: "p9" }]);
+    expect(cards.get("a")?.id).toBe("d1");
+    expect(unresolved).toEqual(["a"]);
+  });
+
+  it("does not hide Scryfall rejecting a request behind stale data", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-reject-"));
+    await new FileCache(dir).set("print:p1", { ...card, id: "p1" });
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new FileCache(dir, 1000, () => Date.now() + 10_000),
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [{ status: 400, body: { object: "error", status: 400, code: "bad", details: "Bad" } }],
+        [],
+      ),
+    });
+    await expect(client.byIds(["p1"])).rejects.toThrow("Bad");
+  });
+
+  it("returns no printings when Scryfall finds none", async () => {
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [{ status: 404, body: { object: "error", status: 404, code: "not_found", details: "x" } }],
+        [],
+      ),
+    });
+    expect(await client.printings("none")).toEqual([]);
   });
 
   it("lists every paper printing of a card across pages", async () => {

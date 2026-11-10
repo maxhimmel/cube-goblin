@@ -8,6 +8,7 @@ export {
   ScryfallClient,
   ScryfallError,
   chunk,
+  isUnreachable,
 } from "./client.ts";
 export type { CardIdentifier, PrintedEntry, ScryfallClientOptions } from "./client.ts";
 export { cardFaces, displayFields, imageUrl, printingLabels, printingSummary } from "./card.ts";

@@ -89,7 +89,7 @@ export const newTagSchema = tagSchema.pick({ label: true, kind: true });
 
 export const tagChangeSchema = tagSchema.pick({ label: true, kind: true }).partial();
 
-export const binSchema = z.strictObject({
+export const sectionSchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9-]+$/u),
   label: z.string().trim().min(1),
   cards: z.array(z.string()),
@@ -97,7 +97,7 @@ export const binSchema = z.strictObject({
 });
 
 export const boardSchema = z.strictObject({
-  bins: z.array(binSchema),
+  sections: z.array(sectionSchema),
 });
 
 export const cubeConfigSchema = z.strictObject({
@@ -114,6 +114,6 @@ export type NewCard = z.infer<typeof newCardSchema>;
 export type CardChange = z.infer<typeof cardChangeSchema>;
 export type TagKind = z.infer<typeof tagKindSchema>;
 export type Tag = z.infer<typeof tagSchema>;
-export type Bin = z.infer<typeof binSchema>;
+export type Section = z.infer<typeof sectionSchema>;
 export type Board = z.infer<typeof boardSchema>;
 export type CubeConfig = z.infer<typeof cubeConfigSchema>;

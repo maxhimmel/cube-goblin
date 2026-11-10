@@ -27,7 +27,7 @@ export {
   TAG_KINDS,
   applyCardPatch,
   applyTagChanges,
-  binSchema,
+  sectionSchema,
   boardSchema,
   cardChangeSchema,
   cardChangesSchema,
@@ -39,7 +39,7 @@ export {
   tagSchema,
 } from "./schema.ts";
 export type {
-  Bin,
+  Section,
   Board,
   CardChange,
   CardEntry,
@@ -81,13 +81,13 @@ export {
 export type { CardFunction } from "./functions.ts";
 export {
   EMPTY_BOARD,
-  addBin,
-  changeBin,
+  addSection,
+  changeSection,
   moveCard,
   putCard,
   pruneBoard,
-  removeBin,
-  restoreBin,
+  removeSection,
+  restoreSection,
   takeCard,
   validateBoard,
 } from "./board.ts";

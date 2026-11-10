@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { moveCard, putCard, restoreBin, takeCard, validateBoard } from "./board.ts";
+import { moveCard, putCard, restoreSection, takeCard, validateBoard } from "./board.ts";
 import { loadBoard, saveBoard } from "./save-board.ts";
 import type { Board, CardEntry, Tag } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
@@ -20,21 +20,21 @@ const opt: CardEntry = { ...shock, name: "Opt", oracleId: "8b4b6b0e-0000-4000-80
 const burn: Tag = { id: "burn", label: "Burn", kind: "group" };
 
 const board: Board = {
-  bins: [
+  sections: [
     { id: "a", label: "Burn", cards: ["shock"] },
     { id: "b", label: "Spells", cards: [] },
   ],
 };
 
-describe("bin edits", () => {
-  it("puts a card once, takes it out, and moves it between bins", () => {
+describe("section edits", () => {
+  it("puts a card once, takes it out, and moves it between sections", () => {
     expect(putCard(board, "a", "shock")).toEqual(board);
-    expect(putCard(board, "b", "shock").bins.map((bin) => bin.cards)).toEqual([
+    expect(putCard(board, "b", "shock").sections.map((section) => section.cards)).toEqual([
       ["shock"],
       ["shock"],
     ]);
-    expect(takeCard(board, "a", "shock").bins[0]?.cards).toEqual([]);
-    expect(moveCard(board, "a", "b", "shock").bins.map((bin) => bin.cards)).toEqual([
+    expect(takeCard(board, "a", "shock").sections[0]?.cards).toEqual([]);
+    expect(moveCard(board, "a", "b", "shock").sections.map((section) => section.cards)).toEqual([
       [],
       ["shock"],
     ]);
@@ -43,27 +43,27 @@ describe("bin edits", () => {
     expect(takeCard(board, "b", "shock")).toBe(board);
   });
 
-  it("puts a deleted bin back where it was", () => {
-    const [first] = board.bins;
+  it("puts a deleted section back where it was", () => {
+    const [first] = board.sections;
     if (!first) {
-      throw new Error("fixture has no bin");
+      throw new Error("fixture has no section");
     }
-    const without = { bins: board.bins.slice(1) };
-    expect(restoreBin(without, first, 0)).toEqual(board);
-    expect(restoreBin(board, first, 0)).toBe(board);
+    const without = { sections: board.sections.slice(1) };
+    expect(restoreSection(without, first, 0)).toEqual(board);
+    expect(restoreSection(board, first, 0)).toBe(board);
   });
 });
 
 describe("validateBoard", () => {
   it("accepts a board of known cards and tags", () => {
     const linked = { id: "a", label: "Burn", cards: ["shock"], tag: "burn" };
-    expect(validateBoard({ bins: [linked] }, [shock], [burn])).toEqual([]);
+    expect(validateBoard({ sections: [linked] }, [shock], [burn])).toEqual([]);
   });
 
-  it("names unknown cards, repeated cards, unknown tags, and duplicate bins", () => {
+  it("names unknown cards, repeated cards, unknown tags, and duplicate sections", () => {
     const problems = validateBoard(
       {
-        bins: [
+        sections: [
           { id: "a", label: "One", cards: ["shock", "shock", "bolt"], tag: "ramp" },
           { id: "a", label: "Two", cards: [] },
         ],
@@ -72,10 +72,10 @@ describe("validateBoard", () => {
       [burn],
     );
     expect(problems).toEqual([
-      'Bin "One" holds "bolt", which is not in cube/cards',
-      'Bin "One" lists a card more than once',
-      'Bin "One" links tag "ramp", which is not in tags.json',
-      'Duplicate bin "a" in board.json',
+      'Section "One" holds "bolt", which is not in cube/cards',
+      'Section "One" lists a card more than once',
+      'Section "One" links tag "ramp", which is not in tags.json',
+      'Duplicate section "a" in board.json',
     ]);
   });
 });
@@ -92,7 +92,7 @@ describe("saveBoard", () => {
   });
 
   it("reads an empty board when the file is missing", async () => {
-    expect(await readBoard(paths)).toEqual({ bins: [] });
+    expect(await readBoard(paths)).toEqual({ sections: [] });
   });
 
   it("writes a valid board and reads it back", async () => {
@@ -102,8 +102,8 @@ describe("saveBoard", () => {
   });
 
   it("drops cards and tags that no longer exist instead of refusing the save", async () => {
-    const stale = { bins: [{ id: "a", label: "x", cards: ["bolt", "shock"], tag: "ramp" }] };
-    const saved = { bins: [{ id: "a", label: "x", cards: ["shock"] }] };
+    const stale = { sections: [{ id: "a", label: "x", cards: ["bolt", "shock"], tag: "ramp" }] };
+    const saved = { sections: [{ id: "a", label: "x", cards: ["shock"] }] };
     expect(await saveBoard(paths, stale)).toEqual({ ok: true, board: saved });
     await writeFile(paths.boardFile, JSON.stringify(stale));
     expect(await loadBoard(paths)).toEqual(saved);
@@ -111,10 +111,10 @@ describe("saveBoard", () => {
 
   it("refuses a malformed board", async () => {
     for (const input of [
-      { bins: [{ id: "A B", label: "x", cards: [] }] },
-      { bins: [{ id: "a", label: " ", cards: [] }] },
+      { sections: [{ id: "A B", label: "x", cards: [] }] },
+      { sections: [{ id: "a", label: " ", cards: [] }] },
       {
-        bins: [
+        sections: [
           { id: "a", label: "x", cards: [] },
           { id: "a", label: "y", cards: [] },
         ],
@@ -122,6 +122,6 @@ describe("saveBoard", () => {
     ]) {
       expect(await saveBoard(paths, input)).toMatchObject({ ok: false, status: 400 });
     }
-    expect(await readBoard(paths)).toEqual({ bins: [] });
+    expect(await readBoard(paths)).toEqual({ sections: [] });
   });
 });

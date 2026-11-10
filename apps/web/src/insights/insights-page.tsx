@@ -95,6 +95,8 @@ function asOf(iso: string | undefined): string {
   return iso === undefined ? "not downloaded yet" : `as of ${iso.slice(0, 10)}`;
 }
 
+const RARE_TYPES: ReadonlySet<string> = new Set(["battle", "other"]);
+
 interface BarBlock {
   kind: BucketKind;
   title: string;
@@ -127,8 +129,9 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
   types: {
     kind: "type",
     title: "Card types",
-    rows: (stats) => stats.types,
+    rows: (stats) => stats.types.filter((row) => row.count > 0 || !RARE_TYPES.has(row.id)),
     fill: "var(--chart-types)",
+    caption: () => "A card counts under every type on its front face",
   },
   functions: {
     kind: "function",

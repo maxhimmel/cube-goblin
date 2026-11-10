@@ -1,5 +1,5 @@
 import type { SnapshotCard, TagKind } from "@repo/cube/browser";
-import { CARD_STATUSES, TAG_KINDS } from "@repo/cube/browser";
+import { CARD_STATUSES, TAG_KINDS, TYPE_COLUMNS, typeKeys } from "@repo/cube/browser";
 import type { CubeView, GridCard } from "../modes/mode.ts";
 
 export interface Pile {
@@ -45,6 +45,14 @@ function byStatus(cube: CubeView): Pile[] {
   }));
 }
 
+function byType(cube: CubeView): Pile[] {
+  return TYPE_COLUMNS.map(({ id, label }) => ({
+    id: `type-${id}`,
+    label,
+    cards: cube.cards.filter((card) => typeKeys(card).includes(id)),
+  }));
+}
+
 function hasTag(card: GridCard, id: string): boolean {
   return card.tags?.includes(id) ?? false;
 }
@@ -74,6 +82,7 @@ export function organizers(cube: CubeView): Organizer[] {
   return [
     { id: DEFAULT_ORGANIZER, label: "Overview", piles: overview },
     { id: "status", label: "Status", piles: byStatus },
+    { id: "type", label: "Card type", piles: byType },
     ...TAG_KINDS.filter((kind) => cube.vocabulary.some((tag) => tag.kind === kind)).map((kind) => ({
       id: kind,
       label: capitalize(kind),

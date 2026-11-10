@@ -119,20 +119,16 @@ export function WallPage(): ReactNode {
     return <p className="muted">Loading cube…</p>;
   }
   const axis: ColumnAxis = COLUMN_AXES.find((option) => option.id === by)?.id ?? "mv";
-  const allDraft = columnsBy(
-    cube.cards.filter((card) => card.status === "draft"),
-    axis,
-  );
-  const allProspects = columnsBy(
-    cube.cards.filter((card) => card.status === "prospect"),
-    axis,
-  );
+  const draftCards = cube.cards.filter((card) => card.status === "draft");
+  const prospectCards = cube.cards.filter((card) => card.status === "prospect");
+  const allDraft = columnsBy(draftCards, axis);
+  const allProspects = columnsBy(prospectCards, axis);
   const used = (index: number): boolean =>
     (allDraft[index]?.cards.length ?? 0) + (allProspects[index]?.cards.length ?? 0) > 0;
   const draft = allDraft.filter((_, index) => used(index));
   const prospects = allProspects.filter((_, index) => used(index));
-  const drafted = draft.reduce((total, column) => total + column.cards.length, 0);
-  const prospectCount = prospects.reduce((total, column) => total + column.cards.length, 0);
+  const drafted = draftCards.length;
+  const prospectCount = prospectCards.length;
 
   return (
     <div className="wall">

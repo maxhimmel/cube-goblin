@@ -1,6 +1,6 @@
 import { COLOR_ORDER, colorKey } from "./columns.ts";
 import type { StatCard } from "./stats.ts";
-import { CARD_TYPES, LAND, typeKey } from "./stats.ts";
+import { TYPE_COLUMNS, typeKey } from "./stats.ts";
 
 export const CARD_SORTS = [
   { id: "added", label: "Added" },
@@ -14,7 +14,7 @@ export type CardSort = (typeof CARD_SORTS)[number]["id"];
 
 type SortCard = Pick<StatCard, "colors" | "cmc" | "typeLine"> & { name: string };
 
-const TYPE_ORDER: string[] = [...CARD_TYPES.map((type) => type.id), LAND.id];
+const TYPE_ORDER: string[] = TYPE_COLUMNS.map((type) => type.id);
 
 const COMPARE: Record<Exclude<CardSort, "added">, (a: SortCard, b: SortCard) => number> = {
   name: (a, b) => a.name.localeCompare(b.name),

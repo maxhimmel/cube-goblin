@@ -1,7 +1,7 @@
 ---
 id: T-019
 title: Card types overlap
-status: todo
+status: done
 ---
 
 Card types are too coarse: Instant and Sorcery share a bucket, and a card counts as one type only (user, 2026-11-10).

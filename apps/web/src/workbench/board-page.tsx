@@ -1,7 +1,6 @@
-import type { Section, CardSort, TagKind, Workbench, WorkbenchCard } from "@repo/cube/browser";
+import type { Section, CardSort, Workbench, WorkbenchCard } from "@repo/cube/browser";
 import {
   CARD_SORTS,
-  TAG_KINDS,
   addSection,
   changeSection,
   moveCard,
@@ -17,8 +16,17 @@ import type { DragEvent, ReactNode } from "react";
 import { useState } from "react";
 import type { Hover } from "../strip.tsx";
 import { SECTION_DRAG_TYPE, DRAG_TYPE, Preview, Strip } from "../strip.tsx";
-import { editBoard, editBoardWithUndo, promoteSection, untagged, useBoard } from "./board.ts";
-import { findTag } from "./tags.ts";
+import {
+  applySectionTags,
+  createSectionTag,
+  editBoard,
+  editBoardWithUndo,
+  linkSectionTag,
+  missingTags,
+  unlinkSectionTag,
+  useBoard,
+} from "./board.ts";
+import { TagPicker } from "./tag-picker.tsx";
 
 const POOL_STATUSES = new Set(["draft", "prospect"]);
 const STATUS_FILTERS = [
@@ -83,7 +91,7 @@ function nextLabel(sections: readonly Section[]): string {
 
 function newSection(sections: readonly Section[], cards: string[] = []): Section {
   const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  return { id, label: nextLabel(sections), cards };
+  return { id, label: nextLabel(sections), cards, tags: [] };
 }
 
 function SectionLabel({ section, autoFocus }: { section: Section; autoFocus: boolean }): ReactNode {
@@ -122,50 +130,78 @@ function SectionLabel({ section, autoFocus }: { section: Section; autoFocus: boo
   );
 }
 
-function SectionTag({ section, cube }: { section: Section; cube: Workbench }): ReactNode {
-  const [kind, setKind] = useState<TagKind>("group");
-  const linked = cube.vocabulary.find((tag) => tag.id === section.tag);
-  const known = linked ?? findTag(cube.vocabulary, section.label);
-  const missing = linked ? untagged(section, cube).length : section.cards.length;
-  const promote = (): void => {
-    void promoteSection(section.id, kind);
-  };
-  if (linked) {
-    return (
-      <div className="board-section-tag">
-        <span className="chip" data-kind={linked.kind}>
-          tag · {linked.label}
-        </span>
-        {missing > 0 && (
-          <button type="button" onClick={promote}>
-            Tag {missing} more
-          </button>
-        )}
-      </div>
-    );
-  }
+function SectionTags({ section, cube }: { section: Section; cube: Workbench }): ReactNode {
+  const [open, setOpen] = useState(false);
+  const byId = new Map(cube.vocabulary.map((tag) => [tag.id, tag]));
+  const missing = missingTags(section, cube).length;
   return (
     <div className="board-section-tag">
-      {known ? (
-        <span className="muted">Tag {known.label} exists</span>
-      ) : (
-        <select
-          aria-label={`Tag kind for ${section.label}`}
-          value={kind}
-          onChange={(event) => {
-            setKind(event.target.value as TagKind);
+      <ul className="chips board-section-chips" aria-label={`Tags for ${section.label}`}>
+        {section.tags.map((id) => {
+          const tag = byId.get(id);
+          return (
+            <li key={id} className="chip" data-kind={tag?.kind}>
+              {tag?.label ?? id}
+            </li>
+          );
+        })}
+      </ul>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(!open);
+        }}
+      >
+        {section.tags.length === 0 ? "+ Tags" : "Edit"}
+      </button>
+      {section.tags.length > 0 && (
+        <button
+          type="button"
+          disabled={missing === 0}
+          title="Add the section's tags to every card in it, with Undo"
+          onClick={() => {
+            applySectionTags(section.id);
           }}
         >
-          {TAG_KINDS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+          {missing === 0 ? "Applied" : `Apply to ${String(missing)}`}
+        </button>
       )}
-      <button type="button" disabled={section.cards.length === 0} onClick={promote}>
-        {known ? `Tag cards ${known.label}` : "Make tag"}
-      </button>
+      {open && (
+        <div
+          className="board-section-tags-editor"
+          role="dialog"
+          aria-label={`Tags for section ${section.label}`}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !event.defaultPrevented) {
+              setOpen(false);
+            }
+          }}
+        >
+          <TagPicker
+            legend="Section tags"
+            inputLabel={`Tag for ${section.label}`}
+            tags={section.tags}
+            vocabulary={cube.vocabulary}
+            onAdd={(id) => {
+              linkSectionTag(section.id, id);
+            }}
+            onRemove={(id) => {
+              unlinkSectionTag(section.id, id);
+            }}
+            onCreate={(label, kind) => createSectionTag(section.id, label, kind)}
+          />
+          <p className="muted">Removing a tag here unlinks it; cards keep it.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+            }}
+          >
+            Done
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -258,7 +294,7 @@ function SectionBox({
           ×
         </button>
       </header>
-      <SectionTag section={section} cube={cube} />
+      <SectionTags section={section} cube={cube} />
       <ul className="stack board-section-cards">
         {cards.map((card) => (
           <Strip
@@ -498,7 +534,7 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
             <strong>Onto New section</strong> starts a section
           </li>
           <li>
-            <strong>Make tag</strong> tags every card, with Undo
+            <strong>Apply</strong> adds a section&apos;s tags to every card, with Undo
           </li>
         </ul>
         <SortPicker sort={sort} />

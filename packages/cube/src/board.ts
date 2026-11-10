@@ -25,10 +25,13 @@ export function validateBoard(
     if (new Set(section.cards).size !== section.cards.length) {
       problems.push(`Section "${section.label}" lists a card more than once`);
     }
-    if (section.tag !== undefined && !tagIds.has(section.tag)) {
-      problems.push(
-        `Section "${section.label}" links tag "${section.tag}", which is not in tags.json`,
-      );
+    for (const tag of section.tags) {
+      if (!tagIds.has(tag)) {
+        problems.push(`Section "${section.label}" links tag "${tag}", which is not in tags.json`);
+      }
+    }
+    if (new Set(section.tags).size !== section.tags.length) {
+      problems.push(`Section "${section.label}" links a tag more than once`);
     }
   }
   return problems;
@@ -38,10 +41,10 @@ export function pruneBoard(board: Board, cards: readonly CardEntry[], tags: read
   const slugs = new Set(cards.map((card) => slugify(card.name)));
   const tagIds = new Set(tags.map((tag) => tag.id));
   return {
-    sections: board.sections.map(({ tag, ...section }) => ({
+    sections: board.sections.map((section) => ({
       ...section,
       cards: [...new Set(section.cards)].filter((slug) => slugs.has(slug)),
-      ...(tag !== undefined && tagIds.has(tag) ? { tag } : {}),
+      tags: [...new Set(section.tags)].filter((tag) => tagIds.has(tag)),
     })),
   };
 }
@@ -73,12 +76,26 @@ export function removeSection(board: Board, id: string): Board {
 export function changeSection(
   board: Board,
   id: string,
-  change: Partial<Pick<Section, "label" | "tag">>,
+  change: Partial<Pick<Section, "label">>,
 ): Board {
   return mapSection(board, id, (section) =>
     (Object.keys(change) as (keyof typeof change)[]).every((key) => section[key] === change[key])
       ? section
       : { ...section, ...change },
+  );
+}
+
+export function linkTag(board: Board, id: string, tag: string): Board {
+  return mapSection(board, id, (section) =>
+    section.tags.includes(tag) ? section : { ...section, tags: [...section.tags, tag] },
+  );
+}
+
+export function unlinkTag(board: Board, id: string, tag: string): Board {
+  return mapSection(board, id, (section) =>
+    section.tags.includes(tag)
+      ? { ...section, tags: section.tags.filter((linked) => linked !== tag) }
+      : section,
   );
 }
 

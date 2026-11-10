@@ -789,9 +789,9 @@ test("a card image that keeps failing shows the card name", async ({ page, workb
 
 async function readBoard(
   cardsDir: string,
-): Promise<{ sections: { label: string; cards: string[]; tag?: string }[] }> {
+): Promise<{ sections: { label: string; cards: string[]; tags: string[] }[] }> {
   return JSON.parse(await readFile(join(cardsDir, "..", "board.json"), "utf8")) as {
-    sections: { label: string; cards: string[]; tag?: string }[];
+    sections: { label: string; cards: string[]; tags: string[] }[];
   };
 }
 
@@ -895,29 +895,50 @@ test("the board pool filters by status and the board lists its controls", async 
   }
 });
 
-test("promoting a section tags its cards as one undoable edit", async ({ page, workbench }) => {
+test("a section links several tags and applies them as one undoable edit", async ({
+  page,
+  workbench,
+}) => {
   await page.goto(`${workbench.url}#/board`);
   const burn = page.getByRole("region", { name: "Section Burn" });
   await expect(strip(burn, "Shock")).toBeVisible();
 
-  await burn.getByLabel("Tag kind for Burn").selectOption("archetype");
-  await burn.getByRole("button", { name: "Make tag" }).click();
-  await expect(burn.getByText("tag · Burn")).toBeVisible();
+  await burn.getByRole("button", { name: "+ Tags" }).click();
+  const editor = page.getByRole("dialog", { name: "Tags for section Burn" });
+  const input = editor.getByRole("combobox", { name: "Tag for Burn" });
+  await input.fill("Burn");
+  await editor.getByRole("button", { name: "Add tag" }).click();
+  await editor.getByRole("button", { name: "Create as archetype" }).click();
+  await expect(editor.getByRole("button", { name: "Remove tag Burn" })).toBeVisible();
+  await input.fill("removal");
+  await input.press("ArrowDown");
+  await input.press("Enter");
+  await editor.getByRole("button", { name: "Done" }).click();
+
+  const chips = burn.getByRole("list", { name: "Tags for Burn" });
+  await expect(chips.getByRole("listitem")).toHaveText(["Burn", "Removal"]);
   await expect
-    .poll(async () => (await readEntry(workbench.cardsDir, "shock")).tags)
-    .toContain("burn");
-  expect((await readEntry(workbench.cardsDir, "lasting-tarfire")).tags).toContain("burn");
+    .poll(async () => (await readBoard(workbench.cardsDir)).sections[0]?.tags)
+    .toEqual(["burn", "removal"]);
   expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
     tags: expect.arrayContaining([{ id: "burn", label: "Burn", kind: "archetype" }]),
   });
-  expect((await readBoard(workbench.cardsDir)).sections[0]?.tag).toBe("burn");
+
+  await burn.getByRole("button", { name: "Apply to 2" }).click();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, "shock")).tags)
+    .toEqual(expect.arrayContaining(["burn", "removal"]));
+  expect((await readEntry(workbench.cardsDir, "lasting-tarfire")).tags).toEqual(
+    expect.arrayContaining(["burn", "removal"]),
+  );
+  await expect(burn.getByRole("button", { name: "Applied" })).toBeDisabled();
 
   await page.getByRole("button", { name: "Undo" }).click();
   await expect
     .poll(async () => (await readEntry(workbench.cardsDir, "shock")).tags)
     .not.toContain("burn");
-  expect((await readEntry(workbench.cardsDir, "lasting-tarfire")).tags).not.toContain("burn");
-  await expect(burn.getByRole("button", { name: "Tag 2 more" })).toBeVisible();
+  expect((await readEntry(workbench.cardsDir, "shock")).tags).not.toContain("removal");
+  await expect(burn.getByRole("button", { name: "Apply to 2" })).toBeVisible();
 });
 
 test("board cards sort by a key and a tie-breaker, kept in the URL", async ({

@@ -89,12 +89,23 @@ export const newTagSchema = tagSchema.pick({ label: true, kind: true });
 
 export const tagChangeSchema = tagSchema.pick({ label: true, kind: true }).partial();
 
-export const sectionSchema = z.strictObject({
-  id: z.string().regex(/^[a-z0-9-]+$/u),
-  label: z.string().trim().min(1),
-  cards: z.array(z.string()),
-  tag: z.string().optional(),
-});
+function linkedTags(value: unknown): unknown {
+  if (typeof value !== "object" || value === null || !("tag" in value)) {
+    return value;
+  }
+  const { tag, ...rest } = value;
+  return { ...rest, tags: typeof tag === "string" ? [tag] : [] };
+}
+
+export const sectionSchema = z.preprocess(
+  linkedTags,
+  z.strictObject({
+    id: z.string().regex(/^[a-z0-9-]+$/u),
+    label: z.string().trim().min(1),
+    cards: z.array(z.string()),
+    tags: z.array(z.string()).default([]),
+  }),
+);
 
 export const boardSchema = z.strictObject({
   sections: z.array(sectionSchema),

@@ -339,6 +339,33 @@
   overflow: visible;
 }
 
+.axis-title {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.axis-title[data-axis="x"] {
+  left: var(--tick-gutter);
+  right: 0;
+  bottom: 0;
+}
+
+.axis-title[data-axis="y"] {
+  top: 0;
+  bottom: 56px;
+  left: calc(var(--tick-gutter) - 64px);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
 .chart-ticks {
   position: absolute;
   z-index: 1;

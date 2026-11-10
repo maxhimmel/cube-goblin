@@ -3,7 +3,7 @@ import { barX, barY, cell, defineChart, text } from "@tanstack/charts";
 import { Chart } from "@tanstack/charts/react";
 import { scaleBand } from "@tanstack/charts/scales/band";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
-import type { ReactNode, RefObject } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type TickLabel = (id: string) => ReactNode;
@@ -466,6 +466,8 @@ export function HeatChart({
   name,
   rowTick,
   columnTick,
+  rowTitle,
+  columnTitle,
   selected,
   onPick,
 }: {
@@ -475,6 +477,8 @@ export function HeatChart({
   name: string;
   rowTick: TickLabel;
   columnTick: TickLabel;
+  rowTitle?: string | undefined;
+  columnTitle?: string | undefined;
   selected?: { row: string; column: string } | undefined;
   onPick?: ((row: string, column: string) => void) | undefined;
 }): ReactNode {
@@ -499,7 +503,7 @@ export function HeatChart({
   const definition = useMemo(
     () =>
       defineChart({
-        margin: { left: TICK_GUTTER, top: 8, bottom: 36 },
+        margin: { left: TICK_GUTTER, top: 8, bottom: columnTitle === undefined ? 36 : 56 },
         marks: [
           ...Array.from({ length: HEAT_STEPS + 1 }, (_, step) =>
             [true, false].map((on) =>
@@ -543,10 +547,25 @@ export function HeatChart({
         },
         focusRing: FOCUS_RING,
       }),
-    [cells, columns, isOn, max, rows],
+    [cells, columns, columnTitle, isOn, max, rows],
   );
   return (
-    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
+    <div
+      className="chart-plot"
+      ref={plot}
+      data-pickable={onPick !== undefined}
+      style={{ "--tick-gutter": `${String(TICK_GUTTER)}px` } as CSSProperties}
+    >
+      {rowTitle !== undefined && (
+        <span className="axis-title" data-axis="y" aria-hidden="true">
+          {rowTitle}
+        </span>
+      )}
+      {columnTitle !== undefined && (
+        <span className="axis-title" data-axis="x" aria-hidden="true">
+          {columnTitle}
+        </span>
+      )}
       <TickOverlay
         ids={rows.map((row) => row.id)}
         tick={rowTick}

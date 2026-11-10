@@ -102,19 +102,43 @@ export async function writeCard(paths: CubePaths, card: CardEntry): Promise<stri
   return path;
 }
 
-export async function readVersions(paths: CubePaths): Promise<Version[]> {
+export type VersionFile = { file: string; version: Version } | { file: string; error: string };
+
+export async function readVersionFiles(paths: CubePaths): Promise<VersionFile[]> {
   let files: string[];
   try {
     files = await readdir(paths.versionsDir);
   } catch {
     return [];
   }
-  const versions = await Promise.all(
+  return Promise.all(
     files
       .filter((file) => file.endsWith(".json"))
-      .map((file) => readJson(join(paths.versionsDir, file), versionSchema)),
+      .sort()
+      .map(async (file): Promise<VersionFile> => {
+        try {
+          const version = await readJson(join(paths.versionsDir, file), versionSchema);
+          return file === `${version.id}.json`
+            ? { file, version }
+            : {
+                file,
+                error: `cube/versions/${file}: id "${version.id}" does not match the file name`,
+              };
+        } catch (error) {
+          return { file, error: error instanceof Error ? error.message : String(error) };
+        }
+      }),
   );
-  return versions.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+}
+
+export function versionProblems(files: readonly VersionFile[]): string[] {
+  return files.flatMap((entry) => ("error" in entry ? [entry.error] : []));
+}
+
+export async function readVersions(paths: CubePaths): Promise<Version[]> {
+  return (await readVersionFiles(paths))
+    .flatMap((entry) => ("version" in entry ? [entry.version] : []))
+    .sort((a, b) => b.savedAt.localeCompare(a.savedAt));
 }
 
 export async function writeVersion(paths: CubePaths, version: Version): Promise<string> {

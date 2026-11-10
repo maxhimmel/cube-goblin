@@ -20,7 +20,9 @@ export {
   readCards,
   readConfig,
   readTags,
+  readVersionFiles,
   readVersions,
+  versionProblems,
   writeBoard,
   writeCard,
   writeTags,
@@ -28,7 +30,7 @@ export {
 } from "./store.ts";
 export { changeTag, createTag } from "./tags.ts";
 export type { TagResult } from "./tags.ts";
-export type { CubePaths } from "./store.ts";
+export type { CubePaths, VersionFile } from "./store.ts";
 export { patchCard, patchCards, updateCard } from "./update.ts";
 export type { BatchResult, UpdateResult } from "./update.ts";
 export { validateCube } from "./validate.ts";

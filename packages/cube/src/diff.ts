@@ -14,6 +14,7 @@ export interface CubeState {
 export const cardDiffSchema = z.strictObject({
   slug: z.string(),
   name: z.string(),
+  renamedFrom: z.string().optional(),
   before: cardStatusSchema.optional(),
   after: cardStatusSchema.optional(),
   tagsAdded: z.array(z.string()),
@@ -41,6 +42,8 @@ export const cubeDiffSchema = z.strictObject({
     changed: z.array(z.strictObject({ before: tagSchema, after: tagSchema })),
   }),
   sections: z.array(sectionDiffSchema),
+  names: z.record(z.string(), z.string()),
+  vocabulary: z.array(tagSchema),
   counts: z.strictObject({ before: statusCountsSchema, after: statusCountsSchema }),
 });
 
@@ -68,6 +71,7 @@ function cardDiff(before: CardEntry | undefined, after: CardEntry | undefined): 
   return {
     slug: slugify(card?.name ?? ""),
     name: card?.name ?? "",
+    ...(both && before.name !== after.name ? { renamedFrom: before.name } : {}),
     ...(before === undefined ? {} : { before: before.status }),
     ...(after === undefined ? {} : { after: after.status }),
     tagsAdded: both ? added(beforeTags, afterTags) : [],
@@ -80,6 +84,7 @@ function cardDiff(before: CardEntry | undefined, after: CardEntry | undefined): 
 export function isCardChanged(diff: CardDiff): boolean {
   return (
     diff.before !== diff.after ||
+    diff.renamedFrom !== undefined ||
     diff.tagsAdded.length + diff.tagsRemoved.length > 0 ||
     diff.notesChanged ||
     diff.printingChanged
@@ -153,10 +158,20 @@ export function diffCube(before: CubeState, after: CubeState): CubeDiff {
     .map((id) => cardDiff(old.get(id), next.get(id)))
     .filter(isCardChanged)
     .sort((a, b) => a.name.localeCompare(b.name));
+  const names: Record<string, string> = {};
+  for (const card of [...before.cards, ...after.cards]) {
+    names[slugify(card.name)] = card.name;
+  }
+  const vocabulary = [
+    ...after.tags,
+    ...before.tags.filter((tag) => !after.tags.some((other) => other.id === tag.id)),
+  ];
   return {
     cards,
     tags: diffTags(before.tags, after.tags),
     sections: diffSections(before.board, after.board),
+    names,
+    vocabulary,
     counts: { before: statusCounts(before.cards), after: statusCounts(after.cards) },
   };
 }

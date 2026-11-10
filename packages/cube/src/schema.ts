@@ -2,6 +2,12 @@ import { z } from "zod";
 
 export const CARD_STATUSES = ["draft", "prospect", "cut"] as const;
 
+export const CARD_STATUS_LABELS: Record<(typeof CARD_STATUSES)[number], string> = {
+  draft: "Draft",
+  prospect: "Prospect",
+  cut: "Cut",
+};
+
 export const cardStatusSchema = z.enum(CARD_STATUSES);
 
 export const cardEntrySchema = z.strictObject({

@@ -3,12 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { CubePaths } from "./store.ts";
-import { cubePaths, writeCard } from "./store.ts";
+import { cubePaths, readVersionFiles, versionProblems, writeCard } from "./store.ts";
 import { CURRENT } from "./diff.ts";
-import { compareVersions, listVersions, saveVersion } from "./versions.ts";
+import { compareVersions, listVersions, localDate, saveVersion } from "./versions.ts";
 
 let paths: CubePaths;
-const NOW = new Date("2026-11-10T12:00:00.000Z");
+const NOW = new Date(2026, 10, 10, 12);
 const shock = {
   name: "Shock",
   oracleId: "00000000-0000-4000-8000-000000000001",
@@ -75,5 +75,25 @@ describe("compareVersions", () => {
       status: 404,
       error: 'No version "nope"',
     });
+  });
+});
+
+describe("localDate", () => {
+  it("uses the local calendar day, not the UTC one", () => {
+    expect(localDate(new Date(2026, 10, 10, 23, 59))).toBe("2026-11-10");
+    expect(localDate(new Date(2026, 0, 2, 0, 1))).toBe("2026-01-02");
+  });
+});
+
+describe("version files", () => {
+  it("skips and reports a broken file or one whose id doesn't match its name", async () => {
+    await saveVersion(paths, { label: "Good" }, NOW);
+    const good = await readFile(join(paths.versionsDir, "2026-11-10-good.json"), "utf8");
+    await writeFile(join(paths.versionsDir, "copy.json"), good);
+    await writeFile(join(paths.versionsDir, "broken.json"), "{");
+    expect((await listVersions(paths)).map((version) => version.id)).toEqual(["2026-11-10-good"]);
+    const problems = versionProblems(await readVersionFiles(paths));
+    expect(problems).toHaveLength(2);
+    expect(problems.join("\n")).toMatch(/copy\.json: id "2026-11-10-good" does not match/u);
   });
 });

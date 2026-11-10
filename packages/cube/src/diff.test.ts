@@ -162,6 +162,22 @@ describe("diffCube", () => {
     });
   });
 
+  it("names every card and tag from both states", () => {
+    expect(diff.names["doom-blade"]).toBe("Doom Blade");
+    expect(diff.names["bolt"]).toBe("Bolt");
+    expect(diff.vocabulary.map((tag) => tag.id)).toEqual(["burn", "removal", "tempo"]);
+  });
+
+  it("reports a renamed card", () => {
+    const renamed = diffCube(before, {
+      ...before,
+      cards: before.cards.map((entry) =>
+        entry.name === "Shock" ? { ...entry, name: "Shock (new)" } : entry,
+      ),
+    });
+    expect(renamed.cards).toMatchObject([{ name: "Shock (new)", renamedFrom: "Shock" }]);
+  });
+
   it("finds nothing between a state and itself", () => {
     const same = diffCube(before, before);
     expect(same.cards).toEqual([]);

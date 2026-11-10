@@ -12,6 +12,11 @@ export type VersionResult =
 export type CompareResult =
   { ok: true; diff: CubeDiff } | { ok: false; status: 404; error: string };
 
+export function localDate(date: Date): string {
+  const pad = (value: number): string => String(value).padStart(2, "0");
+  return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export function summarize(version: Version): VersionSummary {
   return {
     id: version.id,
@@ -47,7 +52,7 @@ export async function saveVersion(
   if (name === "") {
     return { ok: false, status: 400, error: `"${parsed.data.label}" has no letters or digits` };
   }
-  const id = `${now.toISOString().slice(0, 10)}-${name}`;
+  const id = `${localDate(now)}-${name}`;
   const existing = await readVersions(paths);
   if (existing.some((version) => version.id === id)) {
     return { ok: false, status: 409, error: `A version "${id}" already exists` };

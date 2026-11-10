@@ -24,6 +24,7 @@ export type {
 } from "./snapshot.ts";
 export {
   CARD_STATUSES,
+  CARD_STATUS_LABELS,
   TAG_KINDS,
   TAG_KIND_LABELS,
   applyCardPatch,

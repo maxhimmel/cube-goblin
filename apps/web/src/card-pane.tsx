@@ -8,7 +8,11 @@ import { ManaCost } from "./mana.tsx";
 export function useCloseCard(): () => void {
   const navigate = useNavigate();
   return () => {
-    void navigate({ to: ".", search: (prev) => ({ ...prev, card: undefined }) });
+    void navigate({
+      to: ".",
+      search: (prev) => ({ ...prev, card: undefined }),
+      resetScroll: false,
+    });
   };
 }
 
@@ -26,7 +30,13 @@ export function CardLink({
   "href" | "children" | "className" | "target"
 >): ReactNode {
   return (
-    <Link to="." search={(prev) => ({ ...prev, card: slug })} className={className} {...rest}>
+    <Link
+      to="."
+      search={(prev) => ({ ...prev, card: slug })}
+      resetScroll={false}
+      className={className}
+      {...rest}
+    >
       {children}
     </Link>
   );

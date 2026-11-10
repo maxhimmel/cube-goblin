@@ -3,7 +3,10 @@
   "oracleId": "dbb1690a-f6f5-459c-9d7f-cb6541fb6688",
   "status": "draft",
   "printing": "c2abfffb-bf36-44af-9a27-6e109e4d77dd",
-  "tags": [],
+  "tags": [
+    "lifegain",
+    "mill"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

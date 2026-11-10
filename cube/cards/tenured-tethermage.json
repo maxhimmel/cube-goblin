@@ -3,7 +3,11 @@
   "oracleId": "571cb06d-55b5-46e4-9678-1f74aca73068",
   "status": "draft",
   "printing": "1703306d-6a3d-4ab8-bf58-a9992236ef0f",
-  "tags": [],
+  "tags": [
+    "ramp",
+    "fixing",
+    "sac-outlet"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

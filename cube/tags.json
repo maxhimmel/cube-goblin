@@ -29,6 +29,106 @@
       "id": "big-ass-foo",
       "label": "big ass foo'",
       "kind": "group"
+    },
+    {
+      "id": "removal",
+      "label": "removal",
+      "kind": "group"
+    },
+    {
+      "id": "board-wipe",
+      "label": "board wipe",
+      "kind": "group"
+    },
+    {
+      "id": "burn",
+      "label": "burn",
+      "kind": "group"
+    },
+    {
+      "id": "bounce",
+      "label": "bounce",
+      "kind": "group"
+    },
+    {
+      "id": "counterspell",
+      "label": "counterspell",
+      "kind": "group"
+    },
+    {
+      "id": "discard",
+      "label": "discard",
+      "kind": "group"
+    },
+    {
+      "id": "ramp",
+      "label": "ramp",
+      "kind": "group"
+    },
+    {
+      "id": "fixing",
+      "label": "fixing",
+      "kind": "group"
+    },
+    {
+      "id": "card-draw",
+      "label": "card draw",
+      "kind": "group"
+    },
+    {
+      "id": "looting",
+      "label": "looting",
+      "kind": "group"
+    },
+    {
+      "id": "tutor",
+      "label": "tutor",
+      "kind": "group"
+    },
+    {
+      "id": "recursion",
+      "label": "recursion",
+      "kind": "group"
+    },
+    {
+      "id": "reanimate",
+      "label": "reanimate",
+      "kind": "group"
+    },
+    {
+      "id": "token-maker",
+      "label": "token maker",
+      "kind": "group"
+    },
+    {
+      "id": "lifegain",
+      "label": "lifegain",
+      "kind": "group"
+    },
+    {
+      "id": "sac-outlet",
+      "label": "sac outlet",
+      "kind": "group"
+    },
+    {
+      "id": "mill",
+      "label": "mill",
+      "kind": "group"
+    },
+    {
+      "id": "evasion",
+      "label": "evasion",
+      "kind": "group"
+    },
+    {
+      "id": "combat-trick",
+      "label": "combat trick",
+      "kind": "group"
+    },
+    {
+      "id": "protection",
+      "label": "protection",
+      "kind": "group"
     }
   ]
 }

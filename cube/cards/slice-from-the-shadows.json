@@ -3,7 +3,10 @@
   "oracleId": "4d31d3f4-4748-4713-808f-24699fcd7b10",
   "status": "draft",
   "printing": "317800b3-6b2d-4de6-8e44-7e54dd623055",
-  "tags": [],
+  "tags": [
+    "removal",
+    "combat-trick"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

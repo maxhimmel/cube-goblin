@@ -3,7 +3,9 @@
   "oracleId": "744f79da-240f-4d14-a98c-e2796645ae88",
   "status": "prospect",
   "printing": "7aa682fb-f5b6-41c1-9428-6043b0b76744",
-  "tags": [],
+  "tags": [
+    "card-draw"
+  ],
   "notes": "Deck: Merfolk",
   "source": {
     "batch": "batch-001",

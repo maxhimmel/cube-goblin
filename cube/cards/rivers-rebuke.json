@@ -3,7 +3,11 @@
   "oracleId": "c52cfb41-18f3-4e73-b5e7-d75baf74e578",
   "status": "draft",
   "printing": "fda8ef30-bbfa-4857-9750-0dd0def8b13f",
-  "tags": [],
+  "tags": [
+    "removal",
+    "board-wipe",
+    "bounce"
+  ],
   "notes": "Deck: Pirates",
   "source": {
     "batch": "batch-001",

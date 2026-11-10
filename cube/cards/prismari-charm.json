@@ -3,7 +3,13 @@
   "oracleId": "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
   "status": "draft",
   "printing": "8f6c2a5e-fe13-407c-aadd-c9caf2884ff1",
-  "tags": [],
+  "tags": [
+    "removal",
+    "burn",
+    "bounce",
+    "card-draw",
+    "mill"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

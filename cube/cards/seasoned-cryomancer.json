@@ -3,7 +3,10 @@
   "oracleId": "c3936db3-d3b6-4a92-9773-6f3c52dc419d",
   "status": "draft",
   "printing": "51d86875-420d-4e82-b69c-4feeb99c9428",
-  "tags": [],
+  "tags": [
+    "card-draw",
+    "looting"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

@@ -3,7 +3,9 @@
   "oracleId": "b9243163-b726-432e-830f-86132aa7f34a",
   "status": "draft",
   "printing": "04421508-b5ac-4466-9f77-dfef478d3cc2",
-  "tags": [],
+  "tags": [
+    "evasion"
+  ],
   "notes": "Deck: Dinosaurs",
   "source": {
     "batch": "batch-001",

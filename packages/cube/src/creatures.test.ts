@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { creatureBalance, isOutlier, spread } from "./creatures.ts";
+import { combatMatchups, creatureBalance, isOutlier, spread } from "./creatures.ts";
 import type { StatCard } from "./stats.ts";
 
 type Card = StatCard & { name: string };
@@ -62,5 +62,23 @@ describe("creatureBalance", () => {
     });
     expect(two?.biggest?.card.name).toBe("Bear");
     expect(two?.smallest?.card.name).toBe("Wall");
+  });
+});
+
+describe("combatMatchups", () => {
+  const { bodies } = creatureBalance(cards);
+  const matchups = combatMatchups(bodies);
+  const find = (power: number, toughness: number) =>
+    matchups.find((entry) => entry.power === power && entry.toughness === toughness);
+
+  it("groups creatures by power and toughness", () => {
+    expect(matchups).toHaveLength(bodies.length);
+    expect(find(2, 2)?.bodies.map((entry) => entry.card.name)).toEqual(["Bear"]);
+  });
+
+  it("shares of creatures each body kills and survives in combat", () => {
+    expect(find(2, 2)).toMatchObject({ kills: 3 / 5, survives: 3 / 5 });
+    expect(find(7, 7)).toMatchObject({ kills: 1, survives: 4 / 5 });
+    expect(find(0, 4)).toMatchObject({ kills: 0, survives: 4 / 5 });
   });
 });

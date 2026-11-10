@@ -18,6 +18,8 @@ Save versions of the cube and compare things side by side: two cards, two groups
 - The comparison shows status counts on both sides, cards added, moved between statuses (grouped by move), gone, and edited (tags added or removed, notes, printing), plus tag-list and Board section changes. Card names open the detail pane.
 - `diffCube` (`packages/cube/src/diff.ts`) and `saveVersion` / `compareVersions` (`packages/cube/src/versions.ts`) hold the logic; `pnpm cube validate` checks the version files.
 - The share doc has no versions yet.
+- Version files are read with the live card, tag, and Board schemas. A breaking change to those schemas must migrate `cube/versions/` too; `pnpm cube validate` reports any version file that no longer parses, or whose `id` doesn't match its file name, and the Versions view skips it.
+- The version id uses the local calendar day.
 
 ## Open questions (before the decisions)
 

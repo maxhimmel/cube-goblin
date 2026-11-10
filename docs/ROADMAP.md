@@ -10,6 +10,8 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-025: Combat matchups](tickets/T-025-combat-matchups.md)
+
 ## Next
 
 - [T-022: Functions as tags](tickets/T-022-functions-as-tags.md)

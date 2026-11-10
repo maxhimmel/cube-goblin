@@ -1,5 +1,16 @@
 import type { Count, GridCell } from "@repo/cube/browser";
-import { barX, barY, cell, defineChart, dot, lineY, rect, text } from "@tanstack/charts";
+import {
+  barX,
+  barY,
+  cell,
+  defineChart,
+  dot,
+  lineY,
+  rect,
+  ruleX,
+  ruleY,
+  text,
+} from "@tanstack/charts";
 import { Chart } from "@tanstack/charts/react";
 import { scaleBand } from "@tanstack/charts/scales/band";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
@@ -821,6 +832,166 @@ export function CreatureChart({
         onSelect={(point) => {
           if (point && onPick && "slug" in point.datum) {
             onPick(point.datum.slug);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+export interface MatchupPoint {
+  id: string;
+  body: string;
+  count: number;
+  names: string;
+  kills: number;
+  survives: number;
+}
+
+const CORNERS = [
+  {
+    id: "wins",
+    fill: "var(--chart-above)",
+    test: (p: MatchupPoint) => p.kills >= 50 && p.survives >= 50,
+  },
+  {
+    id: "wall",
+    fill: "var(--chart-dot)",
+    test: (p: MatchupPoint) => p.kills < 50 && p.survives >= 50,
+  },
+  {
+    id: "cannon",
+    fill: "var(--chart-below)",
+    test: (p: MatchupPoint) => p.kills >= 50 && p.survives < 50,
+  },
+  {
+    id: "chump",
+    fill: "var(--chart-chump)",
+    test: (p: MatchupPoint) => p.kills < 50 && p.survives < 50,
+  },
+] as const;
+
+const CORNER_LABELS = [
+  { x: 52, y: 103, text: "Wins most fights \u2192", anchor: "start" },
+  { x: 48, y: 103, text: "\u2190 Walls: survive, rarely kill", anchor: "end" },
+  { x: 52, y: -3, text: "Glass cannons: kill, then die \u2192", anchor: "start" },
+  { x: 48, y: -3, text: "\u2190 Chump blockers", anchor: "end" },
+] as const;
+
+export function MatchupChart({
+  points,
+  name,
+  selected,
+  onPick,
+}: {
+  points: readonly MatchupPoint[];
+  name: string;
+  selected?: string | undefined;
+  onPick?: ((id: string) => void) | undefined;
+}): ReactNode {
+  const [plot, height] = usePlotHeight();
+  const definition = useMemo(
+    () =>
+      defineChart({
+        margin: { top: 12, bottom: 44, right: 16, left: 52 },
+        focusRing: FOCUS_RING,
+        marks: [
+          decorative(ruleX([50], { stroke: "var(--line)", strokeDasharray: "4 4" })),
+          decorative(ruleY([50], { stroke: "var(--line)", strokeDasharray: "4 4" })),
+          decorative(
+            text(CORNER_LABELS, {
+              x: "x",
+              y: "y",
+              text: "text",
+              anchor: (label) => label.anchor,
+              fontSize: 11,
+              fill: "var(--muted)",
+            }),
+          ),
+          ...CORNERS.map((corner) =>
+            dot(points.filter(corner.test), {
+              id: `matchups-${corner.id}`,
+              x: "kills",
+              y: "survives",
+              r: (point) => 4 + Math.sqrt(point.count) * 3,
+              fill: corner.fill,
+              fillOpacity: 0.85,
+              stroke: "var(--chart-surface)",
+              strokeWidth: 1,
+            }),
+          ),
+          decorative(
+            dot(
+              points.filter((point) => point.id === selected),
+              {
+                id: "matchup-selected",
+                x: "kills",
+                y: "survives",
+                r: (point) => 8 + Math.sqrt(point.count) * 3,
+                fill: "none",
+                stroke: "var(--fg)",
+                strokeWidth: 2,
+              },
+            ),
+          ),
+          decorative(
+            text(points, {
+              x: "kills",
+              y: "survives",
+              text: "body",
+              dy: (point) => -(9 + Math.sqrt(point.count) * 3),
+              fontSize: 11,
+              fill: "currentColor",
+            }),
+          ),
+        ],
+        scales: {
+          x: {
+            scale: scaleLinear().domain([-4, 104]),
+            axis: {
+              line: false,
+              label: "Kills: % of creatures it kills when they block or are blocked",
+              ticks: {
+                size: 0,
+                values: [0, 25, 50, 75, 100],
+                format: (value: number) => `${String(value)}%`,
+              },
+            },
+          },
+          y: {
+            scale: scaleLinear().domain([-4, 104]),
+            grid: true,
+            axis: {
+              line: false,
+              label: "Survives: % of creatures it survives",
+              ticks: {
+                size: 0,
+                values: [0, 25, 50, 75, 100],
+                format: (value: number) => `${String(value)}%`,
+              },
+            },
+          },
+        },
+        tooltip: {
+          use: tooltip,
+          sticky: false,
+          placement: ["top", "bottom"],
+          format: (point) =>
+            `${point.datum.body} \u00b7 ${String(point.datum.count)} creature${point.datum.count === 1 ? "" : "s"}: ${point.datum.names}\nKills ${String(Math.round(point.datum.kills))}%, survives ${String(Math.round(point.datum.survives))}%`,
+        },
+      }),
+    [points, selected],
+  );
+  return (
+    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
+      <Chart
+        definition={definition}
+        ariaLabel={name}
+        height={height ?? 360}
+        initialWidth={720}
+        onSelect={(point) => {
+          if (point && onPick) {
+            onPick(point.datum.id);
           }
         }}
       />

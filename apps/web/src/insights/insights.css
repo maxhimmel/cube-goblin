@@ -15,6 +15,7 @@
   --chart-median: var(--fg);
   --chart-above: #12a06c;
   --chart-below: var(--chart-functions);
+  --chart-chump: color-mix(in oklab, var(--muted) 70%, var(--chart-surface));
   --heat-1: color-mix(in oklab, var(--chart-heat) 20%, var(--chart-surface));
   --heat-2: color-mix(in oklab, var(--chart-heat) 35%, var(--chart-surface));
   --heat-3: color-mix(in oklab, var(--chart-heat) 50%, var(--chart-surface));

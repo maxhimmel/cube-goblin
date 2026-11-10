@@ -73,6 +73,10 @@ Two archetypes share some cards or traits, so one deck can draw on both. ([Cube 
 
 Several similar cards in a singleton cube, so an archetype shows up consistently. ([StarCityGames](https://articles.starcitygames.com/magic-the-gathering/how-to-build-an-mtg-cube-with-redundancy-in-mind/))
 
+## Printing
+
+One release of a card in a particular set, with its own collector number, art, frame, and border. A card that appears again in a later set is a reprint, so one card can have many printings: alternate art, borderless, showcase, Special Guests, and so on. Scryfall gives each printing its own ID and lists them with `unique=prints`. Each cube card stores the printing it shows in `printing`. ([mtg.wiki](https://mtg.wiki/page/Reprint), [Scryfall](https://scryfall.com/docs/api/cards/search)) Notes: [research/scryfall-api.md](research/scryfall-api.md#printings).
+
 ## Mana value
 
 The total amount of mana in a card's mana cost, regardless of color; X counts as 0. A card with no mana cost, such as a land, has mana value 0. A split card adds up both halves. A double-faced card uses its front face. It replaced the older term "converted mana cost". Scryfall's `cmc` field holds it. ([Comprehensive Rules 202.3](https://media.wizards.com/2026/downloads/MagicCompRules%2020261106.txt))

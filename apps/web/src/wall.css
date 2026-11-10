@@ -19,6 +19,22 @@
   font-weight: 800;
 }
 
+.tag-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: color-mix(in oklab, var(--accent) 10%, var(--panel));
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line));
+  border-radius: 12px;
+}
+
+.tag-filter button {
+  margin-left: auto;
+}
+
 .wall-body {
   flex: 1;
   overflow: auto;

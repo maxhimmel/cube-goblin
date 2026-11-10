@@ -1,4 +1,5 @@
 import { mode } from "#mode";
+import { parseTagList } from "@repo/cube/browser";
 import {
   Outlet,
   createHashHistory,
@@ -26,10 +27,24 @@ const rootRoute = createRootRoute({
   ),
 });
 
+function tagListParam(
+  search: Record<string, unknown>,
+  key: "with" | "without",
+): Partial<Record<"with" | "without", string>> {
+  const tags = parseTagList(search[key]);
+  return tags.length > 0 ? { [key]: tags.join(",") } : {};
+}
+
 const wallRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  validateSearch: byParam,
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { by?: string | undefined; with?: string | undefined; without?: string | undefined } => ({
+    ...byParam(search),
+    ...tagListParam(search, "with"),
+    ...tagListParam(search, "without"),
+  }),
   component: WallPage,
 });
 

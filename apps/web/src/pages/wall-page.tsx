@@ -1,6 +1,6 @@
 import { mode } from "#mode";
-import type { CardStatus, Column, ColumnAxis } from "@repo/cube/browser";
-import { COLUMN_AXES, columnsBy } from "@repo/cube/browser";
+import type { CardStatus, Column, ColumnAxis, Tag, TagFilter } from "@repo/cube/browser";
+import { COLUMN_AXES, columnsBy, matchesTags, parseTagList } from "@repo/cube/browser";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { useState } from "react";
@@ -67,6 +67,52 @@ function Columns({
   );
 }
 
+function tagNames(ids: readonly string[], vocabulary: readonly Tag[]): string {
+  return ids.map((id) => vocabulary.find((tag) => tag.id === id)?.label ?? id).join(" + ");
+}
+
+function TagFilterBar({
+  filter,
+  vocabulary,
+  count,
+}: {
+  filter: TagFilter;
+  vocabulary: readonly Tag[];
+  count: number;
+}): ReactNode {
+  const navigate = useNavigate();
+  return (
+    <div className="tag-filter" role="status" aria-label="Tag filter">
+      <span>
+        {filter.with.length > 0 ? (
+          <>
+            Tagged <strong>{tagNames(filter.with, vocabulary)}</strong>
+          </>
+        ) : (
+          "No tags"
+        )}
+        {filter.with.length > 0 && filter.without.length > 0 && ", not "}
+        {filter.with.length === 0 && filter.without.length > 0 && " from "}
+        {filter.without.length > 0 && <strong>{tagNames(filter.without, vocabulary)}</strong>}
+      </span>
+      <span className="muted">
+        {count} {count === 1 ? "card" : "cards"}
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          void navigate({
+            to: "/",
+            search: (prev) => ({ ...prev, with: undefined, without: undefined }),
+          });
+        }}
+      >
+        Clear filter
+      </button>
+    </div>
+  );
+}
+
 interface DropZone {
   "data-drop": string | undefined;
   onDragOver?: (event: DragEvent) => void;
@@ -108,7 +154,13 @@ function useDropZone(status: CardStatus, cards: readonly GridCard[]): DropZone {
 
 export function WallPage(): ReactNode {
   const cube = mode.useCube();
-  const { by } = useSearch({ from: "/" });
+  const search = useSearch({ from: "/" });
+  const { by } = search;
+  const filter: TagFilter = {
+    with: parseTagList(search.with),
+    without: parseTagList(search.without),
+  };
+  const filtered = filter.with.length + filter.without.length > 0;
   const navigate = useNavigate();
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [trayOpen, setTrayOpen] = useState(true);
@@ -119,8 +171,12 @@ export function WallPage(): ReactNode {
     return <p className="muted">Loading cube…</p>;
   }
   const axis: ColumnAxis = COLUMN_AXES.find((option) => option.id === by)?.id ?? "mv";
-  const draftCards = cube.cards.filter((card) => card.status === "draft");
-  const prospectCards = cube.cards.filter((card) => card.status === "prospect");
+  const shown = filtered ? cube.cards.filter((card) => matchesTags(card, filter)) : cube.cards;
+  const draftCards = shown.filter((card) => card.status === "draft");
+  const prospectCards = shown.filter((card) => card.status === "prospect");
+  const draftTotal = filtered
+    ? cube.cards.filter((card) => card.status === "draft").length
+    : draftCards.length;
   const allDraft = columnsBy(draftCards, axis);
   const allProspects = columnsBy(prospectCards, axis);
   const used = (index: number): boolean =>
@@ -134,9 +190,12 @@ export function WallPage(): ReactNode {
     <div className="wall">
       <div className="wall-tools">
         <h1 className="wall-title">
-          Draft <span className="muted">{drafted}</span>
+          Draft{" "}
+          <span className="muted">
+            {filtered ? `${String(drafted)} of ${String(draftTotal)}` : drafted}
+          </span>
         </h1>
-        {cube.size && <Gauge count={drafted} size={cube.size} />}
+        {cube.size && <Gauge count={draftTotal} size={cube.size} />}
         <div className="segmented" role="group" aria-label="Columns">
           {COLUMN_AXES.map((option) => (
             <button
@@ -155,6 +214,13 @@ export function WallPage(): ReactNode {
           ))}
         </div>
       </div>
+      {filtered && (
+        <TagFilterBar
+          filter={filter}
+          vocabulary={cube.vocabulary}
+          count={draftCards.length + prospectCount}
+        />
+      )}
       <div className="wall-body" {...toDraft}>
         <Columns columns={draft} axis={axis} onHover={setHover} heads />
       </div>

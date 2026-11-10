@@ -36,10 +36,33 @@ describe("cubeStats", () => {
     expect(stats.creatures).toBe(2);
   });
 
-  it("counts functions and colored mana symbols", () => {
+  it("counts functions", () => {
     expect(stats.functions.find((row) => row.id === "removal")?.count).toBe(1);
-    const pips = Object.fromEntries(stats.pips.map((row) => [row.id, row.count]));
-    expect(pips).toEqual({ W: 0, U: 1, B: 0, R: 3, G: 0 });
+  });
+
+  it("counts a multicolored card for each of its colors and as multicolored", () => {
+    const presence = Object.fromEntries(stats.presence.map((row) => [row.id, row.count]));
+    expect(presence).toEqual({ W: 0, U: 1, B: 0, R: 3, G: 2, multicolored: 1 });
+  });
+
+  it("counts cards with two or more pips of a color, per face", () => {
+    const heavy = cubeStats(
+      [
+        card({ colors: ["U", "R"], manaCost: "{U/R}{R}" }),
+        card({ colors: ["R"], manaCost: "{R}" }),
+        card({ colors: ["W"], manaCost: "{W} // {2}{W}{W}" }),
+        card({ colors: ["W"], manaCost: "{W} // {W}" }),
+        card({ typeLine: "Land", manaCost: "{R}{R}" }),
+      ],
+      [],
+    ).heavy;
+    expect(Object.fromEntries(heavy.map((row) => [row.id, row.count]))).toEqual({
+      W: 1,
+      U: 0,
+      B: 0,
+      R: 1,
+      G: 0,
+    });
   });
 
   it("splits nonland cards by color and mana value, matching both totals", () => {
@@ -103,6 +126,8 @@ describe("inBucket", () => {
   const counted: [BucketKind, Count[]][] = [
     ["curve", stats.curve],
     ["color", stats.colors],
+    ["presence", stats.presence],
+    ["heavy", stats.heavy],
     ["type", stats.types],
     ["function", stats.functions],
     ["status", stats.status],
@@ -124,9 +149,17 @@ describe("inBucket", () => {
     }
   });
 
-  it("lists every card with a symbol for the mana-symbols chart", () => {
-    const bucket = parseBucket("pips:R");
-    expect(bucket && cards.filter((card) => inBucket(card, bucket)).length).toBe(2);
+  it("splits a color's presence into mono cards and multicolored cards with it", () => {
+    for (const color of ["W", "U", "B", "R", "G"]) {
+      const listed = (id: string) => {
+        const bucket = parseBucket(id);
+        return cards.filter((c) => bucket && inBucket(c, bucket)).length;
+      };
+      expect(listed(bucketId("color", color)) + listed(bucketId("colorMulti", color))).toBe(
+        listed(bucketId("presence", color)),
+      );
+    }
+    expect(cards.filter((c) => inBucket(c, { kind: "colorMulti", keys: ["U"] })).length).toBe(1);
   });
 
   it("rejects unknown buckets", () => {

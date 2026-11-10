@@ -5,7 +5,7 @@ export const BLOCKS = [
   { id: "summary", span: 12, h: 4, minH: 3 },
   { id: "curve", span: 4, h: 11, minH: 6 },
   { id: "color", span: 4, h: 11, minH: 6 },
-  { id: "pips", span: 4, h: 11, minH: 6 },
+  { id: "heavy", span: 4, h: 11, minH: 6 },
   { id: "heat", span: 12, h: 12, minH: 7 },
   { id: "types", span: 4, h: 12, minH: 6 },
   { id: "functions", span: 4, h: 12, minH: 6 },

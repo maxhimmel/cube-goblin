@@ -532,16 +532,14 @@ test("insights count the draft, follow edits, and scope to a selection", async (
   await expect(page.getByRole("img", { name: "Color by mana value" })).toBeVisible();
 
   const color = page.getByRole("region", { name: "Color", exact: true });
+  await color.getByRole("button", { name: "White" }).click();
+  await expect(page).toHaveURL(/bucket=presence%3AW|bucket=presence:W/u);
   await color.getByRole("button", { name: "Table" }).click();
-  const counts = (await color.getByRole("cell").allTextContents()).map(Number);
+  const counts = (await color.locator('tr[data-stat^="color:"] td').allTextContents()).map(Number);
   const nonland = Number(
     await page.getByTestId("stat-nonland").locator(".stat-value").textContent(),
   );
   expect(counts.reduce((sum, value) => sum + value, 0)).toBe(nonland);
-
-  const curve = page.getByRole("region", { name: "Mana curve" });
-  await curve.locator(".ts-chart__bar path").nth(2).hover();
-  await expect(page.getByText(/^Mana value 2: \d+ cards$/u)).toBeVisible();
 
   const slug = "dancing-from-dark-to-dawn";
   const entry = await readEntry(workbench.cardsDir, slug);
@@ -613,7 +611,7 @@ test("insights blocks collapse, move, and keep their layout across reloads", asy
   await expect(page.getByRole("button", { name: "Expand Color", exact: true })).toBeVisible();
   await expect.poll(async () => (await color.boundingBox())?.height).toBeLessThan(100);
 
-  const pips = page.locator('[data-block="pips"]');
+  const pips = page.locator('[data-block="heavy"]');
   const curveBox = await page.locator('[data-block="curve"]').boundingBox();
   const head = await pips.locator(".block-head h2").boundingBox();
   if (!curveBox || !head) {

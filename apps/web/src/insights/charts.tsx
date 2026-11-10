@@ -335,7 +335,8 @@ export function StackedRowChart({
             };
             start = segment.x2;
             return segment;
-          });
+          })
+          .map((segment, index, all) => ({ ...segment, last: index === all.length - 1 }));
       }),
     [rows],
   );
@@ -352,17 +353,26 @@ export function StackedRowChart({
       defineChart({
         margin: { right: 36, ...(tick ? { left: TICK_GUTTER } : {}) },
         marks: [
-          barX(segments, {
-            x1: "x1",
-            x2: "x2",
-            y: "row",
-            fill: (segment) =>
-              dimmed(
-                segment.fill,
-                selected === undefined || segment.bucket === selected || segment.whole === selected,
-              ),
-            maxThickness: BAR_THICKNESS - 4,
-          }),
+          ...[false, true].map((last) =>
+            barX(
+              segments.filter((segment) => segment.last === last),
+              {
+                id: last ? "stack-end" : "stack-inner",
+                x1: "x1",
+                x2: "x2",
+                y: "row",
+                fill: (segment) =>
+                  dimmed(
+                    segment.fill,
+                    selected === undefined ||
+                      segment.bucket === selected ||
+                      segment.whole === selected,
+                  ),
+                maxThickness: BAR_THICKNESS - 4,
+                ...(last ? { radius: [0, 4, 4, 0] as const } : {}),
+              },
+            ),
+          ),
           text(
             segments.filter(
               (segment) =>

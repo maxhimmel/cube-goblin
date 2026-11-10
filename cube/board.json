@@ -14,7 +14,9 @@
         "felling-blow",
         "lightning-strike",
         "luminous-rebuke",
-        "shock"
+        "shock",
+        "murder",
+        "tweeze"
       ]
     },
     {
@@ -24,7 +26,10 @@
         "aerid-konstrari",
         "biotech-specialist",
         "llanowar-elves",
-        "loot-exuberant-explorer"
+        "loot-exuberant-explorer",
+        "heartwood-crafter-soul-tether",
+        "environmental-scientist",
+        "tenured-tethermage"
       ]
     }
   ]

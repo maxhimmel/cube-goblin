@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 export interface Cache {
   get(key: string): Promise<unknown>;
+  peek(key: string): Promise<unknown>;
   set(key: string, value: unknown): Promise<void>;
 }
 
@@ -25,13 +26,20 @@ export class FileCache implements Cache {
   }
 
   async get(key: string): Promise<unknown> {
-    const path = this.#path(key);
     try {
-      const info = await stat(path);
+      const info = await stat(this.#path(key));
       if (this.#now() - info.mtimeMs > this.#ttlMs) {
         return undefined;
       }
-      return JSON.parse(await readFile(path, "utf8")) as unknown;
+    } catch {
+      return undefined;
+    }
+    return this.peek(key);
+  }
+
+  async peek(key: string): Promise<unknown> {
+    try {
+      return JSON.parse(await readFile(this.#path(key), "utf8")) as unknown;
     } catch {
       return undefined;
     }
@@ -48,6 +56,10 @@ export class MemoryCache implements Cache {
 
   get(key: string): Promise<unknown> {
     return Promise.resolve(this.#entries.get(key));
+  }
+
+  peek(key: string): Promise<unknown> {
+    return this.get(key);
   }
 
   set(key: string, value: unknown): Promise<void> {

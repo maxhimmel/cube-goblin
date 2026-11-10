@@ -207,21 +207,31 @@ export class ScryfallClient {
         toFetch.push(id);
       }
     }
-    for (const batch of chunk(toFetch, COLLECTION_MAX_IDENTIFIERS)) {
-      const list = await this.#request(
-        {
-          path: "/cards/collection",
-          body: { identifiers: batch.map((id) => ({ [kind]: id })) },
-          cache: false,
-        },
-        cardListSchema,
-      );
-      for (const card of list.data) {
-        const id = idOf(card);
-        if (id !== undefined) {
-          found.set(id, card);
-          await this.#cache.set(keyOf(id), card);
+    try {
+      for (const batch of chunk(toFetch, COLLECTION_MAX_IDENTIFIERS)) {
+        const list = await this.#request(
+          {
+            path: "/cards/collection",
+            body: { identifiers: batch.map((id) => ({ [kind]: id })) },
+            cache: false,
+          },
+          cardListSchema,
+        );
+        for (const card of list.data) {
+          const id = idOf(card);
+          if (id !== undefined) {
+            found.set(id, card);
+            await this.#cache.set(keyOf(id), card);
+          }
         }
+      }
+    } catch (error) {
+      for (const id of toFetch.filter((candidate) => !found.has(candidate))) {
+        const stale = cardSchema.safeParse(await this.#cache.peek(keyOf(id)));
+        if (!stale.success) {
+          throw error;
+        }
+        found.set(id, stale.data);
       }
     }
     return { cards: found, missing: unique.filter((id) => !found.has(id)) };
@@ -279,6 +289,7 @@ export class ScryfallClient {
             dir: "desc",
             page: String(page),
           },
+          cache: false,
         },
         cardListSchema,
       );

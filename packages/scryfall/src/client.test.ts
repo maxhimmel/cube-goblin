@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { MemoryCache } from "./cache.ts";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { FileCache, MemoryCache } from "./cache.ts";
 import { CARD_ENDPOINT_INTERVAL_MS, ScryfallClient, ScryfallError, chunk } from "./client.ts";
 
 const card = {
@@ -170,6 +173,20 @@ describe("ScryfallClient", () => {
     expect(JSON.parse(calls[1]?.init?.body as string)).toEqual({
       identifiers: [{ id: "p1" }, { id: "p2" }],
     });
+  });
+
+  it("serves stale cached cards when Scryfall can't be reached", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-stale-"));
+    await new FileCache(dir).set("print:p1", { ...card, id: "p1", oracle_id: "a" });
+    const later = new FileCache(dir, 1000, () => Date.now() + 10_000);
+    const offline = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: later,
+      sleep: () => Promise.resolve(),
+      fetch: () => Promise.reject(new TypeError("fetch failed")),
+    });
+    expect((await offline.byIds(["p1"])).cards.map((found) => found.id)).toEqual(["p1"]);
+    await expect(offline.byIds(["p2"])).rejects.toThrow("fetch failed");
   });
 
   it("lists every paper printing of a card across pages", async () => {

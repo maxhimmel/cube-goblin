@@ -12,6 +12,28 @@ import { InsightsPage } from "./insights/insights-page.tsx";
 import { GridPage } from "./pages/grid-page.tsx";
 import { WallPage } from "./pages/wall-page.tsx";
 import { Shell } from "./shell.tsx";
+import type { RememberedPath } from "./view-choices.ts";
+import { isRemembered, recallSearch, rememberSearch } from "./view-choices.ts";
+
+function restoreChoices(path: RememberedPath) {
+  return ({
+    search,
+    cause,
+    preload,
+  }: {
+    search: Record<string, unknown>;
+    cause: "preload" | "enter" | "stay";
+    preload: boolean;
+  }): void => {
+    if (preload || cause !== "enter") {
+      return;
+    }
+    const saved = recallSearch(path, search);
+    if (saved) {
+      redirect({ to: path, search: { ...search, ...saved }, replace: true, throw: true });
+    }
+  };
+}
 
 function byParam(search: Record<string, unknown>): { by?: string | undefined } {
   return typeof search["by"] === "string" ? { by: search["by"] } : {};
@@ -38,6 +60,7 @@ function tagListParam(
 const wallRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
+  beforeLoad: restoreChoices("/"),
   validateSearch: (
     search: Record<string, unknown>,
   ): { by?: string | undefined; with?: string | undefined; without?: string | undefined } => ({
@@ -51,6 +74,7 @@ const wallRoute = createRoute({
 const gridRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cards",
+  beforeLoad: restoreChoices("/cards"),
   validateSearch: byParam,
   component: GridPage,
 });
@@ -66,6 +90,7 @@ const cardRoute = createRoute({
 const insightsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/insights",
+  beforeLoad: restoreChoices("/insights"),
   validateSearch: (
     search: Record<string, unknown>,
   ): { scope?: string | undefined; bucket?: string | undefined } => ({
@@ -78,6 +103,7 @@ const insightsRoute = createRoute({
 const tagsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tags",
+  beforeLoad: restoreChoices("/tags"),
   validateSearch: (search: Record<string, unknown>): { tags?: string | undefined } => {
     const tags = parseTagList(search["tags"]);
     return tags.length > 0 ? { tags: tags.join(",") } : {};
@@ -88,6 +114,7 @@ const tagsRoute = createRoute({
 const boardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/board",
+  beforeLoad: restoreChoices("/board"),
   validateSearch: (search: Record<string, unknown>): { sort?: string | undefined } =>
     typeof search["sort"] === "string" ? { sort: search["sort"] } : {},
   component: () => <mode.BoardPage />,
@@ -128,6 +155,12 @@ export const router = createRouter({
     addRoute,
   ]),
   history: createHashHistory(),
+});
+
+router.subscribe("onResolved", ({ toLocation }) => {
+  if (isRemembered(toLocation.pathname)) {
+    rememberSearch(toLocation.pathname, toLocation.search);
+  }
 });
 
 declare module "@tanstack/react-router" {

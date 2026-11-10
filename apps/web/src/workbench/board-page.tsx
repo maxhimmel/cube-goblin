@@ -14,8 +14,10 @@ import {
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { DragEvent, ReactNode } from "react";
 import { useState } from "react";
+import { z } from "zod";
 import type { Hover } from "../strip.tsx";
 import { SECTION_DRAG_TYPE, DRAG_TYPE, Preview, Strip } from "../strip.tsx";
+import { useRemembered } from "../view-choices.ts";
 import {
   applySectionTags,
   createSectionTag,
@@ -331,9 +333,13 @@ function Pool({
   placed: ReadonlySet<string>;
   onHover: (hover: Hover | undefined) => void;
 }): ReactNode {
-  const [filter, setFilter] = useState("");
-  const [loose, setLoose] = useState(false);
-  const [status, setStatus] = useState<StatusFilter>("all");
+  const [filter, setFilter] = useRemembered("board.poolFilter", "", z.string());
+  const [loose, setLoose] = useRemembered("board.poolLoose", false, z.boolean());
+  const [status, setStatus] = useRemembered<StatusFilter>(
+    "board.poolStatus",
+    "all",
+    z.enum(STATUS_FILTERS.map((option) => option.id)),
+  );
   const drop = useDrop(({ slug, from }) => {
     if (from !== undefined) {
       editBoard((board) => takeCard(board, from, slug));

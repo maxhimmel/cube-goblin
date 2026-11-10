@@ -11,11 +11,13 @@ import {
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { useState } from "react";
+import { z } from "zod";
 import { Gauge } from "../gauge.tsx";
 import { ManaSymbol } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import type { Hover } from "../strip.tsx";
 import { DRAG_TYPE, Preview, Strip } from "../strip.tsx";
+import { useRemembered } from "../view-choices.ts";
 
 const SYMBOL_COLUMNS: Record<ColumnAxis, ReadonlySet<string>> = {
   mv: new Set(["0", "1", "2", "3", "4", "5", "6", "7"]),
@@ -152,7 +154,7 @@ export function WallPage(): ReactNode {
 
   const navigate = useNavigate();
   const [hover, setHover] = useState<Hover | undefined>(undefined);
-  const [trayOpen, setTrayOpen] = useState(true);
+  const [trayOpen, setTrayOpen] = useRemembered("wall.trayOpen", true, z.boolean());
   const cards = cube?.cards ?? [];
   const toDraft = useDropZone("draft", cards);
   const toProspects = useDropZone("prospect", cards);

@@ -265,10 +265,15 @@ export function InsightsPage(): ReactNode {
     void navigate({
       to: "/insights",
       search: (prev) => ({ ...prev, bucket: prev.bucket === id ? undefined : id }),
+      resetScroll: false,
     });
   };
   const closeBucket = (): void => {
-    void navigate({ to: "/insights", search: (prev) => ({ ...prev, bucket: undefined }) });
+    void navigate({
+      to: "/insights",
+      search: (prev) => ({ ...prev, bucket: undefined }),
+      resetScroll: false,
+    });
   };
 
   const content = (id: BlockId): ReactNode => {

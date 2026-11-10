@@ -10,9 +10,10 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-011: Board view](tickets/T-011-board-view.md)
+
 ## Next
 
-- [T-011: Board view](tickets/T-011-board-view.md)
 - [T-012: Tag overlap view](tickets/T-012-tag-overlap-view.md)
 - [T-014: Versions and compare](tickets/T-014-versions-and-compare.md)
 - [T-009: Archive and delete cards](tickets/T-009-archive-and-delete.md)

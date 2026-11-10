@@ -15,8 +15,18 @@ import { showToast } from "./toast.tsx";
 
 const BOARD_SAVE_KEY = ["board-save"] as const;
 
-export function useBoard(): Board | undefined {
-  return useQuery({ queryKey: BOARD_QUERY_KEY, queryFn: fetchBoard }).data;
+type BoardChange = (board: Board) => Board;
+
+let confirmed: Board = EMPTY_BOARD;
+
+async function loadBoard(): Promise<Board> {
+  confirmed = await fetchBoard();
+  return confirmed;
+}
+
+export function useBoard(): { board: Board | undefined; error: Error | null } {
+  const { data, error } = useQuery({ queryKey: BOARD_QUERY_KEY, queryFn: loadBoard });
+  return { board: data, error };
 }
 
 export function boardSavesPending(): boolean {
@@ -30,12 +40,19 @@ function currentBoard(): Board {
 const boardSaveOptions = {
   mutationKey: BOARD_SAVE_KEY,
   scope: { id: "board-save" },
-  mutationFn: (board: Board): Promise<Board> => saveBoardRequest(board),
-  onMutate: async (board: Board): Promise<void> => {
+  mutationFn: async (change: BoardChange): Promise<Board> => {
+    const next = change(confirmed);
+    if (next !== confirmed) {
+      confirmed = await saveBoardRequest(next);
+    }
+    return confirmed;
+  },
+  onMutate: async (change: BoardChange): Promise<void> => {
     await queryClient.cancelQueries({ queryKey: BOARD_QUERY_KEY });
-    queryClient.setQueryData(BOARD_QUERY_KEY, board);
+    queryClient.setQueryData(BOARD_QUERY_KEY, change(currentBoard()));
   },
   onError: (error: Error): void => {
+    queryClient.setQueryData(BOARD_QUERY_KEY, confirmed);
     showToast({ message: error.message, tone: "error" });
   },
   onSettled: async (): Promise<void> => {
@@ -45,21 +62,19 @@ const boardSaveOptions = {
   },
 };
 
-function save(board: Board): Promise<Board> {
-  return new MutationObserver(queryClient, boardSaveOptions).mutate(board);
+function save(change: BoardChange): Promise<Board> {
+  return new MutationObserver(queryClient, boardSaveOptions).mutate(change);
 }
 
-export function editBoard(change: (board: Board) => Board): void {
+export function editBoard(change: BoardChange): void {
   const before = currentBoard();
-  const next = change(before);
-  if (next !== before) {
-    save(next).catch(() => undefined);
+  if (change(before) !== before) {
+    save(change).catch(() => undefined);
   }
 }
 
-export function editBoardWithUndo(label: string, change: (board: Board) => Board): void {
-  const before = currentBoard();
-  save(change(before)).then(
+export function editBoardWithUndo(label: string, change: BoardChange, undo: BoardChange): void {
+  save(change).then(
     () => {
       showToast({
         message: label,
@@ -67,7 +82,7 @@ export function editBoardWithUndo(label: string, change: (board: Board) => Board
         action: {
           label: "Undo",
           run: () => {
-            save(before).catch(() => undefined);
+            editBoard(undo);
           },
         },
       });
@@ -112,7 +127,7 @@ export async function promoteBin(id: string, kind: TagKind): Promise<void> {
   try {
     tag = await binTag(bin, cube, kind);
     if (bin.tag !== tag.id) {
-      await save(changeBin(currentBoard(), id, { tag: tag.id }));
+      await save((board) => changeBin(board, id, { tag: tag.id }));
     }
   } catch (error) {
     showToast({ message: error instanceof Error ? error.message : String(error), tone: "error" });

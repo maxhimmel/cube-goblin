@@ -855,9 +855,17 @@ test("board bins hold dragged cards and survive a reload", async ({ page, workbe
 
   await second.getByRole("button", { name: "Delete bin Bin 2" }).click();
   await expect(second).toHaveCount(0);
+  await burn.getByLabel("Add card to Burn").fill("Opt");
+  await burn.getByLabel("Add card to Burn").press("Enter");
+  await expect(strip(burn, "Opt")).toBeVisible();
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(strip(second, "Murder")).toBeVisible();
-  await expect.poll(async () => (await readBoard(workbench.cardsDir)).bins.length).toBe(2);
+  await expect(strip(burn, "Opt")).toBeVisible();
+  await expect
+    .poll(async () => (await readBoard(workbench.cardsDir)).bins.map((bin) => bin.label))
+    .toEqual(["Burn", "Bin 2"]);
+  await burn.getByRole("button", { name: "Take Opt out of Burn" }).click();
+  await expect(strip(burn, "Opt")).toHaveCount(0);
 });
 
 test("promoting a bin tags its cards as one undoable edit", async ({ page, workbench }) => {

@@ -84,7 +84,9 @@ export {
   changeBin,
   moveCard,
   putCard,
+  pruneBoard,
   removeBin,
+  restoreBin,
   takeCard,
   validateBoard,
 } from "./board.ts";

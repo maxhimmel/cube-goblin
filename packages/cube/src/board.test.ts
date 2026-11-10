@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { moveCard, putCard, takeCard, validateBoard } from "./board.ts";
-import { saveBoard } from "./save-board.ts";
+import { moveCard, putCard, restoreBin, takeCard, validateBoard } from "./board.ts";
+import { loadBoard, saveBoard } from "./save-board.ts";
 import type { Board, CardEntry, Tag } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
 import { cubePaths, readBoard, writeCard } from "./store.ts";
@@ -39,6 +39,18 @@ describe("bin edits", () => {
       ["shock"],
     ]);
     expect(moveCard(board, "a", "a", "shock")).toBe(board);
+    expect(putCard(board, "a", "shock")).toBe(board);
+    expect(takeCard(board, "b", "shock")).toBe(board);
+  });
+
+  it("puts a deleted bin back where it was", () => {
+    const [first] = board.bins;
+    if (!first) {
+      throw new Error("fixture has no bin");
+    }
+    const without = { bins: board.bins.slice(1) };
+    expect(restoreBin(without, first, 0)).toEqual(board);
+    expect(restoreBin(board, first, 0)).toBe(board);
   });
 });
 
@@ -89,11 +101,24 @@ describe("saveBoard", () => {
     expect(await readFile(paths.boardFile, "utf8")).toMatch(/\n$/u);
   });
 
-  it("refuses a malformed board or one that points at missing cards", async () => {
+  it("drops cards and tags that no longer exist instead of refusing the save", async () => {
+    const stale = { bins: [{ id: "a", label: "x", cards: ["bolt", "shock"], tag: "ramp" }] };
+    const saved = { bins: [{ id: "a", label: "x", cards: ["shock"] }] };
+    expect(await saveBoard(paths, stale)).toEqual({ ok: true, board: saved });
+    await writeFile(paths.boardFile, JSON.stringify(stale));
+    expect(await loadBoard(paths)).toEqual(saved);
+  });
+
+  it("refuses a malformed board", async () => {
     for (const input of [
       { bins: [{ id: "A B", label: "x", cards: [] }] },
       { bins: [{ id: "a", label: " ", cards: [] }] },
-      { bins: [{ id: "a", label: "x", cards: ["bolt"] }] },
+      {
+        bins: [
+          { id: "a", label: "x", cards: [] },
+          { id: "a", label: "y", cards: [] },
+        ],
+      },
     ]) {
       expect(await saveBoard(paths, input)).toMatchObject({ ok: false, status: 400 });
     }

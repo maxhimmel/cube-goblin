@@ -32,12 +32,34 @@ export function validateBoard(
   return problems;
 }
 
+export function pruneBoard(board: Board, cards: readonly CardEntry[], tags: readonly Tag[]): Board {
+  const slugs = new Set(cards.map((card) => slugify(card.name)));
+  const tagIds = new Set(tags.map((tag) => tag.id));
+  return {
+    bins: board.bins.map(({ tag, ...bin }) => ({
+      ...bin,
+      cards: [...new Set(bin.cards)].filter((slug) => slugs.has(slug)),
+      ...(tag !== undefined && tagIds.has(tag) ? { tag } : {}),
+    })),
+  };
+}
+
 function mapBin(board: Board, id: string, change: (bin: Bin) => Bin): Board {
-  return { bins: board.bins.map((bin) => (bin.id === id ? change(bin) : bin)) };
+  const bins = board.bins.map((bin) => (bin.id === id ? change(bin) : bin));
+  return bins.every((bin, index) => bin === board.bins[index]) ? board : { bins };
 }
 
 export function addBin(board: Board, bin: Bin): Board {
   return { bins: [...board.bins, bin] };
+}
+
+export function restoreBin(board: Board, bin: Bin, index: number): Board {
+  if (board.bins.some((other) => other.id === bin.id)) {
+    return board;
+  }
+  const bins = [...board.bins];
+  bins.splice(index, 0, bin);
+  return { bins };
 }
 
 export function removeBin(board: Board, id: string): Board {
@@ -49,7 +71,11 @@ export function changeBin(
   id: string,
   change: Partial<Pick<Bin, "label" | "tag">>,
 ): Board {
-  return mapBin(board, id, (bin) => ({ ...bin, ...change }));
+  return mapBin(board, id, (bin) =>
+    (Object.keys(change) as (keyof typeof change)[]).every((key) => bin[key] === change[key])
+      ? bin
+      : { ...bin, ...change },
+  );
 }
 
 export function putCard(board: Board, id: string, slug: string): Board {
@@ -59,7 +85,9 @@ export function putCard(board: Board, id: string, slug: string): Board {
 }
 
 export function takeCard(board: Board, id: string, slug: string): Board {
-  return mapBin(board, id, (bin) => ({ ...bin, cards: bin.cards.filter((card) => card !== slug) }));
+  return mapBin(board, id, (bin) =>
+    bin.cards.includes(slug) ? { ...bin, cards: bin.cards.filter((card) => card !== slug) } : bin,
+  );
 }
 
 export function moveCard(board: Board, from: string, to: string, slug: string): Board {

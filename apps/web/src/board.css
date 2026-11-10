@@ -107,7 +107,7 @@
   min-width: 0;
 }
 
-.strip-cell[data-status="cut"] .strip {
+.board .strip-cell[data-status="cut"] .strip {
   opacity: 0.5;
 }
 

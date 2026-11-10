@@ -20,7 +20,7 @@ import {
   cubePaths,
   patchCard,
   patchCards,
-  readBoard,
+  loadBoard,
   readCards,
   readConfig,
   readSections,
@@ -271,7 +271,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
           return;
         }
         if (url === "/api/board" && req.method === "GET") {
-          readBoard(paths).then(
+          loadBoard(paths).then(
             (board) => {
               send(res, 200, board);
             },

@@ -6,6 +6,7 @@ import {
   moveCard,
   putCard,
   removeBin,
+  restoreBin,
   takeCard,
 } from "@repo/cube/browser";
 import type { DragEvent, ReactNode } from "react";
@@ -71,7 +72,8 @@ function nextLabel(bins: readonly Bin[]): string {
 }
 
 function newBin(bins: readonly Bin[], cards: string[] = []): Bin {
-  return { id: crypto.randomUUID(), label: nextLabel(bins), cards };
+  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return { id, label: nextLabel(bins), cards };
 }
 
 function BinLabel({ bin, autoFocus }: { bin: Bin; autoFocus: boolean }): ReactNode {
@@ -188,12 +190,14 @@ function AddToBin({ bin, pool }: { bin: Bin; pool: readonly WorkbenchCard[] }): 
 
 function BinBox({
   bin,
+  index,
   cube,
   pool,
   fresh,
   onHover,
 }: {
   bin: Bin;
+  index: number;
   cube: Workbench;
   pool: readonly WorkbenchCard[];
   fresh: boolean;
@@ -218,7 +222,11 @@ function BinBox({
           className="bin-delete"
           aria-label={`Delete bin ${bin.label}`}
           onClick={() => {
-            editBoardWithUndo(`Deleted bin ${bin.label}`, (board) => removeBin(board, bin.id));
+            editBoardWithUndo(
+              `Deleted bin ${bin.label}`,
+              (board) => removeBin(board, bin.id),
+              (board) => restoreBin(board, bin, index),
+            );
           }}
         >
           ×
@@ -342,9 +350,16 @@ function NewBin({
 }
 
 export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode {
-  const board = useBoard();
+  const { board, error } = useBoard();
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [fresh, setFresh] = useState<string | undefined>(undefined);
+  if (error) {
+    return (
+      <p role="alert" className="error">
+        {error.message}
+      </p>
+    );
+  }
   if (!cube || !board) {
     return <p className="muted">Loading board…</p>;
   }
@@ -356,10 +371,11 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
     <div className="board">
       <Pool pool={pool} binned={binned} onHover={setHover} />
       <div className="bins">
-        {board.bins.map((bin) => (
+        {board.bins.map((bin, index) => (
           <BinBox
             key={bin.id}
             bin={bin}
+            index={index}
             cube={cube}
             pool={pool}
             fresh={bin.id === fresh}

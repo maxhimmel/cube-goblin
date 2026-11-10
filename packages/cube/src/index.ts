@@ -23,5 +23,5 @@ export type { CubePaths } from "./store.ts";
 export { patchCard, patchCards, updateCard } from "./update.ts";
 export type { BatchResult, UpdateResult } from "./update.ts";
 export { validateCube } from "./validate.ts";
-export { saveBoard } from "./save-board.ts";
+export { loadBoard, saveBoard } from "./save-board.ts";
 export type { BoardResult } from "./save-board.ts";

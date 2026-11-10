@@ -16,9 +16,12 @@ export async function validate(): Promise<number> {
     readSections(CUBE_PATHS),
     readTags(CUBE_PATHS),
     readConfig(CUBE_PATHS),
-    readBoard(CUBE_PATHS),
+    readBoard(CUBE_PATHS).catch((error: unknown) => new Error(String(error))),
   ]);
-  const problems = [...validateCube(cards, sections, tags), ...validateBoard(board, cards, tags)];
+  const problems = [
+    ...validateCube(cards, sections, tags),
+    ...(board instanceof Error ? [board.message] : validateBoard(board, cards, tags)),
+  ];
   for (const problem of problems) {
     console.error(chalk.red(problem));
   }

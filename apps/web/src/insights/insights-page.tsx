@@ -1,6 +1,13 @@
 import { mode } from "#mode";
 import type { Bucket, BucketKind, Count, CubeStats } from "@repo/cube/browser";
-import { COLOR_GROUPS, CURVE_COLUMNS, bucketId, cubeStats, parseBucket } from "@repo/cube/browser";
+import {
+  COLOR_GROUPS,
+  CURVE_COLUMNS,
+  HEAVY_PIPS,
+  bucketId,
+  cubeStats,
+  parseBucket,
+} from "@repo/cube/browser";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
@@ -117,14 +124,22 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
     caption: () => "Nonland cards by color",
     tick: colorTick,
   },
-  pips: {
-    kind: "pips",
-    title: "Mana symbols",
-    rows: (stats) => stats.pips,
+  presence: {
+    kind: "presence",
+    title: "Color presence",
+    rows: (stats) => stats.presence,
     fill: manaFill,
-    caption: () => "Colored symbols in mana costs; hybrid counts for both colors",
+    caption: () => "Nonland cards of each color; a multicolored card counts for each of its colors",
     tick: colorTick,
-    unit: "symbols",
+  },
+  heavy: {
+    kind: "heavy",
+    title: "Heavy pips",
+    rows: (stats) => stats.heavy,
+    fill: manaFill,
+    caption: () =>
+      `Nonland cards with ${String(HEAVY_PIPS)} or more pips of one color, like {R}{R}; hybrid counts for both colors`,
+    tick: colorTick,
   },
   types: {
     kind: "type",
@@ -167,7 +182,8 @@ const KIND_TITLES: Record<BucketKind, string> = {
   curve: "Mana curve",
   color: "Color",
   colorCurve: "Color by mana value",
-  pips: "Mana symbols",
+  presence: "Color presence",
+  heavy: "Heavy pips",
   type: "Card types",
   function: "Functions",
   status: "Status",
@@ -182,8 +198,10 @@ function bucketLabel(bucket: Bucket, stats: CubeStats): string {
     case "curve":
       return `Mana value ${curveLabel(first)}`;
     case "color":
-    case "pips":
+    case "presence":
       return colorLabel(first);
+    case "heavy":
+      return `${colorLabel(first)}, ${String(HEAVY_PIPS)}+ pips`;
     case "colorCurve":
       return `${colorLabel(first)}, mana value ${curveLabel(second)}`;
     case "type":

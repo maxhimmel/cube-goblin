@@ -613,7 +613,7 @@ test("insights blocks collapse, move, and keep their layout across reloads", asy
   await expect(page.getByRole("button", { name: "Expand Color", exact: true })).toBeVisible();
   await expect.poll(async () => (await color.boundingBox())?.height).toBeLessThan(100);
 
-  const pips = page.locator('[data-block="pips"]');
+  const pips = page.locator('[data-block="presence"]');
   const curveBox = await page.locator('[data-block="curve"]').boundingBox();
   const head = await pips.locator(".block-head h2").boundingBox();
   if (!curveBox || !head) {

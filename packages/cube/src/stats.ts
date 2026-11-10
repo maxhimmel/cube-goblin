@@ -58,7 +58,8 @@ export interface CubeStats {
   total: number;
   status: Count[];
   colors: Count[];
-  pips: Count[];
+  presence: Count[];
+  heavy: Count[];
   curve: Count[];
   colorCurve: GridCell[];
   lands: number;
@@ -114,6 +115,23 @@ export const CURVE_COLUMNS: readonly Omit<Count, "count">[] = Array.from(
   }),
 );
 
+export const HEAVY_PIPS = 2;
+
+export const PRESENCE_GROUPS: readonly Omit<Count, "count">[] = [
+  ...COLORS,
+  { id: "multicolored", label: "Multicolored" },
+];
+
+export function hasColor(card: Pick<StatCard, "colors">, id: string): boolean {
+  return id === "multicolored" ? card.colors.length > 1 : card.colors.includes(id);
+}
+
+export function isHeavy(card: Pick<StatCard, "manaCost">, color: string): boolean {
+  return (card.manaCost ?? "")
+    .split(" // ")
+    .some((face) => pipColors(face).filter((pip) => pip === color).length >= HEAVY_PIPS);
+}
+
 export function pipColors(manaCost: string): string[] {
   const colors: string[] = [];
   for (const [, symbol = ""] of manaCost.matchAll(/\{([^}]+)\}/gu)) {
@@ -132,7 +150,6 @@ function count<T>(cards: readonly T[], test: (card: T) => boolean): number {
 
 export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]): CubeStats {
   const spells = cards.filter((card) => !isLand(card));
-  const pips = cards.flatMap((card) => pipColors(card.manaCost ?? ""));
   return {
     total: cards.length,
     status: CARD_STATUSES.map((status) => ({
@@ -144,9 +161,13 @@ export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]
       ...group,
       count: count(spells, (card) => colorGroup(card) === group.id),
     })),
-    pips: COLORS.map((color) => ({
+    presence: PRESENCE_GROUPS.map((group) => ({
+      ...group,
+      count: count(spells, (card) => hasColor(card, group.id)),
+    })),
+    heavy: COLORS.map((color) => ({
       ...color,
-      count: pips.filter((pip) => pip === color.id).length,
+      count: count(spells, (card) => isHeavy(card, color.id)),
     })),
     curve: CURVE_COLUMNS.map((column) => ({
       ...column,
@@ -187,7 +208,8 @@ export const BUCKET_KINDS = [
   "curve",
   "color",
   "colorCurve",
-  "pips",
+  "presence",
+  "heavy",
   "type",
   "function",
   "status",
@@ -221,8 +243,10 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
       return spell && colorGroup(card) === first;
     case "colorCurve":
       return spell && colorGroup(card) === first && curveKey(card) === second;
-    case "pips":
-      return pipColors(card.manaCost ?? "").includes(first);
+    case "presence":
+      return spell && hasColor(card, first);
+    case "heavy":
+      return spell && isHeavy(card, first);
     case "type":
       return typeKeys(card).includes(first);
     case "function":

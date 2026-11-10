@@ -15,6 +15,50 @@ function matches(printing: Printing, wanted: string): boolean {
   );
 }
 
+const RETRIES = 2;
+const RETRY_MS = 1500;
+
+function Thumbnail({ src }: { src: string }): ReactNode {
+  const [state, setState] = useState<"loading" | "loaded" | "failed">("loading");
+  const [attempt, setAttempt] = useState(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+    },
+    [],
+  );
+  return (
+    <span className="printing-thumb" data-state={state}>
+      <img
+        key={attempt}
+        src={src}
+        alt=""
+        loading="lazy"
+        width={146}
+        height={204}
+        onLoad={() => {
+          setState("loaded");
+        }}
+        onError={() => {
+          if (attempt < RETRIES) {
+            timer.current = setTimeout(() => {
+              setAttempt(attempt + 1);
+            }, RETRY_MS);
+          } else {
+            setState("failed");
+          }
+        }}
+      />
+      {state !== "loaded" && (
+        <span className="printing-thumb-note">
+          {state === "loading" ? "loading…" : "image unavailable"}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function PrintingTile({
   printing,
   chosen,
@@ -30,7 +74,7 @@ function PrintingTile({
   return (
     <li>
       <button type="button" className="printing" aria-pressed={chosen} onClick={onChoose}>
-        <img src={printing.image} alt="" loading="lazy" width={146} height={204} />
+        <Thumbnail src={printing.image} />
         <span className="printing-set">
           {printing.setName} <span className="muted">#{printing.collectorNumber}</span>
         </span>

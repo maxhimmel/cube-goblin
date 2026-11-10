@@ -3,6 +3,8 @@ import type { Board, CardEntry, StatusCounts, Tag } from "./schema.ts";
 import { cardStatusSchema, statusCountsSchema, tagSchema } from "./schema.ts";
 import { slugify } from "./slug.ts";
 
+export const CURRENT = "current";
+
 export interface CubeState {
   cards: readonly CardEntry[];
   tags: readonly Tag[];

@@ -53,6 +53,11 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
           <Link to="/insights" activeOptions={{ includeSearch: false }}>
             Insights
           </Link>
+          {mode.name === "workbench" && (
+            <Link to="/versions" activeOptions={{ includeSearch: false }}>
+              Versions
+            </Link>
+          )}
         </nav>
         <mode.Toolbar />
       </header>

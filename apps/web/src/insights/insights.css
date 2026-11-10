@@ -9,6 +9,12 @@
   --chart-group: #eda100;
   --chart-status: #6250d6;
   --chart-heat: #2a78d6;
+  --chart-dot: var(--chart-curve);
+  --chart-band: color-mix(in oklab, var(--chart-curve) 16%, var(--chart-surface));
+  --chart-range: color-mix(in oklab, var(--chart-curve) 30%, var(--chart-surface));
+  --chart-median: var(--fg);
+  --chart-above: #12a06c;
+  --chart-below: var(--chart-functions);
   --heat-1: color-mix(in oklab, var(--chart-heat) 20%, var(--chart-surface));
   --heat-2: color-mix(in oklab, var(--chart-heat) 35%, var(--chart-surface));
   --heat-3: color-mix(in oklab, var(--chart-heat) 50%, var(--chart-surface));
@@ -32,6 +38,10 @@
     --chart-group: #c98500;
     --chart-status: #9085e9;
     --chart-heat: #3987e5;
+    --chart-above: #2fc48b;
+    --chart-band: color-mix(in oklab, var(--chart-curve) 30%, var(--chart-surface));
+    --chart-range: color-mix(in oklab, var(--chart-curve) 50%, var(--chart-surface));
+    --chart-below: #f07a45;
     --heat-6: color-mix(in oklab, var(--chart-heat) 85%, var(--chart-surface));
     --heat-ink-1: #fff;
     --heat-ink-2: #fff;
@@ -410,4 +420,75 @@
 
 .block .stat-table {
   margin-top: 4px;
+}
+
+.creature-balance {
+  display: grid;
+  grid-template-rows: auto minmax(260px, 1fr) auto;
+  gap: 12px;
+  height: 100%;
+  overflow: auto;
+}
+
+.creature-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  margin: 0;
+}
+
+.creature-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.creature-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-swatch[data-shape="dot"] {
+  width: 10px;
+  border-radius: 50%;
+}
+
+.legend-swatch[data-shape="line"] {
+  height: 2px;
+}
+
+.body-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.body-link:hover {
+  color: var(--accent);
+}
+
+.body-pt {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.balance-table th,
+.balance-table td {
+  text-align: left;
+  padding-right: 16px;
 }

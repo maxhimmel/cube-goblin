@@ -1,8 +1,10 @@
 import type { Count, GridCell } from "@repo/cube/browser";
-import { barX, barY, cell, defineChart, text } from "@tanstack/charts";
+import { barX, barY, cell, defineChart, dot, lineY, rect, text } from "@tanstack/charts";
 import { Chart } from "@tanstack/charts/react";
 import { scaleBand } from "@tanstack/charts/scales/band";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
+import { tooltip } from "@tanstack/charts/tooltip";
+import { decorative } from "@tanstack/charts/mark/decorative";
 import type { CSSProperties, ReactNode, RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -137,6 +139,8 @@ function TickOverlay({
 }
 
 const INSIDE_LABEL_MIN = 2;
+
+const CURVE_TICKS = 8;
 
 const FOCUS_RING = false;
 
@@ -638,5 +642,188 @@ export function CountTable({
         })}
       </tbody>
     </table>
+  );
+}
+
+export interface CreaturePoint {
+  slug: string;
+  name: string;
+  body: string;
+  mv: number;
+  size: number;
+  place: "above" | "within" | "below";
+  outlier: boolean;
+}
+
+export interface CreatureColumn {
+  mv: number;
+  min: number;
+  q1: number;
+  median: number;
+  q3: number;
+  max: number;
+}
+
+const JITTER = 0.07;
+
+const PLACES = [
+  { id: "within", fill: "var(--chart-dot)" },
+  { id: "above", fill: "var(--chart-above)" },
+  { id: "below", fill: "var(--chart-below)" },
+] as const;
+const BAND_HALF = 0.34;
+
+function spreadOut(points: readonly CreaturePoint[]): (CreaturePoint & { x: number })[] {
+  const seen = new Map<string, number>();
+  const totals = new Map<string, number>();
+  for (const point of points) {
+    const key = `${String(point.mv)}:${String(point.size)}`;
+    totals.set(key, (totals.get(key) ?? 0) + 1);
+  }
+  return points.map((point) => {
+    const key = `${String(point.mv)}:${String(point.size)}`;
+    const index = seen.get(key) ?? 0;
+    seen.set(key, index + 1);
+    const total = totals.get(key) ?? 1;
+    const step = Math.min(JITTER, (2 * BAND_HALF) / Math.max(1, total));
+    return { ...point, x: point.mv + (index - (total - 1) / 2) * step };
+  });
+}
+
+export function CreatureChart({
+  points,
+  columns,
+  name,
+  tick,
+  selected,
+  onPick,
+}: {
+  points: readonly CreaturePoint[];
+  selected?: string | undefined;
+  columns: readonly CreatureColumn[];
+  name: string;
+  tick: TickLabel;
+  onPick?: ((slug: string) => void) | undefined;
+}): ReactNode {
+  const overlay = useTickOverlay("x");
+  const [plot, height] = usePlotHeight();
+  const placed = useMemo(() => spreadOut(points), [points]);
+  const top = Math.max(1, ...points.map((point) => point.size));
+  const ids = Array.from({ length: CURVE_TICKS }, (_, value) => String(value));
+  const definition = useMemo(
+    () =>
+      defineChart({
+        margin: { top: 12, bottom: 40, right: 16, left: 44 },
+        focusRing: FOCUS_RING,
+        marks: [
+          decorative(
+            rect(columns, {
+              id: "range",
+              x1: (column) => column.mv - 0.03,
+              x2: (column) => column.mv + 0.03,
+              y1: "min",
+              y2: "max",
+              fill: "var(--chart-range)",
+              inset: 0,
+            }),
+          ),
+          decorative(
+            rect(columns, {
+              id: "middle",
+              x1: (column) => column.mv - BAND_HALF,
+              x2: (column) => column.mv + BAND_HALF,
+              y1: "q1",
+              y2: "q3",
+              fill: "var(--chart-band)",
+              inset: 0,
+              radius: 4,
+            }),
+          ),
+          decorative(
+            lineY(columns, {
+              x: "mv",
+              y: "median",
+              stroke: "var(--chart-median)",
+              strokeWidth: 2,
+            }),
+          ),
+          ...PLACES.map((place) =>
+            dot(
+              placed.filter((point) => point.place === place.id),
+              {
+                id: `creatures-${place.id}`,
+                x: "x",
+                y: "size",
+                r: 4.5,
+                fill: place.fill,
+                stroke: "var(--chart-surface)",
+                strokeWidth: 1,
+              },
+            ),
+          ),
+          decorative(
+            dot(
+              placed.filter((point) => point.slug === selected),
+              {
+                id: "selected",
+                x: "x",
+                y: "size",
+                r: 9,
+                fill: "none",
+                stroke: "var(--fg)",
+                strokeWidth: 2,
+              },
+            ),
+          ),
+          text(
+            placed.filter((point) => point.outlier),
+            {
+              x: "x",
+              y: "size",
+              text: "name",
+              anchor: "start",
+              dx: 8,
+              fontSize: 11,
+              fill: "currentColor",
+            },
+          ),
+        ],
+        scales: {
+          x: {
+            scale: scaleLinear().domain([-0.5, CURVE_TICKS - 0.5]),
+            axis: { line: false, ticks: { size: 0, values: ids.map(Number) }, tickLabels: false },
+          },
+          y: {
+            scale: scaleLinear().domain([0, top + 1]),
+            grid: true,
+            axis: { line: false, ticks: { size: 0 } },
+          },
+        },
+        tooltip: {
+          use: tooltip,
+          sticky: false,
+          placement: ["top", "bottom"],
+          format: (point) =>
+            "slug" in point.datum ? `${point.datum.name} ${point.datum.body}` : "",
+        },
+      }),
+    [columns, ids, placed, selected, top],
+  );
+  return (
+    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
+      <TickOverlay ids={ids} tick={tick} axis="x" overlayRef={overlay.ref} label={`${name} axis`} />
+      <Chart
+        definition={definition}
+        ariaLabel={name}
+        height={height ?? 300}
+        initialWidth={720}
+        onRender={overlay.onRender}
+        onSelect={(point) => {
+          if (point && onPick && "slug" in point.datum) {
+            onPick(point.datum.slug);
+          }
+        }}
+      />
+    </div>
   );
 }

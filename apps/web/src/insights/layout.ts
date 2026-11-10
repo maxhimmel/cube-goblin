@@ -9,6 +9,7 @@ export const BLOCKS = [
   { id: "heat", span: 12, h: 12, minH: 7 },
   { id: "types", span: 4, h: 12, minH: 6 },
   { id: "pt", span: 8, h: 12, minH: 7 },
+  { id: "creature-balance", span: 12, h: 26, minH: 8 },
   { id: "functions", span: 4, h: 12, minH: 6 },
   { id: "status", span: 4, h: 8, minH: 5 },
   { id: "archetype", span: 4, h: 6, minH: 4 },

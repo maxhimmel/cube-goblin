@@ -16,6 +16,17 @@ Read 2026-11-08 from [scryfall.com/docs/api](https://scryfall.com/docs/api). Imp
 - **`POST /cards/collection`**: body `{ "identifiers": [...] }`, up to 75 identifiers. Identifier shapes: `id`, `mtgo_id`, `multiverse_id`, `oracle_id`, `illustration_id`, `name`, `name`+`set`, `collector_number`+`set`. Misses come back in `not_found`. Gotcha: the response has no `has_more` field ([collection](https://scryfall.com/docs/api/cards/collection)).
 - **Errors**: `{ status, code, details, type?, warnings? }` ([errors](https://scryfall.com/docs/api/errors)).
 
+## Printings
+
+Read 2026-11-10 from [search](https://scryfall.com/docs/api/cards/search), [cards](https://scryfall.com/docs/api/cards), and [/cards/:id](https://scryfall.com/docs/api/cards/id).
+
+- **`unique=prints`** returns every printing of the matched cards instead of one per card. `include_variations=true` adds rare variants; `include_extras=true` adds tokens, planes, and the like (not needed for printings).
+- **`oracleid:<id>`** in `q` matches every printing of one card. Each card object also has `prints_search_uri`, a ready-made link to the same list.
+- **Digital printings**: the list includes Alchemy and other digital-only printings; `game:paper` in `q` drops them.
+- **Verified 2026-11-10**: `!"Lightning Bolt"` with `unique=prints` returned 83 printings, including borderless, showcase, extended art, Secret Lair bonus cards (`sldbonus` promo type), and The List (`plst`).
+- **Labels**: `border_color` (`borderless`), `frame_effects` (`showcase`, `extendedart`, `inverted`, `etched`), `full_art`, `frame` (`1993`, `1997` for old frames), `promo_types`, `set_name`, `collector_number`, `released_at`, and `artist` describe a printing.
+- **`GET /cards/:id`** returns one printing by Scryfall ID; `POST /cards/collection` takes `{ "id": ... }` identifiers for many.
+
 ## Bulk data (not used yet)
 
 - Daily gzipped JSONL files ([bulk data](https://scryfall.com/docs/api/bulk-data)).

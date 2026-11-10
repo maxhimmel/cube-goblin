@@ -3,6 +3,7 @@ import type {
   CardChange,
   CardEntry,
   NewCard,
+  Printing,
   SearchResult,
   Tag,
   TagKind,
@@ -11,6 +12,7 @@ import type {
 import {
   boardSchema,
   cardEntrySchema,
+  printingSchema,
   searchResultSchema,
   tagSchema,
   workbenchSchema,
@@ -100,4 +102,13 @@ export async function fetchBoard(): Promise<Board> {
 
 export async function saveBoardRequest(board: Board): Promise<Board> {
   return boardSchema.parse(await sendJson("PUT", "/api/board", board));
+}
+
+export async function fetchPrintings(slug: string): Promise<Printing[]> {
+  const url = `/api/cards/${slug}/printings`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw await failure("GET", url, response);
+  }
+  return printingSchema.array().parse(await response.json());
 }

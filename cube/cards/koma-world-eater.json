@@ -2,7 +2,10 @@
   "name": "Koma, World-Eater",
   "oracleId": "1ebf2142-f171-40cd-8143-15f50084b707",
   "status": "draft",
-  "tags": ["big-ass-foo"],
+  "printing": "c3b92caa-3401-4b11-9515-152f3e057c05",
+  "tags": [
+    "big-ass-foo"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

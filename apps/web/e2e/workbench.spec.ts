@@ -949,3 +949,64 @@ test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
     "shock",
   ]);
 });
+
+test("a card's printing is chosen from its printings, shown everywhere, and undoable", async ({
+  page,
+  workbench,
+}) => {
+  const slug = "shock";
+  const pinned = (await readEntry(workbench.cardsDir, slug)).printing;
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  const shown = page.getByTestId("shown-printing");
+  const before = await shown.textContent();
+  const paneImage = page.locator(".pane img").first();
+  const imageBefore = await paneImage.getAttribute("src");
+
+  await page.getByRole("button", { name: "Change printing…" }).click();
+  const browser = page.getByRole("dialog", { name: "Printings of Shock" });
+  const tiles = browser.locator(".printing:not(.printing-default)");
+  await expect(tiles.first()).toBeVisible({ timeout: 20_000 });
+  expect(await tiles.count()).toBeGreaterThan(5);
+  await browser.getByLabel("Filter printings").fill("zzz-no-such-set");
+  await expect(tiles).toHaveCount(0);
+  await browser.getByLabel("Filter printings").fill("");
+  await browser.getByLabel("Filter printings").blur();
+  await page.keyboard.press("Escape");
+  await expect(browser).toBeHidden();
+  await expect(page.getByRole("complementary", { name: "Shock" })).toBeVisible();
+  await page.getByRole("button", { name: "Change printing…" }).click();
+
+  await expect(browser.locator(".printing-current")).toHaveCount(1);
+  const pick = browser
+    .locator(".printing:not(.printing-default):not(:has(.printing-current))")
+    .nth(2);
+  const setName = ((await pick.locator(".printing-set").textContent()) ?? "").split(" #")[0] ?? "";
+  await pick.click();
+  await expect(browser).toBeHidden();
+  await expect(shown).toContainText(setName);
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, slug)).printing)
+    .not.toBe(pinned);
+  await expect.poll(() => paneImage.getAttribute("src")).not.toBe(imageBefore);
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(async () => (await readEntry(workbench.cardsDir, slug)).printing).toBe(pinned);
+  await expect(shown).toHaveText(before ?? "");
+});
+
+test("a chosen printing that can't be found falls back and says so", async ({
+  page,
+  workbench,
+}) => {
+  const slug = "opt";
+  const entry = await readEntry(workbench.cardsDir, slug);
+  const path = join(workbench.cardsDir, `${slug}.json`);
+  await writeFile(
+    path,
+    `${JSON.stringify({ ...entry, printing: "00000000-0000-4000-8000-000000000000" }, null, 2)}\n`,
+  );
+  await page.goto(`${workbench.url}#/card/${slug}`);
+  await expect(page.getByRole("note")).toHaveText("(chosen printing unavailable)");
+  await writeFile(path, `${JSON.stringify(entry, null, 2)}\n`);
+  await expect(page.getByRole("note")).toHaveCount(0);
+});

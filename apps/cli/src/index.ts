@@ -4,6 +4,7 @@ import { ScryfallError } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient } from "./client.ts";
 import { addBatch } from "./commands/add.ts";
+import { pinPrintings } from "./commands/pin-printings.ts";
 import { importReview } from "./commands/review.ts";
 import { snapshot } from "./commands/snapshot.ts";
 import { validate } from "./commands/validate.ts";
@@ -17,6 +18,7 @@ Commands:
   search <query>       Scryfall search syntax, e.g. "o:graveyard t:sorcery"
   add <batch-file>     Parse a batch list, resolve on Scryfall, write cube/cards/*.json
   validate             Check cube files: schema, singleton, sections, size
+  pin-printings        Save each card's current printing so Scryfall can't change it
   snapshot             Bake cube + Scryfall data + images for the share doc build
   review import <src>  Import a friend's review (saved .html, code, or .json)
 
@@ -24,7 +26,7 @@ Options:
   --fuzzy              Fuzzy name match (card)
   --limit <n>          Max results (search, default 20)
   --json               Print raw JSON
-  --dry-run            Resolve without writing (add)
+  --dry-run            Resolve without writing (add, pin-printings)
   -h, --help           Show this help`;
 
 const { positionals, values } = parseArgs({
@@ -60,6 +62,9 @@ async function run(): Promise<number> {
     }
     case "validate": {
       return validate();
+    }
+    case "pin-printings": {
+      return pinPrintings(values["dry-run"]);
     }
     case "snapshot": {
       return snapshot();

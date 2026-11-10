@@ -27,7 +27,21 @@ export const snapshotSchema = z.strictObject({
   functionsAsOf: z.string().optional(),
 });
 
+export const printingSchema = z.strictObject({
+  id: z.string(),
+  set: z.string(),
+  setName: z.string(),
+  collectorNumber: z.string(),
+  releasedAt: z.string(),
+  artist: z.string(),
+  labels: z.array(z.string()),
+  image: z.string(),
+  imageLarge: z.string(),
+});
+
 export const workbenchCardSchema = snapshotCardSchema.extend({
+  printing: z.string().optional(),
+  shown: printingSchema.pick({ id: true, setName: true, collectorNumber: true }),
   tags: z.array(z.string()),
   notes: z.string(),
 });
@@ -71,6 +85,7 @@ export type SnapshotCard = z.infer<typeof snapshotCardSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export type WorkbenchCard = z.infer<typeof workbenchCardSchema>;
 export type Workbench = z.infer<typeof workbenchSchema>;
+export type Printing = z.infer<typeof printingSchema>;
 export type SearchResult = z.infer<typeof searchResultSchema>;
 export type Vote = (typeof VOTES)[number];
 export type CardReview = z.infer<typeof cardReviewSchema>;

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { MemoryCache } from "./cache.ts";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { FileCache, MemoryCache } from "./cache.ts";
 import { CARD_ENDPOINT_INTERVAL_MS, ScryfallClient, ScryfallError, chunk } from "./client.ts";
 
 const card = {
@@ -132,6 +135,130 @@ describe("ScryfallClient", () => {
     expect(JSON.parse(calls[1]?.init?.body as string)).toEqual({
       identifiers: [{ oracle_id: "c" }, { oracle_id: "x" }],
     });
+  });
+
+  it("uses a chosen printing when it matches the card, else the default printing", async () => {
+    const calls: Call[] = [];
+    const print = (id: string, oracleId: string, set: string) => ({
+      ...card,
+      id,
+      oracle_id: oracleId,
+      set,
+    });
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new MemoryCache(),
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [
+          {
+            status: 200,
+            body: { object: "list", data: [print("d1", "a", "dmr"), print("d2", "b", "dmr")] },
+          },
+          {
+            status: 200,
+            body: { object: "list", data: [print("p1", "a", "spg"), print("p2", "z", "sld")] },
+          },
+        ],
+        calls,
+      ),
+    });
+    const { cards, missing, unresolved } = await client.forEntries([
+      { oracleId: "a", printing: "p1" },
+      { oracleId: "b", printing: "p2" },
+    ]);
+    expect(cards.get("a")?.set).toBe("spg");
+    expect(cards.get("b")?.id).toBe("d2");
+    expect(missing).toEqual([]);
+    expect(unresolved).toEqual(["b"]);
+    expect(JSON.parse(calls[1]?.init?.body as string)).toEqual({
+      identifiers: [{ id: "p1" }, { id: "p2" }],
+    });
+  });
+
+  it("serves stale cached cards when Scryfall can't be reached", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-stale-"));
+    await new FileCache(dir).set("print:p1", { ...card, id: "p1", oracle_id: "a" });
+    const later = new FileCache(dir, 1000, () => Date.now() + 10_000);
+    const offline = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: later,
+      sleep: () => Promise.resolve(),
+      fetch: () => Promise.reject(new TypeError("fetch failed")),
+    });
+    expect((await offline.byIds(["p1"])).cards.map((found) => found.id)).toEqual(["p1"]);
+    await expect(offline.byIds(["p2"])).rejects.toThrow("fetch failed");
+    const fresh = await offline
+      .forEntries([{ oracleId: "a", printing: "p2" }])
+      .catch((error: unknown) => error);
+    expect(fresh).toBeInstanceOf(TypeError);
+  });
+
+  it("falls back to the default when a new printing can't be fetched offline", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-offline-"));
+    await new FileCache(dir).set("oracle:a", { ...card, id: "d1", oracle_id: "a" });
+    const offline = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new FileCache(dir),
+      sleep: () => Promise.resolve(),
+      fetch: () => Promise.reject(new TypeError("fetch failed")),
+    });
+    const { cards, unresolved } = await offline.forEntries([{ oracleId: "a", printing: "p9" }]);
+    expect(cards.get("a")?.id).toBe("d1");
+    expect(unresolved).toEqual(["a"]);
+  });
+
+  it("does not hide Scryfall rejecting a request behind stale data", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-reject-"));
+    await new FileCache(dir).set("print:p1", { ...card, id: "p1" });
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new FileCache(dir, 1000, () => Date.now() + 10_000),
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [{ status: 400, body: { object: "error", status: 400, code: "bad", details: "Bad" } }],
+        [],
+      ),
+    });
+    await expect(client.byIds(["p1"])).rejects.toThrow("Bad");
+  });
+
+  it("returns no printings when Scryfall finds none", async () => {
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [{ status: 404, body: { object: "error", status: 404, code: "not_found", details: "x" } }],
+        [],
+      ),
+    });
+    expect(await client.printings("none")).toEqual([]);
+  });
+
+  it("lists every paper printing of a card across pages", async () => {
+    const calls: Call[] = [];
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [
+          { status: 200, body: { object: "list", data: [card], has_more: true } },
+          { status: 200, body: { object: "list", data: [{ ...card, id: "2" }] } },
+        ],
+        calls,
+      ),
+    });
+    expect((await client.printings("abc")).map((printing) => printing.id)).toEqual(["1", "2"]);
+    const url = new URL(calls[0]?.url ?? "");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      q: "oracleid:abc game:paper",
+      unique: "prints",
+      include_variations: "true",
+      order: "released",
+      dir: "desc",
+      page: "1",
+    });
+    expect(new URL(calls[1]?.url ?? "").searchParams.get("page")).toBe("2");
   });
 
   it("throws ScryfallError with the API error details", async () => {

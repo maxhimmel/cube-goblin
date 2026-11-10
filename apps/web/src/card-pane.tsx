@@ -44,7 +44,11 @@ export function CardPane({ slug }: { slug: string }): ReactNode {
 
   useEffect(() => {
     function onKey(event: KeyboardEvent): void {
-      if (event.key === "Escape" && !event.defaultPrevented) {
+      if (
+        event.key === "Escape" &&
+        !event.defaultPrevented &&
+        document.querySelector("dialog[open]") === null
+      ) {
         close();
       }
     }
@@ -69,15 +73,20 @@ export function CardPane({ slug }: { slug: string }): ReactNode {
         </p>
       ) : (
         <article className="detail">
-          <CardImage
-            key={card.imageLarge}
-            src={card.imageLarge}
-            alt={card.name}
-            className="large"
-            width={336}
-            height={468}
-            lazy={false}
-          />
+          <figure className="large-figure">
+            <CardImage
+              key={card.imageLarge}
+              src={card.imageLarge}
+              alt={card.name}
+              className="large"
+              width={336}
+              height={468}
+              lazy={false}
+            />
+            <figcaption>
+              <mode.CardImageCaption slug={slug} />
+            </figcaption>
+          </figure>
           <div className="detail-body">
             <h1 ref={heading} tabIndex={-1}>
               {card.name}

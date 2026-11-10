@@ -2,7 +2,11 @@
   "name": "Lasting Tarfire",
   "oracleId": "ff5502d2-37f5-4ad5-bee2-3a03ec973268",
   "status": "draft",
-  "tags": ["ping", "payoff"],
+  "printing": "9c4a95ac-072f-4219-80a0-1ce71f1b8411",
+  "tags": [
+    "ping",
+    "payoff"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

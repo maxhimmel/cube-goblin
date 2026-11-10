@@ -19,9 +19,14 @@ import { CUBE_PATHS, SNAPSHOT_FILE } from "../paths.ts";
 export async function snapshot(): Promise<number> {
   const [entries, sections] = await Promise.all([readCards(CUBE_PATHS), readSections(CUBE_PATHS)]);
   const client = createClient();
-  const { cards, missing: notFound } = await client.byOracleIds(
-    entries.map((entry) => entry.oracleId),
-  );
+  const { cards: byOracle, missing: notFound, unresolved } = await client.forEntries(entries);
+  if (unresolved.length > 0) {
+    const names = entries
+      .filter((entry) => unresolved.includes(entry.oracleId))
+      .map((entry) => entry.name);
+    console.error(chalk.red(`Chosen printing not found for: ${names.join(", ")}`));
+    return 1;
+  }
   const oracleTags = await createOracleTagStore(client).load(FUNCTION_ORACLE_TAG_IDS);
   if (oracleTags.error !== undefined) {
     console.error(chalk.yellow(`Oracle tags unavailable, using cache: ${oracleTags.error}`));
@@ -30,13 +35,12 @@ export async function snapshot(): Promise<number> {
     console.error(chalk.red(`Scryfall could not find: ${JSON.stringify(notFound)}`));
     return 1;
   }
-  const byOracle = new Map(cards.map((card) => [card.oracle_id, card]));
 
   const snapshotCards: SnapshotCard[] = [];
   for (const entry of entries) {
     const card = byOracle.get(entry.oracleId);
     const fields = card ? displayFields(card) : undefined;
-    if (!fields) {
+    if (!card || !fields) {
       console.error(chalk.red(`Missing Scryfall data or image for ${entry.name}`));
       return 1;
     }
@@ -50,7 +54,7 @@ export async function snapshot(): Promise<number> {
       ...(entry.section === undefined ? {} : { section: entry.section }),
       ...display,
       functions: cardFunctions({ oracleId: entry.oracleId, producedMana }, oracleTags.index),
-      image: await imageDataUri(fields.image, `${entry.oracleId}-small`, USER_AGENT),
+      image: await imageDataUri(fields.image, `${card.id}-small`, USER_AGENT),
     });
   }
   process.stderr.write("\n");

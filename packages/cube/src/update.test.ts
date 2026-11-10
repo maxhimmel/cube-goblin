@@ -120,8 +120,21 @@ describe("patchCard", () => {
     expect(await onDisk("shock")).toEqual(shock);
   });
 
+  it("sets a printing and clears it with null", async () => {
+    const printing = "8b4b6b0e-0000-4000-8000-0000000000aa";
+    await patchCard(paths, "shock", { printing });
+    expect(await onDisk("shock")).toEqual({ ...shock, printing });
+    await patchCard(paths, "shock", { printing: null });
+    expect(await onDisk("shock")).toEqual(shock);
+  });
+
   it("rejects identity fields and unknown keys", async () => {
-    for (const patch of [{ name: "Bolt" }, { oracleId: opt.oracleId }, { status: "maybe" }]) {
+    for (const patch of [
+      { name: "Bolt" },
+      { oracleId: opt.oracleId },
+      { status: "maybe" },
+      { printing: "not-an-id" },
+    ]) {
       expect(await patchCard(paths, "shock", patch)).toMatchObject({ ok: false, status: 400 });
     }
     expect(await onDisk("shock")).toEqual(shock);

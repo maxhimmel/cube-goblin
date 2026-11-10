@@ -114,6 +114,7 @@ export const mode: Mode = {
   useTileMark: (slug) => ({ "data-vote": useReview().cards[slug]?.vote ?? undefined }),
   Toolbar,
   CardPanel,
+  CardImageCaption: () => null,
   TagsPage: () => <p className="muted">Tags are edited in the workbench.</p>,
   BoardPage: () => <p className="muted">The board lives in the workbench.</p>,
   SelectCard: () => null,

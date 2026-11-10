@@ -50,6 +50,22 @@ function oracleKey(oracleId: string): string {
   return `oracle:${oracleId}`;
 }
 
+function printKey(id: string): string {
+  return `print:${id}`;
+}
+
+export function isUnreachable(error: unknown): boolean {
+  if (error instanceof ScryfallError) {
+    return error.status === 429 || error.status >= 500;
+  }
+  return error instanceof TypeError || (error instanceof Error && error.name === "TimeoutError");
+}
+
+export interface PrintedEntry {
+  oracleId: string;
+  printing?: string | undefined;
+}
+
 function intervalFor(path: string): number {
   return path.startsWith("/cards/") ? CARD_ENDPOINT_INTERVAL_MS : DEFAULT_INTERVAL_MS;
 }
@@ -181,38 +197,138 @@ export class ScryfallClient {
     return { cards, notFound };
   }
 
-  async byOracleIds(oracleIds: readonly string[]): Promise<{ cards: Card[]; missing: string[] }> {
-    const unique = [...new Set(oracleIds)];
+  async #byKeys(
+    ids: readonly string[],
+    kind: "oracle_id" | "id",
+  ): Promise<{ cards: Map<string, Card>; missing: string[] }> {
+    const keyOf = kind === "id" ? printKey : oracleKey;
+    const idOf = (card: Card): string | undefined => (kind === "id" ? card.id : card.oracle_id);
+    const unique = [...new Set(ids)];
     const found = new Map<string, Card>();
     const toFetch: string[] = [];
-    for (const oracleId of unique) {
-      const cached = cardSchema.safeParse(await this.#cache.get(oracleKey(oracleId)));
+    for (const id of unique) {
+      const cached = cardSchema.safeParse(await this.#cache.get(keyOf(id)));
       if (cached.success) {
-        found.set(oracleId, cached.data);
+        found.set(id, cached.data);
       } else {
-        toFetch.push(oracleId);
+        toFetch.push(id);
       }
     }
-    for (const batch of chunk(toFetch, COLLECTION_MAX_IDENTIFIERS)) {
-      const list = await this.#request(
-        {
-          path: "/cards/collection",
-          body: { identifiers: batch.map((oracleId) => ({ oracle_id: oracleId })) },
-          cache: false,
-        },
-        cardListSchema,
-      );
-      for (const card of list.data) {
-        if (card.oracle_id !== undefined) {
-          found.set(card.oracle_id, card);
-          await this.#cache.set(oracleKey(card.oracle_id), card);
+    try {
+      for (const batch of chunk(toFetch, COLLECTION_MAX_IDENTIFIERS)) {
+        const list = await this.#request(
+          {
+            path: "/cards/collection",
+            body: { identifiers: batch.map((id) => ({ [kind]: id })) },
+            cache: false,
+          },
+          cardListSchema,
+        );
+        for (const card of list.data) {
+          const id = idOf(card);
+          if (id !== undefined) {
+            found.set(id, card);
+            await this.#cache.set(keyOf(id), card);
+          }
         }
       }
+    } catch (error) {
+      if (!isUnreachable(error)) {
+        throw error;
+      }
+      for (const id of toFetch.filter((candidate) => !found.has(candidate))) {
+        const stale = cardSchema.safeParse(await this.#cache.peek(keyOf(id)));
+        if (!stale.success) {
+          throw error;
+        }
+        found.set(id, stale.data);
+      }
     }
+    return { cards: found, missing: unique.filter((id) => !found.has(id)) };
+  }
+
+  async byOracleIds(oracleIds: readonly string[]): Promise<{ cards: Card[]; missing: string[] }> {
+    const { cards, missing } = await this.#byKeys(oracleIds, "oracle_id");
     return {
-      cards: unique.flatMap((oracleId) => found.get(oracleId) ?? []),
-      missing: unique.filter((oracleId) => !found.has(oracleId)),
+      cards: [...new Set(oracleIds)].flatMap((oracleId) => cards.get(oracleId) ?? []),
+      missing,
     };
+  }
+
+  async byIds(ids: readonly string[]): Promise<{ cards: Card[]; missing: string[] }> {
+    const { cards, missing } = await this.#byKeys(ids, "id");
+    return { cards: [...new Set(ids)].flatMap((id) => cards.get(id) ?? []), missing };
+  }
+
+  async forEntries(
+    entries: readonly PrintedEntry[],
+  ): Promise<{ cards: Map<string, Card>; missing: string[]; unresolved: string[] }> {
+    const chosen = entries.flatMap((entry) => entry.printing ?? []);
+    const [defaults, printed] = await Promise.all([
+      this.#byKeys(
+        entries.map((entry) => entry.oracleId),
+        "oracle_id",
+      ),
+      this.#byKeys(chosen, "id").catch((error: unknown) => {
+        if (isUnreachable(error)) {
+          return { cards: new Map<string, Card>(), missing: chosen };
+        }
+        throw error;
+      }),
+    ]);
+    const cards = new Map<string, Card>();
+    const unresolved: string[] = [];
+    for (const entry of entries) {
+      const printing = entry.printing === undefined ? undefined : printed.cards.get(entry.printing);
+      const matches = printing?.oracle_id === entry.oracleId;
+      if (entry.printing !== undefined && !matches) {
+        unresolved.push(entry.oracleId);
+      }
+      const card = matches ? printing : defaults.cards.get(entry.oracleId);
+      if (card) {
+        cards.set(entry.oracleId, card);
+      }
+    }
+    return { cards, missing: defaults.missing, unresolved };
+  }
+
+  async rememberPrinting(card: Card): Promise<void> {
+    await this.#cache.set(printKey(card.id), card);
+  }
+
+  async printings(oracleId: string): Promise<Card[]> {
+    const cards: Card[] = [];
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
+      let list: CardList;
+      try {
+        list = await this.#request(
+          {
+            path: "/cards/search",
+            params: {
+              q: `oracleid:${oracleId} game:paper`,
+              unique: "prints",
+              include_variations: "true",
+              order: "released",
+              dir: "desc",
+              page: String(page),
+            },
+            cache: false,
+          },
+          cardListSchema,
+        );
+      } catch (error) {
+        if (error instanceof ScryfallError && error.status === 404) {
+          return cards;
+        }
+        throw error;
+      }
+      cards.push(...list.data);
+      hasMore = list.has_more;
+      page += 1;
+    }
+    return cards;
   }
 
   bulkData(type: string): Promise<BulkData> {

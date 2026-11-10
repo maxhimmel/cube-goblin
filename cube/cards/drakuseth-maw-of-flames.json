@@ -2,7 +2,10 @@
   "name": "Drakuseth, Maw of Flames",
   "oracleId": "060deaff-44d6-4f03-9568-bcb7add80255",
   "status": "draft",
-  "tags": ["big-ass-foo"],
+  "printing": "9e9b40f5-3dd0-4607-a78d-b004d57fa4ea",
+  "tags": [
+    "big-ass-foo"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

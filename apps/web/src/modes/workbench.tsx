@@ -13,7 +13,7 @@ import { boardSavesPending } from "../workbench/board.ts";
 import { BoardPage } from "../workbench/board-page.tsx";
 import { AddPage } from "../workbench/add-page.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
-import { CardEditor } from "../workbench/card-editor.tsx";
+import { CardEditor, CardPrinting } from "../workbench/card-editor.tsx";
 import { editsPending, runCardEdit, useSaving } from "../workbench/edits.ts";
 import { useSelection } from "../workbench/selection.ts";
 import { TagsPage } from "../workbench/tags-page.tsx";
@@ -110,6 +110,10 @@ export const mode: Mode = {
   }),
   Toolbar,
   CardPanel,
+  CardImageCaption: ({ slug }) => {
+    const card = useWorkbenchCard(slug);
+    return card ? <CardPrinting card={card} /> : null;
+  },
   TagsPage: () => <TagsPage cube={useWorkbench()} />,
   BoardPage: () => <BoardPage cube={useWorkbench()} />,
   SelectCard,

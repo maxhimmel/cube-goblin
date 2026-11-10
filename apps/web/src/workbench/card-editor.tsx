@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { sendChanges } from "./api.ts";
 import { useCardEdit } from "./edits.ts";
+import { PrintingCaption } from "./printing-browser.tsx";
 import { findTag, useCreateTag } from "./tags.ts";
 
 const NOTES_DEBOUNCE_MS = 600;
@@ -251,6 +252,22 @@ function TagsField({
         )}
       </div>
     </fieldset>
+  );
+}
+
+export function CardPrinting({ card }: { card: WorkbenchCard }): ReactNode {
+  const edit = useCardEdit();
+  return (
+    <PrintingCaption
+      card={card}
+      save={(label, patch, undo) => {
+        edit.mutate({
+          label,
+          changes: [{ slug: card.slug, patch }],
+          undo: [{ slug: card.slug, patch: undo }],
+        });
+      }}
+    />
   );
 }
 

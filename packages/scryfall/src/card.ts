@@ -23,6 +23,70 @@ export function imageUrl(card: Card, version: ImageVersion = "normal"): string |
   return card.image_uris?.[version] ?? card.card_faces?.[0]?.image_uris?.[version];
 }
 
+const FRAME_LABELS: Record<string, string> = {
+  showcase: "showcase",
+  extendedart: "extended art",
+  etched: "etched",
+  inverted: "inverted",
+};
+
+export function printingLabels(card: Card): string[] {
+  const labels: string[] = [];
+  if (card.border_color === "borderless") {
+    labels.push("borderless");
+  }
+  for (const effect of card.frame_effects ?? []) {
+    const label = FRAME_LABELS[effect];
+    if (label !== undefined && !labels.includes(label)) {
+      labels.push(label);
+    }
+  }
+  if (card.full_art === true) {
+    labels.push("full art");
+  }
+  if (card.frame === "1993" || card.frame === "1997") {
+    labels.push("retro frame");
+  }
+  if (card.set === "spg") {
+    labels.push("special guest");
+  }
+  if (card.promo_types?.includes("sldbonus") === true) {
+    labels.push("bonus");
+  }
+  return labels;
+}
+
+export interface Printing {
+  id: string;
+  set: string;
+  setName: string;
+  collectorNumber: string;
+  releasedAt: string;
+  artist: string;
+  labels: string[];
+  image: string;
+  imageLarge: string;
+}
+
+export function printingSummary(card: Card): Printing | undefined {
+  const image = imageUrl(card, "small");
+  const imageLarge = imageUrl(card, "large");
+  if (!image || !imageLarge) {
+    return undefined;
+  }
+  return {
+    id: card.id,
+    set: card.set,
+    setName: card.set_name ?? card.set.toUpperCase(),
+    collectorNumber: card.collector_number,
+    releasedAt: card.released_at ?? "",
+    artist: card.artist ?? "",
+    labels: printingLabels(card),
+    image,
+    imageLarge,
+  };
+}
+
 export interface DisplayFields {
   manaCost: string;
   typeLine: string;

@@ -2,6 +2,12 @@ import { z } from "zod";
 
 export const CARD_STATUSES = ["draft", "prospect", "cut"] as const;
 
+export const CARD_STATUS_LABELS: Record<(typeof CARD_STATUSES)[number], string> = {
+  draft: "Draft",
+  prospect: "Prospect",
+  cut: "Cut",
+};
+
 export const cardStatusSchema = z.enum(CARD_STATUSES);
 
 export const cardEntrySchema = z.strictObject({
@@ -116,6 +122,29 @@ export const boardSchema = z.strictObject({
   sections: z.array(sectionSchema),
 });
 
+export const newVersionSchema = z.strictObject({
+  label: z.string().trim().min(1),
+});
+
+export const versionSchema = z.strictObject({
+  id: z.string().regex(/^[a-z0-9-]+$/u),
+  label: z.string().trim().min(1),
+  savedAt: z.iso.datetime(),
+  cards: z.array(cardEntrySchema),
+  tags: z.array(tagSchema),
+  board: boardSchema,
+});
+
+export const statusCountsSchema = z.strictObject({
+  draft: z.int(),
+  prospect: z.int(),
+  cut: z.int(),
+});
+
+export const versionSummarySchema = versionSchema
+  .pick({ id: true, label: true, savedAt: true })
+  .extend({ counts: statusCountsSchema });
+
 export const cubeConfigSchema = z.strictObject({
   format: z.enum(["winston"]),
   size: z
@@ -133,3 +162,6 @@ export type Tag = z.infer<typeof tagSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type Board = z.infer<typeof boardSchema>;
 export type CubeConfig = z.infer<typeof cubeConfigSchema>;
+export type Version = z.infer<typeof versionSchema>;
+export type VersionSummary = z.infer<typeof versionSummarySchema>;
+export type StatusCounts = z.infer<typeof statusCountsSchema>;

@@ -24,6 +24,7 @@ export type {
 } from "./snapshot.ts";
 export {
   CARD_STATUSES,
+  CARD_STATUS_LABELS,
   TAG_KINDS,
   TAG_KIND_LABELS,
   applyCardPatch,
@@ -38,6 +39,8 @@ export {
   newTagSchema,
   tagChangeSchema,
   tagSchema,
+  versionSchema,
+  versionSummarySchema,
 } from "./schema.ts";
 export type {
   Section,
@@ -49,6 +52,9 @@ export type {
   NewCard,
   Tag,
   TagKind,
+  StatusCounts,
+  Version,
+  VersionSummary,
 } from "./schema.ts";
 export { COLUMN_AXES, colorKey, columnsBy } from "./columns.ts";
 export { combatMatchups, creatureBalance, isOutlier, size } from "./creatures.ts";
@@ -108,3 +114,12 @@ export {
   tagOverlaps,
 } from "./overlaps.ts";
 export type { Overlap, TagFilter, Tagged } from "./overlaps.ts";
+export {
+  CURRENT,
+  cardDiffSchema,
+  cubeDiffSchema,
+  diffCube,
+  isCardChanged,
+  statusCounts,
+} from "./diff.ts";
+export type { CardDiff, CubeDiff, CubeState, SectionDiff } from "./diff.ts";

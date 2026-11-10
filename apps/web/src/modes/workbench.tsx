@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { queryClient } from "../query-client.ts";
 import {
   BOARD_QUERY_KEY,
+  VERSIONS_QUERY_KEY,
   CUBE_CHANGED_EVENT,
   CUBE_QUERY_KEY,
   fetchCube,
@@ -17,6 +18,7 @@ import { CardEditor, CardPrinting } from "../workbench/card-editor.tsx";
 import { editsPending, runCardEdit, useSaving } from "../workbench/edits.ts";
 import { useSelection } from "../workbench/selection.ts";
 import { TagsPage } from "../workbench/tags-page.tsx";
+import { VersionsPage } from "../workbench/versions-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
 
@@ -32,6 +34,7 @@ if (import.meta.hot) {
   import.meta.hot.on(CUBE_CHANGED_EVENT, () => {
     void refetch(CUBE_QUERY_KEY, editsPending);
     void refetch(BOARD_QUERY_KEY, boardSavesPending);
+    void queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
   });
 }
 
@@ -109,6 +112,7 @@ export const mode: Mode = {
   },
   TagsPage: () => <TagsPage cube={useWorkbench()} />,
   BoardPage: () => <BoardPage cube={useWorkbench()} />,
+  VersionsPage: () => <VersionsPage cube={useWorkbench()} />,
   SelectCard,
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,

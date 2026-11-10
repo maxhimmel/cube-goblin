@@ -1,5 +1,11 @@
 import type { SnapshotCard, TagKind } from "@repo/cube/browser";
-import { CARD_STATUSES, TAG_KINDS, TYPE_COLUMNS, typeKeys } from "@repo/cube/browser";
+import {
+  CARD_STATUSES,
+  CARD_STATUS_LABELS,
+  TAG_KINDS,
+  TYPE_COLUMNS,
+  typeKeys,
+} from "@repo/cube/browser";
 import type { CubeView, GridCard } from "../modes/mode.ts";
 
 export interface Pile {
@@ -40,7 +46,7 @@ function overview(cube: CubeView): Pile[] {
 function byStatus(cube: CubeView): Pile[] {
   return CARD_STATUSES.map((status) => ({
     id: status,
-    label: capitalize(status),
+    label: CARD_STATUS_LABELS[status],
     cards: cube.cards.filter((card) => card.status === status),
   }));
 }

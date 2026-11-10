@@ -93,6 +93,18 @@ const boardRoute = createRoute({
   component: () => <mode.BoardPage />,
 });
 
+const versionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/versions",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { from?: string | undefined; to?: string | undefined } => ({
+    ...(typeof search["from"] === "string" ? { from: search["from"] } : {}),
+    ...(typeof search["to"] === "string" ? { to: search["to"] } : {}),
+  }),
+  component: () => <mode.VersionsPage />,
+});
+
 const addRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/add",
@@ -112,6 +124,7 @@ export const router = createRouter({
     cardRoute,
     tagsRoute,
     boardRoute,
+    versionsRoute,
     addRoute,
   ]),
   history: createHashHistory(),

@@ -3,9 +3,15 @@ import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
 import { EMPTY_BOARD } from "./board.ts";
-import type { Board, CardEntry, CubeConfig, Tag } from "./schema.ts";
+import type { Board, CardEntry, CubeConfig, Tag, Version } from "./schema.ts";
 import { slugify } from "./slug.ts";
-import { boardSchema, cardEntrySchema, cubeConfigSchema, tagsFileSchema } from "./schema.ts";
+import {
+  boardSchema,
+  cardEntrySchema,
+  cubeConfigSchema,
+  tagsFileSchema,
+  versionSchema,
+} from "./schema.ts";
 
 export const WORKBENCH_BATCH = "workbench";
 
@@ -14,6 +20,7 @@ export interface CubePaths {
   cardsDir: string;
   tagsFile: string;
   boardFile: string;
+  versionsDir: string;
   configFile: string;
   workbenchBatch: string;
 }
@@ -24,6 +31,7 @@ export function cubePaths(repoRoot: string): CubePaths {
     cardsDir: join(repoRoot, "cube", "cards"),
     tagsFile: join(repoRoot, "cube", "tags.json"),
     boardFile: join(repoRoot, "cube", "board.json"),
+    versionsDir: join(repoRoot, "cube", "versions"),
     configFile: join(repoRoot, "cube.config.json"),
     workbenchBatch: join(repoRoot, "cube", "inbox", `${WORKBENCH_BATCH}.txt`),
   };
@@ -91,5 +99,51 @@ export async function writeCard(paths: CubePaths, card: CardEntry): Promise<stri
   await mkdir(paths.cardsDir, { recursive: true });
   const path = join(paths.cardsDir, `${slugify(card.name)}.json`);
   await writeJsonAtomic(path, cardEntrySchema.parse(card));
+  return path;
+}
+
+export type VersionFile = { file: string; version: Version } | { file: string; error: string };
+
+export async function readVersionFiles(paths: CubePaths): Promise<VersionFile[]> {
+  let files: string[];
+  try {
+    files = await readdir(paths.versionsDir);
+  } catch {
+    return [];
+  }
+  return Promise.all(
+    files
+      .filter((file) => file.endsWith(".json"))
+      .sort()
+      .map(async (file): Promise<VersionFile> => {
+        try {
+          const version = await readJson(join(paths.versionsDir, file), versionSchema);
+          return file === `${version.id}.json`
+            ? { file, version }
+            : {
+                file,
+                error: `cube/versions/${file}: id "${version.id}" does not match the file name`,
+              };
+        } catch (error) {
+          return { file, error: error instanceof Error ? error.message : String(error) };
+        }
+      }),
+  );
+}
+
+export function versionProblems(files: readonly VersionFile[]): string[] {
+  return files.flatMap((entry) => ("error" in entry ? [entry.error] : []));
+}
+
+export async function readVersions(paths: CubePaths): Promise<Version[]> {
+  return (await readVersionFiles(paths))
+    .flatMap((entry) => ("version" in entry ? [entry.version] : []))
+    .sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+}
+
+export async function writeVersion(paths: CubePaths, version: Version): Promise<string> {
+  await mkdir(paths.versionsDir, { recursive: true });
+  const path = join(paths.versionsDir, `${version.id}.json`);
+  await writeJsonAtomic(path, versionSchema.parse(version));
   return path;
 }

@@ -1154,9 +1154,10 @@ test("each view keeps its choices across views and reloads", async ({ page, work
 
   await go("Insights");
   await page.getByLabel("Count cards in").selectOption("draft");
-  await go("Wall");
+  await go("Tags");
   await page.goto(`${workbench.url}#/?with=removal`);
-  await expect(page).toHaveURL(/#\/\?with=removal$/u);
+  await expect(page).toHaveURL(/with=removal/u);
+  await expect(page).toHaveURL(/by=color/u);
   await go("Insights");
   await expect(page.getByLabel("Count cards in")).toHaveValue("draft");
   await expect(page).not.toHaveURL(/scope=/u);

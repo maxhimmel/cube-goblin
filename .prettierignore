@@ -2,3 +2,5 @@ pnpm-lock.yaml
 .omc
 apps/web/src/generated
 exports
+cube/cards
+cube/tags.json

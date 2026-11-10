@@ -5,6 +5,7 @@ import {
   COLOR_GROUPS,
   CURVE_COLUMNS,
   HEAVY_PIPS,
+  PT_VALUES,
   bucketId,
   cubeStats,
   parseBucket,
@@ -64,6 +65,12 @@ function colorIcon(id: string): ReactNode {
 function colorLabel(id: string): string {
   return COLOR_GROUPS.find((group) => group.id === id)?.label ?? id;
 }
+
+function ptLabel(id: string): string {
+  return PT_VALUES.find((value) => value.id === id)?.label ?? id;
+}
+
+const ptTick: TickLabel = (id) => ptLabel(id);
 
 function curveLabel(id: string): string {
   return CURVE_COLUMNS.find((column) => column.id === id)?.label ?? id;
@@ -170,6 +177,7 @@ const KIND_TITLES: Record<BucketKind, string> = {
   colorMulti: "Color",
   heavy: "Heavy pips",
   type: "Card types",
+  pt: "Power and toughness",
   function: "Functions",
   status: "Status",
   tag: "Tags",
@@ -193,6 +201,8 @@ function bucketLabel(bucket: Bucket, stats: CubeStats): string {
       return `${colorLabel(first)}, mana value ${curveLabel(second)}`;
     case "type":
       return find(stats.types);
+    case "pt":
+      return `${ptLabel(first)}/${ptLabel(second)}`;
     case "function":
       return find(stats.functions);
     case "status":
@@ -401,6 +411,47 @@ export function InsightsPage(): ReactNode {
             tick={colorTick}
             selected={search.bucket}
             onPick={pick}
+          />
+        </Block>
+      );
+    }
+    if (id === "pt") {
+      const selected =
+        bucket?.kind === "pt"
+          ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
+          : undefined;
+      return (
+        <Block
+          title="Power and toughness"
+          caption="Creatures by power (rows) and toughness (columns); * is a power or toughness that varies"
+          collapsed={collapsed}
+          onToggle={toggle}
+          table={
+            <CountTable
+              caption="Power and toughness"
+              rows={stats.powerToughness
+                .filter((entry) => entry.count > 0)
+                .map((entry) => ({
+                  id: bucketId("pt", entry.row, entry.column),
+                  label: `${ptLabel(entry.row)}/${ptLabel(entry.column)}`,
+                  count: entry.count,
+                }))}
+              selected={search.bucket}
+              onPick={pick}
+            />
+          }
+        >
+          <HeatChart
+            cells={stats.powerToughness}
+            rows={PT_VALUES}
+            columns={PT_VALUES}
+            name="Power and toughness"
+            rowTick={ptTick}
+            columnTick={ptTick}
+            selected={selected}
+            onPick={(row, column) => {
+              pick(bucketId("pt", row, column));
+            }}
           />
         </Block>
       );

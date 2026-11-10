@@ -38,6 +38,8 @@ export interface StatCard {
   cmc: number;
   typeLine: string;
   manaCost?: string | undefined;
+  power?: string | undefined;
+  toughness?: string | undefined;
   tags?: string[] | undefined;
   functions?: readonly string[] | undefined;
 }
@@ -62,6 +64,7 @@ export interface CubeStats {
   heavy: Count[];
   curve: Count[];
   colorCurve: GridCell[];
+  powerToughness: GridCell[];
   lands: number;
   creatures: number;
   types: Count[];
@@ -114,6 +117,35 @@ export const CURVE_COLUMNS: readonly Omit<Count, "count">[] = Array.from(
     label: value === CURVE_TOP ? `${String(value)}+` : String(value),
   }),
 );
+
+export const PT_TOP = 6;
+
+export const VARIABLE_PT = { id: "*", label: "*" } as const;
+
+export const PT_VALUES: readonly Omit<Count, "count">[] = [
+  ...Array.from({ length: PT_TOP + 1 }, (_, value) => ({
+    id: String(value),
+    label: value === PT_TOP ? `${String(value)}+` : String(value),
+  })),
+  VARIABLE_PT,
+];
+
+export function ptKey(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return /^\d+$/u.test(value) ? String(Math.min(Number(value), PT_TOP)) : VARIABLE_PT.id;
+}
+
+export function isCreature(card: Pick<StatCard, "typeLine" | "power" | "toughness">): boolean {
+  return (
+    typeKeys(card).includes("creature") && card.power !== undefined && card.toughness !== undefined
+  );
+}
+
+function inPtCell(card: StatCard, power: string, toughness: string): boolean {
+  return isCreature(card) && ptKey(card.power) === power && ptKey(card.toughness) === toughness;
+}
 
 export const HEAVY_PIPS = 2;
 
@@ -183,6 +215,13 @@ export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]
         ),
       })),
     ),
+    powerToughness: PT_VALUES.flatMap((power) =>
+      PT_VALUES.map((toughness) => ({
+        row: power.id,
+        column: toughness.id,
+        count: count(cards, (card) => inPtCell(card, power.id, toughness.id)),
+      })),
+    ),
     lands: cards.length - spells.length,
     creatures: count(cards, (card) => typeKeys(card).includes("creature")),
     types: TYPE_COLUMNS.map(({ id, label }) => ({
@@ -212,6 +251,7 @@ export const BUCKET_KINDS = [
   "colorMulti",
   "heavy",
   "type",
+  "pt",
   "function",
   "status",
   "tag",
@@ -252,6 +292,8 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
       return spell && isHeavy(card, first);
     case "type":
       return typeKeys(card).includes(first);
+    case "pt":
+      return inPtCell(card, first, second);
     case "function":
       return card.functions?.includes(first) ?? false;
     case "status":

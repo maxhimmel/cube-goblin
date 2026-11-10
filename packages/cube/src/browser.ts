@@ -63,6 +63,7 @@ export {
   LAND,
   OTHER_TYPE,
   PRESENCE_GROUPS,
+  PT_VALUES,
   TYPE_COLUMNS,
   bucketId,
   colorGroup,

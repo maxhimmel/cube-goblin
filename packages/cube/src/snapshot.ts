@@ -12,6 +12,8 @@ export const snapshotCardSchema = z.strictObject({
   oracleText: z.string(),
   cmc: z.number(),
   colors: z.array(z.string()),
+  power: z.string().optional(),
+  toughness: z.string().optional(),
   functions: z.array(z.enum(CARD_FUNCTION_IDS)),
   image: z.string(),
   imageLarge: z.string(),

@@ -103,6 +103,35 @@ describe("cubeStats", () => {
   });
 });
 
+describe("power and toughness", () => {
+  const creatures = [
+    card({ typeLine: "Creature — Elf", power: "1", toughness: "1" }),
+    card({ typeLine: "Artifact Creature — Golem", power: "3", toughness: "3" }),
+    card({ typeLine: "Creature — Eldrazi", power: "10", toughness: "*" }),
+    card({ typeLine: "Creature — Spirit", power: "1+*", toughness: "2" }),
+    card({ typeLine: "Artifact — Vehicle", power: "3", toughness: "3" }),
+    card({ typeLine: "Instant" }),
+  ];
+  const cells = cubeStats(creatures, []).powerToughness;
+  const cell = (row: string, column: string) =>
+    cells.find((entry) => entry.row === row && entry.column === column)?.count;
+
+  it("counts creatures by power and toughness, capping at 6+ and folding variable values into *", () => {
+    expect(cell("1", "1")).toBe(1);
+    expect(cell("3", "3")).toBe(1);
+    expect(cell("6", "*")).toBe(1);
+    expect(cell("*", "2")).toBe(1);
+    expect(cells.reduce((sum, entry) => sum + entry.count, 0)).toBe(4);
+  });
+
+  it("lists exactly the creatures in a cell", () => {
+    for (const entry of cells) {
+      const bucket = parseBucket(bucketId("pt", entry.row, entry.column));
+      expect(creatures.filter((c) => bucket && inBucket(c, bucket)).length).toBe(entry.count);
+    }
+  });
+});
+
 describe("pipColors", () => {
   it("counts hybrid halves and phyrexian symbols, not generic or colorless", () => {
     expect(pipColors("{2}{W}{W}")).toEqual(["W", "W"]);

@@ -94,6 +94,8 @@ export interface DisplayFields {
   cmc: number;
   colors: string[];
   producedMana: string[];
+  power?: string;
+  toughness?: string;
   image: string;
   imageLarge: string;
   scryfallUri: string;
@@ -106,6 +108,8 @@ export function displayFields(card: Card): DisplayFields | undefined {
     return undefined;
   }
   const faces = cardFaces(card);
+  const power = card.power ?? faces[0]?.power;
+  const toughness = card.toughness ?? faces[0]?.toughness;
   return {
     manaCost: card.mana_cost ?? faces[0]?.mana_cost ?? "",
     typeLine: card.type_line ?? "",
@@ -113,6 +117,8 @@ export function displayFields(card: Card): DisplayFields | undefined {
     cmc: card.cmc ?? 0,
     colors: card.colors ?? faces[0]?.colors ?? [],
     producedMana: card.produced_mana ?? [],
+    ...(power === undefined ? {} : { power }),
+    ...(toughness === undefined ? {} : { toughness }),
     image: small,
     imageLarge: large,
     scryfallUri: card.scryfall_uri.split("?")[0] ?? card.scryfall_uri,

@@ -26,6 +26,22 @@ describe("displayFields", () => {
     expect(displayFields(base)?.colors).toEqual(["G"]);
   });
 
+  it("reads power and toughness from the card, or else its front face", () => {
+    expect(displayFields({ ...base, power: "2", toughness: "3" })).toMatchObject({
+      power: "2",
+      toughness: "3",
+    });
+    const faces = [
+      { ...base.card_faces?.[0], name: "Front", power: "*", toughness: "1+*" },
+      { name: "Back", image_uris: images },
+    ];
+    expect(displayFields({ ...base, card_faces: faces })).toMatchObject({
+      power: "*",
+      toughness: "1+*",
+    });
+    expect(displayFields(base)).not.toHaveProperty("power");
+  });
+
   it("prefers top-level colors when Scryfall gives them", () => {
     expect(displayFields({ ...base, colors: ["G", "R"] })?.colors).toEqual(["G", "R"]);
   });

@@ -113,3 +113,19 @@ test("share doc shows tag overlaps from the snapshot", async ({ page }) => {
   const numbers = await page.locator(".overlap-number").allTextContents();
   expect(numbers.reduce((sum, value) => sum + Number(value), 0)).toBe(considered.length);
 });
+
+test("share doc keeps view choices across views and reloads", async ({ page }) => {
+  await page.goto(`${DOC_URL}#/insights`);
+  await page.getByLabel("Count cards in").selectOption("all");
+  const views = page.getByRole("navigation", { name: "Views" });
+  await views.getByRole("link", { name: "Wall", exact: true }).click();
+  await page
+    .getByRole("group", { name: "Columns" })
+    .getByRole("button", { name: "Card type" })
+    .click();
+  await page.reload();
+  await views.getByRole("link", { name: "Insights", exact: true }).click();
+  await expect(page.getByLabel("Count cards in")).toHaveValue("all");
+  await views.getByRole("link", { name: "Wall", exact: true }).click();
+  await expect(page).toHaveURL(/by=type/u);
+});

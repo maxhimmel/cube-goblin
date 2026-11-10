@@ -1110,3 +1110,54 @@ test("a saved version compares with the current cube", async ({ page, workbench 
   await page.getByRole("button", { name: "Save version" }).click();
   await expect(page.getByText(/already exists/u)).toBeVisible();
 });
+
+test("each view keeps its choices across views and reloads", async ({ page, workbench }) => {
+  const views = page.getByRole("navigation", { name: "Views" });
+  const go = async (name: string) => {
+    await views.getByRole("link", { name, exact: true }).click();
+  };
+  await page.goto(`${workbench.url}#/`);
+  await page.getByRole("group", { name: "Columns" }).getByRole("button", { name: "Color" }).click();
+  await page.getByRole("button", { name: /^Prospects/u }).click();
+  await go("Cards");
+  await page.getByLabel("Organize by").selectOption("status");
+  await go("Insights");
+  await page.getByLabel("Count cards in").selectOption("all");
+  await go("Board");
+  const pool = page.getByRole("complementary", { name: "Card pool" });
+  await pool.getByRole("button", { name: "Draft", exact: true }).click();
+  await pool.getByLabel("Filter cards").fill("sh");
+  await page.getByLabel("Sort cards by").selectOption("mv");
+
+  for (const reload of [false, true]) {
+    if (reload) {
+      await page.reload();
+    }
+    await go("Wall");
+    await expect(page).toHaveURL(/#\/\?by=color$/u);
+    await expect(page.getByRole("button", { name: /^Prospects/u })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await go("Cards");
+    await expect(page.getByLabel("Organize by")).toHaveValue("status");
+    await go("Insights");
+    await expect(page.getByLabel("Count cards in")).toHaveValue("all");
+    await go("Board");
+    await expect(page).toHaveURL(/sort=mv/u);
+    await expect(pool.getByRole("button", { name: "Draft", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(pool.getByLabel("Filter cards")).toHaveValue("sh");
+  }
+
+  await go("Insights");
+  await page.getByLabel("Count cards in").selectOption("draft");
+  await go("Wall");
+  await page.goto(`${workbench.url}#/?with=removal`);
+  await expect(page).toHaveURL(/#\/\?with=removal$/u);
+  await go("Insights");
+  await expect(page.getByLabel("Count cards in")).toHaveValue("draft");
+  await expect(page).not.toHaveURL(/scope=/u);
+});

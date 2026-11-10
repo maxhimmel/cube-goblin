@@ -1,6 +1,14 @@
 export * from "./browser.ts";
 export { addCard } from "./add.ts";
-export type { AddResult, NameLookup } from "./add.ts";
+export type { AddResult, CardLookup, FoundCard } from "./add.ts";
+export {
+  CARD_FUNCTIONS,
+  FUNCTION_ORACLE_TAG_IDS,
+  FUNCTION_TAGS,
+  functionTags,
+  producesFixing,
+  withFunctionTags,
+} from "./functions.ts";
 export { parseBatch } from "./parse.ts";
 export type { BatchLine } from "./parse.ts";
 export { cardStatusSchema, cubeConfigSchema } from "./schema.ts";

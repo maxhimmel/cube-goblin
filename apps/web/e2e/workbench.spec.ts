@@ -440,7 +440,7 @@ test("the grid organizes by status and tag kind", async ({ page, workbench }) =>
   await expect(page).not.toHaveURL(/by=/u);
 });
 
-test("adding a card from Scryfall writes it and a workbench batch line", async ({
+test("adding a card from Scryfall writes it with its function tags and a batch line", async ({
   page,
   workbench,
 }) => {
@@ -454,10 +454,10 @@ test("adding a card from Scryfall writes it and a workbench batch line", async (
   const entry = await readEntry(workbench.cardsDir, "lightning-bolt");
   expect(entry).toMatchObject({
     status: "draft",
-    tags: [],
     notes: "",
     source: { batch: "workbench", input: "[  ] Lightning Bolt" },
   });
+  expect(entry.tags).toContain("removal");
   const batch = await readFile(join(workbench.cardsDir, "..", "inbox", "workbench.txt"), "utf8");
   expect(batch.split("\n")[entry.source.line - 1]).toBe("[  ] Lightning Bolt");
 

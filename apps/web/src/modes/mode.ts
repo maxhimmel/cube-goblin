@@ -1,14 +1,13 @@
 import type { CardStatus, SnapshotCard, Tag } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 
-export type GridCard = SnapshotCard & { tags?: string[] };
+export type GridCard = SnapshotCard;
 
 export interface CubeView {
   cards: GridCard[];
   vocabulary: Tag[];
   label: string;
   size?: { min: number; max: number } | undefined;
-  functionsAsOf?: string | undefined;
 }
 
 export interface Mode {

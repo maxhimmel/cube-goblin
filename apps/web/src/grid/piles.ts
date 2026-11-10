@@ -54,7 +54,7 @@ function byType(cube: CubeView): Pile[] {
 }
 
 function hasTag(card: GridCard, id: string): boolean {
-  return card.tags?.includes(id) ?? false;
+  return card.tags.includes(id);
 }
 
 function byTagKind(kind: TagKind): (cube: CubeView) => Pile[] {

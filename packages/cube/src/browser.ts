@@ -80,14 +80,6 @@ export {
 } from "./stats.ts";
 export type { Bucket, BucketKind, Count, CubeStats, GridCell, StatCard } from "./stats.ts";
 export {
-  CARD_FUNCTIONS,
-  CARD_FUNCTION_IDS,
-  FUNCTION_ORACLE_TAG_IDS,
-  cardFunctions,
-  producesFixing,
-} from "./functions.ts";
-export type { CardFunction } from "./functions.ts";
-export {
   EMPTY_BOARD,
   addSection,
   changeSection,

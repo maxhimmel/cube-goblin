@@ -97,7 +97,6 @@ export const mode: Mode = {
         vocabulary: data.vocabulary,
         label: "live from cube/cards",
         size: data.size,
-        functionsAsOf: data.functionsAsOf,
       }
     );
   },

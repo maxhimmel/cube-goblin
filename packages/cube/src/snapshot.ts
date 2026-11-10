@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { CARD_FUNCTION_IDS } from "./functions.ts";
 import { cardStatusSchema, cubeConfigSchema, tagSchema } from "./schema.ts";
 
 export const snapshotCardSchema = z.strictObject({
@@ -14,7 +13,7 @@ export const snapshotCardSchema = z.strictObject({
   colors: z.array(z.string()),
   power: z.string().optional(),
   toughness: z.string().optional(),
-  functions: z.array(z.enum(CARD_FUNCTION_IDS)),
+  tags: z.array(z.string()),
   image: z.string(),
   imageLarge: z.string(),
   scryfallUri: z.string(),
@@ -24,7 +23,7 @@ export const snapshotSchema = z.strictObject({
   id: z.string(),
   createdAt: z.string(),
   cards: z.array(snapshotCardSchema),
-  functionsAsOf: z.string().optional(),
+  vocabulary: z.array(tagSchema),
 });
 
 export const printingSchema = z.strictObject({
@@ -42,7 +41,6 @@ export const printingSchema = z.strictObject({
 export const workbenchCardSchema = snapshotCardSchema.extend({
   printing: z.string().optional(),
   shown: printingSchema.pick({ id: true, setName: true, collectorNumber: true }),
-  tags: z.array(z.string()),
   notes: z.string(),
 });
 
@@ -50,7 +48,6 @@ export const workbenchSchema = z.strictObject({
   cards: z.array(workbenchCardSchema),
   vocabulary: z.array(tagSchema),
   size: cubeConfigSchema.shape.size,
-  functionsAsOf: z.string().optional(),
 });
 
 export const searchResultSchema = z.strictObject({

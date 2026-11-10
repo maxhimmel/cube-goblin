@@ -704,6 +704,26 @@ test("the Wall shows names and costs, previews on hover, and opens the pane", as
   await expect(page).toHaveURL(/by=color/u);
 });
 
+test("opening and closing a card keeps the scroll position", async ({ page, workbench }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${workbench.url}#/cards`);
+  const tiles = page.locator("a.tile");
+  await expect(tiles.first()).toBeVisible();
+  const tile = tiles.nth(40);
+  await tile.scrollIntoViewIfNeeded();
+  const before = await page.evaluate(() => window.scrollY);
+  expect(before).toBeGreaterThan(0);
+
+  await tile.click();
+  await expect(page).toHaveURL(/[?&]card=/u);
+  await expect(page.locator("aside.pane h1")).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page).not.toHaveURL(/card=/u);
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+});
+
 test("dragging a card between the Wall and the tray changes its status", async ({
   page,
   workbench,

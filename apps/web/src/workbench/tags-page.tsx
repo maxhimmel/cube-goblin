@@ -2,6 +2,7 @@ import type { Tag, TagKind, Workbench } from "@repo/cube/browser";
 import { TAG_KINDS } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { TagOverlap } from "../overlaps/overlap.tsx";
 import { useChangeTag, useCreateTag } from "./tags.ts";
 
 const KIND_LABELS: Record<TagKind, string> = { archetype: "Archetypes", group: "Groups" };
@@ -125,7 +126,8 @@ export function TagsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
   }
   return (
     <div className="tags-page">
-      <h1>Tags</h1>
+      <TagOverlap />
+      <h2>Manage tags</h2>
       <p className="muted">
         Renaming changes the label only. Cards keep the tag id, so no card files change.
       </p>
@@ -134,9 +136,9 @@ export function TagsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
         const tags = cube.vocabulary.filter((tag) => tag.kind === kind);
         return (
           <section key={kind} data-kind={kind}>
-            <h2>
+            <h3>
               {KIND_LABELS[kind]} <span className="muted">({tags.length})</span>
-            </h2>
+            </h3>
             {tags.length === 0 ? (
               <p className="muted">None yet.</p>
             ) : (

@@ -13,6 +13,7 @@ import "./wall.css";
 import "./pane.css";
 import "./board.css";
 import "./insights/insights.css";
+import "./overlaps/overlap.css";
 
 const root = document.getElementById("root");
 if (!root) {

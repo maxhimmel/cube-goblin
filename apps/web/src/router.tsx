@@ -78,6 +78,10 @@ const insightsRoute = createRoute({
 const tagsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tags",
+  validateSearch: (search: Record<string, unknown>): { tags?: string | undefined } => {
+    const tags = parseTagList(search["tags"]);
+    return tags.length > 0 ? { tags: tags.join(",") } : {};
+  },
   component: () => <mode.TagsPage />,
 });
 

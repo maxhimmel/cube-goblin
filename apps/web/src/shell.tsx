@@ -47,6 +47,9 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
               Board
             </Link>
           )}
+          <Link to="/tags" activeOptions={{ includeSearch: false }}>
+            Tags
+          </Link>
           <Link to="/insights" activeOptions={{ includeSearch: false }}>
             Insights
           </Link>

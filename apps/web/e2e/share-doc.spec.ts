@@ -96,3 +96,25 @@ test("share doc shows insights from the snapshot", async ({ page }) => {
   ).toHaveCount(creatures);
   expect(errors).toEqual([]);
 });
+
+test("share doc shows tag overlaps from the snapshot", async ({ page }) => {
+  const considered = snapshot.cards.filter((card) => card.status !== "cut");
+  const counts = new Map<string, number>();
+  for (const card of considered) {
+    for (const tag of card.tags) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  const [first, second] = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tag]) => tag);
+  if (first === undefined || second === undefined) {
+    throw new Error("the snapshot needs two tags");
+  }
+  const both = considered.filter(
+    (card) => card.tags.includes(first) && card.tags.includes(second),
+  ).length;
+  await page.goto(`${DOC_URL}#/tags?tags=${first},${second}`);
+  const venn = page.getByRole("img", { name: /^Venn diagram/u });
+  await expect(venn.locator('[data-key="0+1"]')).toHaveText(String(both));
+  const numbers = await page.locator(".overlap-number").allTextContents();
+  expect(numbers.reduce((sum, value) => sum + Number(value), 0)).toBe(considered.length);
+});

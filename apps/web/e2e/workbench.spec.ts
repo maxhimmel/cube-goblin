@@ -1026,3 +1026,52 @@ test("a chosen printing that can't be found falls back and says so", async ({
   await writeFile(path, `${JSON.stringify(entry, null, 2)}\n`);
   await expect(page.getByRole("note")).toHaveCount(0);
 });
+
+test("the tags view counts overlaps and filters the Wall to one", async ({ page, workbench }) => {
+  for (const label of ["Overlap A", "Overlap B"]) {
+    const created = await page.request.post(`${workbench.url}api/tags`, {
+      data: { label, kind: "group" },
+    });
+    expect(created.status()).toBe(200);
+  }
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: {
+      changes: [
+        { slug: "adanto-vanguard", patch: { addTags: ["overlap-a", "overlap-b"] } },
+        { slug: "awaken-the-honored-dead", patch: { addTags: ["overlap-b"] } },
+        { slug: "biotech-specialist", patch: { addTags: ["overlap-a"] } },
+      ],
+    },
+  });
+  expect(patched.status()).toBe(200);
+  await page.goto(`${workbench.url}#/`);
+  await page.getByRole("navigation", { name: "Views" }).getByRole("link", { name: "Tags" }).click();
+  await page.getByRole("button", { name: "Overlap A 2" }).click();
+  await page.getByRole("button", { name: "Overlap B 2" }).click();
+  await expect(page).toHaveURL(/tags=overlap-a%2Coverlap-b/u);
+
+  const venn = page.getByRole("img", { name: /^Venn diagram of Overlap A, Overlap B/u });
+  await expect(venn.locator('[data-key="0"]')).toHaveText("1");
+  await expect(venn.locator('[data-key="1"]')).toHaveText("1");
+  await expect(venn.locator('[data-key="0+1"]')).toHaveText("1");
+
+  await page.getByRole("link", { name: "Overlap A + Overlap B: 1 cards" }).click();
+  await expect(page).toHaveURL(/#\/\?with=overlap-a%2Coverlap-b$/u);
+  const filter = page.getByRole("status", { name: "Tag filter" });
+  await expect(filter).toContainText("Tagged Overlap A + Overlap B");
+  await expect(page.locator(".strip-name")).toHaveText(["Adanto Vanguard"]);
+
+  await page.goBack();
+  const label = await venn.locator('[data-key="0"]').boundingBox();
+  if (!label) {
+    throw new Error("no Overlap A-only label");
+  }
+  await page.mouse.click(label.x + label.width / 2, label.y - 12);
+  await expect(page).toHaveURL(/with=overlap-a&without=overlap-b/u);
+  await expect(filter).toContainText("Tagged Overlap A, not Overlap B");
+  await expect(page.locator(".strip-name")).toHaveText(["Biotech Specialist"]);
+
+  await filter.getByRole("button", { name: "Clear filter" }).click();
+  await expect(filter).toHaveCount(0);
+  await expect(page).not.toHaveURL(/with=/u);
+});

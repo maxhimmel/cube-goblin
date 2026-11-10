@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { snapshot } from "../data.ts";
+import { TagOverlap } from "../overlaps/overlap.tsx";
 import {
   downloadSavedDocument,
   reviewCode,
@@ -113,7 +114,7 @@ export const mode: Mode = {
   Toolbar,
   CardPanel,
   CardImageCaption: () => null,
-  TagsPage: () => <p className="muted">Tags are edited in the workbench.</p>,
+  TagsPage: TagOverlap,
   BoardPage: () => <p className="muted">The board lives in the workbench.</p>,
   SelectCard: () => null,
   SelectPile: () => null,

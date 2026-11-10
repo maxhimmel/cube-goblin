@@ -1,0 +1,214 @@
+:root {
+  --set-1: #2a78d6;
+  --set-2: #eb6834;
+  --set-3: #1baf7a;
+  --overlap-bar: color-mix(in oklab, var(--set-1) 30%, var(--strip));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --set-1: #3987e5;
+    --set-2: #d95926;
+    --set-3: #199e70;
+  }
+}
+
+.overlap {
+  margin-bottom: 32px;
+}
+
+.overlap h1 {
+  margin-bottom: 4px;
+}
+
+.overlap-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 20px;
+}
+
+.overlap-picker-kind {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.overlap-picker-kind > .muted {
+  min-width: 90px;
+  font-size: 0.85rem;
+}
+
+.overlap-tag {
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
+.overlap-tag[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.overlap-tag[aria-pressed="true"] .muted {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.overlap-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 40px;
+  align-items: flex-start;
+}
+
+.venn {
+  margin: 0;
+  width: min(100%, 440px);
+  padding: 12px;
+  background: var(--strip);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.venn svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.venn svg[data-region] {
+  cursor: pointer;
+}
+
+.venn-set {
+  fill: var(--set);
+  fill-opacity: 0.16;
+  stroke: var(--set);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.venn-highlight {
+  fill: var(--fg);
+  fill-opacity: 0.14;
+  pointer-events: none;
+}
+
+.venn-name {
+  fill: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.venn-count {
+  fill: var(--fg);
+  font-size: 18px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.venn-count[data-empty="true"] {
+  fill: var(--muted);
+  font-weight: 400;
+}
+
+.venn figcaption {
+  margin-top: 8px;
+  min-height: 1.45em;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.overlap-table {
+  border-collapse: collapse;
+  min-width: 260px;
+}
+
+.overlap-table th {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  vertical-align: bottom;
+}
+
+.overlap-table th:last-child {
+  text-align: left;
+}
+
+.overlap-tag-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.overlap-table[data-wide="true"] .overlap-tag-head span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.overlap-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.overlap-table td {
+  padding: 3px 10px;
+}
+
+.overlap-table tbody tr:hover {
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
+.overlap-dot-cell {
+  text-align: center;
+}
+
+.overlap-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  vertical-align: middle;
+}
+
+.overlap-dot[data-on="true"] {
+  background: var(--fg);
+  border-color: var(--strip);
+}
+
+.overlap-count {
+  width: 200px;
+}
+
+.overlap-count a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.overlap-bar {
+  height: 100%;
+  min-width: 2px;
+  background: var(--overlap-bar);
+  border-radius: 0 4px 4px 0;
+}
+
+.overlap-number {
+  margin-left: 8px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlap-none {
+  text-align: center;
+  font-size: 0.85rem;
+}

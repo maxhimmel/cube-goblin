@@ -30,7 +30,7 @@
 }
 
 .pool-head,
-.section-head {
+.board-section-head {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -38,7 +38,7 @@
 }
 
 .pool-head input,
-.section-label {
+.board-section-label {
   flex: 1;
   min-width: 0;
   height: 100%;
@@ -46,7 +46,7 @@
 }
 
 .pool-filters,
-.section-tag {
+.board-section-tag {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -55,8 +55,8 @@
 }
 
 .pool-filters button,
-.section-tag button,
-.section-tag select {
+.board-section-tag button,
+.board-section-tag select {
   height: 100%;
   box-sizing: border-box;
   padding-block: 0;
@@ -83,7 +83,7 @@
   padding: 0 var(--pad) 12px;
 }
 
-.sections {
+.board-sections {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   align-content: start;
@@ -93,7 +93,7 @@
   padding: 0 4px 16px 0;
 }
 
-.section {
+.board-section {
   display: grid;
   grid-row: span 4;
   grid-template-rows: subgrid;
@@ -106,20 +106,20 @@
   background: var(--panel);
 }
 
-.section-label {
+.board-section-label {
   border: 1px solid transparent;
   background: none;
   font: inherit;
   font-weight: 700;
 }
 
-.section-label:hover,
-.section-label:focus {
+.board-section-label:hover,
+.board-section-label:focus {
   border-color: var(--line);
   background: var(--field);
 }
 
-.section-delete,
+.board-section-delete,
 .strip-remove {
   border: 0;
   background: none;
@@ -139,17 +139,17 @@
   opacity: 1;
 }
 
-.section-cards {
+.board-section-cards {
   min-height: 34px;
 }
 
-.section-cards .strip-cell,
+.board-section-cards .strip-cell,
 .pool-cards .strip-cell {
   display: flex;
   align-items: center;
 }
 
-.section-cards .strip {
+.board-section-cards .strip {
   flex: 1;
   min-width: 0;
 }
@@ -163,12 +163,12 @@
   opacity: 0.5;
 }
 
-.section-add input {
+.board-section-add input {
   width: 100%;
   box-sizing: border-box;
 }
 
-.section-new {
+.board-section-new {
   display: flex;
   flex-direction: column;
   min-height: 160px;
@@ -181,7 +181,7 @@
   cursor: pointer;
 }
 
-.section[data-drop="over"],
+.board-section[data-drop="over"],
 .pool[data-drop="over"] {
   outline: 3px dashed var(--accent);
   outline-offset: -3px;

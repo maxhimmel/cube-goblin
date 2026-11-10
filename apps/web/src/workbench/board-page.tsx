@@ -99,7 +99,7 @@ function SectionLabel({ section, autoFocus }: { section: Section; autoFocus: boo
 
   return (
     <input
-      className="section-label"
+      className="board-section-label"
       aria-label="Section name"
       value={label ?? section.label}
       autoFocus={autoFocus}
@@ -132,7 +132,7 @@ function SectionTag({ section, cube }: { section: Section; cube: Workbench }): R
   };
   if (linked) {
     return (
-      <div className="section-tag">
+      <div className="board-section-tag">
         <span className="chip" data-kind={linked.kind}>
           tag · {linked.label}
         </span>
@@ -145,7 +145,7 @@ function SectionTag({ section, cube }: { section: Section; cube: Workbench }): R
     );
   }
   return (
-    <div className="section-tag">
+    <div className="board-section-tag">
       {known ? (
         <span className="muted">Tag {known.label} exists</span>
       ) : (
@@ -180,7 +180,7 @@ function AddToSection({
   const [name, setName] = useState("");
   return (
     <form
-      className="section-add"
+      className="board-section-add"
       onSubmit={(event) => {
         event.preventDefault();
         const wanted = name.trim().toLowerCase();
@@ -235,17 +235,17 @@ function SectionBox({
   );
   return (
     <section
-      className="section"
+      className="board-section"
       data-section={section.id}
       aria-label={`Section ${section.label}`}
       {...drop}
     >
-      <header className="section-head">
+      <header className="board-section-head">
         <SectionLabel section={section} autoFocus={fresh} />
         <span className="column-count">{cards.length}</span>
         <button
           type="button"
-          className="section-delete"
+          className="board-section-delete"
           aria-label={`Delete section ${section.label}`}
           onClick={() => {
             editBoardWithUndo(
@@ -259,7 +259,7 @@ function SectionBox({
         </button>
       </header>
       <SectionTag section={section} cube={cube} />
-      <ul className="stack section-cards">
+      <ul className="stack board-section-cards">
         {cards.map((card) => (
           <Strip
             key={card.slug}
@@ -386,7 +386,7 @@ function NewSection({
   return (
     <button
       type="button"
-      className="section section-new"
+      className="board-section board-section-new"
       onClick={() => {
         create([]);
       }}
@@ -504,7 +504,7 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
         <SortPicker sort={sort} />
       </div>
       <Pool pool={pool} placed={placed} onHover={setHover} />
-      <div className="sections">
+      <div className="board-sections">
         {board.sections.map((section, index) => (
           <SectionBox
             key={section.id}

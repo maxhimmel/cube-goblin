@@ -2,7 +2,10 @@
   "name": "Detective's Satchel",
   "oracleId": "e4ecfccd-b8b4-4b18-b989-30de79b4971e",
   "status": "draft",
-  "tags": ["enabler"],
+  "printing": "2c05bf2d-7d4f-4717-b1ea-ec4284854f4f",
+  "tags": [
+    "enabler"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

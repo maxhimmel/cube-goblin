@@ -3,7 +3,10 @@
   "oracleId": "8c411f4e-a091-447c-9450-d895b10b4985",
   "status": "prospect",
   "section": "dinosaurs",
-  "tags": ["big-ass-foo"],
+  "printing": "3bd78731-949c-464a-826a-92f86d784911",
+  "tags": [
+    "big-ass-foo"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

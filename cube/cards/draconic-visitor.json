@@ -2,7 +2,10 @@
   "name": "Draconic Visitor",
   "oracleId": "6745e850-68f6-480b-a1e0-e06180dde169",
   "status": "draft",
-  "tags": ["payoff"],
+  "printing": "112f8478-bd89-4a14-9721-8ab750613129",
+  "tags": [
+    "payoff"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

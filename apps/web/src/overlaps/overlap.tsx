@@ -2,9 +2,14 @@ import { mode } from "#mode";
 import type { Overlap, Tag } from "@repo/cube/browser";
 import {
   TAG_KINDS,
+  TAG_KIND_LABELS,
+  cardCount,
+  describeFilter,
   overlapFilter,
   overlapKey,
   parseTagList,
+  tagCounts,
+  tagLabel as label,
   tagOverlaps,
 } from "@repo/cube/browser";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
@@ -14,26 +19,14 @@ import type { GridCard } from "../modes/mode.ts";
 import type { VennLayout } from "./geometry.ts";
 import { VENN_LAYOUTS, inside } from "./geometry.ts";
 
-const KIND_LABELS: Record<(typeof TAG_KINDS)[number], string> = {
-  archetype: "Archetypes",
-  group: "Groups",
-};
-
 const SET_HUES = ["var(--set-1)", "var(--set-2)", "var(--set-3)"];
 
-function label(id: string, vocabulary: readonly Tag[]): string {
-  return vocabulary.find((tag) => tag.id === id)?.label ?? id;
-}
-
-function describe(tags: readonly string[], picked: readonly string[], vocabulary: readonly Tag[]) {
-  if (tags.length === 0) {
-    return "None of these tags";
-  }
-  const names = tags.map((id) => label(id, vocabulary)).join(" + ");
-  const rest = picked.filter((id) => !tags.includes(id));
-  return rest.length === 0
-    ? names
-    : `${names}, not ${rest.map((id) => label(id, vocabulary)).join(" or ")}`;
+function describe(
+  tags: readonly string[],
+  picked: readonly string[],
+  vocabulary: readonly Tag[],
+): string {
+  return describeFilter(overlapFilter(picked, tags), vocabulary);
 }
 
 function wallSearch(picked: readonly string[], tags: readonly string[]) {
@@ -71,9 +64,9 @@ function TagPicker({
             key={kind}
             className="overlap-picker-kind"
             role="group"
-            aria-label={KIND_LABELS[kind]}
+            aria-label={TAG_KIND_LABELS[kind]}
           >
-            <span className="muted">{KIND_LABELS[kind]}</span>
+            <span className="muted">{TAG_KIND_LABELS[kind]}</span>
             {tags.map((tag) => {
               const on = picked.includes(tag.id);
               const count = counts.get(tag.id) ?? 0;
@@ -225,10 +218,10 @@ function Venn({
           );
         })}
       </svg>
-      <figcaption className="muted" aria-live="polite">
+      <figcaption className="muted">
         {hovered === undefined
           ? "Click a region to show its cards on the Wall."
-          : `${describe(hovered, picked, vocabulary)} · ${String(counts.get(hover ?? "")?.cards.length ?? 0)} cards`}
+          : `${describe(hovered, picked, vocabulary)} · ${cardCount(counts.get(hover ?? "")?.cards.length ?? 0)}`}
       </figcaption>
     </figure>
   );
@@ -279,6 +272,7 @@ function OverlapTable({
                         className="overlap-dot"
                         data-on={on}
                         style={on && hued ? { background: SET_HUES[index] } : undefined}
+                        role="img"
                         aria-label={on ? label(tag, vocabulary) : `not ${label(tag, vocabulary)}`}
                       />
                     </td>
@@ -288,7 +282,7 @@ function OverlapTable({
                 <Link
                   to="/"
                   search={wallSearch(picked, overlap.tags)}
-                  aria-label={`${describe(overlap.tags, picked, vocabulary)}: ${String(count)} cards`}
+                  aria-label={`${describe(overlap.tags, picked, vocabulary)}: ${cardCount(count)}`}
                 >
                   <span
                     className="overlap-bar"
@@ -315,12 +309,7 @@ export function TagOverlap(): ReactNode {
   const cards = cube.cards.filter((card) => card.status !== "cut");
   const known = new Set(cube.vocabulary.map((tag) => tag.id));
   const picked = parseTagList(search.tags).filter((tag) => known.has(tag));
-  const counts = new Map<string, number>();
-  for (const card of cards) {
-    for (const tag of card.tags) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    }
-  }
+  const counts = tagCounts(cards);
   const overlaps = tagOverlaps(cards, picked);
 
   return (

@@ -1055,7 +1055,7 @@ test("the tags view counts overlaps and filters the Wall to one", async ({ page,
   await expect(venn.locator('[data-key="1"]')).toHaveText("1");
   await expect(venn.locator('[data-key="0+1"]')).toHaveText("1");
 
-  await page.getByRole("link", { name: "Overlap A + Overlap B: 1 cards" }).click();
+  await page.getByRole("link", { name: "Overlap A + Overlap B: 1 card" }).click();
   await expect(page).toHaveURL(/#\/\?with=overlap-a%2Coverlap-b$/u);
   const filter = page.getByRole("status", { name: "Tag filter" });
   await expect(filter).toContainText("Tagged Overlap A + Overlap B");

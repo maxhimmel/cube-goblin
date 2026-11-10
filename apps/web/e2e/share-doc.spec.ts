@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, test } from "@playwright/test";
-import { extractReview, reviewSchema } from "@repo/cube/browser";
+import { extractReview, reviewSchema, tagCounts } from "@repo/cube/browser";
 import lzString from "lz-string";
 import snapshot from "../src/generated/snapshot.json" with { type: "json" };
 
@@ -99,12 +99,7 @@ test("share doc shows insights from the snapshot", async ({ page }) => {
 
 test("share doc shows tag overlaps from the snapshot", async ({ page }) => {
   const considered = snapshot.cards.filter((card) => card.status !== "cut");
-  const counts = new Map<string, number>();
-  for (const card of considered) {
-    for (const tag of card.tags) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    }
-  }
+  const counts = tagCounts(considered);
   const [first, second] = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tag]) => tag);
   if (first === undefined || second === undefined) {
     throw new Error("the snapshot needs two tags");

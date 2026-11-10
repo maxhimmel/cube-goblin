@@ -1,6 +1,13 @@
 import { mode } from "#mode";
 import type { CardStatus, Column, ColumnAxis, Tag, TagFilter } from "@repo/cube/browser";
-import { COLUMN_AXES, columnsBy, matchesTags, parseTagList } from "@repo/cube/browser";
+import {
+  COLUMN_AXES,
+  cardCount,
+  columnsBy,
+  describeFilter,
+  matchesTags,
+  parseTagList,
+} from "@repo/cube/browser";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { useState } from "react";
@@ -67,10 +74,6 @@ function Columns({
   );
 }
 
-function tagNames(ids: readonly string[], vocabulary: readonly Tag[]): string {
-  return ids.map((id) => vocabulary.find((tag) => tag.id === id)?.label ?? id).join(" + ");
-}
-
 function TagFilterBar({
   filter,
   vocabulary,
@@ -84,20 +87,10 @@ function TagFilterBar({
   return (
     <div className="tag-filter" role="status" aria-label="Tag filter">
       <span>
-        {filter.with.length > 0 ? (
-          <>
-            Tagged <strong>{tagNames(filter.with, vocabulary)}</strong>
-          </>
-        ) : (
-          "No tags"
-        )}
-        {filter.with.length > 0 && filter.without.length > 0 && ", not "}
-        {filter.with.length === 0 && filter.without.length > 0 && " from "}
-        {filter.without.length > 0 && <strong>{tagNames(filter.without, vocabulary)}</strong>}
+        {filter.with.length > 0 && "Tagged "}
+        <strong>{describeFilter(filter, vocabulary)}</strong>
       </span>
-      <span className="muted">
-        {count} {count === 1 ? "card" : "cards"}
-      </span>
+      <span className="muted">{cardCount(count)}</span>
       <button
         type="button"
         onClick={() => {
@@ -156,11 +149,7 @@ export function WallPage(): ReactNode {
   const cube = mode.useCube();
   const search = useSearch({ from: "/" });
   const { by } = search;
-  const filter: TagFilter = {
-    with: parseTagList(search.with),
-    without: parseTagList(search.without),
-  };
-  const filtered = filter.with.length + filter.without.length > 0;
+
   const navigate = useNavigate();
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [trayOpen, setTrayOpen] = useState(true);
@@ -170,6 +159,12 @@ export function WallPage(): ReactNode {
   if (!cube) {
     return <p className="muted">Loading cube…</p>;
   }
+  const known = new Set(cube.vocabulary.map((tag) => tag.id));
+  const filter: TagFilter = {
+    with: parseTagList(search.with).filter((tag) => known.has(tag)),
+    without: parseTagList(search.without).filter((tag) => known.has(tag)),
+  };
+  const filtered = filter.with.length + filter.without.length > 0;
   const axis: ColumnAxis = COLUMN_AXES.find((option) => option.id === by)?.id ?? "mv";
   const shown = filtered ? cube.cards.filter((card) => matchesTags(card, filter)) : cube.cards;
   const draftCards = shown.filter((card) => card.status === "draft");

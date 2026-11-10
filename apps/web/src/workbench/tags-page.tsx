@@ -1,11 +1,9 @@
 import type { Tag, TagKind, Workbench } from "@repo/cube/browser";
-import { TAG_KINDS } from "@repo/cube/browser";
+import { TAG_KINDS, TAG_KIND_LABELS, tagCounts } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { TagOverlap } from "../overlaps/overlap.tsx";
 import { useChangeTag, useCreateTag } from "./tags.ts";
-
-const KIND_LABELS: Record<TagKind, string> = { archetype: "Archetypes", group: "Groups" };
 
 function TagRow({ tag, count }: { tag: Tag; count: number }): ReactNode {
   const changeTag = useChangeTag();
@@ -118,12 +116,7 @@ export function TagsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
   if (!cube) {
     return <p className="muted">Loading cube…</p>;
   }
-  const counts = new Map<string, number>();
-  for (const card of cube.cards) {
-    for (const tag of card.tags) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    }
-  }
+  const counts = tagCounts(cube.cards);
   return (
     <div className="tags-page">
       <TagOverlap />
@@ -137,7 +130,7 @@ export function TagsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
         return (
           <section key={kind} data-kind={kind}>
             <h3>
-              {KIND_LABELS[kind]} <span className="muted">({tags.length})</span>
+              {TAG_KIND_LABELS[kind]} <span className="muted">({tags.length})</span>
             </h3>
             {tags.length === 0 ? (
               <p className="muted">None yet.</p>
@@ -148,7 +141,7 @@ export function TagsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
                     <th>Label</th>
                     <th>Kind</th>
                     <th>Id</th>
-                    <th>Cards</th>
+                    <th>All cards</th>
                   </tr>
                 </thead>
                 <tbody>

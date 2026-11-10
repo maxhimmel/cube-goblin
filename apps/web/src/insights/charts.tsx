@@ -1,6 +1,5 @@
 import type { Count, GridCell } from "@repo/cube/browser";
 import { barX, barY, cell, defineChart, dot, lineY, link, rect, text } from "@tanstack/charts";
-import { Chart } from "@tanstack/charts/react";
 import { Chart as RendererChart } from "@tanstack/charts/react/core";
 import { motion } from "@tanstack/charts/motion";
 import { scaleBand } from "@tanstack/charts/scales/band";
@@ -13,6 +12,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 export type TickLabel = (id: string) => ReactNode;
 
 export type BarFill = string | ((row: Count) => string);
+
+const CHART_MOTION = motion({
+  initial: false,
+  transition: { type: "spring", stiffness: 260, damping: 24, mass: 0.8 },
+});
 
 const BAR = "var(--chart-bar)";
 const BAR_THICKNESS = 24;
@@ -221,7 +225,8 @@ export function ColumnChart({
           onPick={onPick}
         />
       )}
-      <Chart
+      <RendererChart
+        renderer={CHART_MOTION}
         definition={definition}
         ariaLabel={name}
         height={height ?? 220}
@@ -290,7 +295,8 @@ export function RowChart({ rows, name, fill = BAR, tick, selected, onPick }: Bar
           onPick={onPick}
         />
       )}
-      <Chart
+      <RendererChart
+        renderer={CHART_MOTION}
         definition={definition}
         ariaLabel={name}
         height={height ?? rows.length * 34 + 12}
@@ -449,7 +455,8 @@ export function StackedRowChart({
           }
         />
       )}
-      <Chart
+      <RendererChart
+        renderer={CHART_MOTION}
         definition={definition}
         ariaLabel={name}
         height={height ?? rows.length * 34 + 12}
@@ -586,7 +593,8 @@ export function HeatChart({
         overlayRef={columnOverlay.ref}
         label={`${name} columns`}
       />
-      <Chart
+      <RendererChart
+        renderer={CHART_MOTION}
         definition={definition}
         ariaLabel={name}
         height={height ?? rows.length * 36 + 44}
@@ -814,7 +822,8 @@ export function CreatureChart({
   return (
     <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
       <TickOverlay ids={ids} tick={tick} axis="x" overlayRef={overlay.ref} label={`${name} axis`} />
-      <Chart
+      <RendererChart
+        renderer={CHART_MOTION}
         definition={definition}
         ariaLabel={name}
         height={height ?? 300}
@@ -972,11 +981,6 @@ function nearestPile(
     .sort((a, b) => a.gap - b.gap)[0];
   return near?.key;
 }
-
-const FAN_MOTION = motion({
-  initial: false,
-  transition: { type: "spring", stiffness: 260, damping: 24, mass: 0.8 },
-});
 
 export function MatchupChart({
   points,
@@ -1194,7 +1198,7 @@ export function MatchupChart({
         Kills
       </span>
       <RendererChart
-        renderer={FAN_MOTION}
+        renderer={CHART_MOTION}
         definition={definition}
         ariaLabel={name}
         height={height ?? 420}

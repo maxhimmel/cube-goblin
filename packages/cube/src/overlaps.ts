@@ -1,3 +1,5 @@
+import type { Tag } from "./schema.ts";
+
 export interface Tagged {
   tags: readonly string[];
 }
@@ -68,4 +70,32 @@ export function parseTagList(value: unknown): string[] {
     return [];
   }
   return [...new Set(value.split(",").filter((tag) => tag !== ""))];
+}
+
+export function tagLabel(id: string, vocabulary: readonly Tag[]): string {
+  return vocabulary.find((tag) => tag.id === id)?.label ?? id;
+}
+
+export function tagCounts(cards: readonly Tagged[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const card of cards) {
+    for (const tag of card.tags) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+export function cardCount(count: number): string {
+  return `${String(count)} ${count === 1 ? "card" : "cards"}`;
+}
+
+export function describeFilter(filter: TagFilter, vocabulary: readonly Tag[]): string {
+  const names = (ids: readonly string[], joiner: string): string =>
+    ids.map((id) => tagLabel(id, vocabulary)).join(joiner);
+  if (filter.with.length === 0) {
+    return filter.without.length === 0 ? "Every card" : `None of ${names(filter.without, " or ")}`;
+  }
+  const tagged = names(filter.with, " + ");
+  return filter.without.length === 0 ? tagged : `${tagged}, not ${names(filter.without, " or ")}`;
 }

@@ -73,6 +73,11 @@ export const newCardSchema = z.strictObject({
 
 export const TAG_KINDS = ["archetype", "group"] as const;
 
+export const TAG_KIND_LABELS: Record<(typeof TAG_KINDS)[number], string> = {
+  archetype: "Archetypes",
+  group: "Groups",
+};
+
 export const tagKindSchema = z.enum(TAG_KINDS);
 
 export const tagSchema = z.strictObject({

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { matchesTags, overlapFilter, parseTagList, tagOverlaps } from "./overlaps.ts";
+import {
+  cardCount,
+  describeFilter,
+  matchesTags,
+  overlapFilter,
+  parseTagList,
+  tagCounts,
+  tagOverlaps,
+} from "./overlaps.ts";
 
 const cards = [
   { name: "Shock", tags: ["removal", "burn"] },
@@ -58,5 +66,28 @@ describe("parseTagList", () => {
   it("splits on commas and drops blanks and repeats", () => {
     expect(parseTagList("a,,b,a")).toEqual(["a", "b"]);
     expect(parseTagList(undefined)).toEqual([]);
+  });
+});
+
+describe("describeFilter", () => {
+  const vocabulary = [
+    { id: "a", label: "A", kind: "group" as const },
+    { id: "b", label: "B", kind: "group" as const },
+    { id: "c", label: "C", kind: "group" as const },
+  ];
+
+  it("joins kept tags with + and left-out tags with or", () => {
+    expect(describeFilter({ with: ["a", "b"], without: ["c"] }, vocabulary)).toBe("A + B, not C");
+    expect(describeFilter({ with: ["a"], without: ["b", "c"] }, vocabulary)).toBe("A, not B or C");
+    expect(describeFilter({ with: [], without: ["a", "b"] }, vocabulary)).toBe("None of A or B");
+    expect(describeFilter({ with: ["gone"], without: [] }, vocabulary)).toBe("gone");
+  });
+});
+
+describe("tagCounts and cardCount", () => {
+  it("counts cards per tag and says card or cards", () => {
+    expect(tagCounts(cards).get("removal")).toBe(3);
+    expect(cardCount(1)).toBe("1 card");
+    expect(cardCount(2)).toBe("2 cards");
   });
 });

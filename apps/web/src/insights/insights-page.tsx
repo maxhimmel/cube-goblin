@@ -6,6 +6,9 @@ import {
   CURVE_COLUMNS,
   HEAVY_PIPS,
   creatureBalance,
+  curveKey,
+  isOutlier,
+  size,
   PT_VALUES,
   bucketId,
   cubeStats,
@@ -22,7 +25,14 @@ import type { GridCard } from "../modes/mode.ts";
 import { Block } from "./block.tsx";
 import { BucketPanel } from "./bucket-panel.tsx";
 import type { BarFill, StackedRow, TickLabel } from "./charts.tsx";
-import { ColumnChart, CountTable, HeatChart, RowChart, StackedRowChart } from "./charts.tsx";
+import {
+  ColumnChart,
+  CountTable,
+  CreatureChart,
+  HeatChart,
+  RowChart,
+  StackedRowChart,
+} from "./charts.tsx";
 import type { BlockId, Dashboard } from "./layout.ts";
 import { BLOCKS, BREAKPOINTS, COLS, ROW_HEIGHT, shown, useDashboard } from "./layout.ts";
 
@@ -124,7 +134,25 @@ function BodyLink({ entry }: { entry: Body<GridCard> | undefined }): ReactNode {
 
 function CreatureBalanceView({ cards }: { cards: readonly GridCard[] }): ReactNode {
   const balance = creatureBalance(cards);
+  const navigate = useNavigate();
   const rows = balance.curve.filter((row) => row.count > 0);
+  const columns = balance.curve.flatMap((row) =>
+    row.size ? [{ mv: Number(row.id), ...row.size }] : [],
+  );
+  const spreads = new Map(balance.curve.map((row) => [row.id, row.size]));
+  const points = balance.bodies.map((entry) => {
+    const key = curveKey(entry.card);
+    const range = spreads.get(key);
+    const total = size(entry);
+    return {
+      slug: entry.card.slug,
+      name: entry.card.name,
+      body: `${String(entry.power)}/${String(entry.toughness)}`,
+      mv: Number(key),
+      size: total,
+      outlier: range !== undefined && isOutlier(total, range),
+    };
+  });
   return (
     <div className="creature-balance">
       <div className="stat-tiles" data-testid="creature-tiles">
@@ -134,15 +162,24 @@ function CreatureBalanceView({ cards }: { cards: readonly GridCard[] }): ReactNo
           {...(balance.variable > 0 ? { note: `${String(balance.variable)} vary (* or 0/0)` } : {})}
         />
         <div className="stat-tile">
-          <span className="stat-label">Average body</span>
+          <span className="stat-label">Typical body</span>
           <strong className="stat-value">
             {decimal(balance.power)}/{decimal(balance.toughness)}
           </strong>
+          <span className="muted stat-note">median power / toughness</span>
         </div>
         <div className="stat-tile">
           <span className="stat-label">Stats per mana</span>
           <strong className="stat-value">{decimal(balance.perMana)}</strong>
-          <span className="muted stat-note">power + toughness ÷ mana value</span>
+          <span className="muted stat-note">median (power + toughness) ÷ mana value</span>
+        </div>
+        <div className="stat-tile">
+          <span className="stat-label">Most powerful</span>
+          <BodyLink entry={balance.strongest} />
+        </div>
+        <div className="stat-tile">
+          <span className="stat-label">Toughest</span>
+          <BodyLink entry={balance.toughest} />
         </div>
         <div className="stat-tile">
           <span className="stat-label">Biggest</span>
@@ -153,13 +190,55 @@ function CreatureBalanceView({ cards }: { cards: readonly GridCard[] }): ReactNo
           <BodyLink entry={balance.smallest} />
         </div>
       </div>
+      <figure className="creature-figure">
+        <ul className="creature-legend" aria-hidden="true">
+          <li>
+            <span
+              className="legend-swatch"
+              style={{ background: "var(--chart-dot)", borderRadius: "50%", width: 10 }}
+            />
+            a creature (power + toughness)
+          </li>
+          <li>
+            <span className="legend-swatch" style={{ background: "var(--chart-band)" }} />
+            middle half of each mana value
+          </li>
+          <li>
+            <span
+              className="legend-swatch"
+              style={{ background: "var(--chart-median)", height: 2 }}
+            />
+            median: this cube&apos;s typical rate
+          </li>
+          <li>
+            <span
+              className="legend-swatch"
+              style={{ background: "var(--chart-outlier)", borderRadius: "50%", width: 10 }}
+            />
+            outlier, far from its mana value&apos;s middle half
+          </li>
+        </ul>
+        <CreatureChart
+          points={points}
+          columns={columns}
+          name="Creature size by mana value"
+          tick={curveTick}
+          onPick={(slug) => {
+            void navigate({
+              to: ".",
+              search: (prev) => ({ ...prev, card: slug }),
+              resetScroll: false,
+            });
+          }}
+        />
+      </figure>
       <table className="stat-table balance-table">
         <caption>Creatures by mana value</caption>
         <thead>
           <tr>
             <th scope="col">Mana value</th>
             <th scope="col">Creatures</th>
-            <th scope="col">Average</th>
+            <th scope="col">Typical</th>
             <th scope="col">Smallest</th>
             <th scope="col">Biggest</th>
           </tr>
@@ -499,11 +578,11 @@ export function InsightsPage(): ReactNode {
         </Block>
       );
     }
-    if (id === "creatures") {
+    if (id === "creature-balance") {
       return (
         <Block
           title="Creature balance"
-          caption="Printed bodies. Biggest and smallest go by power + toughness, then power. Creatures with * or 0/0 (they grow with counters or copy something) are left out of averages and extremes."
+          caption="Printed bodies, compared with this cube’s own medians so one huge creature can’t skew them. Biggest and smallest go by power + toughness. Creatures with * or 0/0 (they grow with counters or copy something) are left out. Click a dot or name to open the card."
           collapsed={collapsed}
           onToggle={toggle}
         >

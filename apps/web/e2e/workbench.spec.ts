@@ -882,6 +882,22 @@ test("the board pool filters by status and the board lists its controls", async 
   await expect(pool.locator('.strip-cell[data-status="draft"]')).toHaveCount(0);
   await expect(pool.locator(".strip-cell")).toHaveCount(total - drafted);
   await expect(page.getByRole("list", { name: "Board controls" })).toContainText("Alt copies");
+  await pool.getByRole("button", { name: "Both", exact: true }).click();
+
+  for (const width of [1440, 1000]) {
+    await page.setViewportSize({ width, height: 800 });
+    const burn = page.getByRole("region", { name: "Bin Burn" });
+    const firstPool = await pool.locator(".strip").first().boundingBox();
+    const firstBin = await burn.locator(".strip").first().boundingBox();
+    expect(Math.abs((firstPool?.y ?? 0) - (firstBin?.y ?? 1))).toBeLessThan(1);
+    const box = await burn.boundingBox();
+    for (const remove of await burn.locator(".strip-remove").all()) {
+      const edge = await remove.boundingBox();
+      expect((edge?.x ?? 0) + (edge?.width ?? 0)).toBeLessThanOrEqual(
+        (box?.x ?? 0) + (box?.width ?? 0),
+      );
+    }
+  }
 });
 
 test("promoting a bin tags its cards as one undoable edit", async ({ page, workbench }) => {

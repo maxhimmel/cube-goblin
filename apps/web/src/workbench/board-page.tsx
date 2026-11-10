@@ -293,42 +293,47 @@ function Pool({
   return (
     <aside className="pool" aria-label="Card pool" {...drop}>
       <div className="pool-tools">
-        <input
-          type="search"
-          aria-label="Filter cards"
-          placeholder="Filter cards…"
-          value={filter}
-          onChange={(event) => {
-            setFilter(event.target.value);
-          }}
-        />
-        <div className="segmented" role="group" aria-label="Status">
-          {STATUS_FILTERS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-pressed={option.id === status}
-              onClick={() => {
-                setStatus(option.id);
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <label>
+        <div className="pool-head">
           <input
-            type="checkbox"
-            checked={loose}
+            type="search"
+            aria-label="Filter cards"
+            placeholder="Filter cards…"
+            value={filter}
             onChange={(event) => {
-              setLoose(event.target.checked);
+              setFilter(event.target.value);
             }}
-          />{" "}
-          Only cards in no bin
-        </label>
-        <span className="muted" data-testid="pool-count">
-          {shown.length} cards
-        </span>
+          />
+          <span className="column-count" data-testid="pool-count">
+            {shown.length}
+          </span>
+        </div>
+        <div className="pool-filters">
+          <div className="segmented" role="group" aria-label="Status">
+            {STATUS_FILTERS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={option.id === status}
+                onClick={() => {
+                  setStatus(option.id);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="pool-loose"
+            aria-pressed={loose}
+            title="Only cards in no bin"
+            onClick={() => {
+              setLoose(!loose);
+            }}
+          >
+            No bin
+          </button>
+        </div>
       </div>
       <ul className="stack pool-cards">
         {shown.map((card) => (
@@ -393,39 +398,37 @@ export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode 
   const binned = new Set(board.bins.flatMap((bin) => bin.cards));
   return (
     <div className="board">
+      <ul className="board-help" aria-label="Board controls">
+        <li>
+          <strong>Drag in</strong> adds a card (it can sit in several bins)
+        </li>
+        <li>
+          <strong>Between bins</strong> moves, <kbd>⌥ Alt</kbd> copies
+        </li>
+        <li>
+          <strong>Back to the pool</strong> takes it out
+        </li>
+        <li>
+          <strong>Onto New bin</strong> starts a bin
+        </li>
+        <li>
+          <strong>Make tag</strong> tags every card, with Undo
+        </li>
+      </ul>
       <Pool pool={pool} binned={binned} onHover={setHover} />
-      <div className="board-main">
-        <ul className="board-help" aria-label="Board controls">
-          <li>
-            <strong>Drag in</strong> adds a card (it can sit in several bins)
-          </li>
-          <li>
-            <strong>Between bins</strong> moves, <kbd>⌥ Alt</kbd> copies
-          </li>
-          <li>
-            <strong>Back to the pool</strong> takes it out
-          </li>
-          <li>
-            <strong>Onto New bin</strong> starts a bin
-          </li>
-          <li>
-            <strong>Make tag</strong> tags every card, with Undo
-          </li>
-        </ul>
-        <div className="bins">
-          {board.bins.map((bin, index) => (
-            <BinBox
-              key={bin.id}
-              bin={bin}
-              index={index}
-              cube={cube}
-              pool={pool}
-              fresh={bin.id === fresh}
-              onHover={setHover}
-            />
-          ))}
-          <NewBin bins={board.bins} onCreate={setFresh} />
-        </div>
+      <div className="bins">
+        {board.bins.map((bin, index) => (
+          <BinBox
+            key={bin.id}
+            bin={bin}
+            index={index}
+            cube={cube}
+            pool={pool}
+            fresh={bin.id === fresh}
+            onHover={setHover}
+          />
+        ))}
+        <NewBin bins={board.bins} onCreate={setFresh} />
       </div>
       <datalist id={POOL_LIST_ID}>
         {pool.map((card) => (

@@ -113,5 +113,12 @@ export {
   tagOverlaps,
 } from "./overlaps.ts";
 export type { Overlap, TagFilter, Tagged } from "./overlaps.ts";
-export { cardDiffSchema, cubeDiffSchema, diffCube, isCardChanged, statusCounts } from "./diff.ts";
+export {
+  CURRENT,
+  cardDiffSchema,
+  cubeDiffSchema,
+  diffCube,
+  isCardChanged,
+  statusCounts,
+} from "./diff.ts";
 export type { CardDiff, CubeDiff, CubeState, SectionDiff } from "./diff.ts";

@@ -20,9 +20,11 @@ export {
   readCards,
   readConfig,
   readTags,
+  readVersions,
   writeBoard,
   writeCard,
   writeTags,
+  writeVersion,
 } from "./store.ts";
 export { changeTag, createTag } from "./tags.ts";
 export type { TagResult } from "./tags.ts";
@@ -32,3 +34,12 @@ export type { BatchResult, UpdateResult } from "./update.ts";
 export { validateCube } from "./validate.ts";
 export { loadBoard, saveBoard } from "./save-board.ts";
 export type { BoardResult } from "./save-board.ts";
+export {
+  CURRENT,
+  compareVersions,
+  listVersions,
+  readCubeState,
+  saveVersion,
+  summarize,
+} from "./versions.ts";
+export type { CompareResult, VersionResult } from "./versions.ts";

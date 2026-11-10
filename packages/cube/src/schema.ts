@@ -100,6 +100,17 @@ export const sectionsFileSchema = z.strictObject({
   sections: z.array(sectionSchema),
 });
 
+export const binSchema = z.strictObject({
+  id: z.string().regex(/^[a-z0-9-]+$/u),
+  label: z.string().trim().min(1),
+  cards: z.array(z.string()),
+  tag: z.string().optional(),
+});
+
+export const boardSchema = z.strictObject({
+  bins: z.array(binSchema),
+});
+
 export const cubeConfigSchema = z.strictObject({
   format: z.enum(["winston"]),
   size: z
@@ -115,4 +126,6 @@ export type CardChange = z.infer<typeof cardChangeSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type TagKind = z.infer<typeof tagKindSchema>;
 export type Tag = z.infer<typeof tagSchema>;
+export type Bin = z.infer<typeof binSchema>;
+export type Board = z.infer<typeof boardSchema>;
 export type CubeConfig = z.infer<typeof cubeConfigSchema>;

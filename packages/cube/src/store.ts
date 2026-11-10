@@ -2,9 +2,16 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
-import type { CardEntry, CubeConfig, Section, Tag } from "./schema.ts";
+import { EMPTY_BOARD } from "./board.ts";
+import type { Board, CardEntry, CubeConfig, Section, Tag } from "./schema.ts";
 import { slugify } from "./slug.ts";
-import { cardEntrySchema, cubeConfigSchema, sectionsFileSchema, tagsFileSchema } from "./schema.ts";
+import {
+  boardSchema,
+  cardEntrySchema,
+  cubeConfigSchema,
+  sectionsFileSchema,
+  tagsFileSchema,
+} from "./schema.ts";
 
 export const WORKBENCH_BATCH = "workbench";
 
@@ -13,6 +20,7 @@ export interface CubePaths {
   cardsDir: string;
   sectionsFile: string;
   tagsFile: string;
+  boardFile: string;
   configFile: string;
   workbenchBatch: string;
 }
@@ -23,6 +31,7 @@ export function cubePaths(repoRoot: string): CubePaths {
     cardsDir: join(repoRoot, "cube", "cards"),
     sectionsFile: join(repoRoot, "cube", "sections.json"),
     tagsFile: join(repoRoot, "cube", "tags.json"),
+    boardFile: join(repoRoot, "cube", "board.json"),
     configFile: join(repoRoot, "cube.config.json"),
     workbenchBatch: join(repoRoot, "cube", "inbox", `${WORKBENCH_BATCH}.txt`),
   };
@@ -49,6 +58,17 @@ export async function readTags(paths: CubePaths): Promise<Tag[]> {
   return (await readJson(paths.tagsFile, tagsFileSchema)).tags;
 }
 
+export async function readBoard(paths: CubePaths): Promise<Board> {
+  try {
+    return await readJson(paths.boardFile, boardSchema);
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return EMPTY_BOARD;
+    }
+    throw error;
+  }
+}
+
 async function writeJsonAtomic(path: string, value: unknown): Promise<void> {
   const temp = `${path}.${randomUUID()}.tmp`;
   await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`);
@@ -57,6 +77,10 @@ async function writeJsonAtomic(path: string, value: unknown): Promise<void> {
 
 export async function writeTags(paths: CubePaths, tags: readonly Tag[]): Promise<void> {
   await writeJsonAtomic(paths.tagsFile, tagsFileSchema.parse({ tags }));
+}
+
+export async function writeBoard(paths: CubePaths, board: Board): Promise<void> {
+  await writeJsonAtomic(paths.boardFile, boardSchema.parse(board));
 }
 
 export async function readCards(paths: CubePaths): Promise<CardEntry[]> {

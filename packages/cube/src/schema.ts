@@ -9,6 +9,7 @@ export const cardEntrySchema = z.strictObject({
   oracleId: z.uuid(),
   status: cardStatusSchema,
   section: z.string().optional(),
+  printing: z.uuid().optional(),
   tags: z.array(z.string()),
   notes: z.string(),
   source: z.strictObject({
@@ -21,6 +22,7 @@ export const cardEntrySchema = z.strictObject({
 export const cardPatchSchema = z.strictObject({
   status: cardStatusSchema.optional(),
   section: z.string().nullable().optional(),
+  printing: z.uuid().nullable().optional(),
   tags: z.array(z.string()).optional(),
   addTags: z.array(z.string()).optional(),
   removeTags: z.array(z.string()).optional(),
@@ -38,19 +40,22 @@ export function applyTagChanges(tags: readonly string[], patch: CardPatch): stri
 interface PatchableCard {
   status: CardStatus;
   section?: string | undefined;
+  printing?: string | undefined;
   tags: string[];
   notes: string;
 }
 
 export function applyCardPatch<T extends PatchableCard>(card: T, patch: CardPatch): T {
-  const { section, ...rest } = card;
+  const { section, printing, ...rest } = card;
   const nextSection = patch.section === undefined ? section : (patch.section ?? undefined);
+  const nextPrinting = patch.printing === undefined ? printing : (patch.printing ?? undefined);
   const next: PatchableCard = {
     ...rest,
     status: patch.status ?? card.status,
     notes: patch.notes ?? card.notes,
     tags: applyTagChanges(card.tags, patch),
     ...(nextSection === undefined ? {} : { section: nextSection }),
+    ...(nextPrinting === undefined ? {} : { printing: nextPrinting }),
   };
   return next as T;
 }

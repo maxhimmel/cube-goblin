@@ -411,3 +411,31 @@
 .block .stat-table {
   margin-top: 4px;
 }
+
+.creature-balance {
+  display: grid;
+  gap: 12px;
+  overflow: auto;
+}
+
+.body-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.body-link:hover {
+  color: var(--accent);
+}
+
+.body-pt {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.balance-table th,
+.balance-table td {
+  text-align: left;
+  padding-right: 16px;
+}

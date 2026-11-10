@@ -1,10 +1,11 @@
 import { mode } from "#mode";
-import type { Bucket, BucketKind, Count, CubeStats } from "@repo/cube/browser";
+import type { Body, Bucket, BucketKind, Count, CubeStats } from "@repo/cube/browser";
 import {
   COLORS,
   COLOR_GROUPS,
   CURVE_COLUMNS,
   HEAVY_PIPS,
+  creatureBalance,
   PT_VALUES,
   bucketId,
   cubeStats,
@@ -14,6 +15,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import type { ReactNode } from "react";
+import { CardLink } from "../card-pane.tsx";
 import { Gauge } from "../gauge.tsx";
 import { ManaSymbol } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
@@ -98,6 +100,88 @@ function Tile({ label, value, note }: { label: string; value: number; note?: str
       <span className="stat-label">{label}</span>
       <strong className="stat-value">{value}</strong>
       {note !== undefined && <span className="muted stat-note">{note}</span>}
+    </div>
+  );
+}
+
+function decimal(value: number | undefined): string {
+  return value === undefined ? "–" : value.toFixed(1);
+}
+
+function BodyLink({ entry }: { entry: Body<GridCard> | undefined }): ReactNode {
+  if (!entry) {
+    return <span className="muted">–</span>;
+  }
+  return (
+    <CardLink slug={entry.card.slug} className="body-link">
+      {entry.card.name}{" "}
+      <span className="body-pt">
+        {entry.power}/{entry.toughness}
+      </span>
+    </CardLink>
+  );
+}
+
+function CreatureBalanceView({ cards }: { cards: readonly GridCard[] }): ReactNode {
+  const balance = creatureBalance(cards);
+  const rows = balance.curve.filter((row) => row.count > 0);
+  return (
+    <div className="creature-balance">
+      <div className="stat-tiles" data-testid="creature-tiles">
+        <Tile
+          label="Creatures"
+          value={balance.creatures}
+          {...(balance.variable > 0 ? { note: `${String(balance.variable)} vary (* or 0/0)` } : {})}
+        />
+        <div className="stat-tile">
+          <span className="stat-label">Average body</span>
+          <strong className="stat-value">
+            {decimal(balance.power)}/{decimal(balance.toughness)}
+          </strong>
+        </div>
+        <div className="stat-tile">
+          <span className="stat-label">Stats per mana</span>
+          <strong className="stat-value">{decimal(balance.perMana)}</strong>
+          <span className="muted stat-note">power + toughness ÷ mana value</span>
+        </div>
+        <div className="stat-tile">
+          <span className="stat-label">Biggest</span>
+          <BodyLink entry={balance.biggest} />
+        </div>
+        <div className="stat-tile">
+          <span className="stat-label">Smallest</span>
+          <BodyLink entry={balance.smallest} />
+        </div>
+      </div>
+      <table className="stat-table balance-table">
+        <caption>Creatures by mana value</caption>
+        <thead>
+          <tr>
+            <th scope="col">Mana value</th>
+            <th scope="col">Creatures</th>
+            <th scope="col">Average</th>
+            <th scope="col">Smallest</th>
+            <th scope="col">Biggest</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id} data-stat={row.id}>
+              <th scope="row">{curveTick(row.id)}</th>
+              <td>{row.count}</td>
+              <td>
+                {decimal(row.power)}/{decimal(row.toughness)}
+              </td>
+              <td>
+                <BodyLink entry={row.smallest} />
+              </td>
+              <td>
+                <BodyLink entry={row.biggest} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -412,6 +496,18 @@ export function InsightsPage(): ReactNode {
             selected={search.bucket}
             onPick={pick}
           />
+        </Block>
+      );
+    }
+    if (id === "creatures") {
+      return (
+        <Block
+          title="Creature balance"
+          caption="Printed bodies. Biggest and smallest go by power + toughness, then power. Creatures with * or 0/0 (they grow with counters or copy something) are left out of averages and extremes."
+          collapsed={collapsed}
+          onToggle={toggle}
+        >
+          <CreatureBalanceView cards={cards} />
         </Block>
       );
     }

@@ -10,6 +10,8 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-024: Creature balance](tickets/T-024-creature-balance.md)
+
 ## Next
 
 - [T-022: Functions as tags](tickets/T-022-functions-as-tags.md)

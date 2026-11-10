@@ -1,0 +1,20 @@
+{
+  "bins": [
+    {
+      "id": "407fe119-64b6-4602-8afe-e680c6097b59",
+      "label": "Removal",
+      "cards": [
+        "abrade",
+        "awaken-the-honored-dead",
+        "bake-into-a-pie",
+        "banishing-light",
+        "bite-down",
+        "bitter-triumph",
+        "coerced-to-kill",
+        "felling-blow",
+        "lightning-strike",
+        "luminous-rebuke"
+      ]
+    }
+  ]
+}

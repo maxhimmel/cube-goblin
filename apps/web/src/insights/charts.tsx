@@ -1,6 +1,8 @@
 import type { Count, GridCell } from "@repo/cube/browser";
 import { barX, barY, cell, defineChart, dot, lineY, link, rect, text } from "@tanstack/charts";
 import { Chart } from "@tanstack/charts/react";
+import { Chart as RendererChart } from "@tanstack/charts/react/core";
+import { motion } from "@tanstack/charts/motion";
 import { scaleBand } from "@tanstack/charts/scales/band";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
 import { tooltip } from "@tanstack/charts/tooltip";
@@ -971,6 +973,11 @@ function nearestPile(
   return near?.key;
 }
 
+const FAN_MOTION = motion({
+  initial: false,
+  transition: { type: "spring", stiffness: 260, damping: 24, mass: 0.8 },
+});
+
 export function MatchupChart({
   points,
   name,
@@ -1034,6 +1041,7 @@ export function MatchupChart({
       defineChart({
         margin: { top: 8, bottom: 40, right: 16, left: 56 },
         focusRing: FOCUS_RING,
+        maxFocusDistance: 16,
         marks: [
           ...CORNERS.map((corner) =>
             decorative(
@@ -1053,6 +1061,7 @@ export function MatchupChart({
               placed.filter((point) => point.moved),
               {
                 id: "leaders",
+                key: "id",
                 x1: "kills",
                 y1: "survives",
                 x2: "x",
@@ -1090,6 +1099,7 @@ export function MatchupChart({
               placed.filter((point) => point.id === selected),
               {
                 id: "matchup-selected",
+                key: "id",
                 x: "x",
                 y: "y",
                 r: (point) => radius(point) + 4,
@@ -1101,6 +1111,7 @@ export function MatchupChart({
           ),
           decorative(
             text(placed, {
+              key: "id",
               x: "x",
               y: "y",
               text: "body",
@@ -1182,7 +1193,8 @@ export function MatchupChart({
       <span className="axis-title" data-axis="x" aria-hidden="true">
         Kills
       </span>
-      <Chart
+      <RendererChart
+        renderer={FAN_MOTION}
         definition={definition}
         ariaLabel={name}
         height={height ?? 420}

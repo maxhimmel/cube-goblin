@@ -12,7 +12,7 @@ Show how the cube's creatures fare against each other in combat (user, 2026-11-1
 - It counts the creatures in the scope picker, leaving out `*` and 0/0 bodies, like Creature balance. Keywords (first strike, deathtouch, flying) are not modeled.
 - Hover lists the creatures; click opens them in the bucket panel.
 - It reads as a quadrant view, not an x/y plot (user, 2026-11-10): each corner is tinted in its color with an uppercase title and a hint, in the same style as the heatmap's axis titles; no gridlines.
-- Dots that sit on top of each other fan out when the pointer comes near, each with a line back to its real spot, and close when it moves away.
+- Dots that sit on top of each other fan out when the pointer comes near, each with a line back to its real spot, and close when it moves away. Dots glide open and shut on a spring (TanStack `motion()` renderer, keyed by body); reduced-motion users get no animation.
 
 ## Done when
 

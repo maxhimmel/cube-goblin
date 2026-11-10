@@ -40,10 +40,11 @@
 }
 
 .bin {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 160px;
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  row-gap: 8px;
+  align-items: start;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -88,7 +89,7 @@
 }
 
 .bin-cards {
-  flex: 1;
+  min-height: 34px;
 }
 
 .bin-cards .strip-cell,
@@ -117,6 +118,9 @@
 }
 
 .bin-new {
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
   align-items: center;
   justify-content: center;
   border-style: dashed;

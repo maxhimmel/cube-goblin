@@ -1,9 +1,9 @@
 {
   "name": "Nezahal, Primal Tide",
   "oracleId": "c45e96cb-2539-4e00-9fff-782a182c2f4b",
-  "status": "prospect",
+  "status": "draft",
   "section": "pirates",
-  "tags": [],
+  "tags": ["big-ass-foo"],
   "notes": "",
   "source": {
     "batch": "batch-001",

@@ -2,7 +2,7 @@
   "name": "Saheeli, Jewel of Avishkar",
   "oracleId": "83705258-1f42-41db-a32e-de99ffd759eb",
   "status": "draft",
-  "tags": [],
+  "tags": ["enabler"],
   "notes": "",
   "source": {
     "batch": "batch-001",

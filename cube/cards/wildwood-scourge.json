@@ -2,7 +2,7 @@
   "name": "Wildwood Scourge",
   "oracleId": "b9dec104-c636-4770-a7fc-7a3331face15",
   "status": "draft",
-  "tags": [],
+  "tags": ["counters", "payoff"],
   "notes": "",
   "source": {
     "batch": "batch-001",

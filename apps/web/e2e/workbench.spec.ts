@@ -34,6 +34,12 @@ const test = base.extend<object, { workbench: Workbench }>({
         join(root, "cube", "tags.json"),
         `${JSON.stringify({ tags: TEST_VOCABULARY }, null, 2)}\n`,
       );
+      const cardsDir = join(root, "cube", "cards");
+      for (const file of await readdir(cardsDir)) {
+        const path = join(cardsDir, file);
+        const entry = cardEntrySchema.parse(JSON.parse(await readFile(path, "utf8")));
+        await writeFile(path, `${JSON.stringify({ ...entry, tags: [] }, null, 2)}\n`);
+      }
       process.env["CUBE_REPO_ROOT"] = root;
       const server = await createServer({
         root: WEB_ROOT,
@@ -493,7 +499,7 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
   await page.goto(`${workbench.url}#/card/${slug}`);
   await page.getByRole("link", { name: "Swap for another card…" }).click();
   await expect(page.getByRole("heading", { name: "Swap out Daring Saboteur" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "prospect", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: before.status, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
@@ -505,7 +511,7 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
   await expect(page.getByRole("status")).toContainText("Daring Saboteur is now cut");
   expect(await readEntry(workbench.cardsDir, slug)).toEqual({ ...before, status: "cut" });
   expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({
-    status: "prospect",
+    status: before.status,
     section: "pirates",
     tags: before.tags,
     notes: "",

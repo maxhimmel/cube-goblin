@@ -1,1 +1,34 @@
-{ "tags": [] }
+{
+  "tags": [
+    {
+      "id": "ping",
+      "label": "ping",
+      "kind": "archetype"
+    },
+    {
+      "id": "payoff",
+      "label": "payoff",
+      "kind": "group"
+    },
+    {
+      "id": "enabler",
+      "label": "enabler",
+      "kind": "group"
+    },
+    {
+      "id": "counters",
+      "label": "counters",
+      "kind": "archetype"
+    },
+    {
+      "id": "go-wide",
+      "label": "go wide",
+      "kind": "archetype"
+    },
+    {
+      "id": "big-ass-foo",
+      "label": "big ass foo'",
+      "kind": "group"
+    }
+  ]
+}

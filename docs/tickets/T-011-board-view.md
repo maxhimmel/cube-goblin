@@ -9,7 +9,7 @@ The Board in [views.md](../design/views.md): drag cards into buckets on a big gr
 ## Decisions (user, 2026-11-10)
 
 - A card can sit in several bins. Dragging from the pool copies; dragging between bins moves (hold Alt to copy); dragging back to the pool takes it out.
-- The pool offers draft and prospect cards, with a name filter.
+- The pool offers draft and prospect cards, with a name filter and a Both / Draft / Prospects switch. A collapsed "Controls" key under the pool explains the drag gestures.
 - A promoted bin stays on the Board, linked to its tag. Adding cards later offers "Tag N more".
 - The boxes are called bins, since "bucket" already means a chart bucket in Insights.
 

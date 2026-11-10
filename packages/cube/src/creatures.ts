@@ -134,3 +134,36 @@ export function creatureBalance<T extends StatCard>(cards: readonly T[]): Creatu
     }),
   };
 }
+
+export interface Matchup<T> {
+  power: number;
+  toughness: number;
+  bodies: Body<T>[];
+  kills: number;
+  survives: number;
+}
+
+export function combatMatchups<T extends StatCard>(bodies: readonly Body<T>[]): Matchup<T>[] {
+  const groups = new Map<string, Body<T>[]>();
+  for (const entry of bodies) {
+    const key = `${String(entry.power)}/${String(entry.toughness)}`;
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
+  const share = (test: (other: Body<T>) => boolean): number =>
+    bodies.length === 0 ? 0 : bodies.filter(test).length / bodies.length;
+  return [...groups.values()].flatMap((group) => {
+    const first = group[0];
+    if (!first) {
+      return [];
+    }
+    return [
+      {
+        power: first.power,
+        toughness: first.toughness,
+        bodies: group,
+        kills: share((other) => first.power >= other.toughness),
+        survives: share((other) => other.power < first.toughness),
+      },
+    ];
+  });
+}

@@ -252,6 +252,7 @@ export const BUCKET_KINDS = [
   "heavy",
   "type",
   "pt",
+  "body",
   "function",
   "status",
   "tag",
@@ -294,6 +295,8 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
       return typeKeys(card).includes(first);
     case "pt":
       return inPtCell(card, first, second);
+    case "body":
+      return isCreature(card) && card.power === first && card.toughness === second;
     case "function":
       return card.functions?.includes(first) ?? false;
     case "status":

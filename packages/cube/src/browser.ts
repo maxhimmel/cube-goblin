@@ -50,8 +50,8 @@ export type {
   TagKind,
 } from "./schema.ts";
 export { COLUMN_AXES, colorKey, columnsBy } from "./columns.ts";
-export { creatureBalance, isOutlier, size } from "./creatures.ts";
-export type { Body, CreatureBalance, CurveBodies, Spread } from "./creatures.ts";
+export { combatMatchups, creatureBalance, isOutlier, size } from "./creatures.ts";
+export type { Body, CreatureBalance, CurveBodies, Matchup, Spread } from "./creatures.ts";
 export type { Column, ColumnAxis } from "./columns.ts";
 export { slugify } from "./slug.ts";
 export {

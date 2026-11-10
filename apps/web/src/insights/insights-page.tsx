@@ -5,6 +5,7 @@ import {
   COLOR_GROUPS,
   CURVE_COLUMNS,
   HEAVY_PIPS,
+  combatMatchups,
   creatureBalance,
   curveKey,
   isOutlier,
@@ -30,6 +31,7 @@ import {
   CountTable,
   CreatureChart,
   HeatChart,
+  MatchupChart,
   RowChart,
   StackedRowChart,
 } from "./charts.tsx";
@@ -130,6 +132,26 @@ function BodyLink({ entry }: { entry: Body<GridCard> | undefined }): ReactNode {
       </span>
     </CardLink>
   );
+}
+
+const NAMES_SHOWN = 4;
+
+function matchupPoints(cards: readonly GridCard[]) {
+  return combatMatchups(creatureBalance(cards).bodies).map((matchup) => {
+    const names = matchup.bodies.map((entry) => entry.card.name);
+    const shown = names.slice(0, NAMES_SHOWN).join(", ");
+    return {
+      id: bucketId("body", String(matchup.power), String(matchup.toughness)),
+      body: `${String(matchup.power)}/${String(matchup.toughness)}`,
+      count: names.length,
+      names:
+        names.length > NAMES_SHOWN
+          ? `${shown}, +${String(names.length - NAMES_SHOWN)} more`
+          : shown,
+      kills: matchup.kills * 100,
+      survives: matchup.survives * 100,
+    };
+  });
 }
 
 const LEGEND = [
@@ -357,6 +379,7 @@ const KIND_TITLES: Record<BucketKind, string> = {
   heavy: "Heavy pips",
   type: "Card types",
   pt: "Power and toughness",
+  body: "Combat matchups",
   function: "Functions",
   status: "Status",
   tag: "Tags",
@@ -382,6 +405,8 @@ function bucketLabel(bucket: Bucket, stats: CubeStats): string {
       return find(stats.types);
     case "pt":
       return `${ptLabel(first)}/${ptLabel(second)}`;
+    case "body":
+      return `${first}/${second}`;
     case "function":
       return find(stats.functions);
     case "status":
@@ -603,6 +628,23 @@ export function InsightsPage(): ReactNode {
           onToggle={toggle}
         >
           <CreatureBalanceView cards={cards} selected={search.card} />
+        </Block>
+      );
+    }
+    if (id === "combat") {
+      return (
+        <Block
+          title="Combat matchups"
+          caption="Each dot is a power/toughness, sized by how many creatures have it. It kills a creature when its power is at least that creature’s toughness, and survives one whose power is less than its toughness. Counts the same creatures as the rest of the page; * and 0/0 left out. Click a dot to list its creatures."
+          collapsed={collapsed}
+          onToggle={toggle}
+        >
+          <MatchupChart
+            points={matchupPoints(cards)}
+            name="Combat matchups"
+            selected={search.bucket}
+            onPick={pick}
+          />
         </Block>
       );
     }

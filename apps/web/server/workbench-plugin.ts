@@ -10,12 +10,17 @@ import type {
   SearchResult,
   TagResult,
   UpdateResult,
+  VersionResult,
   Workbench,
   WorkbenchCard,
 } from "@repo/cube";
 import {
+  CURRENT,
   FUNCTION_ORACLE_TAG_IDS,
   addCard,
+  compareVersions,
+  listVersions,
+  saveVersion,
   cardChangesSchema,
   functionTags,
   cardPatchSchema,
@@ -123,7 +128,7 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
   };
 }
 
-type WriteResult = UpdateResult | TagResult | BatchResult | AddResult | BoardResult;
+type WriteResult = UpdateResult | TagResult | BatchResult | AddResult | BoardResult | VersionResult;
 type Write = (body: unknown) => Promise<WriteResult>;
 
 function written(result: Extract<WriteResult, { ok: true }>): unknown {
@@ -132,6 +137,9 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   }
   if ("board" in result) {
     return result.board;
+  }
+  if ("version" in result) {
+    return result.version;
   }
   return "cards" in result ? result.cards : result.tag;
 }
@@ -273,6 +281,9 @@ function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: Oracle
     if (url === "/api/tags" && method === "POST") {
       return (body) => createTag(paths, body);
     }
+    if (url === "/api/versions" && method === "POST") {
+      return (body) => saveVersion(paths, body);
+    }
     return undefined;
   };
 }
@@ -342,6 +353,36 @@ export function workbench(options: WorkbenchOptions): Plugin {
             (error: unknown) => {
               const status = error instanceof ScryfallError ? scryfallStatus(error.status) : 502;
               send(res, status, { error: error instanceof Error ? error.message : String(error) });
+            },
+          );
+          return;
+        }
+        if (url === "/api/versions" && req.method === "GET") {
+          listVersions(paths).then(
+            (versions) => {
+              send(res, 200, versions);
+            },
+            (error: unknown) => {
+              send(res, 500, { error: String(error) });
+            },
+          );
+          return;
+        }
+        if (url === "/api/versions/compare" && req.method === "GET") {
+          compareVersions(
+            paths,
+            requestUrl.searchParams.get("from") ?? CURRENT,
+            requestUrl.searchParams.get("to") ?? CURRENT,
+          ).then(
+            (result) => {
+              if (result.ok) {
+                send(res, 200, result.diff);
+              } else {
+                send(res, result.status, { error: result.error });
+              }
+            },
+            (error: unknown) => {
+              send(res, 500, { error: String(error) });
             },
           );
           return;

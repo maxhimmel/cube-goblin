@@ -17,6 +17,12 @@ import { editBoard, editBoardWithUndo, promoteBin, untagged, useBoard } from "./
 import { findTag } from "./tags.ts";
 
 const POOL_STATUSES = new Set(["draft", "prospect"]);
+const STATUS_FILTERS = [
+  { id: "all", label: "Both" },
+  { id: "draft", label: "Draft" },
+  { id: "prospect", label: "Prospects" },
+] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number]["id"];
 const POOL_LIST_ID = "board-pool-names";
 
 interface Dropped {
@@ -271,6 +277,7 @@ function Pool({
 }): ReactNode {
   const [filter, setFilter] = useState("");
   const [loose, setLoose] = useState(false);
+  const [status, setStatus] = useState<StatusFilter>("all");
   const drop = useDrop(({ slug, from }) => {
     if (from !== undefined) {
       editBoard((board) => takeCard(board, from, slug));
@@ -278,7 +285,10 @@ function Pool({
   });
   const wanted = filter.trim().toLowerCase();
   const shown = pool.filter(
-    (card) => card.name.toLowerCase().includes(wanted) && !(loose && binned.has(card.slug)),
+    (card) =>
+      card.name.toLowerCase().includes(wanted) &&
+      (status === "all" || card.status === status) &&
+      !(loose && binned.has(card.slug)),
   );
   return (
     <aside className="pool" aria-label="Card pool" {...drop}>
@@ -292,6 +302,20 @@ function Pool({
             setFilter(event.target.value);
           }}
         />
+        <div className="segmented" role="group" aria-label="Status">
+          {STATUS_FILTERS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={option.id === status}
+              onClick={() => {
+                setStatus(option.id);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
         <label>
           <input
             type="checkbox"
@@ -311,6 +335,21 @@ function Pool({
           <Strip key={card.slug} card={card} onHover={onHover} />
         ))}
       </ul>
+      <details className="board-help">
+        <summary>Controls</summary>
+        <dl>
+          <dt>Drag into a bin</dt>
+          <dd>adds the card; a card can sit in several bins</dd>
+          <dt>Drag between bins</dt>
+          <dd>moves it; hold Alt (⌥) to copy</dd>
+          <dt>Drag back to the pool</dt>
+          <dd>takes it out of that bin</dd>
+          <dt>Drop on New bin</dt>
+          <dd>starts a bin with that card</dd>
+          <dt>Make tag</dt>
+          <dd>tags every card in the bin, with Undo</dd>
+        </dl>
+      </details>
     </aside>
   );
 }

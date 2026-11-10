@@ -868,6 +868,20 @@ test("board bins hold dragged cards and survive a reload", async ({ page, workbe
   await expect(strip(burn, "Opt")).toHaveCount(0);
 });
 
+test("the board pool filters by status and lists its controls", async ({ page, workbench }) => {
+  await page.goto(`${workbench.url}#/board`);
+  const pool = page.getByRole("complementary", { name: "Card pool" });
+  const total = Number((await pool.getByTestId("pool-count").textContent())?.split(" ")[0]);
+  await pool.getByRole("button", { name: "Draft", exact: true }).click();
+  await expect(pool.locator('.strip-cell[data-status="prospect"]')).toHaveCount(0);
+  const drafted = await pool.locator('.strip-cell[data-status="draft"]').count();
+  await pool.getByRole("button", { name: "Prospects", exact: true }).click();
+  await expect(pool.locator('.strip-cell[data-status="draft"]')).toHaveCount(0);
+  await expect(pool.locator(".strip-cell")).toHaveCount(total - drafted);
+  await pool.getByText("Controls").click();
+  await expect(pool.getByText("hold Alt (⌥) to copy")).toBeVisible();
+});
+
 test("promoting a bin tags its cards as one undoable edit", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/board`);
   const burn = page.getByRole("region", { name: "Bin Burn" });

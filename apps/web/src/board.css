@@ -131,3 +131,34 @@
   outline: 3px dashed var(--accent);
   outline-offset: -3px;
 }
+
+.pool .segmented button {
+  flex: 1;
+}
+
+.board-help {
+  padding: 6px 10px 10px;
+  border-top: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.board-help summary {
+  cursor: pointer;
+}
+
+.board-help dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 8px;
+  margin: 6px 0 0;
+}
+
+.board-help dt {
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.board-help dd {
+  margin: 0;
+}

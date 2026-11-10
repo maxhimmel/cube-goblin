@@ -1,10 +1,12 @@
 import type { CubeDiff, CubeState } from "./diff.ts";
-import { CURRENT, diffCube, statusCounts } from "./diff.ts";
+import { diffCube, statusCounts } from "./diff.ts";
 import type { Version, VersionSummary } from "./schema.ts";
 import { newVersionSchema } from "./schema.ts";
 import { slugify } from "./slug.ts";
 import type { CubePaths } from "./store.ts";
 import { readBoard, readCards, readTags, readVersions, writeVersion } from "./store.ts";
+
+export const CURRENT = "current";
 
 export type VersionResult =
   { ok: true; version: VersionSummary } | { ok: false; status: 400 | 409; error: string };

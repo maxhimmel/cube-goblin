@@ -4,8 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { CubePaths } from "./store.ts";
 import { cubePaths, writeCard } from "./store.ts";
-import { CURRENT } from "./diff.ts";
-import { compareVersions, listVersions, saveVersion } from "./versions.ts";
+import { CURRENT, compareVersions, listVersions, saveVersion } from "./versions.ts";
 
 let paths: CubePaths;
 const NOW = new Date("2026-11-10T12:00:00.000Z");

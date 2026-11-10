@@ -1075,38 +1075,3 @@ test("the tags view counts overlaps and filters the Wall to one", async ({ page,
   await expect(filter).toHaveCount(0);
   await expect(page).not.toHaveURL(/with=/u);
 });
-
-test("a saved version compares with the current cube", async ({ page, workbench }) => {
-  const slug = "brazen-scourge";
-  await page.goto(`${workbench.url}#/`);
-  await page
-    .getByRole("navigation", { name: "Views" })
-    .getByRole("link", { name: "Versions" })
-    .click();
-  await page.getByLabel("Version name").fill("Before the cut");
-  await page.getByRole("button", { name: "Save version" }).click();
-  const row = page.locator("tr[data-version$='-before-the-cut']");
-  await expect(row).toContainText("Before the cut");
-  const versionsDir = join(workbench.cardsDir, "..", "versions");
-  const [file] = await readdir(versionsDir);
-  expect(file).toMatch(/^\d{4}-\d{2}-\d{2}-before-the-cut\.json$/u);
-
-  const patched = await page.request.patch(`${workbench.url}api/cards/${slug}`, {
-    data: { status: "cut", addTags: ["tempo"] },
-  });
-  expect(patched.status()).toBe(200);
-  await row.getByRole("button", { name: "Compare with now" }).click();
-  await expect(page).toHaveURL(/from=\d{4}-\d{2}-\d{2}-before-the-cut&to=current/u);
-
-  const moved = page.getByRole("region", { name: "Draft → Cut" });
-  await expect(moved.getByRole("link", { name: "Brazen Scourge" })).toBeVisible();
-  const edited = page.getByRole("region", { name: "Edited" });
-  await expect(edited.locator("li").filter({ hasText: "Brazen Scourge" })).toContainText("+ Tempo");
-
-  await page.getByLabel("To").selectOption({ label: "Before the cut" });
-  await expect(page.getByText("No changes.")).toBeVisible();
-
-  await page.getByLabel("Version name").fill("before the CUT");
-  await page.getByRole("button", { name: "Save version" }).click();
-  await expect(page.getByText(/already exists/u)).toBeVisible();
-});

@@ -35,6 +35,7 @@ export { validateCube } from "./validate.ts";
 export { loadBoard, saveBoard } from "./save-board.ts";
 export type { BoardResult } from "./save-board.ts";
 export {
+  CURRENT,
   compareVersions,
   listVersions,
   readCubeState,

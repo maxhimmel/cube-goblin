@@ -14,7 +14,6 @@ import "./pane.css";
 import "./board.css";
 import "./insights/insights.css";
 import "./overlaps/overlap.css";
-import "./versions.css";
 
 const root = document.getElementById("root");
 if (!root) {

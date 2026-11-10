@@ -1,7 +1,5 @@
 import type {
   Board,
-  CubeDiff,
-  VersionSummary,
   CardChange,
   CardEntry,
   NewCard,
@@ -14,8 +12,6 @@ import type {
 import {
   boardSchema,
   cardEntrySchema,
-  cubeDiffSchema,
-  versionSummarySchema,
   printingSchema,
   searchResultSchema,
   tagSchema,
@@ -24,7 +20,6 @@ import {
 
 export const CUBE_QUERY_KEY = ["cube"] as const;
 export const BOARD_QUERY_KEY = ["board"] as const;
-export const VERSIONS_QUERY_KEY = ["versions"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
 function errorMessage(text: string): string {
@@ -116,25 +111,4 @@ export async function fetchPrintings(slug: string): Promise<Printing[]> {
     throw await failure("GET", url, response);
   }
   return printingSchema.array().parse(await response.json());
-}
-
-async function getJson(url: string): Promise<unknown> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw await failure("GET", url, response);
-  }
-  return response.json();
-}
-
-export async function fetchVersions(): Promise<VersionSummary[]> {
-  return versionSummarySchema.array().parse(await getJson("/api/versions"));
-}
-
-export async function compareRequest(from: string, to: string): Promise<CubeDiff> {
-  const query = new URLSearchParams({ from, to }).toString();
-  return cubeDiffSchema.parse(await getJson(`/api/versions/compare?${query}`));
-}
-
-export async function saveVersionRequest(label: string): Promise<VersionSummary> {
-  return versionSummarySchema.parse(await sendJson("POST", "/api/versions", { label }));
 }

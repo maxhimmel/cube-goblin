@@ -2,12 +2,16 @@ import { useState } from "react";
 import { z } from "zod";
 
 export const REMEMBERED = {
-  "/": ["by", "with", "without"],
-  "/cards": ["by"],
-  "/insights": ["scope"],
-  "/tags": ["tags"],
-  "/board": ["sort"],
-} as const satisfies Record<string, readonly string[]>;
+  "/": [["by"], ["with", "without"]],
+  "/cards": [["by"]],
+  "/insights": [["scope"]],
+  "/tags": [["tags"]],
+  "/board": [["sort"]],
+} as const satisfies Record<string, readonly (readonly string[])[]>;
+
+const FORGOTTEN: Partial<Record<RememberedPath, Record<string, readonly string[]>>> = {
+  "/insights": { scope: ["selected"] },
+};
 
 export type RememberedPath = keyof typeof REMEMBERED;
 
@@ -57,13 +61,21 @@ export function isRemembered(path: string): path is RememberedPath {
   return Object.hasOwn(REMEMBERED, path);
 }
 
-export function pickChoices(path: RememberedPath, search: Record<string, unknown>): Choices {
-  const keys: readonly string[] = REMEMBERED[path];
+function pick(keys: readonly string[], search: Record<string, unknown>): Choices {
   return Object.fromEntries(
     keys.flatMap((key) => {
       const value = search[key];
       return typeof value === "string" && value !== "" ? [[key, value]] : [];
     }),
+  );
+}
+
+export function pickChoices(path: RememberedPath, search: Record<string, unknown>): Choices {
+  const forgotten = FORGOTTEN[path] ?? {};
+  return Object.fromEntries(
+    Object.entries(pick(REMEMBERED[path].flat(), search)).filter(
+      ([key, value]) => !(forgotten[key] ?? []).includes(value),
+    ),
   );
 }
 
@@ -81,11 +93,10 @@ export function recallSearch(
   search: Record<string, unknown>,
   store: KeyValueStore | undefined = browserStore(),
 ): Choices | undefined {
-  if (Object.keys(pickChoices(path, search)).length > 0) {
-    return undefined;
-  }
   const saved = pickChoices(path, read(store, SEARCH_KEY, storedSchema)?.[path] ?? {});
-  return Object.keys(saved).length > 0 ? saved : undefined;
+  const missing = REMEMBERED[path].filter((group) => Object.keys(pick(group, search)).length === 0);
+  const restored = pick(missing.flat(), saved);
+  return Object.keys(restored).length > 0 ? restored : undefined;
 }
 
 export function recallState<T>(

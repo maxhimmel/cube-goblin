@@ -20,10 +20,17 @@ describe("view choices", () => {
     expect(recallSearch("/", { card: "y" }, store)).toEqual({ by: "color", with: "removal" });
   });
 
-  it("lets a link with its own choices win", () => {
+  it("lets a link with its own choices win and keeps the rest", () => {
     const store = memory();
-    rememberSearch("/", { by: "color" }, store);
-    expect(recallSearch("/", { with: "ramp" }, store)).toBeUndefined();
+    rememberSearch("/", { by: "color", with: "removal", without: "ramp" }, store);
+    expect(recallSearch("/", { with: "ramp" }, store)).toEqual({ by: "color" });
+    expect(recallSearch("/", { by: "type", without: "x" }, store)).toBeUndefined();
+  });
+
+  it("does not bring back a selection scope", () => {
+    const store = memory();
+    rememberSearch("/insights", { scope: "selected" }, store);
+    expect(recallSearch("/insights", {}, store)).toBeUndefined();
   });
 
   it("remembers going back to the default", () => {

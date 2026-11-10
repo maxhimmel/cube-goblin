@@ -158,9 +158,13 @@ export const router = createRouter({
 });
 
 router.subscribe("onResolved", ({ toLocation }) => {
-  if (isRemembered(toLocation.pathname)) {
-    rememberSearch(toLocation.pathname, toLocation.search);
+  const path = toLocation.pathname;
+  if (!isRemembered(path)) {
+    return;
   }
+  const validate = router.routesByPath[path].options.validateSearch as
+    ((search: Record<string, unknown>) => Record<string, unknown>) | undefined;
+  rememberSearch(path, validate ? validate(toLocation.search) : toLocation.search);
 });
 
 declare module "@tanstack/react-router" {

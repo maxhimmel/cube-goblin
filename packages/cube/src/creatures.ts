@@ -7,12 +7,21 @@ export interface Body<T> {
   toughness: number;
 }
 
+export interface Spread {
+  min: number;
+  q1: number;
+  median: number;
+  q3: number;
+  max: number;
+}
+
 export interface CurveBodies<T> {
   id: string;
   label: string;
   count: number;
   power: number | undefined;
   toughness: number | undefined;
+  size: Spread | undefined;
   smallest: Body<T> | undefined;
   biggest: Body<T> | undefined;
 }
@@ -25,6 +34,9 @@ export interface CreatureBalance<T> {
   perMana: number | undefined;
   biggest: Body<T> | undefined;
   smallest: Body<T> | undefined;
+  strongest: Body<T> | undefined;
+  toughest: Body<T> | undefined;
+  bodies: Body<T>[];
   curve: CurveBodies<T>[];
 }
 
@@ -44,11 +56,42 @@ export function body<T extends StatCard>(card: T): Body<T> | undefined {
   return { card, power, toughness };
 }
 
-function mean(values: readonly number[]): number | undefined {
-  return values.length === 0 ? undefined : values.reduce((sum, v) => sum + v, 0) / values.length;
+export function quantile(sorted: readonly number[], q: number): number {
+  const at = (sorted.length - 1) * q;
+  const low = sorted[Math.floor(at)] ?? 0;
+  const high = sorted[Math.ceil(at)] ?? low;
+  return low + (high - low) * (at - Math.floor(at));
 }
 
-function size(entry: Body<StatCard>): number {
+export function median(values: readonly number[]): number | undefined {
+  return values.length === 0
+    ? undefined
+    : quantile(
+        [...values].sort((a, b) => a - b),
+        0.5,
+      );
+}
+
+export function spread(values: readonly number[]): Spread | undefined {
+  if (values.length === 0) {
+    return undefined;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  return {
+    min: sorted[0] ?? 0,
+    q1: quantile(sorted, 0.25),
+    median: quantile(sorted, 0.5),
+    q3: quantile(sorted, 0.75),
+    max: sorted.at(-1) ?? 0,
+  };
+}
+
+export function isOutlier(value: number, range: Spread): boolean {
+  const reach = 1.5 * (range.q3 - range.q1);
+  return value < range.q1 - reach || value > range.q3 + reach;
+}
+
+export function size(entry: Body<StatCard>): number {
   return entry.power + entry.toughness;
 }
 
@@ -70,18 +113,22 @@ export function creatureBalance<T extends StatCard>(cards: readonly T[]): Creatu
   return {
     creatures: creatures.length,
     variable: creatures.length - bodies.length,
-    power: mean(bodies.map((entry) => entry.power)),
-    toughness: mean(bodies.map((entry) => entry.toughness)),
-    perMana: mean(paid.map((entry) => size(entry) / entry.card.cmc)),
+    power: median(bodies.map((entry) => entry.power)),
+    toughness: median(bodies.map((entry) => entry.toughness)),
+    perMana: median(paid.map((entry) => size(entry) / entry.card.cmc)),
     ...extremes(bodies),
+    strongest: [...bodies].sort((a, b) => b.power - a.power || b.toughness - a.toughness)[0],
+    toughest: [...bodies].sort((a, b) => b.toughness - a.toughness || b.power - a.power)[0],
+    bodies,
     curve: CURVE_COLUMNS.map(({ id, label }) => {
       const here = bodies.filter((entry) => curveKey(entry.card) === id);
       return {
         id,
         label,
         count: creatures.filter((card) => curveKey(card) === id).length,
-        power: mean(here.map((entry) => entry.power)),
-        toughness: mean(here.map((entry) => entry.toughness)),
+        power: median(here.map((entry) => entry.power)),
+        toughness: median(here.map((entry) => entry.toughness)),
+        size: spread(here.map(size)),
         ...extremes(here),
       };
     }),

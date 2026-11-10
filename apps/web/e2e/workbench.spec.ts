@@ -2,6 +2,7 @@ import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Locator } from "@playwright/test";
 import { test as base, expect } from "@playwright/test";
 import type { CardEntry } from "@repo/cube/browser";
 import { cardEntrySchema } from "@repo/cube/browser";
@@ -34,6 +35,7 @@ const test = base.extend<object, { workbench: Workbench }>({
         join(root, "cube", "tags.json"),
         `${JSON.stringify({ tags: TEST_VOCABULARY }, null, 2)}\n`,
       );
+      await writeFile(join(root, "cube", "board.json"), `${JSON.stringify({ bins: [] })}\n`);
       const cardsDir = join(root, "cube", "cards");
       for (const file of await readdir(cardsDir)) {
         const path = join(cardsDir, file);
@@ -790,4 +792,95 @@ test("a card image that keeps failing shows the card name", async ({ page, workb
   await expect(page.locator(".card-fallback").filter({ hasText: "Abrade" })).toBeVisible({
     timeout: 10_000,
   });
+});
+
+async function readBoard(
+  cardsDir: string,
+): Promise<{ bins: { label: string; cards: string[]; tag?: string }[] }> {
+  return JSON.parse(await readFile(join(cardsDir, "..", "board.json"), "utf8")) as {
+    bins: { label: string; cards: string[]; tag?: string }[];
+  };
+}
+
+function strip(scope: Locator, name: string): Locator {
+  return scope.locator(`.strip:has(.strip-name:text-is(${JSON.stringify(name)}))`);
+}
+
+test("board bins hold dragged cards and survive a reload", async ({ page, workbench }) => {
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: {
+      changes: ["shock", "lasting-tarfire", "murder"].map((slug) => ({
+        slug,
+        patch: { status: "draft" },
+      })),
+    },
+  });
+  expect(patched.status()).toBe(200);
+  await page.goto(`${workbench.url}#/board`);
+  const pool = page.getByRole("complementary", { name: "Card pool" });
+
+  await page.getByRole("button", { name: /New bin/u }).click();
+  await expect(page.getByLabel("Bin name")).toBeFocused();
+  await page.getByLabel("Bin name").fill("Burn");
+  await page.getByLabel("Bin name").press("Enter");
+  const burn = page.getByRole("region", { name: "Bin Burn" });
+
+  await strip(pool, "Shock").dragTo(burn);
+  await expect(strip(burn, "Shock")).toBeVisible();
+  await burn.getByLabel("Add card to Burn").fill("Lasting Tarfire");
+  await burn.getByLabel("Add card to Burn").press("Enter");
+  await expect(strip(burn, "Lasting Tarfire")).toBeVisible();
+
+  await strip(pool, "Murder").dragTo(page.getByRole("button", { name: /New bin/u }));
+  const second = page.getByRole("region", { name: "Bin Bin 2" });
+  await expect(strip(second, "Murder")).toBeVisible();
+  await strip(burn, "Shock").dragTo(second);
+  await expect(strip(second, "Shock")).toBeVisible();
+  await expect(strip(burn, "Shock")).toHaveCount(0);
+  await strip(second, "Shock").dragTo(pool);
+  await expect(strip(second, "Shock")).toHaveCount(0);
+  await strip(pool, "Shock").dragTo(burn);
+  await expect(strip(burn, "Shock")).toBeVisible();
+
+  await expect
+    .poll(async () => (await readBoard(workbench.cardsDir)).bins)
+    .toEqual([
+      expect.objectContaining({ label: "Burn", cards: ["lasting-tarfire", "shock"] }),
+      expect.objectContaining({ label: "Bin 2", cards: ["murder"] }),
+    ]);
+  await page.reload();
+  await expect(strip(burn, "Shock")).toBeVisible();
+  await expect(strip(burn, "Lasting Tarfire")).toBeVisible();
+  await expect(strip(second, "Murder")).toBeVisible();
+
+  await second.getByRole("button", { name: "Delete bin Bin 2" }).click();
+  await expect(second).toHaveCount(0);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(strip(second, "Murder")).toBeVisible();
+  await expect.poll(async () => (await readBoard(workbench.cardsDir)).bins.length).toBe(2);
+});
+
+test("promoting a bin tags its cards as one undoable edit", async ({ page, workbench }) => {
+  await page.goto(`${workbench.url}#/board`);
+  const burn = page.getByRole("region", { name: "Bin Burn" });
+  await expect(strip(burn, "Shock")).toBeVisible();
+
+  await burn.getByLabel("Tag kind for Burn").selectOption("archetype");
+  await burn.getByRole("button", { name: "Make tag" }).click();
+  await expect(burn.getByText("tag · Burn")).toBeVisible();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, "shock")).tags)
+    .toContain("burn");
+  expect((await readEntry(workbench.cardsDir, "lasting-tarfire")).tags).toContain("burn");
+  expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
+    tags: expect.arrayContaining([{ id: "burn", label: "Burn", kind: "archetype" }]),
+  });
+  expect((await readBoard(workbench.cardsDir)).bins[0]?.tag).toBe("burn");
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, "shock")).tags)
+    .not.toContain("burn");
+  expect((await readEntry(workbench.cardsDir, "lasting-tarfire")).tags).not.toContain("burn");
+  await expect(burn.getByRole("button", { name: "Tag 2 more" })).toBeVisible();
 });

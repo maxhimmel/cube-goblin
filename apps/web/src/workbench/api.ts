@@ -1,4 +1,5 @@
 import type {
+  Board,
   CardChange,
   CardEntry,
   NewCard,
@@ -8,6 +9,7 @@ import type {
   Workbench,
 } from "@repo/cube/browser";
 import {
+  boardSchema,
   cardEntrySchema,
   searchResultSchema,
   tagSchema,
@@ -15,6 +17,7 @@ import {
 } from "@repo/cube/browser";
 
 export const CUBE_QUERY_KEY = ["cube"] as const;
+export const BOARD_QUERY_KEY = ["board"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
 function errorMessage(text: string): string {
@@ -85,4 +88,16 @@ export async function changeTagRequest(
   change: { label?: string; kind?: TagKind },
 ): Promise<Tag> {
   return tagSchema.parse(await sendJson("PATCH", `/api/tags/${id}`, change));
+}
+
+export async function fetchBoard(): Promise<Board> {
+  const response = await fetch("/api/board");
+  if (!response.ok) {
+    throw await failure("GET", "/api/board", response);
+  }
+  return boardSchema.parse(await response.json());
+}
+
+export async function saveBoardRequest(board: Board): Promise<Board> {
+  return boardSchema.parse(await sendJson("PUT", "/api/board", board));
 }

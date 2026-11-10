@@ -1,0 +1,133 @@
+.board {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 16px;
+  height: calc(100dvh - var(--topbar-height, 64px) - 24px);
+  min-height: 480px;
+  padding-top: 10px;
+}
+
+.pool {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.pool-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  font-size: 0.85rem;
+}
+
+.pool-cards {
+  overflow: auto;
+  padding: 4px 8px 12px;
+}
+
+.bins {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  align-content: start;
+  gap: 14px;
+  overflow: auto;
+  padding: 2px 4px 16px;
+}
+
+.bin {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 160px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.bin-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bin-label {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+}
+
+.bin-label:hover,
+.bin-label:focus {
+  border-color: var(--line);
+  background: var(--field);
+}
+
+.bin-delete,
+.strip-remove {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.bin-tag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.bin-cards {
+  flex: 1;
+}
+
+.bin-cards .strip-cell,
+.pool-cards .strip-cell {
+  display: flex;
+  align-items: center;
+}
+
+.bin-cards .strip {
+  flex: 1;
+  min-width: 0;
+}
+
+.pool-cards .strip {
+  flex: 1;
+  min-width: 0;
+}
+
+.strip-cell[data-status="cut"] .strip {
+  opacity: 0.5;
+}
+
+.bin-add input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bin-new {
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bin[data-drop="over"],
+.pool[data-drop="over"] {
+  outline: 3px dashed var(--accent);
+  outline-offset: -3px;
+}

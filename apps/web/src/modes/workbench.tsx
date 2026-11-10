@@ -3,7 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { queryClient } from "../query-client.ts";
-import { CUBE_CHANGED_EVENT, CUBE_QUERY_KEY, fetchCube } from "../workbench/api.ts";
+import {
+  BOARD_QUERY_KEY,
+  CUBE_CHANGED_EVENT,
+  CUBE_QUERY_KEY,
+  fetchCube,
+} from "../workbench/api.ts";
+import { boardSavesPending } from "../workbench/board.ts";
+import { BoardPage } from "../workbench/board-page.tsx";
 import { AddPage } from "../workbench/add-page.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor } from "../workbench/card-editor.tsx";
@@ -13,17 +20,18 @@ import { TagsPage } from "../workbench/tags-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
 
-async function refetchCube(): Promise<void> {
-  if (editsPending()) {
+async function refetch(key: readonly string[], pending: () => boolean): Promise<void> {
+  if (pending()) {
     return;
   }
-  await queryClient.cancelQueries({ queryKey: CUBE_QUERY_KEY });
-  await queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
+  await queryClient.cancelQueries({ queryKey: key });
+  await queryClient.invalidateQueries({ queryKey: key });
 }
 
 if (import.meta.hot) {
   import.meta.hot.on(CUBE_CHANGED_EVENT, () => {
-    void refetchCube();
+    void refetch(CUBE_QUERY_KEY, editsPending);
+    void refetch(BOARD_QUERY_KEY, boardSavesPending);
   });
 }
 
@@ -103,6 +111,7 @@ export const mode: Mode = {
   Toolbar,
   CardPanel,
   TagsPage: () => <TagsPage cube={useWorkbench()} />,
+  BoardPage: () => <BoardPage cube={useWorkbench()} />,
   SelectCard,
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,

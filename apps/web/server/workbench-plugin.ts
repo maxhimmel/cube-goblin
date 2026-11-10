@@ -3,6 +3,7 @@ import { join, resolve, sep } from "node:path";
 import type {
   AddResult,
   BatchResult,
+  BoardResult,
   CubePaths,
   SearchResult,
   TagResult,
@@ -19,10 +20,12 @@ import {
   cubePaths,
   patchCard,
   patchCards,
+  readBoard,
   readCards,
   readConfig,
   readSections,
   readTags,
+  saveBoard,
   slugify,
 } from "@repo/cube";
 import {
@@ -119,12 +122,15 @@ async function loadWorkbench(
   };
 }
 
-type WriteResult = UpdateResult | TagResult | BatchResult | AddResult;
+type WriteResult = UpdateResult | TagResult | BatchResult | AddResult | BoardResult;
 type Write = (body: unknown) => Promise<WriteResult>;
 
 function written(result: Extract<WriteResult, { ok: true }>): unknown {
   if ("card" in result) {
     return result.card;
+  }
+  if ("board" in result) {
+    return result.board;
   }
   return "cards" in result ? result.cards : result.tag;
 }
@@ -185,6 +191,9 @@ function writeRoute(paths: CubePaths, client: ScryfallClient) {
     const tag = TAG_ROUTE.exec(url)?.[1];
     if (tag !== undefined && method === "PATCH") {
       return (body) => changeTag(paths, tag, body);
+    }
+    if (url === "/api/board" && method === "PUT") {
+      return (body) => saveBoard(paths, body);
     }
     if (url === "/api/tags" && method === "POST") {
       return (body) => createTag(paths, body);
@@ -257,6 +266,17 @@ export function workbench(options: WorkbenchOptions): Plugin {
             (error: unknown) => {
               const status = error instanceof ScryfallError ? scryfallStatus(error.status) : 502;
               send(res, status, { error: error instanceof Error ? error.message : String(error) });
+            },
+          );
+          return;
+        }
+        if (url === "/api/board" && req.method === "GET") {
+          readBoard(paths).then(
+            (board) => {
+              send(res, 200, board);
+            },
+            (error: unknown) => {
+              send(res, 500, { error: String(error) });
             },
           );
           return;

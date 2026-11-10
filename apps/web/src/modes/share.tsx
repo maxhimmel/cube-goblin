@@ -115,6 +115,7 @@ export const mode: Mode = {
   Toolbar,
   CardPanel,
   TagsPage: () => <p className="muted">Tags are edited in the workbench.</p>,
+  BoardPage: () => <p className="muted">The board lives in the workbench.</p>,
   SelectCard: () => null,
   SelectPile: () => null,
   BulkBar: () => null,

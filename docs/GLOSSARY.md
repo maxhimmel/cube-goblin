@@ -26,6 +26,10 @@ A label on a card. A card can carry many tags. Every tag has a kind, either **ar
 
 A project-defined term with no outside source: a tag of kind `group`, meaning a set of cards the designer wants to see together that isn't an archetype, such as removal or card draw. Groups can overlap. See [Tag](#tag).
 
+## Bin
+
+A project-defined term with no outside source: a named box on the workbench Board that holds cards while the designer sketches a [Group](#group) or [Archetype](#archetype) before tagging. A card can sit in several bins. Bins live in `cube/board.json`, apart from tags; promoting a bin turns it into a [Tag](#tag) on its cards. Not the same as a bucket in Insights, which is one bar or cell of a chart.
+
 ## Enabler / payoff
 
 An **enabler** produces an effect or resource. A **payoff** turns it into value. Synergy and combo are both built from these two parts.

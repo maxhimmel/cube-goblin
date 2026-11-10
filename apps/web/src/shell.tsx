@@ -42,6 +42,11 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
           <Link to="/cards" activeOptions={{ includeSearch: false }}>
             Cards
           </Link>
+          {mode.name === "workbench" && (
+            <Link to="/board" activeOptions={{ includeSearch: false }}>
+              Board
+            </Link>
+          )}
           <Link to="/insights" activeOptions={{ includeSearch: false }}>
             Insights
           </Link>

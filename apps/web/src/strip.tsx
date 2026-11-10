@@ -9,6 +9,7 @@ const PREVIEW_WIDTH = 250;
 const PREVIEW_HEIGHT = Math.round((PREVIEW_WIDTH * 680) / 488);
 const GAP = 14;
 export const DRAG_TYPE = "application/x-cube-card";
+export const BIN_DRAG_TYPE = "application/x-cube-bin";
 
 const MANA_VAR: Record<string, string> = {
   W: "var(--mana-w)",
@@ -48,12 +49,16 @@ function previewAt(card: GridCard, rect: DOMRect): Hover {
 export function Strip({
   card,
   onHover,
+  dragFrom,
+  after,
 }: {
   card: GridCard;
   onHover: (hover: Hover | undefined) => void;
+  dragFrom?: string;
+  after?: ReactNode;
 }): ReactNode {
   return (
-    <li className="strip-cell">
+    <li className="strip-cell" data-status={card.status}>
       <CardLink
         slug={card.slug}
         className="strip"
@@ -61,7 +66,10 @@ export function Strip({
         draggable={mode.moveCard !== undefined}
         onDragStart={(event: DragEvent<HTMLAnchorElement>) => {
           event.dataTransfer.setData(DRAG_TYPE, card.slug);
-          event.dataTransfer.effectAllowed = "move";
+          if (dragFrom !== undefined) {
+            event.dataTransfer.setData(BIN_DRAG_TYPE, dragFrom);
+          }
+          event.dataTransfer.effectAllowed = "copyMove";
           onHover(undefined);
         }}
         onPointerEnter={(event: PointerEvent<HTMLAnchorElement>) => {
@@ -82,6 +90,7 @@ export function Strip({
         <span className="strip-name">{card.name}</span>
         <ManaCost cost={card.manaCost} />
       </CardLink>
+      {after}
     </li>
   );
 }

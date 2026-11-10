@@ -29,7 +29,7 @@ async function refresh(): Promise<void> {
   }
 }
 
-function cacheTag(tag: Tag): void {
+export function cacheTag(tag: Tag): void {
   queryClient.setQueryData<Workbench>(CUBE_QUERY_KEY, (cube) => {
     if (!cube) {
       return cube;

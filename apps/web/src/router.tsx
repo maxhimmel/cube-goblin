@@ -66,6 +66,12 @@ const tagsRoute = createRoute({
   component: () => <mode.TagsPage />,
 });
 
+const boardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/board",
+  component: () => <mode.BoardPage />,
+});
+
 const addRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/add",
@@ -84,6 +90,7 @@ export const router = createRouter({
     insightsRoute,
     cardRoute,
     tagsRoute,
+    boardRoute,
     addRoute,
   ]),
   history: createHashHistory(),

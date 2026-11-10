@@ -307,6 +307,10 @@ function percent(part: number, whole: number): string {
   return whole === 0 ? "–" : `${String(Math.round((part / whole) * 100))}%`;
 }
 
+function byCount<T extends Count>(rows: readonly T[]): T[] {
+  return [...rows].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
 const RARE_TYPES: ReadonlySet<string> = new Set(["battle", "other"]);
 
 interface BarBlock {
@@ -342,17 +346,18 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
     rows: (stats) => stats.status,
     fill: "var(--chart-status)",
   },
-  archetype: {
+  archetypes: {
     kind: "tag",
     title: "Archetypes",
-    rows: (stats) => stats.tags.filter((row) => row.kind === "archetype"),
+    rows: (stats) => byCount(stats.tags.filter((row) => row.kind === "archetype")),
     fill: "var(--chart-archetype)",
     empty: "No archetype tags yet.",
   },
-  group: {
+  groups: {
     kind: "tag",
     title: "Groups",
-    rows: (stats) => stats.tags.filter((row) => row.kind === "group"),
+    caption: () => "Includes functions (removal, ramp, …) that Scryfall filled in",
+    rows: (stats) => byCount(stats.tags.filter((row) => row.kind === "group")),
     fill: "var(--chart-group)",
     empty: "No group tags yet.",
   },

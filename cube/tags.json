@@ -129,6 +129,16 @@
       "id": "protection",
       "label": "protection",
       "kind": "group"
+    },
+    {
+      "id": "flicker",
+      "label": "flicker",
+      "kind": "group"
+    },
+    {
+      "id": "etb",
+      "label": "ETB",
+      "kind": "group"
     }
   ]
 }

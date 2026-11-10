@@ -209,6 +209,7 @@ export const BUCKET_KINDS = [
   "color",
   "colorCurve",
   "presence",
+  "colorMulti",
   "heavy",
   "type",
   "function",
@@ -245,6 +246,8 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
       return spell && colorGroup(card) === first && curveKey(card) === second;
     case "presence":
       return spell && hasColor(card, first);
+    case "colorMulti":
+      return spell && card.colors.length > 1 && card.colors.includes(first);
     case "heavy":
       return spell && isHeavy(card, first);
     case "type":

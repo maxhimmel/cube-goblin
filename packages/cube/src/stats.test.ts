@@ -149,6 +149,19 @@ describe("inBucket", () => {
     }
   });
 
+  it("splits a color's presence into mono cards and multicolored cards with it", () => {
+    for (const color of ["W", "U", "B", "R", "G"]) {
+      const listed = (id: string) => {
+        const bucket = parseBucket(id);
+        return cards.filter((c) => bucket && inBucket(c, bucket)).length;
+      };
+      expect(listed(bucketId("color", color)) + listed(bucketId("colorMulti", color))).toBe(
+        listed(bucketId("presence", color)),
+      );
+    }
+    expect(cards.filter((c) => inBucket(c, { kind: "colorMulti", keys: ["U"] })).length).toBe(1);
+  });
+
   it("rejects unknown buckets", () => {
     expect(parseBucket("nope:1")).toBeUndefined();
     expect(parseBucket("curve")).toBeUndefined();

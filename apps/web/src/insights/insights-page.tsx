@@ -1,6 +1,7 @@
 import { mode } from "#mode";
 import type { Bucket, BucketKind, Count, CubeStats } from "@repo/cube/browser";
 import {
+  COLORS,
   COLOR_GROUPS,
   CURVE_COLUMNS,
   HEAVY_PIPS,
@@ -17,8 +18,8 @@ import { ManaSymbol } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import { Block } from "./block.tsx";
 import { BucketPanel } from "./bucket-panel.tsx";
-import type { BarFill, TickLabel } from "./charts.tsx";
-import { ColumnChart, CountTable, HeatChart, RowChart } from "./charts.tsx";
+import type { BarFill, StackedRow, TickLabel } from "./charts.tsx";
+import { ColumnChart, CountTable, HeatChart, RowChart, StackedRowChart } from "./charts.tsx";
 import type { BlockId, Dashboard } from "./layout.ts";
 import { BLOCKS, BREAKPOINTS, COLS, ROW_HEIGHT, shown, useDashboard } from "./layout.ts";
 
@@ -111,27 +112,10 @@ interface BarBlock {
   fill: BarFill;
   caption?: (asOfText: string) => string;
   tick?: TickLabel;
-  unit?: string;
   empty?: string;
 }
 
 const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
-  color: {
-    kind: "color",
-    title: "Color",
-    rows: (stats) => stats.colors,
-    fill: manaFill,
-    caption: () => "Nonland cards by color",
-    tick: colorTick,
-  },
-  presence: {
-    kind: "presence",
-    title: "Color presence",
-    rows: (stats) => stats.presence,
-    fill: manaFill,
-    caption: () => "Nonland cards of each color; a multicolored card counts for each of its colors",
-    tick: colorTick,
-  },
   heavy: {
     kind: "heavy",
     title: "Heavy pips",
@@ -182,7 +166,8 @@ const KIND_TITLES: Record<BucketKind, string> = {
   curve: "Mana curve",
   color: "Color",
   colorCurve: "Color by mana value",
-  presence: "Color presence",
+  presence: "Color",
+  colorMulti: "Color",
   heavy: "Heavy pips",
   type: "Card types",
   function: "Functions",
@@ -200,6 +185,8 @@ function bucketLabel(bucket: Bucket, stats: CubeStats): string {
     case "color":
     case "presence":
       return colorLabel(first);
+    case "colorMulti":
+      return `Multicolored with ${colorLabel(first)}`;
     case "heavy":
       return `${colorLabel(first)}, ${String(HEAVY_PIPS)}+ pips`;
     case "colorCurve":
@@ -213,6 +200,57 @@ function bucketLabel(bucket: Bucket, stats: CubeStats): string {
     case "tag":
       return find(stats.tags);
   }
+}
+
+const DARK_INK: ReadonlySet<string> = new Set(["W", "multicolored", "colorless"]);
+
+function colorRows(stats: CubeStats): StackedRow[] {
+  const mono = new Map(stats.colors.map((row) => [row.id, row.count]));
+  const presence = new Map(stats.presence.map((row) => [row.id, row.count]));
+  return COLOR_GROUPS.map((group) => {
+    const own = mono.get(group.id) ?? 0;
+    const fill = MANA_FILLS[group.id] ?? "var(--chart-bar)";
+    const solo = {
+      bucket: bucketId("color", group.id),
+      label: group.label,
+      count: own,
+      fill,
+      ink: DARK_INK.has(group.id) ? "#1b2230" : "#fff",
+    };
+    if (!COLORS.some((color) => color.id === group.id)) {
+      return { id: group.id, label: group.label, bucket: solo.bucket, parts: [solo] };
+    }
+    return {
+      id: group.id,
+      label: group.label,
+      bucket: bucketId("presence", group.id),
+      parts: [
+        { ...solo, label: `Mono ${group.label.toLowerCase()}` },
+        {
+          bucket: bucketId("colorMulti", group.id),
+          label: `Multicolored with ${group.label.toLowerCase()}`,
+          count: (presence.get(group.id) ?? 0) - own,
+          fill: `color-mix(in oklab, ${fill} 45%, var(--panel))`,
+          ink: "var(--fg)",
+        },
+      ],
+    };
+  });
+}
+
+function colorTable(rows: readonly StackedRow[]): Count[] {
+  return rows.flatMap((row) => {
+    const parts = row.parts.map((part) => ({
+      id: part.bucket,
+      label: part.label,
+      count: part.count,
+    }));
+    if (row.parts.length < 2) {
+      return parts;
+    }
+    const total = row.parts.reduce((sum, part) => sum + part.count, 0);
+    return [...parts, { id: row.bucket, label: `All ${row.label.toLowerCase()}`, count: total }];
+  });
 }
 
 function selectedIn(bucket: Bucket | undefined, kind: BucketKind): string | undefined {
@@ -332,12 +370,37 @@ export function InsightsPage(): ReactNode {
           <ColumnChart
             rows={stats.curve}
             name="Mana curve"
-            unit="cards"
-            category="Mana value"
             fill="var(--chart-curve)"
             tick={curveTick}
             selected={selected}
             onPick={onPick}
+          />
+        </Block>
+      );
+    }
+    if (id === "color") {
+      const rows = colorRows(stats);
+      return (
+        <Block
+          title="Color"
+          caption="Nonland cards by color. The pale part of a bar is multicolored cards with that color. Click a part for those cards, or a color's name for all of them."
+          collapsed={collapsed}
+          onToggle={toggle}
+          table={
+            <CountTable
+              caption="Color"
+              rows={colorTable(rows)}
+              selected={search.bucket}
+              onPick={pick}
+            />
+          }
+        >
+          <StackedRowChart
+            rows={rows}
+            name="Color"
+            tick={colorTick}
+            selected={search.bucket}
+            onPick={pick}
           />
         </Block>
       );
@@ -416,7 +479,6 @@ export function InsightsPage(): ReactNode {
           <RowChart
             rows={rows}
             name={spec.title}
-            unit={spec.unit ?? "cards"}
             fill={spec.fill}
             tick={spec.tick}
             selected={selected}

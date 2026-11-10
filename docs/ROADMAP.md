@@ -10,6 +10,8 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-017: Choose a card's printing](tickets/T-017-card-printings.md)
+
 ## Next
 
 - [T-012: Tag overlap view](tickets/T-012-tag-overlap-view.md)

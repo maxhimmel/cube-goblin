@@ -409,7 +409,7 @@ textarea {
 
 .tile-cell .select {
   position: absolute;
-  top: 16%;
+  bottom: 8px;
   left: 8px;
   width: 22px;
   height: 22px;

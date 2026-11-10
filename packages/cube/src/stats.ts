@@ -1,4 +1,3 @@
-import { CARD_FUNCTIONS } from "./functions.ts";
 import type { CardStatus, Tag } from "./schema.ts";
 import { CARD_STATUSES } from "./schema.ts";
 
@@ -41,7 +40,6 @@ export interface StatCard {
   power?: string | undefined;
   toughness?: string | undefined;
   tags?: string[] | undefined;
-  functions?: readonly string[] | undefined;
 }
 
 export interface Count {
@@ -68,7 +66,6 @@ export interface CubeStats {
   lands: number;
   creatures: number;
   types: Count[];
-  functions: Count[];
   tags: (Count & { kind: Tag["kind"] })[];
 }
 
@@ -229,11 +226,6 @@ export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]
       label,
       count: count(cards, (card) => typeKeys(card).includes(id)),
     })),
-    functions: CARD_FUNCTIONS.map(({ id, label }) => ({
-      id,
-      label,
-      count: count(cards, (card) => card.functions?.includes(id) ?? false),
-    })),
     tags: vocabulary.map((tag) => ({
       id: tag.id,
       label: tag.label,
@@ -253,7 +245,6 @@ export const BUCKET_KINDS = [
   "type",
   "pt",
   "body",
-  "function",
   "status",
   "tag",
 ] as const;
@@ -297,8 +288,6 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
       return inPtCell(card, first, second);
     case "body":
       return isCreature(card) && card.power === first && card.toughness === second;
-    case "function":
-      return card.functions?.includes(first) ?? false;
     case "status":
       return card.status === first;
     case "tag":

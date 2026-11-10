@@ -11,10 +11,9 @@ export const BLOCKS = [
   { id: "pt", span: 8, h: 12, minH: 7 },
   { id: "creature-balance", span: 12, h: 26, minH: 8 },
   { id: "combat", span: 12, h: 20, minH: 10 },
-  { id: "functions", span: 4, h: 12, minH: 6 },
   { id: "status", span: 4, h: 8, minH: 5 },
-  { id: "archetype", span: 4, h: 6, minH: 4 },
-  { id: "group", span: 4, h: 6, minH: 4 },
+  { id: "archetypes", span: 4, h: 10, minH: 4 },
+  { id: "groups", span: 8, h: 26, minH: 8 },
 ] as const;
 
 export type BlockId = (typeof BLOCKS)[number]["id"];

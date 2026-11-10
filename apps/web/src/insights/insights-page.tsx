@@ -307,8 +307,8 @@ function percent(part: number, whole: number): string {
   return whole === 0 ? "–" : `${String(Math.round((part / whole) * 100))}%`;
 }
 
-function asOf(iso: string | undefined): string {
-  return iso === undefined ? "not downloaded yet" : `as of ${iso.slice(0, 10)}`;
+function byCount<T extends Count>(rows: readonly T[]): T[] {
+  return [...rows].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
 const RARE_TYPES: ReadonlySet<string> = new Set(["battle", "other"]);
@@ -318,7 +318,7 @@ interface BarBlock {
   title: string;
   rows: (stats: CubeStats) => Count[];
   fill: BarFill;
-  caption?: (asOfText: string) => string;
+  caption?: () => string;
   tick?: TickLabel;
   empty?: string;
 }
@@ -340,31 +340,24 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
     fill: "var(--chart-types)",
     caption: () => "A card counts under every type on its front face",
   },
-  functions: {
-    kind: "function",
-    title: "Functions",
-    rows: (stats) => stats.functions,
-    fill: "var(--chart-functions)",
-    caption: (when) =>
-      `Scryfall oracle tags, ${when}. Fixing also counts cards that make two or more colors of mana.`,
-  },
   status: {
     kind: "status",
     title: "Status",
     rows: (stats) => stats.status,
     fill: "var(--chart-status)",
   },
-  archetype: {
+  archetypes: {
     kind: "tag",
     title: "Archetypes",
-    rows: (stats) => stats.tags.filter((row) => row.kind === "archetype"),
+    rows: (stats) => byCount(stats.tags.filter((row) => row.kind === "archetype")),
     fill: "var(--chart-archetype)",
     empty: "No archetype tags yet.",
   },
-  group: {
+  groups: {
     kind: "tag",
     title: "Groups",
-    rows: (stats) => stats.tags.filter((row) => row.kind === "group"),
+    caption: () => "Includes functions (removal, ramp, …) that Scryfall filled in",
+    rows: (stats) => byCount(stats.tags.filter((row) => row.kind === "group")),
     fill: "var(--chart-group)",
     empty: "No group tags yet.",
   },
@@ -380,7 +373,6 @@ const KIND_TITLES: Record<BucketKind, string> = {
   type: "Card types",
   pt: "Power and toughness",
   body: "Combat matchups",
-  function: "Functions",
   status: "Status",
   tag: "Tags",
 };
@@ -407,8 +399,6 @@ function bucketLabel(bucket: Bucket, stats: CubeStats): string {
       return `${ptLabel(first)}/${ptLabel(second)}`;
     case "body":
       return `${first}/${second}`;
-    case "function":
-      return find(stats.functions);
     case "status":
       return find(stats.status);
     case "tag":
@@ -522,7 +512,6 @@ export function InsightsPage(): ReactNode {
   const drafted = cube.cards.filter((card) => card.status === "draft").length;
   const nonland = stats.total - stats.lands;
   const bucket = search.bucket === undefined ? undefined : parseBucket(search.bucket);
-  const when = asOf(cube.functionsAsOf);
 
   const pick = (id: string): void => {
     void navigate({
@@ -742,7 +731,7 @@ export function InsightsPage(): ReactNode {
     return (
       <Block
         title={spec.title}
-        caption={spec.caption?.(when)}
+        caption={spec.caption?.()}
         collapsed={collapsed}
         onToggle={toggle}
         {...(rows.length > 0

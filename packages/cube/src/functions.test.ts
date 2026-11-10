@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CARD_FUNCTIONS, cardFunctions, producesFixing } from "./functions.ts";
+import {
+  CARD_FUNCTIONS,
+  FUNCTION_TAGS,
+  functionTags,
+  producesFixing,
+  withFunctionTags,
+} from "./functions.ts";
 
 const removal = CARD_FUNCTIONS.find((entry) => entry.id === "removal")?.oracleTagId ?? "";
 const fetchland = CARD_FUNCTIONS.find((entry) => entry.id === "fixing")?.oracleTagId ?? "";
@@ -13,21 +19,33 @@ describe("producesFixing", () => {
   });
 });
 
-describe("cardFunctions", () => {
+describe("functionTags", () => {
   const index = { [removal]: ["bolt"], [fetchland]: ["wilds"] };
 
-  it("reads oracle tags by id, in function order", () => {
-    expect(cardFunctions({ oracleId: "bolt", producedMana: [] }, index)).toEqual(["removal"]);
-    expect(cardFunctions({ oracleId: "elf", producedMana: ["G"] }, index)).toEqual([]);
+  it("reads oracle tags by id, as tag ids in function order", () => {
+    expect(functionTags({ oracleId: "bolt", producedMana: [] }, index)).toEqual(["removal"]);
+    expect(functionTags({ oracleId: "elf", producedMana: ["G"] }, index)).toEqual([]);
   });
 
   it("counts fetchlands and multicolor mana as fixing, once", () => {
-    expect(cardFunctions({ oracleId: "wilds", producedMana: [] }, index)).toEqual(["fixing"]);
-    expect(cardFunctions({ oracleId: "birds", producedMana: ["W", "U"] }, index)).toEqual([
+    expect(functionTags({ oracleId: "wilds", producedMana: [] }, index)).toEqual(["fixing"]);
+    expect(functionTags({ oracleId: "birds", producedMana: ["W", "U"] }, index)).toEqual([
       "fixing",
     ]);
-    expect(cardFunctions({ oracleId: "wilds", producedMana: ["W", "U"] }, index)).toEqual([
+    expect(functionTags({ oracleId: "wilds", producedMana: ["W", "U"] }, index)).toEqual([
       "fixing",
     ]);
+  });
+});
+
+describe("withFunctionTags", () => {
+  it("adds every missing function as a group tag and keeps the designer's tags", () => {
+    const mine = { id: "removal", label: "Kill spells", kind: "archetype" } as const;
+    const vocabulary = withFunctionTags([mine]);
+    expect(vocabulary[0]).toEqual(mine);
+    expect(vocabulary).toHaveLength(FUNCTION_TAGS.length);
+    expect(
+      vocabulary.filter((tag) => tag.id !== "removal").every((tag) => tag.kind === "group"),
+    ).toBe(true);
   });
 });

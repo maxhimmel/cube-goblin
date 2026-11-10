@@ -3,7 +3,11 @@
   "oracleId": "eb1dfa29-7371-4cb6-bfa2-16f7820b69be",
   "status": "draft",
   "printing": "26a65d5b-d07e-4ff0-900a-30d509ce0f35",
-  "tags": [],
+  "tags": [
+    "counterspell",
+    "card-draw",
+    "looting"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

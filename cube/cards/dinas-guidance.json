@@ -3,7 +3,9 @@
   "oracleId": "a9abed25-9256-4fc7-8afb-edb4286e18f4",
   "status": "draft",
   "printing": "775c1e50-08a4-413f-ab0f-f1c2a79cfe94",
-  "tags": [],
+  "tags": [
+    "tutor"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

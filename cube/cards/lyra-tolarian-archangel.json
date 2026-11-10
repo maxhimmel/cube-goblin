@@ -3,7 +3,11 @@
   "oracleId": "d9060fff-0b65-4b3d-930d-6e36315b802c",
   "status": "draft",
   "printing": "a5183681-447b-4023-91f7-00e9338f4417",
-  "tags": [],
+  "tags": [
+    "card-draw",
+    "token-maker",
+    "evasion"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

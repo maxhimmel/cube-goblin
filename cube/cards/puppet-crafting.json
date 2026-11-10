@@ -3,7 +3,9 @@
   "oracleId": "d13c111a-ebfc-48ac-b734-f203c7c29d21",
   "status": "draft",
   "printing": "6b8789a6-3b63-4198-af5f-c2f2f49fafd9",
-  "tags": [],
+  "tags": [
+    "recursion"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

@@ -3,7 +3,9 @@
   "oracleId": "5ba482e9-fbb0-4d9f-a3a9-414892bcdfed",
   "status": "draft",
   "printing": "550cd0b6-ca61-4db7-9d20-0b68c48066f9",
-  "tags": [],
+  "tags": [
+    "token-maker"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

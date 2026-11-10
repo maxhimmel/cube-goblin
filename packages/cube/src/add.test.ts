@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { NameLookup } from "./add.ts";
+import type { CardLookup } from "./add.ts";
 import { addCard } from "./add.ts";
 import { parseBatch } from "./parse.ts";
 import type { CardEntry } from "./schema.ts";
@@ -21,12 +21,12 @@ const shock: CardEntry = {
   source: { batch: "test", line: 1, input: "Shock" },
 };
 
-const names = new Map([
-  [BOLT_ID, "Lightning Bolt"],
-  [OPT_ID, "Opt"],
-  [shock.oracleId, "Shock"],
+const found = new Map([
+  [BOLT_ID, { name: "Lightning Bolt", functionTags: ["burn", "removal"] }],
+  [OPT_ID, { name: "Opt", functionTags: [] }],
+  [shock.oracleId, { name: "Shock", functionTags: ["burn"] }],
 ]);
-const lookup: NameLookup = (id) => Promise.resolve(names.get(id));
+const lookup: CardLookup = (id) => Promise.resolve(found.get(id));
 
 let paths: CubePaths;
 
@@ -63,6 +63,11 @@ describe("addCard", () => {
       [1, "Lightning Bolt"],
       [2, "Opt"],
     ]);
+  });
+
+  it("tags a new card with its functions that are in the vocabulary", async () => {
+    await addCard(paths, { oracleId: BOLT_ID, status: "draft" }, lookup);
+    expect(await card("lightning-bolt")).toMatchObject({ tags: ["burn"] });
   });
 
   it("swaps a card: the old one becomes cut and keeps its notes", async () => {
@@ -115,7 +120,7 @@ describe("addCard", () => {
 
   it("does not look up a card that is already in the cube", async () => {
     let lookups = 0;
-    const counting: NameLookup = (id) => {
+    const counting: CardLookup = (id) => {
       lookups += 1;
       return lookup(id);
     };

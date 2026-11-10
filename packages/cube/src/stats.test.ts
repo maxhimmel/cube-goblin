@@ -8,7 +8,7 @@ function card(overrides: Partial<StatCard>): StatCard {
 }
 
 const cards: StatCard[] = [
-  card({ colors: ["R"], cmc: 1, tags: ["burn"], manaCost: "{R}", functions: ["removal"] }),
+  card({ colors: ["R"], cmc: 1, tags: ["burn"], manaCost: "{R}" }),
   card({ colors: ["R"], cmc: 1, status: "prospect" }),
   card({ colors: ["U", "R"], cmc: 2, tags: ["burn"], manaCost: "{U/R}{R}" }),
   card({ cmc: 9, typeLine: "Artifact Creature — Eldrazi", status: "cut" }),
@@ -34,10 +34,6 @@ describe("cubeStats", () => {
       land: 1,
     });
     expect(stats.creatures).toBe(2);
-  });
-
-  it("counts functions", () => {
-    expect(stats.functions.find((row) => row.id === "removal")?.count).toBe(1);
   });
 
   it("counts a multicolored card for each of its colors and as multicolored", () => {
@@ -158,7 +154,6 @@ describe("inBucket", () => {
     ["presence", stats.presence],
     ["heavy", stats.heavy],
     ["type", stats.types],
-    ["function", stats.functions],
     ["status", stats.status],
     ["tag", stats.tags],
   ];

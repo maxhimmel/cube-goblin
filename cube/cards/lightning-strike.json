@@ -3,7 +3,10 @@
   "oracleId": "f34b9bc4-7bfe-47fd-ba23-4eeeb46026eb",
   "status": "prospect",
   "printing": "f0f55dee-7e39-4183-8e74-844d9c299bf5",
-  "tags": [],
+  "tags": [
+    "removal",
+    "burn"
+  ],
   "notes": "Deck: Dinosaurs",
   "source": {
     "batch": "batch-001",

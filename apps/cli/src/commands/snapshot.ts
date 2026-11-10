@@ -2,21 +2,15 @@ import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotCard } from "@repo/cube";
-import {
-  FUNCTION_ORACLE_TAG_IDS,
-  cardFunctions,
-  readCards,
-  slugify,
-  snapshotSchema,
-} from "@repo/cube";
+import { readCards, readTags, slugify, snapshotSchema } from "@repo/cube";
 import { displayFields } from "@repo/scryfall";
 import { chalk } from "zx";
-import { createClient, createOracleTagStore, USER_AGENT } from "../client.ts";
+import { createClient, USER_AGENT } from "../client.ts";
 import { imageDataUri } from "../images.ts";
 import { CUBE_PATHS, SNAPSHOT_FILE } from "../paths.ts";
 
 export async function snapshot(): Promise<number> {
-  const entries = await readCards(CUBE_PATHS);
+  const [entries, vocabulary] = await Promise.all([readCards(CUBE_PATHS), readTags(CUBE_PATHS)]);
   const client = createClient();
   const { cards: byOracle, missing: notFound, unresolved } = await client.forEntries(entries);
   if (unresolved.length > 0) {
@@ -25,10 +19,6 @@ export async function snapshot(): Promise<number> {
       .map((entry) => entry.name);
     console.error(chalk.red(`Chosen printing not found for: ${names.join(", ")}`));
     return 1;
-  }
-  const oracleTags = await createOracleTagStore(client).load(FUNCTION_ORACLE_TAG_IDS);
-  if (oracleTags.error !== undefined) {
-    console.error(chalk.yellow(`Oracle tags unavailable, using cache: ${oracleTags.error}`));
   }
   if (notFound.length > 0) {
     console.error(chalk.red(`Scryfall could not find: ${JSON.stringify(notFound)}`));
@@ -44,14 +34,13 @@ export async function snapshot(): Promise<number> {
       return 1;
     }
     process.stderr.write(`\rImages ${String(snapshotCards.length + 1)}/${String(entries.length)}`);
-    const { producedMana, ...display } = fields;
     snapshotCards.push({
       slug: slugify(entry.name),
       name: entry.name,
       oracleId: entry.oracleId,
       status: entry.status,
-      ...display,
-      functions: cardFunctions({ oracleId: entry.oracleId, producedMana }, oracleTags.index),
+      ...fields,
+      tags: entry.tags,
       image: await imageDataUri(fields.image, `${card.id}-small`, USER_AGENT),
     });
   }
@@ -65,9 +54,7 @@ export async function snapshot(): Promise<number> {
     id,
     createdAt: new Date().toISOString(),
     cards: snapshotCards,
-    ...(oracleTags.fetchedAt === undefined
-      ? {}
-      : { functionsAsOf: new Date(oracleTags.fetchedAt).toISOString() }),
+    vocabulary,
   });
   await mkdir(dirname(SNAPSHOT_FILE), { recursive: true });
   await writeFile(SNAPSHOT_FILE, JSON.stringify(result));

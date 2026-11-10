@@ -3,7 +3,10 @@
   "oracleId": "cc65821a-1893-4087-b461-35cf9fd26c71",
   "status": "draft",
   "printing": "f54f1c1d-6a22-43e9-a842-0a1ae25b323c",
-  "tags": [],
+  "tags": [
+    "ramp",
+    "token-maker"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

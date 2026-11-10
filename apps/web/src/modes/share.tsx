@@ -13,9 +13,8 @@ import type { CubeView, Mode } from "./mode.ts";
 
 const view: CubeView = {
   cards: snapshot.cards,
-  vocabulary: [],
+  vocabulary: snapshot.vocabulary,
   label: `snapshot ${snapshot.id}`,
-  functionsAsOf: snapshot.functionsAsOf,
 };
 
 const NO_SELECTION: ReadonlySet<string> = new Set();

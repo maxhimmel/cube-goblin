@@ -5,6 +5,7 @@ import type {
   BatchResult,
   BoardResult,
   CubePaths,
+  FoundCard,
   Printing,
   SearchResult,
   TagResult,
@@ -16,7 +17,7 @@ import {
   FUNCTION_ORACLE_TAG_IDS,
   addCard,
   cardChangesSchema,
-  cardFunctions,
+  functionTags,
   cardPatchSchema,
   changeTag,
   createTag,
@@ -78,20 +79,13 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
   }
 }
 
-async function loadWorkbench(
-  paths: CubePaths,
-  client: ScryfallClient,
-  oracleTags: OracleTagStore,
-): Promise<Workbench> {
+async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<Workbench> {
   const [entries, vocabulary, config] = await Promise.all([
     readCards(paths),
     readTags(paths),
     readConfig(paths),
   ]);
-  const [{ cards: byOracle, unresolved }, tags] = await Promise.all([
-    client.forEntries(entries),
-    oracleTags.load(FUNCTION_ORACLE_TAG_IDS),
-  ]);
+  const { cards: byOracle, unresolved } = await client.forEntries(entries);
   if (unresolved.length > 0) {
     console.warn(
       `Showing the default printing for ${String(unresolved.length)} card(s) whose chosen printing could not be loaded`,
@@ -104,7 +98,6 @@ async function loadWorkbench(
     if (!card || !fields) {
       throw new Error(`Missing Scryfall data or image for ${entry.name}`);
     }
-    const { producedMana, ...display } = fields;
     workbenchCards.push({
       slug: slugify(entry.name),
       name: entry.name,
@@ -116,8 +109,7 @@ async function loadWorkbench(
         setName: card.set_name ?? card.set,
         collectorNumber: card.collector_number,
       },
-      ...display,
-      functions: cardFunctions({ oracleId: entry.oracleId, producedMana }, tags.index),
+      ...fields,
       image: localImageUrl(fields.image),
       imageLarge: localImageUrl(fields.imageLarge),
       tags: entry.tags,
@@ -128,9 +120,6 @@ async function loadWorkbench(
     cards: workbenchCards,
     vocabulary,
     size: config.size,
-    ...(tags.fetchedAt === undefined
-      ? {}
-      : { functionsAsOf: new Date(tags.fetchedAt).toISOString() }),
   };
 }
 
@@ -246,9 +235,23 @@ function warmImages(cards: readonly Card[], images: ImageCache): void {
   }
 }
 
-function writeRoute(paths: CubePaths, client: ScryfallClient) {
-  const lookup = async (oracleId: string): Promise<string | undefined> =>
-    (await client.byOracleIds([oracleId])).cards[0]?.name;
+function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: OracleTagStore) {
+  const lookup = async (oracleId: string): Promise<FoundCard | undefined> => {
+    const [{ cards }, tags] = await Promise.all([
+      client.byOracleIds([oracleId]),
+      oracleTags.load(FUNCTION_ORACLE_TAG_IDS),
+    ]);
+    const card = cards[0];
+    return card
+      ? {
+          name: card.name,
+          functionTags: functionTags(
+            { oracleId, producedMana: card.produced_mana ?? [] },
+            tags.index,
+          ),
+        }
+      : undefined;
+  };
   return (url: string, method: string | undefined): Write | undefined => {
     if (url === "/api/cards" && method === "POST") {
       return (body) => addCard(paths, body, lookup);
@@ -289,7 +292,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
         file: join(options.cacheDir, "oracle-tags.json"),
       });
       const images = new ImageCache(options.imageCacheDir, USER_AGENT);
-      const route = writeRoute(paths, client);
+      const route = writeRoute(paths, client, oracleTags);
       const remembered = new Map<string, Card[]>();
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
@@ -372,7 +375,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
           return;
         }
         if (url === "/api/cube" && req.method === "GET") {
-          loadWorkbench(paths, client, oracleTags).then(
+          loadWorkbench(paths, client).then(
             (data) => {
               send(res, 200, data);
             },

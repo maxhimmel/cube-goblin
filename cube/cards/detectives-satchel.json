@@ -4,7 +4,10 @@
   "status": "draft",
   "printing": "2c05bf2d-7d4f-4717-b1ea-ec4284854f4f",
   "tags": [
-    "enabler"
+    "enabler",
+    "card-draw",
+    "token-maker",
+    "evasion"
   ],
   "notes": "",
   "source": {

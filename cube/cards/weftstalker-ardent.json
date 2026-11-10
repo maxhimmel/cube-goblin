@@ -3,7 +3,9 @@
   "oracleId": "926d52a5-4db1-46ce-9567-17c28bf56ae7",
   "status": "draft",
   "printing": "cddb48cc-8eb1-47ce-90f0-7aad1e93e2c4",
-  "tags": [],
+  "tags": [
+    "burn"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

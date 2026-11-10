@@ -3,7 +3,10 @@
   "oracleId": "f852bc33-e2f8-43be-9e6e-7badd1f894ef",
   "status": "prospect",
   "printing": "47414323-ca30-45b7-a0b2-6668312bee04",
-  "tags": [],
+  "tags": [
+    "recursion",
+    "reanimate"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

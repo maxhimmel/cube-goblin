@@ -3,7 +3,10 @@
   "oracleId": "a9d288b8-cdc1-4e55-a0c9-d6edfc95e65d",
   "status": "prospect",
   "printing": "00365412-41db-427c-9109-8f69c17c326d",
-  "tags": [],
+  "tags": [
+    "removal",
+    "burn"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

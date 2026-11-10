@@ -3,7 +3,11 @@
   "oracleId": "9e45e2da-7064-4ec0-8d09-55fc7d1aeaa8",
   "status": "draft",
   "printing": "7c725702-8696-4e5a-8318-62f5e2616d52",
-  "tags": [],
+  "tags": [
+    "ramp",
+    "card-draw",
+    "tutor"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

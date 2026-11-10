@@ -93,7 +93,6 @@ export interface DisplayFields {
   oracleText: string;
   cmc: number;
   colors: string[];
-  producedMana: string[];
   power?: string;
   toughness?: string;
   image: string;
@@ -116,7 +115,6 @@ export function displayFields(card: Card): DisplayFields | undefined {
     oracleText: faces.map((face) => face.oracle_text ?? "").join("\n//\n"),
     cmc: card.cmc ?? 0,
     colors: card.colors ?? faces[0]?.colors ?? [],
-    producedMana: card.produced_mana ?? [],
     ...(power === undefined ? {} : { power }),
     ...(toughness === undefined ? {} : { toughness }),
     image: small,

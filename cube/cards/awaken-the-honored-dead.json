@@ -3,7 +3,11 @@
   "oracleId": "5f694917-f434-4459-bc86-caf9ac1c80e7",
   "status": "draft",
   "printing": "14078a49-2230-4ad7-aea0-0c253813c646",
-  "tags": [],
+  "tags": [
+    "removal",
+    "recursion",
+    "mill"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

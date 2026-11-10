@@ -3,7 +3,9 @@
   "oracleId": "d96141af-313f-4ea9-a249-d9eb22cd2431",
   "status": "draft",
   "printing": "621839e1-2756-4cdc-a25c-5f76ea98dd87",
-  "tags": [],
+  "tags": [
+    "removal"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

@@ -7,6 +7,7 @@ import { addBatch } from "./commands/add.ts";
 import { pinPrintings } from "./commands/pin-printings.ts";
 import { importReview } from "./commands/review.ts";
 import { snapshot } from "./commands/snapshot.ts";
+import { tagFunctions } from "./commands/tag-functions.ts";
 import { validate } from "./commands/validate.ts";
 import { formatCard, formatCardLine } from "./format.ts";
 
@@ -19,6 +20,7 @@ Commands:
   add <batch-file>     Parse a batch list, resolve on Scryfall, write cube/cards/*.json
   validate             Check cube files: schema, singleton, tags, board, size
   pin-printings        Save each card's current printing so Scryfall can't change it
+  tag-functions        Add Scryfall function tags (removal, ramp, …) to every card, once
   snapshot             Bake cube + Scryfall data + images for the share doc build
   review import <src>  Import a friend's review (saved .html, code, or .json)
 
@@ -26,7 +28,7 @@ Options:
   --fuzzy              Fuzzy name match (card)
   --limit <n>          Max results (search, default 20)
   --json               Print raw JSON
-  --dry-run            Resolve without writing (add, pin-printings)
+  --dry-run            Resolve without writing (add, pin-printings, tag-functions)
   -h, --help           Show this help`;
 
 const { positionals, values } = parseArgs({
@@ -65,6 +67,9 @@ async function run(): Promise<number> {
     }
     case "pin-printings": {
       return pinPrintings(values["dry-run"]);
+    }
+    case "tag-functions": {
+      return tagFunctions(values["dry-run"]);
     }
     case "snapshot": {
       return snapshot();

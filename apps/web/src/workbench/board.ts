@@ -1,5 +1,5 @@
-import type { Section, Board, CardChange, Tag, TagKind, Workbench } from "@repo/cube/browser";
-import { EMPTY_BOARD, changeSection } from "@repo/cube/browser";
+import type { Section, Board, CardChange, TagKind, Workbench } from "@repo/cube/browser";
+import { EMPTY_BOARD, linkTag, unlinkTag } from "@repo/cube/browser";
 import { MutationObserver, useQuery } from "@tanstack/react-query";
 import { queryClient } from "../query-client.ts";
 import {
@@ -10,7 +10,7 @@ import {
   saveBoardRequest,
 } from "./api.ts";
 import { runCardEdit } from "./edits.ts";
-import { cacheTag, findTag } from "./tags.ts";
+import { cacheTag } from "./tags.ts";
 import { showToast } from "./toast.tsx";
 
 const BOARD_SAVE_KEY = ["board-save"] as const;
@@ -95,50 +95,53 @@ function plural(count: number): string {
   return `${String(count)} card${count === 1 ? "" : "s"}`;
 }
 
-export function untagged(section: Section, cube: Workbench): string[] {
+export function missingTags(section: Section, cube: Workbench): CardChange[] {
   const bySlug = new Map(cube.cards.map((card) => [card.slug, card]));
-  return section.cards.filter((slug) => {
+  return section.cards.flatMap((slug) => {
     const card = bySlug.get(slug);
-    return card !== undefined && section.tag !== undefined && !card.tags.includes(section.tag);
+    const addTags = card ? section.tags.filter((tag) => !card.tags.includes(tag)) : [];
+    return addTags.length > 0 ? [{ slug, patch: { addTags } }] : [];
   });
 }
 
-async function sectionTag(section: Section, cube: Workbench, kind: TagKind): Promise<Tag> {
-  const linked = cube.vocabulary.find((tag) => tag.id === section.tag);
-  if (linked) {
-    return linked;
-  }
-  const known = findTag(cube.vocabulary, section.label);
-  if (known) {
-    return known;
-  }
-  const created = await createTagRequest(section.label, kind);
-  cacheTag(created);
-  return created;
+export function linkSectionTag(id: string, tag: string): void {
+  editBoard((board) => linkTag(board, id, tag));
 }
 
-export async function promoteSection(id: string, kind: TagKind): Promise<void> {
+export function unlinkSectionTag(id: string, tag: string): void {
+  editBoard((board) => unlinkTag(board, id, tag));
+}
+
+export async function createSectionTag(id: string, label: string, kind: TagKind): Promise<void> {
+  try {
+    const tag = await createTagRequest(label, kind);
+    cacheTag(tag);
+    linkSectionTag(id, tag.id);
+  } catch (error) {
+    showToast({ message: error instanceof Error ? error.message : String(error), tone: "error" });
+    throw error;
+  }
+}
+
+export function applySectionTags(id: string): void {
   const cube = queryClient.getQueryData<Workbench>(CUBE_QUERY_KEY);
   const section = currentBoard().sections.find((candidate) => candidate.id === id);
   if (!cube || !section) {
     return;
   }
-  let tag: Tag;
-  try {
-    tag = await sectionTag(section, cube, kind);
-    if (section.tag !== tag.id) {
-      await save((board) => changeSection(board, id, { tag: tag.id }));
-    }
-  } catch (error) {
-    showToast({ message: error instanceof Error ? error.message : String(error), tone: "error" });
+  const changes = missingTags(section, cube);
+  if (changes.length === 0) {
+    showToast({ message: `Every card in ${section.label} has its tags`, tone: "info" });
     return;
   }
-  const slugs = untagged({ ...section, tag: tag.id }, cube);
-  if (slugs.length === 0) {
-    showToast({ message: `Every card in ${section.label} has tag ${tag.label}`, tone: "info" });
-    return;
-  }
-  const changes: CardChange[] = slugs.map((slug) => ({ slug, patch: { addTags: [tag.id] } }));
-  const undo: CardChange[] = slugs.map((slug) => ({ slug, patch: { removeTags: [tag.id] } }));
-  runCardEdit({ label: `tag ${tag.label} on ${plural(slugs.length)}`, changes, undo });
+  const added = changes.reduce((sum, change) => sum + (change.patch.addTags?.length ?? 0), 0);
+  const undo: CardChange[] = changes.map(({ slug, patch }) => ({
+    slug,
+    patch: { removeTags: patch.addTags ?? [] },
+  }));
+  runCardEdit({
+    label: `${String(added)} tag${added === 1 ? "" : "s"} on ${plural(changes.length)}`,
+    changes,
+    undo,
+  });
 }

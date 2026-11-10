@@ -47,11 +47,54 @@
 
 .pool-filters,
 .board-section-tag {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
   height: var(--row-tools);
   font-size: 0.82rem;
+}
+
+.board-section-chips {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  mask-image: linear-gradient(to right, #000 85%, transparent);
+}
+
+.board-section-chips .chip {
+  flex: none;
+}
+
+.board-section-tags-editor {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  box-sizing: border-box;
+  width: max(100%, 300px);
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+}
+
+.board-section-tags-editor .field {
+  min-width: 0;
+  margin: 0;
+}
+
+.board-section-tags-editor p {
+  margin: 0;
+  font-size: 0.78rem;
 }
 
 .pool-filters button,
@@ -230,4 +273,24 @@
   border-radius: 4px;
   background: var(--field);
   font: inherit;
+}
+
+.board-section-tags-editor .inline {
+  display: flex;
+  gap: 6px;
+}
+
+.board-section-tags-editor .inline input {
+  flex: 1;
+  min-width: 0;
+}
+
+.board-section-tags-editor .inline button,
+.board-section-tags-editor > button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.board-section-tags-editor > button {
+  justify-self: end;
 }

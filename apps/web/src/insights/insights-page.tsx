@@ -356,7 +356,6 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
   groups: {
     kind: "tag",
     title: "Groups",
-    caption: () => "Includes functions (removal, ramp, …) that Scryfall filled in",
     rows: (stats) => byCount(stats.tags.filter((row) => row.kind === "group")),
     fill: "var(--chart-group)",
     empty: "No group tags yet.",

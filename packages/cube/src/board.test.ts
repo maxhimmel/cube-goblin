@@ -2,7 +2,15 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { moveCard, putCard, restoreSection, takeCard, validateBoard } from "./board.ts";
+import {
+  linkTag,
+  moveCard,
+  putCard,
+  restoreSection,
+  takeCard,
+  unlinkTag,
+  validateBoard,
+} from "./board.ts";
 import { loadBoard, saveBoard } from "./save-board.ts";
 import type { Board, CardEntry, Tag } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
@@ -21,8 +29,8 @@ const burn: Tag = { id: "burn", label: "Burn", kind: "group" };
 
 const board: Board = {
   sections: [
-    { id: "a", label: "Burn", cards: ["shock"] },
-    { id: "b", label: "Spells", cards: [] },
+    { id: "a", label: "Burn", cards: ["shock"], tags: [] },
+    { id: "b", label: "Spells", cards: [], tags: [] },
   ],
 };
 
@@ -43,6 +51,13 @@ describe("section edits", () => {
     expect(takeCard(board, "b", "shock")).toBe(board);
   });
 
+  it("links several tags once each and unlinks them", () => {
+    const linked = linkTag(linkTag(linkTag(board, "a", "burn"), "a", "removal"), "a", "burn");
+    expect(linked.sections[0]?.tags).toEqual(["burn", "removal"]);
+    expect(unlinkTag(linked, "a", "burn").sections[0]?.tags).toEqual(["removal"]);
+    expect(unlinkTag(board, "a", "burn")).toBe(board);
+  });
+
   it("puts a deleted section back where it was", () => {
     const [first] = board.sections;
     if (!first) {
@@ -56,7 +71,7 @@ describe("section edits", () => {
 
 describe("validateBoard", () => {
   it("accepts a board of known cards and tags", () => {
-    const linked = { id: "a", label: "Burn", cards: ["shock"], tag: "burn" };
+    const linked = { id: "a", label: "Burn", cards: ["shock"], tags: ["burn"] };
     expect(validateBoard({ sections: [linked] }, [shock], [burn])).toEqual([]);
   });
 
@@ -64,8 +79,13 @@ describe("validateBoard", () => {
     const problems = validateBoard(
       {
         sections: [
-          { id: "a", label: "One", cards: ["shock", "shock", "bolt"], tag: "ramp" },
-          { id: "a", label: "Two", cards: [] },
+          {
+            id: "a",
+            label: "One",
+            cards: ["shock", "shock", "bolt"],
+            tags: ["ramp", "burn", "burn"],
+          },
+          { id: "a", label: "Two", cards: [], tags: [] },
         ],
       },
       [shock],
@@ -75,6 +95,7 @@ describe("validateBoard", () => {
       'Section "One" holds "bolt", which is not in cube/cards',
       'Section "One" lists a card more than once',
       'Section "One" links tag "ramp", which is not in tags.json',
+      'Section "One" links a tag more than once',
       'Duplicate section "a" in board.json',
     ]);
   });
@@ -102,11 +123,31 @@ describe("saveBoard", () => {
   });
 
   it("drops cards and tags that no longer exist instead of refusing the save", async () => {
-    const stale = { sections: [{ id: "a", label: "x", cards: ["bolt", "shock"], tag: "ramp" }] };
-    const saved = { sections: [{ id: "a", label: "x", cards: ["shock"] }] };
+    const stale = {
+      sections: [{ id: "a", label: "x", cards: ["bolt", "shock"], tags: ["ramp", "burn"] }],
+    };
+    const saved = { sections: [{ id: "a", label: "x", cards: ["shock"], tags: ["burn"] }] };
     expect(await saveBoard(paths, stale)).toEqual({ ok: true, board: saved });
     await writeFile(paths.boardFile, JSON.stringify(stale));
     expect(await loadBoard(paths)).toEqual(saved);
+  });
+
+  it("reads a section's old single tag as a list of one", async () => {
+    await writeFile(
+      paths.boardFile,
+      JSON.stringify({
+        sections: [
+          { id: "a", label: "x", cards: [], tag: "burn" },
+          { id: "b", label: "y", cards: [] },
+        ],
+      }),
+    );
+    expect(await loadBoard(paths)).toEqual({
+      sections: [
+        { id: "a", label: "x", cards: [], tags: ["burn"] },
+        { id: "b", label: "y", cards: [], tags: [] },
+      ],
+    });
   });
 
   it("refuses a malformed board", async () => {

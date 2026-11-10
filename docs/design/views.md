@@ -23,7 +23,7 @@ Wherever cards are stacked or small, each one shows its name, mana cost, and col
 
 ## Card types
 
-The type list lives in `TYPE_COLUMNS` (`packages/cube/src/stats.ts`). A card shows under every type on its front face, so an Artifact Creature sits in both the Artifact and the Creature columns ([T-019](../tickets/T-019-card-types-overlap.md)). Sorting uses the first match only. Mechanic groups such as "makes tokens" wait for [T-013](../tickets/T-013-mechanic-detection-wizard.md).
+The type list lives in `TYPE_COLUMNS` (`packages/cube/src/stats.ts`). A card shows under every type on its front face, so an Artifact Creature sits in both the Artifact and the Creature columns ([T-019](../tickets/T-019-card-types-overlap.md)). Sorting uses the first match only. Mechanic groups such as "makes tokens" are [function](../GLOSSARY.md#function) tags ([T-022](../tickets/T-022-functions-as-tags.md)), not Wall columns.
 
 ## Look
 

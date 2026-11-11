@@ -185,6 +185,21 @@ describe("compileQuery", () => {
     expect(compileQuery('o:"open')).toMatchObject({ ok: false, error: "Missing closing quote" });
   });
 
+  it("reads and as an explicit join that binds tighter than or", () => {
+    expect(names("c=r and t:creature")).toEqual(names("c=r t:creature"));
+    expect(names("t:creature AND c=g or c=w")).toEqual(names("(t:creature c=g) or c=w"));
+    expect(compileQuery("and c=r")).toMatchObject({
+      ok: false,
+      error: '"and" needs something before it',
+    });
+    expect(compileQuery("c=r and")).toMatchObject({
+      ok: false,
+      error: '"and" needs something after it',
+    });
+    expect(compileQuery("c=r and or c=g")).toMatchObject({ ok: false });
+    expect(compileQuery('a "and" b')).toMatchObject({ ok: true });
+  });
+
   it("matches everything when empty", () => {
     expect(names("")).toHaveLength(CARDS.length);
   });
@@ -202,6 +217,16 @@ describe("query helpers", () => {
     const second = parts[1];
     expect(second && removePart(query, second)).toBe("t:creature (tag:a or tag:b)");
     expect(queryParts("a or b").map((part) => part.text)).toEqual(["a or b"]);
+  });
+
+  it("splits around an explicit and and drops it with a removed part", () => {
+    const query = "c=r and t:creature and mv<=2";
+    const parts = queryParts(query);
+    expect(parts.map((part) => part.text)).toEqual(["c=r", "t:creature", "mv<=2"]);
+    const [first, second, third] = parts;
+    expect(first && removePart(query, first)).toBe("t:creature and mv<=2");
+    expect(second && removePart(query, second)).toBe("c=r and mv<=2");
+    expect(third && removePart(query, third)).toBe("c=r and t:creature");
   });
 
   it("joins parts, wrapping bare ors", () => {

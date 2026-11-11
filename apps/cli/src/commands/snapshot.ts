@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotCard } from "@repo/cube";
-import { readCards, readTags, slugify, snapshotSchema } from "@repo/cube";
+import { loadFilters, readCards, readTags, slugify, snapshotSchema } from "@repo/cube";
 import { displayFields } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient, USER_AGENT } from "../client.ts";
@@ -10,7 +10,11 @@ import { imageDataUri } from "../images.ts";
 import { CUBE_PATHS, SNAPSHOT_FILE } from "../paths.ts";
 
 export async function snapshot(): Promise<number> {
-  const [entries, vocabulary] = await Promise.all([readCards(CUBE_PATHS), readTags(CUBE_PATHS)]);
+  const [entries, vocabulary, saved] = await Promise.all([
+    readCards(CUBE_PATHS),
+    readTags(CUBE_PATHS),
+    loadFilters(CUBE_PATHS),
+  ]);
   const client = createClient();
   const { cards: byOracle, missing: notFound, unresolved } = await client.forEntries(entries);
   if (unresolved.length > 0) {
@@ -55,6 +59,7 @@ export async function snapshot(): Promise<number> {
     createdAt: new Date().toISOString(),
     cards: snapshotCards,
     vocabulary,
+    filters: saved.filters,
   });
   await mkdir(dirname(SNAPSHOT_FILE), { recursive: true });
   await writeFile(SNAPSHOT_FILE, JSON.stringify(result));

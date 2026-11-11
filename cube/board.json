@@ -1,36 +1,27 @@
 {
   "sections": [
     {
-      "id": "407fe119-64b6-4602-8afe-e680c6097b59",
-      "label": "Removal",
+      "id": "mwbi4pyd-2n3q9z",
+      "label": "beatdown",
       "cards": [
-        "abrade",
-        "awaken-the-honored-dead",
-        "bake-into-a-pie",
-        "banishing-light",
-        "bite-down",
-        "bitter-triumph",
-        "coerced-to-kill",
-        "felling-blow",
-        "lightning-strike",
-        "luminous-rebuke",
-        "shock",
-        "murder",
-        "tweeze"
-      ],
-      "tags": []
-    },
-    {
-      "id": "mwaxzbxq-4uttae",
-      "label": "Ramp",
-      "cards": [
-        "aerid-konstrari",
-        "biotech-specialist",
-        "llanowar-elves",
-        "loot-exuberant-explorer",
-        "heartwood-crafter-soul-tether",
-        "environmental-scientist",
-        "tenured-tethermage"
+        "elite-interceptor-rejoinder",
+        "fanatical-firebrand",
+        "healers-hawk",
+        "rigging-runner",
+        "savannah-lions",
+        "stingerquill-voxmancer-vicious-verse",
+        "vicious-conquistador",
+        "adanto-vanguard",
+        "devoted-duelist",
+        "firebrand-archer",
+        "gleaming-geardrake",
+        "master-of-barbs",
+        "red-herring",
+        "shocking-sharpshooter",
+        "sky-terror",
+        "stone-docent",
+        "thunderdrum-soloist",
+        "brazen-scourge"
       ],
       "tags": []
     }

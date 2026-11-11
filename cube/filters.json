@@ -1,3 +1,47 @@
 {
-  "filters": []
+  "filters": [
+    {
+      "id": "filter-bkko2n",
+      "label": "Multicolored",
+      "chips": [
+        {
+          "bucket": "color:multicolored"
+        }
+      ],
+      "view": "color"
+    },
+    {
+      "id": "filter-tj1fqi",
+      "label": "Instants",
+      "chips": [
+        {
+          "bucket": "type:instant"
+        }
+      ],
+      "view": "color"
+    },
+    {
+      "id": "filter-2mtppc",
+      "label": "Evasion",
+      "chips": [
+        {
+          "bucket": "tag:evasion"
+        }
+      ],
+      "view": "color"
+    },
+    {
+      "id": "filter-okfccw",
+      "label": "Removal",
+      "chips": [
+        {
+          "bucket": "tag:removal"
+        },
+        {
+          "bucket": "status:draft"
+        }
+      ],
+      "view": "color"
+    }
+  ]
 }

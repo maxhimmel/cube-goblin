@@ -18,12 +18,12 @@
     {
       "id": "counters",
       "label": "counters",
-      "kind": "archetype"
+      "kind": "group"
     },
     {
       "id": "go-wide",
       "label": "go wide",
-      "kind": "archetype"
+      "kind": "group"
     },
     {
       "id": "big-ass-foo",
@@ -138,6 +138,11 @@
     {
       "id": "etb",
       "label": "ETB",
+      "kind": "group"
+    },
+    {
+      "id": "control",
+      "label": "control",
       "kind": "group"
     }
   ]

@@ -8,11 +8,23 @@ export const CARD_SORTS = [
   { id: "mv", label: "Mana value" },
   { id: "color", label: "Color" },
   { id: "type", label: "Card type" },
+  { id: "power", label: "Power" },
+  { id: "toughness", label: "Toughness" },
 ] as const;
 
 export type CardSort = (typeof CARD_SORTS)[number]["id"];
 
-type SortCard = Pick<StatCard, "colors" | "cmc" | "typeLine"> & { name: string };
+type SortCard = Pick<StatCard, "colors" | "cmc" | "typeLine" | "power" | "toughness"> & {
+  name: string;
+};
+
+function stat(value: string | undefined): number {
+  return value !== undefined && /^\d+$/u.test(value) ? Number(value) : Number.POSITIVE_INFINITY;
+}
+
+function byStat(a: number, b: number): number {
+  return a === b ? 0 : a < b ? -1 : 1;
+}
 
 const TYPE_ORDER: string[] = TYPE_COLUMNS.map((type) => type.id);
 
@@ -21,10 +33,22 @@ const COMPARE: Record<Exclude<CardSort, "added">, (a: SortCard, b: SortCard) => 
   mv: (a, b) => a.cmc - b.cmc,
   color: (a, b) => COLOR_ORDER.indexOf(colorKey(a)) - COLOR_ORDER.indexOf(colorKey(b)),
   type: (a, b) => TYPE_ORDER.indexOf(typeKey(a)) - TYPE_ORDER.indexOf(typeKey(b)),
+  power: (a, b) => byStat(stat(a.power), stat(b.power)),
+  toughness: (a, b) => byStat(stat(a.toughness), stat(b.toughness)),
 };
 
 export function isCardSort(value: string): value is CardSort {
   return CARD_SORTS.some((sort) => sort.id === value);
+}
+
+export function parseSortKeys(param: string | undefined): CardSort[] {
+  const keys = [...new Set((param ?? "").split(".").filter(isCardSort))];
+  return keys[0] === "added" ? ["added"] : keys.filter((key) => key !== "added");
+}
+
+export function formatSortKeys(keys: readonly CardSort[]): string | undefined {
+  const kept = parseSortKeys(keys.join("."));
+  return kept.length === 0 || kept[0] === "added" ? undefined : kept.join(".");
 }
 
 type Compare = (a: SortCard, b: SortCard) => number;

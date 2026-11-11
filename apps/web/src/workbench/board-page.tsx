@@ -1,11 +1,11 @@
 import type { Section, CardSort, Workbench, WorkbenchCard } from "@repo/cube/browser";
 import {
-  CARD_SORTS,
+  formatSortKeys,
   addSection,
   changeSection,
   moveCard,
   putCard,
-  isCardSort,
+  parseSortKeys,
   removeSection,
   restoreSection,
   sortCards,
@@ -15,6 +15,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { DragEvent, ReactNode } from "react";
 import { useState } from "react";
 import { z } from "zod";
+import { SortChain } from "../sort-chain.tsx";
 import type { Hover } from "../strip.tsx";
 import { SECTION_DRAG_TYPE, DRAG_TYPE, Preview, Strip } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
@@ -440,70 +441,24 @@ function NewSection({
   );
 }
 
-const NO_SORT = "";
-
-function parseSort(param: string | undefined): CardSort[] {
-  return (param ?? "").split(".").filter(isCardSort).slice(0, 2);
-}
-
 function SortPicker({ sort }: { sort: readonly CardSort[] }): ReactNode {
   const navigate = useNavigate();
-  const [first = "added", second] = sort;
-  const choose = (keys: string[]): void => {
-    const kept = keys.filter((key) => key !== NO_SORT);
-    void navigate({
-      to: "/board",
-      search: (prev) => ({
-        ...prev,
-        sort: kept.length === 0 || kept[0] === "added" ? undefined : kept.join("."),
-      }),
-    });
-  };
   return (
-    <div className="board-sort" role="group" aria-label="Sort cards">
-      <label>
-        Sort cards by{" "}
-        <select
-          aria-label="Sort cards by"
-          value={first}
-          onChange={(event) => {
-            choose([event.target.value, second ?? NO_SORT]);
-          }}
-        >
-          {CARD_SORTS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        then{" "}
-        <select
-          aria-label="Then by"
-          value={second ?? NO_SORT}
-          disabled={first === "added"}
-          onChange={(event) => {
-            choose([first, event.target.value]);
-          }}
-        >
-          <option value={NO_SORT}>—</option>
-          {CARD_SORTS.filter((option) => option.id !== "added" && option.id !== first).map(
-            (option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ),
-          )}
-        </select>
-      </label>
-    </div>
+    <SortChain
+      keys={sort}
+      onChange={(keys) => {
+        void navigate({
+          to: "/board",
+          search: (prev) => ({ ...prev, sort: formatSortKeys(keys) }),
+        });
+      }}
+    />
   );
 }
 
 export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode {
   const { board, error } = useBoard();
-  const sort = parseSort(useSearch({ from: "/board" }).sort);
+  const sort = parseSortKeys(useSearch({ from: "/board" }).sort);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [fresh, setFresh] = useState<string | undefined>(undefined);
   if (error) {

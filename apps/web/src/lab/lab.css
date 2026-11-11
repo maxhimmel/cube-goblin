@@ -1465,3 +1465,13 @@ button.lab-stat:hover {
 .lab-hbar-base-ghost[data-down] {
   outline-color: color-mix(in oklab, var(--lab-loss) 60%, transparent);
 }
+
+.lab-pile-sort {
+  margin: -2px 0 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.lab-pile-sort select {
+  font-size: 0.8rem;
+}

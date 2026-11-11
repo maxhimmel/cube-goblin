@@ -440,6 +440,262 @@ function DashboardGrid({
   );
 }
 
+export interface BlockUi {
+  collapsed: boolean;
+  onToggle: () => void;
+  onHide?: (() => void) | undefined;
+  selectedCard: string | undefined;
+}
+
+export function chartBlock(
+  id: BlockId,
+  set: CardSet,
+  Frame: FrameComponent,
+  ui: BlockUi,
+): ReactNode {
+  const { cards, stats, bucket, pick } = set;
+  const nonland = stats.total - stats.lands;
+  const collapsed = ui.collapsed;
+  const toggle = ui.onToggle;
+  const hide = ui.onHide;
+  if (id === "summary") {
+    return (
+      <Frame title="Summary" collapsed={collapsed} onToggle={toggle} onHide={hide}>
+        <div className="stat-tiles" data-testid="stat-tiles">
+          <Tile label="Cards" value={stats.total} />
+          <Tile label="Nonland" value={nonland} />
+          <Tile label="Lands" value={stats.lands} note={percent(stats.lands, stats.total)} />
+          <Tile
+            label="Creatures"
+            value={stats.creatures}
+            note={`${percent(stats.creatures, nonland)} of nonland`}
+          />
+        </div>
+      </Frame>
+    );
+  }
+  if (id === "curve") {
+    const selected = selectedIn(bucket, "curve");
+    const onPick = (key: string): void => {
+      pick(bucketId("curve", key));
+    };
+    return (
+      <Frame
+        title="Mana curve"
+        caption="Nonland cards by mana value"
+        collapsed={collapsed}
+        onToggle={toggle}
+        onHide={hide}
+        table={
+          <CountTable
+            caption="Mana curve"
+            rows={stats.curve}
+            head={curveTick}
+            selected={selected}
+            onPick={onPick}
+          />
+        }
+      >
+        <ColumnChart
+          rows={stats.curve}
+          name="Mana curve"
+          fill="var(--chart-curve)"
+          tick={curveTick}
+          selected={selected}
+          onPick={onPick}
+        />
+      </Frame>
+    );
+  }
+  if (id === "color") {
+    const rows = colorRows(stats);
+    return (
+      <Frame
+        title="Color"
+        caption="Nonland cards by color. The pale part of a bar is multicolored cards with that color. Click a part for those cards, or a color's name for all of them."
+        collapsed={collapsed}
+        onToggle={toggle}
+        onHide={hide}
+        table={
+          <CountTable
+            caption="Color"
+            rows={colorTable(rows)}
+            selected={set.selectedBucket}
+            onPick={pick}
+          />
+        }
+      >
+        <StackedRowChart
+          rows={rows}
+          name="Color"
+          tick={colorTick}
+          selected={set.selectedBucket}
+          onPick={pick}
+        />
+      </Frame>
+    );
+  }
+  if (id === "creature-balance") {
+    return (
+      <Frame
+        title="Creature balance"
+        caption="Printed bodies, compared with this cube’s own medians so one huge creature can’t skew them. Biggest and smallest go by power + toughness. Creatures with * or 0/0 (they grow with counters or copy something) are left out. Click a dot or name to open the card."
+        collapsed={collapsed}
+        onToggle={toggle}
+        onHide={hide}
+      >
+        <CreatureBalanceView cards={cards} selected={ui.selectedCard} />
+      </Frame>
+    );
+  }
+  if (id === "combat") {
+    return (
+      <Frame
+        title="Combat matchups"
+        caption="Each dot is a power/toughness, sized by how many creatures have it. It kills a creature when its power is at least that creature’s toughness, and survives one whose power is less than its toughness. Counts the same creatures as the rest of the page; * and 0/0 left out. Click a dot to list its creatures."
+        collapsed={collapsed}
+        onToggle={toggle}
+        onHide={hide}
+      >
+        <MatchupChart
+          points={matchupPoints(cards)}
+          name="Combat matchups"
+          selected={set.selectedBucket}
+          onPick={pick}
+        />
+      </Frame>
+    );
+  }
+  if (id === "pt") {
+    const selected =
+      bucket?.kind === "pt"
+        ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
+        : undefined;
+    return (
+      <Frame
+        title="Power and toughness"
+        caption="Creatures by power and toughness; * means it varies, like */* or 1+*"
+        collapsed={collapsed}
+        onToggle={toggle}
+        onHide={hide}
+        table={
+          <CountTable
+            caption="Power and toughness"
+            rows={stats.powerToughness
+              .filter((entry) => entry.count > 0)
+              .map((entry) => ({
+                id: bucketId("pt", entry.row, entry.column),
+                label: `${ptLabel(entry.row)}/${ptLabel(entry.column)}`,
+                count: entry.count,
+              }))}
+            selected={set.selectedBucket}
+            onPick={pick}
+          />
+        }
+      >
+        <HeatChart
+          cells={stats.powerToughness}
+          rows={PT_VALUES}
+          columns={PT_VALUES}
+          name="Power and toughness"
+          rowTick={ptTick}
+          columnTick={ptTick}
+          rowTitle="Power"
+          columnTitle="Toughness"
+          selected={selected}
+          onPick={(row, column) => {
+            pick(bucketId("pt", row, column));
+          }}
+        />
+      </Frame>
+    );
+  }
+  if (id === "heat") {
+    const selected =
+      bucket?.kind === "colorCurve"
+        ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
+        : undefined;
+    return (
+      <Frame
+        title="Color by mana value"
+        caption="Nonland cards by color and mana value; stronger color means more"
+        collapsed={collapsed}
+        onToggle={toggle}
+        onHide={hide}
+        table={
+          <CountTable
+            caption="Color by mana value"
+            rows={stats.colorCurve.map((entry) => ({
+              id: bucketId("colorCurve", entry.row, entry.column),
+              label: `${colorLabel(entry.row)}, ${curveLabel(entry.column)}`,
+              count: entry.count,
+            }))}
+            selected={set.selectedBucket}
+            onPick={pick}
+          />
+        }
+      >
+        <HeatChart
+          cells={stats.colorCurve}
+          rows={COLOR_GROUPS}
+          columns={CURVE_COLUMNS}
+          name="Color by mana value"
+          rowTick={colorTick}
+          columnTick={curveTick}
+          selected={selected}
+          onPick={(row, column) => {
+            pick(bucketId("colorCurve", row, column));
+          }}
+        />
+      </Frame>
+    );
+  }
+  const spec = BAR_BLOCKS[id];
+  if (!spec) {
+    return null;
+  }
+  const rows = spec.rows(stats);
+  const selected = selectedIn(bucket, spec.kind);
+  const onPick = (key: string): void => {
+    pick(bucketId(spec.kind, key));
+  };
+  return (
+    <Frame
+      title={spec.title}
+      caption={spec.caption?.()}
+      collapsed={collapsed}
+      onToggle={toggle}
+      onHide={hide}
+      {...(rows.length > 0
+        ? {
+            table: (
+              <CountTable
+                caption={spec.title}
+                rows={rows}
+                head={spec.tick}
+                selected={selected}
+                onPick={onPick}
+              />
+            ),
+          }
+        : {})}
+    >
+      {rows.length === 0 ? (
+        <p className="muted">{spec.empty}</p>
+      ) : (
+        <RowChart
+          rows={rows}
+          name={spec.title}
+          fill={spec.fill}
+          tick={spec.tick}
+          selected={selected}
+          onPick={onPick}
+        />
+      )}
+    </Frame>
+  );
+}
+
 export function InsightsPage(): ReactNode {
   const cube = mode.useCube();
   const selection = mode.useSelection();
@@ -505,253 +761,17 @@ export function InsightsPage(): ReactNode {
     setEditing({ id: newFilterId(filters), label, chips, view: "cards" });
   };
 
-  const renderBlock = (id: BlockId, set: CardSet, Frame: FrameComponent): ReactNode => {
-    const { cards, stats, bucket, pick } = set;
-    const nonland = stats.total - stats.lands;
-    const collapsed = dashboard.collapsed.has(id);
-    const toggle = (): void => {
-      dashboard.toggle(id);
-    };
-    const hide = (): void => {
-      dashboard.setHidden(id, true);
-    };
-    if (id === "summary") {
-      return (
-        <Frame title="Summary" collapsed={collapsed} onToggle={toggle} onHide={hide}>
-          <div className="stat-tiles" data-testid="stat-tiles">
-            <Tile label="Cards" value={stats.total} />
-            <Tile label="Nonland" value={nonland} />
-            <Tile label="Lands" value={stats.lands} note={percent(stats.lands, stats.total)} />
-            <Tile
-              label="Creatures"
-              value={stats.creatures}
-              note={`${percent(stats.creatures, nonland)} of nonland`}
-            />
-          </div>
-        </Frame>
-      );
-    }
-    if (id === "curve") {
-      const selected = selectedIn(bucket, "curve");
-      const onPick = (key: string): void => {
-        pick(bucketId("curve", key));
-      };
-      return (
-        <Frame
-          title="Mana curve"
-          caption="Nonland cards by mana value"
-          collapsed={collapsed}
-          onToggle={toggle}
-          onHide={hide}
-          table={
-            <CountTable
-              caption="Mana curve"
-              rows={stats.curve}
-              head={curveTick}
-              selected={selected}
-              onPick={onPick}
-            />
-          }
-        >
-          <ColumnChart
-            rows={stats.curve}
-            name="Mana curve"
-            fill="var(--chart-curve)"
-            tick={curveTick}
-            selected={selected}
-            onPick={onPick}
-          />
-        </Frame>
-      );
-    }
-    if (id === "color") {
-      const rows = colorRows(stats);
-      return (
-        <Frame
-          title="Color"
-          caption="Nonland cards by color. The pale part of a bar is multicolored cards with that color. Click a part for those cards, or a color's name for all of them."
-          collapsed={collapsed}
-          onToggle={toggle}
-          onHide={hide}
-          table={
-            <CountTable
-              caption="Color"
-              rows={colorTable(rows)}
-              selected={set.selectedBucket}
-              onPick={pick}
-            />
-          }
-        >
-          <StackedRowChart
-            rows={rows}
-            name="Color"
-            tick={colorTick}
-            selected={set.selectedBucket}
-            onPick={pick}
-          />
-        </Frame>
-      );
-    }
-    if (id === "creature-balance") {
-      return (
-        <Frame
-          title="Creature balance"
-          caption="Printed bodies, compared with this cube’s own medians so one huge creature can’t skew them. Biggest and smallest go by power + toughness. Creatures with * or 0/0 (they grow with counters or copy something) are left out. Click a dot or name to open the card."
-          collapsed={collapsed}
-          onToggle={toggle}
-          onHide={hide}
-        >
-          <CreatureBalanceView cards={cards} selected={search.card} />
-        </Frame>
-      );
-    }
-    if (id === "combat") {
-      return (
-        <Frame
-          title="Combat matchups"
-          caption="Each dot is a power/toughness, sized by how many creatures have it. It kills a creature when its power is at least that creature’s toughness, and survives one whose power is less than its toughness. Counts the same creatures as the rest of the page; * and 0/0 left out. Click a dot to list its creatures."
-          collapsed={collapsed}
-          onToggle={toggle}
-          onHide={hide}
-        >
-          <MatchupChart
-            points={matchupPoints(cards)}
-            name="Combat matchups"
-            selected={set.selectedBucket}
-            onPick={pick}
-          />
-        </Frame>
-      );
-    }
-    if (id === "pt") {
-      const selected =
-        bucket?.kind === "pt"
-          ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
-          : undefined;
-      return (
-        <Frame
-          title="Power and toughness"
-          caption="Creatures by power and toughness; * means it varies, like */* or 1+*"
-          collapsed={collapsed}
-          onToggle={toggle}
-          onHide={hide}
-          table={
-            <CountTable
-              caption="Power and toughness"
-              rows={stats.powerToughness
-                .filter((entry) => entry.count > 0)
-                .map((entry) => ({
-                  id: bucketId("pt", entry.row, entry.column),
-                  label: `${ptLabel(entry.row)}/${ptLabel(entry.column)}`,
-                  count: entry.count,
-                }))}
-              selected={set.selectedBucket}
-              onPick={pick}
-            />
-          }
-        >
-          <HeatChart
-            cells={stats.powerToughness}
-            rows={PT_VALUES}
-            columns={PT_VALUES}
-            name="Power and toughness"
-            rowTick={ptTick}
-            columnTick={ptTick}
-            rowTitle="Power"
-            columnTitle="Toughness"
-            selected={selected}
-            onPick={(row, column) => {
-              pick(bucketId("pt", row, column));
-            }}
-          />
-        </Frame>
-      );
-    }
-    if (id === "heat") {
-      const selected =
-        bucket?.kind === "colorCurve"
-          ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
-          : undefined;
-      return (
-        <Frame
-          title="Color by mana value"
-          caption="Nonland cards by color and mana value; stronger color means more"
-          collapsed={collapsed}
-          onToggle={toggle}
-          onHide={hide}
-          table={
-            <CountTable
-              caption="Color by mana value"
-              rows={stats.colorCurve.map((entry) => ({
-                id: bucketId("colorCurve", entry.row, entry.column),
-                label: `${colorLabel(entry.row)}, ${curveLabel(entry.column)}`,
-                count: entry.count,
-              }))}
-              selected={set.selectedBucket}
-              onPick={pick}
-            />
-          }
-        >
-          <HeatChart
-            cells={stats.colorCurve}
-            rows={COLOR_GROUPS}
-            columns={CURVE_COLUMNS}
-            name="Color by mana value"
-            rowTick={colorTick}
-            columnTick={curveTick}
-            selected={selected}
-            onPick={(row, column) => {
-              pick(bucketId("colorCurve", row, column));
-            }}
-          />
-        </Frame>
-      );
-    }
-    const spec = BAR_BLOCKS[id];
-    if (!spec) {
-      return null;
-    }
-    const rows = spec.rows(stats);
-    const selected = selectedIn(bucket, spec.kind);
-    const onPick = (key: string): void => {
-      pick(bucketId(spec.kind, key));
-    };
-    return (
-      <Frame
-        title={spec.title}
-        caption={spec.caption?.()}
-        collapsed={collapsed}
-        onToggle={toggle}
-        onHide={hide}
-        {...(rows.length > 0
-          ? {
-              table: (
-                <CountTable
-                  caption={spec.title}
-                  rows={rows}
-                  head={spec.tick}
-                  selected={selected}
-                  onPick={onPick}
-                />
-              ),
-            }
-          : {})}
-      >
-        {rows.length === 0 ? (
-          <p className="muted">{spec.empty}</p>
-        ) : (
-          <RowChart
-            rows={rows}
-            name={spec.title}
-            fill={spec.fill}
-            tick={spec.tick}
-            selected={selected}
-            onPick={onPick}
-          />
-        )}
-      </Frame>
-    );
-  };
+  const renderBlock = (id: BlockId, set: CardSet, Frame: FrameComponent): ReactNode =>
+    chartBlock(id, set, Frame, {
+      collapsed: dashboard.collapsed.has(id),
+      onToggle: () => {
+        dashboard.toggle(id);
+      },
+      onHide: () => {
+        dashboard.setHidden(id, true);
+      },
+      selectedCard: search.card,
+    });
 
   const render = (id: string): ReactNode => {
     if (id.startsWith(FILTER_BLOCK_PREFIX)) {

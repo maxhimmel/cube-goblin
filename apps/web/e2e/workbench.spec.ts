@@ -1669,3 +1669,24 @@ test("clicks in one Lab chart or together, and tag charts switch to chips", asyn
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
 });
+
+test("an opened card stays highlighted in the Lab and previews its move in every chart", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const prospect = page.locator('[data-pile="prospects"] .lab-cell').first();
+  const name = (await prospect.locator(".lab-strip-name").textContent()) ?? "";
+  await prospect.locator(".lab-strip").click();
+  await expect(page.getByRole("complementary", { name })).toBeVisible();
+  await page.mouse.move(5, 500);
+  await expect(prospect).toHaveAttribute("data-selected", "");
+  const count = Number(await page.locator(".lab-count-value").textContent());
+  await expect(page.locator(".lab-count-ghost")).toHaveText(`→ ${String(count + 1)}`);
+  const summary = page.getByRole("region", { name: "Summary" });
+  await expect(summary.locator(".lab-ghost-label").first()).toHaveText("+1");
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.locator(".lab-cell[data-selected]")).toHaveCount(0);
+  await expect(summary.locator(".lab-ghost-label")).toHaveCount(0);
+});

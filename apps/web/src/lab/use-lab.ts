@@ -1,6 +1,7 @@
 import { mode } from "#mode";
 import type { CardSort, CardStatus, ColumnAxis, Filter, Tag } from "@repo/cube/browser";
 import { COLUMN_AXES, isCardSort, newFilterId } from "@repo/cube/browser";
+import { useSearch } from "@tanstack/react-router";
 import type { DragEvent } from "react";
 import { useState } from "react";
 import { z } from "zod";
@@ -90,6 +91,7 @@ export interface Lab {
   sort: CardSort[];
   setSort: (keys: CardSort[]) => void;
   drag: Drag | undefined;
+  selected: string | undefined;
   scope: GridCard[];
   next: GridCard[];
   events: ChartEvents;
@@ -136,6 +138,7 @@ export function useLab(): Lab | undefined {
   const [typing, setTyping] = useState("");
   const [drag, setDrag] = useState<Drag | undefined>(undefined);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
+  const { card: selected } = useSearch({ from: "__root__" });
   if (!cube) {
     return undefined;
   }
@@ -156,8 +159,10 @@ export function useLab(): Lab | undefined {
   const picked = new Set(pillKeys.flatMap(pillMembers));
   const hoverSlug = hover?.card.slug;
   const hovered = hoverSlug === undefined ? undefined : all.find((c) => c.slug === hoverSlug);
+  const opened = selected === undefined ? undefined : all.find((c) => c.slug === selected);
+  const previewed = hovered ?? opened;
   const ghost: Drag | undefined =
-    drag ?? (hovered ? { slug: hovered.slug, to: flip(hovered.status) } : undefined);
+    drag ?? (previewed ? { slug: previewed.slug, to: flip(previewed.status) } : undefined);
   const projected = project(all, ghost);
   const scope = all.filter(PIN_INCLUDES.draft);
   const next = projected.filter(PIN_INCLUDES.draft);
@@ -231,6 +236,7 @@ export function useLab(): Lab | undefined {
     sort,
     setSort,
     drag,
+    selected,
     scope,
     next,
     events: { onPeek: setPeek, onPick: pick, baseline, filtered: lens !== undefined, picked },

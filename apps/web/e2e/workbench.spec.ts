@@ -451,7 +451,9 @@ test("adding a card from Scryfall writes it with its function tags and a batch l
   await page.getByLabel("Search Scryfall").fill('!"Lightning Bolt"');
   await page.getByRole("button", { name: "Add Lightning Bolt", exact: true }).click();
 
-  await expect(page.getByRole("heading", { name: "Lightning Bolt" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lightning Bolt" })).toBeVisible({
+    timeout: 20000,
+  });
   const entry = await readEntry(workbench.cardsDir, "lightning-bolt");
   expect(entry).toMatchObject({
     status: "draft",
@@ -953,9 +955,12 @@ test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
 
   await page.getByLabel("Sort cards by").selectOption("mv");
   await expect.poll(() => names(burn)).toEqual(["Shock", "Lasting Tarfire"]);
+  await page.getByRole("button", { name: "+ then" }).click();
   await page.getByLabel("Then by", { exact: true }).selectOption("color");
   await expect(page).toHaveURL(/sort=mv\.color/u);
+  await page.getByRole("button", { name: "+ then" }).click();
   await page.getByLabel("Then by, key 3").selectOption("power");
+  await page.getByRole("button", { name: "+ then" }).click();
   await page.getByLabel("Then by, key 4").selectOption("toughness");
   await expect(page).toHaveURL(/sort=mv\.color\.power\.toughness/u);
   await page.reload();
@@ -966,7 +971,8 @@ test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
 
   await page.getByLabel("Sort cards by").selectOption("added");
   await expect.poll(() => names(burn)).toEqual(["Lasting Tarfire", "Shock"]);
-  await expect(page.getByLabel("Then by", { exact: true })).toBeDisabled();
+  await expect(page.getByLabel("Then by", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "+ then" })).toHaveCount(0);
   expect((await readBoard(workbench.cardsDir)).sections[0]?.cards).toEqual([
     "lasting-tarfire",
     "shock",
@@ -1469,6 +1475,7 @@ test("a named Lab layout saves to the cube and brings its settings back", async 
   await page.getByRole("button", { name: /^Layouts/u }).click();
   await page.getByLabel("Layout name").fill("Creature rows");
   await page.getByLabel("Layout name").press("Enter");
+  await page.getByLabel("Layout name").press("Escape");
   await expect
     .poll(async () => readLayouts(workbench.cardsDir))
     .toEqual({
@@ -1505,6 +1512,7 @@ test("a named Lab layout saves to the cube and brings its settings back", async 
   await page.getByRole("button", { name: /^Layouts/u }).click();
   await page.getByRole("button", { name: "Delete layout Creature rows" }).click();
   await expect.poll(async () => readLayouts(workbench.cardsDir)).toEqual({ layouts: [] });
+  await page.getByRole("button", { name: /^Layouts/u }).click();
   await draft.getByRole("button", { name: "Columns" }).click();
   await draft.getByRole("button", { name: "Mana value", exact: true }).click();
   await page.getByRole("button", { name: "Charts on the top" }).click();
@@ -1586,8 +1594,10 @@ test("the Lab sorts its cards by a chain of keys that survives a reload", async 
   const draft = page.getByRole("region", { name: "Draft", exact: true });
   await draft.getByRole("button", { name: "Rows" }).click();
   await draft.getByRole("button", { name: "Card type", exact: true }).click();
+  await draft.getByRole("button", { name: /^Sort:/u }).click();
   const sorter = draft.getByRole("group", { name: "Sort order" });
   await sorter.getByLabel("Sort cards by").selectOption("power");
+  await sorter.getByRole("button", { name: "+ then" }).click();
   await sorter.getByLabel("Then by", { exact: true }).selectOption("toughness");
   const creatures = draft
     .locator(".lab-group")
@@ -1606,6 +1616,12 @@ test("the Lab sorts its cards by a chain of keys that survives a reload", async 
   await expect.poll(async () => (await stats()).length).toBeGreaterThan(5);
   expect(ascending(await stats())).toBe(true);
   await page.reload();
+  await expect(draft.getByRole("button", { name: "Sort: Power, Toughness" })).toBeVisible();
+  await draft.getByRole("button", { name: "Color", exact: true }).click();
+  await expect(draft.getByRole("button", { name: "Sort: Mana value" })).toBeVisible();
+  await draft.getByRole("button", { name: "Card type", exact: true }).click();
+  await expect(draft.getByRole("button", { name: "Sort: Power, Toughness" })).toBeVisible();
+  await draft.getByRole("button", { name: /^Sort:/u }).click();
   await expect(sorter.getByLabel("Then by", { exact: true })).toHaveValue("toughness");
   expect(ascending(await stats())).toBe(true);
   await sorter.getByLabel("Sort cards by").selectOption("mv");

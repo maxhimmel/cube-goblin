@@ -245,8 +245,58 @@
 .sort-chain {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 2px 6px;
+  align-items: center;
   font-size: 0.85rem;
+}
+
+.sort-chain label {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.sort-chain-word {
+  color: var(--muted);
+}
+
+.sort-chain-key {
+  field-sizing: content;
+  padding: 1px 18px 1px 5px;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.sort-chain-key:hover,
+.sort-chain-key:focus-visible {
+  background: var(--field);
+  border-color: var(--line);
+}
+
+.sort-chain-add {
+  padding: 1px 6px;
+  color: var(--muted);
+  font: inherit;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  opacity: 0.6;
+  transition: opacity 0.12s;
+}
+
+.sort-chain-add:hover,
+.sort-chain-add:focus-visible,
+.sort-chain:hover .sort-chain-add {
+  color: var(--accent);
+  opacity: 1;
 }
 
 .board-help {
@@ -294,4 +344,38 @@
 
 .board-section-tags-editor > button {
   justify-self: end;
+}
+
+.sort-menu {
+  position: relative;
+}
+
+.sort-menu-button {
+  padding: 3px 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.sort-menu-button:hover,
+.sort-menu-button[aria-expanded="true"] {
+  color: var(--fg);
+}
+
+.sort-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  width: max-content;
+  max-width: min(520px, 80vw);
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
 }

@@ -25,6 +25,13 @@ export type Axis = ColumnAxis | "none";
 
 export const AXES: { id: Axis; label: string }[] = [...COLUMN_AXES, { id: "none", label: "None" }];
 
+const DEFAULT_SORTS: Record<Axis, CardSort[]> = {
+  mv: ["color"],
+  color: ["mv"],
+  type: ["mv", "color"],
+  none: ["mv", "color"],
+};
+
 function flip(status: CardStatus): CardStatus {
   return status === "draft" ? "prospect" : "draft";
 }
@@ -113,11 +120,18 @@ export function useLab(): Lab | undefined {
     "mv",
     z.enum(["mv", "color", "type", "none"]),
   );
-  const [sort, setSort] = useRemembered<CardSort[]>(
-    "lab.sort",
-    ["mv", "color"],
-    z.array(z.string()).transform((keys) => keys.filter(isCardSort)),
+  const [sorts, setSorts] = useRemembered<Partial<Record<Axis, CardSort[]>>>(
+    "lab.sorts",
+    {},
+    z.partialRecord(
+      z.enum(["mv", "color", "type", "none"]),
+      z.array(z.string()).transform((keys) => keys.filter(isCardSort)),
+    ),
   );
+  const sort = sorts[axis] ?? DEFAULT_SORTS[axis];
+  const setSort = (keys: CardSort[]): void => {
+    setSorts({ ...sorts, [axis]: keys });
+  };
   const [peek, setPeek] = useState<string | undefined>(undefined);
   const [typing, setTyping] = useState("");
   const [drag, setDrag] = useState<Drag | undefined>(undefined);

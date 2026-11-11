@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { z } from "zod";
-import { SortChain } from "../sort-chain.tsx";
+import { SortMenu } from "../sort-chain.tsx";
 import { Preview } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { CardColumns, CardRows } from "./cards.tsx";
@@ -125,11 +125,9 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
                 onChange={setView}
               />
               <AxisTabs lab={lab} />
+              <SortMenu keys={lab.sort} onChange={lab.setSort} />
             </div>
           </header>
-          <div className="lab-pile-sort">
-            <SortChain keys={lab.sort} onChange={lab.setSort} />
-          </div>
           {pile(draft, false)}
         </section>
         <section

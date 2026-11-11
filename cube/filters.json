@@ -3,44 +3,25 @@
     {
       "id": "filter-bkko2n",
       "label": "Multicolored",
-      "chips": [
-        {
-          "bucket": "color:multicolored"
-        }
-      ],
+      "query": "is:spell c:m",
       "view": "color"
     },
     {
       "id": "filter-tj1fqi",
       "label": "Instants",
-      "chips": [
-        {
-          "bucket": "type:instant"
-        }
-      ],
+      "query": "t:instant",
       "view": "color"
     },
     {
       "id": "filter-2mtppc",
       "label": "Evasion",
-      "chips": [
-        {
-          "bucket": "tag:evasion"
-        }
-      ],
+      "query": "tag:evasion",
       "view": "color"
     },
     {
       "id": "filter-okfccw",
       "label": "Removal",
-      "chips": [
-        {
-          "bucket": "tag:removal"
-        },
-        {
-          "bucket": "status:draft"
-        }
-      ],
+      "query": "tag:removal is:draft",
       "view": "color"
     }
   ]

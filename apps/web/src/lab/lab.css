@@ -1245,3 +1245,18 @@
 .lab-tile-actions button[data-override] {
   color: var(--accent);
 }
+
+.lab-columns[data-flow] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lab-columns[data-flow] .lab-stack {
+  display: block;
+  columns: 190px;
+  column-gap: 10px;
+}
+
+.lab-columns[data-flow] .lab-cell {
+  margin-bottom: 3px;
+  break-inside: avoid;
+}

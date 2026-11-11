@@ -141,6 +141,7 @@ export function CardColumns({
     <div
       className="lab-columns"
       data-compact={compact ? "" : undefined}
+      data-flow={lab.axis === "none" ? "" : undefined}
       style={{ "--columns": columns.length } as CSSProperties}
     >
       {columns.map((column) => (

@@ -1,6 +1,5 @@
 import type { CardStatus, Filter } from "@repo/cube/browser";
 import {
-  COLORS,
   COLOR_GROUPS,
   CURVE_COLUMNS,
   PT_VALUES,
@@ -195,8 +194,6 @@ export function usedIn(cards: readonly GridCard[]): Used {
     toughness: new Set(creatures.flatMap((card) => ptCell(card.toughness) ?? [])),
   };
 }
-
-export const MANA_COLORS = COLORS.map((color) => color.id);
 
 export function ghostLabel(delta: number): string {
   return delta > 0 ? `+${String(delta)}` : String(delta);

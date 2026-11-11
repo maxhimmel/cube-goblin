@@ -1485,3 +1485,27 @@ test("a named Lab layout saves to the cube and brings its settings back", async 
   await page.getByRole("button", { name: "Charts on the top" }).click();
   await page.getByRole("button", { name: "Remove t:creature" }).click();
 });
+
+test("the Lab saves its stack of applied filters as one filter", async ({ page, workbench }) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("c=u");
+  await query.press("Enter");
+  await page
+    .getByRole("region", { name: "Curve" })
+    .locator('.lab-bar[aria-label^="MV 2:"]')
+    .click();
+  const dim = page.locator(".lab-cell[data-dim]");
+  const dimmed = await dim.count();
+  await page.getByRole("button", { name: "Save as filter" }).click();
+  await page.getByLabel("Name for the applied filters").fill("Cheap blue");
+  await page.getByLabel("Name for the applied filters").press("Enter");
+  await expect(page.getByRole("button", { name: "Remove Cheap blue" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove c=u" })).toHaveCount(0);
+  await expect(dim).toHaveCount(dimmed);
+  await expect
+    .poll(async () => (await readFilters(workbench.cardsDir)).filters)
+    .toContainEqual(expect.objectContaining({ label: "Cheap blue", query: "c=u mv=2" }));
+  await page.getByRole("button", { name: "Remove Cheap blue" }).click();
+});

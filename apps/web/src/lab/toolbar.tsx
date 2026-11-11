@@ -80,6 +80,56 @@ function SavePill({ lab, pill }: { lab: Lab; pill: Pill }): ReactNode {
   );
 }
 
+function SaveStack({ save }: { save: (label: string) => void }): ReactNode {
+  const [naming, setNaming] = useState(false);
+  const [label, setLabel] = useState("");
+  if (!naming) {
+    return (
+      <button
+        type="button"
+        className="lab-link"
+        title="Save every applied filter as one saved filter"
+        onClick={() => {
+          setNaming(true);
+        }}
+      >
+        Save as filter
+      </button>
+    );
+  }
+  return (
+    <form
+      className="lab-stack-name"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (label.trim() !== "") {
+          save(label.trim());
+        }
+      }}
+    >
+      <input
+        aria-label="Name for the applied filters"
+        placeholder="Name"
+        value={label}
+        autoFocus
+        onChange={(event) => {
+          setLabel(event.target.value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setNaming(false);
+          }
+        }}
+        onBlur={() => {
+          if (label.trim() === "") {
+            setNaming(false);
+          }
+        }}
+      />
+    </form>
+  );
+}
+
 function PillBar({ lab }: { lab: Lab }): ReactNode {
   return (
     <div className="lab-pills" aria-label="Applied filters">
@@ -108,6 +158,7 @@ function PillBar({ lab }: { lab: Lab }): ReactNode {
           {pill.key.startsWith("x:") && <SavePill lab={lab} pill={pill} />}
         </span>
       ))}
+      {lab.pills.length > 1 && lab.saveStack && <SaveStack save={lab.saveStack} />}
       {lab.pills.length > 1 && (
         <button type="button" className="lab-link" onClick={lab.clearPills}>
           Clear

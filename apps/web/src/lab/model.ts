@@ -10,6 +10,8 @@ import {
   compileQuery,
   filterTest,
   parseBucket,
+  bucketQuery,
+  joinQuery,
 } from "@repo/cube/browser";
 import type { GridCard } from "../modes/mode.ts";
 
@@ -56,6 +58,9 @@ function bucketLabel(id: string): string {
   if (kind === "tag") {
     return `#${first}`;
   }
+  if (kind === "pt") {
+    return `${first}/${second}`;
+  }
   return id;
 }
 
@@ -74,19 +79,23 @@ export function resolvePill(key: string, filters: readonly Filter[]): Pill | und
       }
     );
   }
-  if (key.startsWith("pt:")) {
-    const [, power, toughness] = key.split(":");
-    return {
-      key,
-      label: `${power ?? ""}/${toughness ?? ""}`,
-      test: (card) =>
-        isCreatureCard(card) &&
-        ptCell(card.power) === power &&
-        ptCell(card.toughness) === toughness,
-    };
-  }
   const bucket = parseBucket(key);
   return bucket && { key, label: bucketLabel(key), test: (card) => inBucket(card, bucket) };
+}
+
+export function pillQuery(key: string, filters: readonly Filter[]): string | undefined {
+  if (key.startsWith("x:")) {
+    return key.slice(2);
+  }
+  if (key.startsWith("f:")) {
+    return filters.find((candidate) => candidate.id === key.slice(2))?.query;
+  }
+  const bucket = parseBucket(key);
+  return bucket && bucketQuery(bucket);
+}
+
+export function stackQuery(keys: readonly string[], filters: readonly Filter[]): string {
+  return joinQuery(...keys.map((key) => pillQuery(key, filters) ?? ""));
 }
 
 export function allOf(tests: readonly Test[]): Test | undefined {

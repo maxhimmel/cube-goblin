@@ -10,7 +10,7 @@ import { DRAG_TYPE } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import type { ChartEvents } from "./lab-charts.tsx";
 import type { Drag, Pill, Test, Used } from "./model.ts";
-import { allOf, project, resolvePill, usedIn } from "./model.ts";
+import { allOf, project, resolvePill, stackQuery, usedIn } from "./model.ts";
 
 export type Axis = ColumnAxis | "none";
 
@@ -59,6 +59,7 @@ export interface Lab {
   pills: Pill[];
   togglePill: (key: string) => void;
   clearPills: () => void;
+  saveStack: ((label: string) => void) | undefined;
   setPeek: (key: string | undefined) => void;
   lens: Test | undefined;
   dimmed: (card: GridCard) => boolean;
@@ -171,6 +172,14 @@ export function useLab(): Lab | undefined {
     clearPills: () => {
       setPillKeys([]);
     },
+    saveStack: mode.putFilter
+      ? (label) => {
+          const id = newFilterId(filters);
+          const keys = pills.map((pill) => pill.key);
+          mode.putFilter?.({ id, label, query: stackQuery(keys, filters), view: "cards" });
+          setPillKeys([`f:${id}`]);
+        }
+      : undefined,
     setPeek,
     lens,
     dimmed: (card) => (peekPill ? !lens?.(card) : !hide && applied !== undefined && !applied(card)),

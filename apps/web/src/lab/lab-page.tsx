@@ -99,6 +99,9 @@ export interface Lab {
   saveFilter: ((label: string, query: string) => string) | undefined;
   deleteFilter: ((id: string) => void) | undefined;
   addPill: (key: string) => void;
+  replacePill: (from: string, to: string) => void;
+  typing: string;
+  setTyping: (query: string) => void;
   used: Used;
   size: { min: number; max: number } | undefined;
   pills: Pill[];
@@ -149,6 +152,7 @@ export function useLab(): Lab | undefined {
     z.enum(["mv", "color", "type", "none"]),
   );
   const [peek, setPeek] = useState<string | undefined>(undefined);
+  const [typing, setTyping] = useState("");
   const [drag, setDrag] = useState<Drag | undefined>(undefined);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   if (!cube) {
@@ -157,7 +161,12 @@ export function useLab(): Lab | undefined {
   const all = cube.cards;
   const cards = all.filter((card) => showCut || card.status !== "cut");
   const pills = pillKeys.flatMap((key) => resolvePill(key, filters) ?? []);
-  const peekPill = peek === undefined ? undefined : resolvePill(peek, filters);
+  const peekPill =
+    peek !== undefined
+      ? resolvePill(peek, filters)
+      : typing === ""
+        ? undefined
+        : resolvePill(`x:${typing}`, filters);
   const applied = allOf(pills.map((pill) => pill.test));
   const lens = allOf([...pills, ...(peekPill ? [peekPill] : [])].map((pill) => pill.test));
   const hoverSlug = hover?.card.slug;
@@ -189,6 +198,11 @@ export function useLab(): Lab | undefined {
           setPillKeys(pillKeys.filter((key) => key !== `f:${id}`));
         }
       : undefined,
+    replacePill: (from, to) => {
+      setPillKeys(pillKeys.map((key) => (key === from ? to : key)));
+    },
+    typing,
+    setTyping,
     addPill: (key) => {
       if (!pillKeys.includes(key)) {
         setPillKeys([...pillKeys, key]);
@@ -289,27 +303,87 @@ export function DraftCount({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
+function SavePill({ lab, pill }: { lab: Lab; pill: Pill }): ReactNode {
+  const [naming, setNaming] = useState(false);
+  const [label, setLabel] = useState("");
+  const save = lab.saveFilter;
+  if (!save) {
+    return null;
+  }
+  if (!naming) {
+    return (
+      <button
+        type="button"
+        className="lab-pill-save"
+        title="Keep this as a saved filter"
+        onClick={() => {
+          setNaming(true);
+        }}
+      >
+        Save
+      </button>
+    );
+  }
+  return (
+    <form
+      className="lab-pill-name"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (label.trim() !== "") {
+          lab.replacePill(pill.key, `f:${save(label.trim(), pill.key.slice(2))}`);
+        }
+      }}
+    >
+      <input
+        aria-label={`Name for ${pill.label}`}
+        placeholder="Name"
+        value={label}
+        autoFocus
+        onChange={(event) => {
+          setLabel(event.target.value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setNaming(false);
+          }
+        }}
+        onBlur={() => {
+          if (label.trim() === "") {
+            setNaming(false);
+          }
+        }}
+      />
+    </form>
+  );
+}
+
 export function PillBar({ lab }: { lab: Lab }): ReactNode {
   return (
     <div className="lab-pills" aria-label="Applied filters">
-      {lab.pills.length === 0 && (
+      {lab.pills.length === 0 && lab.typing === "" && (
         <span className="lab-pills-empty">No filter · hover a chart or filter to peek</span>
       )}
       {lab.pills.map((pill) => (
-        <button
+        <span
           key={pill.key}
-          type="button"
-          className="lab-pill"
-          onClick={() => {
-            lab.togglePill(pill.key);
-          }}
-          onPointerEnter={() => {
-            lab.setPeek(undefined);
-          }}
-          aria-label={`Remove ${pill.label}`}
+          className="lab-pill-wrap"
+          data-adhoc={pill.key.startsWith("x:") ? "" : undefined}
         >
-          {pill.label} <span aria-hidden>×</span>
-        </button>
+          <button
+            type="button"
+            className="lab-pill"
+            onClick={() => {
+              lab.togglePill(pill.key);
+            }}
+            onPointerEnter={() => {
+              lab.setPeek(undefined);
+            }}
+            aria-label={`Remove ${pill.label}`}
+          >
+            {pill.label} <span aria-hidden>×</span>
+          </button>
+          {pill.key.startsWith("x:") && <SavePill lab={lab} pill={pill} />}
+        </span>
       ))}
       {lab.pills.length > 1 && (
         <button type="button" className="lab-link" onClick={lab.clearPills}>

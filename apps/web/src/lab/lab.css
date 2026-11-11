@@ -1623,3 +1623,36 @@
   padding: 2px 8px;
   font-size: 0.8rem;
 }
+
+.lab-pill-wrap {
+  display: inline-flex;
+  gap: 0;
+  align-items: center;
+}
+
+.lab-pill-wrap[data-adhoc] .lab-pill {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  border-style: dashed;
+  border-radius: 999px 0 0 999px;
+}
+
+.lab-pill-save {
+  padding: 2px 10px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  background: var(--field);
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  animation: lab-pop 0.2s var(--lift);
+}
+
+.lab-pill-name input {
+  width: 130px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  border-color: var(--accent);
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+}

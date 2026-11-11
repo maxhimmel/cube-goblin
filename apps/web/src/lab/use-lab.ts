@@ -116,6 +116,8 @@ export interface Lab {
   zone: (status: CardStatus) => {
     "data-zone": string;
     "data-over": string | undefined;
+    "data-target": string | undefined;
+    "data-drop": string | undefined;
     onDragOver: (event: DragEvent) => void;
     onDrop: (event: DragEvent) => void;
   };
@@ -127,6 +129,8 @@ export interface Lab {
   applyPending: (() => void) | undefined;
   pendingZone: {
     "data-over": string | undefined;
+    "data-target": string | undefined;
+    "data-drop": string | undefined;
     onDragOver: (event: DragEvent) => void;
     onDragLeave: () => void;
     onDrop: (event: DragEvent) => void;
@@ -212,6 +216,7 @@ export function useLab(): Lab | undefined {
         : [...pending, { card, to: flip(card.status) }],
     );
   };
+  const dragged = drag && all.find((candidate) => candidate.slug === drag.slug);
   const hoverSlug = hover?.card.slug;
   const hovered = hoverSlug === undefined ? undefined : all.find((c) => c.slug === hoverSlug);
   const opened = selected === undefined ? undefined : all.find((c) => c.slug === selected);
@@ -324,7 +329,12 @@ export function useLab(): Lab | undefined {
     onHover: setHover,
     zone: (status) => ({
       "data-zone": status,
-      "data-over": drag?.to === status ? "" : undefined,
+      "data-over": drag?.to === status && !overPending ? "" : undefined,
+      "data-target": dragged && dragged.status !== status ? "" : undefined,
+      "data-drop":
+        dragged && dragged.status !== status
+          ? `Drop to move to ${status === "draft" ? "draft" : "prospects"}`
+          : undefined,
       onDragOver: (event) => {
         if (!event.dataTransfer.types.includes(DRAG_TYPE) || !drag) {
           return;
@@ -374,6 +384,8 @@ export function useLab(): Lab | undefined {
         : undefined,
     pendingZone: {
       "data-over": overPending ? "" : undefined,
+      "data-target": dragged && !pendingTo.has(dragged.slug) ? "" : undefined,
+      "data-drop": dragged && !pendingTo.has(dragged.slug) ? "Drop to queue" : undefined,
       onDragOver: (event) => {
         if (!event.dataTransfer.types.includes(DRAG_TYPE) || !drag) {
           return;

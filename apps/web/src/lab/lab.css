@@ -1937,12 +1937,94 @@ button.lab-stat[data-picked] {
   display: block;
 }
 
-.pending-title {
+.pending {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 8px 12px;
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.pending[data-over] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+.pending-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-height: 20px;
+}
+
+.pending-head h2 {
+  margin: 0;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.pending-head .pending-tally {
+  flex: 1;
+}
+
+.pending-head-actions button {
+  height: 20px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1;
+  background: none;
+  border-color: transparent;
+}
+
+.pending-head-actions button:hover {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.pending[data-collapsed] {
+  padding: 8px 0;
+}
+
+.pending[data-collapsed] .pending-head {
+  flex: 1;
+  align-items: center;
+  writing-mode: vertical-rl;
+}
+
+.pending[data-collapsed] .pending-head .pending-tally {
+  flex: 0;
+}
+
+.pending[data-collapsed] .pending-head-actions {
+  order: -1;
+  writing-mode: horizontal-tb;
+}
+
+.lab-floor {
+  grid-template-columns: minmax(0, 2.4fr) 36px minmax(240px, 1fr);
+}
+
+.lab[data-pending-open] .lab-floor {
+  grid-template-columns: minmax(0, 2.4fr) 190px minmax(240px, 1fr);
+}
+
+.pending-sides {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .pending-tally {
@@ -1995,201 +2077,66 @@ button.lab-stat[data-picked] {
   font-size: 0.8rem;
 }
 
-.pending-a,
-.pending-b,
-.pending-c,
-.pending-e {
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+.pending-hint kbd {
+  padding: 0 4px;
+  font: inherit;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 4px;
 }
 
-.pending-a[data-over],
-.pending-b[data-over],
-.pending-c[data-over],
-.pending-e[data-over] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 30%, transparent);
+@keyframes lab-drop-pulse {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 22%, transparent);
+  }
 }
 
-.pending-a {
+.lab-pile[data-target],
+.pending[data-target] {
   position: relative;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 2px 8px 2px 2px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  border-color: color-mix(in oklab, var(--accent) 65%, var(--line));
+  box-shadow: 0 0 0 0 transparent;
+  animation: lab-drop-pulse 1.4s ease-in-out infinite;
 }
 
-.pending-a-toggle {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  padding: 4px 10px;
-  color: var(--fg);
-  background: color-mix(in oklab, var(--panel) 80%, var(--fg) 5%);
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.pending-a-toggle:hover,
-.pending-a[data-open] .pending-a-toggle {
-  background: color-mix(in oklab, var(--accent) 18%, var(--panel));
-}
-
-.pending-caret {
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
-.pending-a-list {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 40;
-  display: grid;
-  grid-template-columns: repeat(2, 190px);
-  gap: 12px;
-  max-height: 60vh;
-  padding: 10px 12px;
-  overflow: auto;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
-}
-
-.pending-a-list .pending-hint {
-  grid-column: 1 / -1;
-}
-
-.pending-b {
-  display: flex;
-  flex-basis: 100%;
-  gap: 10px;
-  align-items: center;
-  min-height: 38px;
-  padding: 4px 10px;
-  border: 1px dashed var(--line);
-  border-radius: 10px;
-}
-
-.pending-b-sides {
-  display: flex;
-  flex: 1;
-  gap: 16px;
-  align-items: center;
-  min-width: 0;
-  overflow-x: auto;
-}
-
-.pending-b .pending-side {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.pending-b .pending-side h3 {
-  white-space: nowrap;
-}
-
-.pending-b .pending-stack {
-  display: flex;
-  gap: 4px;
-}
-
-.pending-b .pending-stack .lab-cell {
-  flex: 0 0 170px;
-}
-
-.lab[data-pending-layout="c"] .lab-floor {
-  grid-template-columns: minmax(0, 2.4fr) 34px minmax(240px, 1fr);
-}
-
-.lab[data-pending-layout="c"][data-gutter-open] .lab-floor {
-  grid-template-columns: minmax(0, 2.4fr) 190px minmax(240px, 1fr);
-}
-
-.pending-c {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 8px;
-  min-height: 0;
-  padding: 10px 8px;
-  border: 1px dashed var(--line);
-  border-radius: 16px;
-}
-
-.pending-c header {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.pending-c header .pending-tally {
-  flex: 1;
-}
-
-.pending-c-close {
-  padding: 0 6px;
-  color: var(--muted);
-  background: none;
-  border: 0;
-  cursor: pointer;
-}
-
-.pending-c-sides {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-  overflow: auto;
-}
-
-.pending-c-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 12px 0;
-  color: var(--fg);
-  background: color-mix(in oklab, var(--panel) 45%, transparent);
-  cursor: pointer;
-}
-
-.pending-c-rail .pending-title,
-.pending-c-rail .pending-tally {
-  writing-mode: vertical-rl;
-}
-
-.pending-c-rail:hover {
+.lab-pile[data-target][data-over],
+.pending[data-target][data-over] {
+  background: color-mix(in oklab, var(--accent) 10%, var(--panel));
+  border-style: solid;
   border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 40%, transparent);
+  animation: none;
 }
 
-.pending-c-arrows {
-  color: var(--muted);
+.lab-pile[data-over]::before,
+.pending[data-over]::before {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: block;
+  box-sizing: border-box;
+  width: max-content;
+  height: 22px;
+  margin: 0 auto -22px;
+  padding: 0 10px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 22px;
+  background: var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  content: attr(data-drop);
+  pointer-events: none;
 }
 
-.pending-e {
-  display: grid;
-  align-content: start;
-  gap: 8px;
-  min-height: 100%;
-  border: 1px dashed transparent;
-  border-radius: 10px;
+.pending[data-collapsed][data-over]::before {
+  display: none;
 }
 
-.pending-e-head {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pending-e-sides {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 10px;
+@media (prefers-reduced-motion: reduce) {
+  .lab-pile[data-target],
+  .pending[data-target] {
+    animation: none;
+  }
 }

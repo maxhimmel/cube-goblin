@@ -1260,3 +1260,35 @@
   margin-bottom: 3px;
   break-inside: avoid;
 }
+
+.lab-layout {
+  position: relative;
+}
+
+.lab-layout-apply {
+  width: 100%;
+  padding: 3px 8px;
+  text-align: left;
+  background: none;
+  border-color: transparent;
+}
+
+.lab-layout-apply:hover {
+  background: color-mix(in oklab, var(--fg) 6%, transparent);
+}
+
+.lab-layout:hover .lab-filter-remove {
+  opacity: 1;
+}
+
+.lab-layout-save {
+  display: flex;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.lab-layout-save input {
+  flex: 1;
+  min-width: 0;
+}

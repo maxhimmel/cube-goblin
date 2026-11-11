@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { Preview } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { CardColumns, CardRows } from "./cards.tsx";
 import type { Dock } from "./dock.tsx";
 import { BlocksMenu, DOCKS, DockBlocks, useDockState } from "./dock.tsx";
+import { LayoutsMenu } from "./layouts-menu.tsx";
 import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx";
 import type { Lab } from "./use-lab.ts";
 import { useLab } from "./use-lab.ts";
@@ -13,7 +15,7 @@ type CardView = "columns" | "rows";
 
 const DOCK_ARROWS: Record<Dock, string> = { top: "↑", right: "→", bottom: "↓", left: "←" };
 
-function LabView({ lab }: { lab: Lab }): ReactNode {
+function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode {
   const [dockAt, setDockAt] = useRemembered<Dock>("labc.dockAt", "top", z.enum(DOCKS));
   const [tags, setTags] = useRemembered("labc.stripTags", false, z.boolean());
   const [open, setOpen] = useRemembered("labc.dockOpen", true, z.boolean());
@@ -79,6 +81,7 @@ function LabView({ lab }: { lab: Lab }): ReactNode {
             </button>
           </div>
           <BlocksMenu dock={dock} />
+          <LayoutsMenu onApply={onApply} />
           <div className="lab-switches">
             <Toggle label="Baseline" checked={lab.baseline} onChange={lab.setBaseline} />
             <Toggle
@@ -144,10 +147,22 @@ function LabView({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
-export function LabPage(): ReactNode {
+function LabRoot({ onApply }: { onApply: () => void }): ReactNode {
   const lab = useLab();
   if (!lab) {
     return <p className="muted">Loading cube…</p>;
   }
-  return <LabView lab={lab} />;
+  return <LabView lab={lab} onApply={onApply} />;
+}
+
+export function LabPage(): ReactNode {
+  const [round, setRound] = useState(0);
+  return (
+    <LabRoot
+      key={round}
+      onApply={() => {
+        setRound(round + 1);
+      }}
+    />
+  );
 }

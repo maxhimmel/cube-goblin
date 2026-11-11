@@ -1417,3 +1417,71 @@ test("a Lab chart pins to a scope or follows the filter, with its own baseline",
   await expect(curve.locator(".lab-bar-base").first()).toBeVisible();
   await page.getByRole("button", { name: "Remove c=g" }).click();
 });
+
+async function readLayouts(cardsDir: string): Promise<unknown> {
+  try {
+    return JSON.parse(await readFile(join(cardsDir, "..", "layouts.json"), "utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+test("a named Lab layout saves to the cube and brings its settings back", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  await draft.getByRole("button", { name: "Rows" }).click();
+  await draft.getByRole("button", { name: "None", exact: true }).click();
+  await page.getByRole("button", { name: "Charts on the left" }).click();
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("t:creature");
+  await query.press("Enter");
+  await expect(draft.locator(".lab-group")).toHaveCount(1);
+
+  await page.getByRole("button", { name: /^Layouts/u }).click();
+  await page.getByLabel("Layout name").fill("Creature rows");
+  await page.getByLabel("Layout name").press("Enter");
+  await expect
+    .poll(async () => readLayouts(workbench.cardsDir))
+    .toEqual({
+      layouts: [
+        {
+          id: expect.stringMatching(/^layout-[a-z0-9]+$/u),
+          label: "Creature rows",
+          settings: expect.objectContaining({
+            "labc.view": "rows",
+            "lab.axis": "none",
+            "labc.dockAt": "left",
+            "lab.pills": ["x:t:creature"],
+          }),
+        },
+      ],
+    });
+
+  await draft.getByRole("button", { name: "Columns" }).click();
+  await draft.getByRole("button", { name: "Mana value", exact: true }).click();
+  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await page.getByRole("button", { name: "Remove t:creature" }).click();
+  await expect(page.locator(".lab")).toHaveAttribute("data-dock", "top");
+
+  await page.reload();
+  await page.getByRole("button", { name: /^Layouts/u }).click();
+  await page.getByRole("button", { name: "Creature rows", exact: true }).click();
+  await expect(page.locator(".lab")).toHaveAttribute("data-dock", "left");
+  await expect(page.getByRole("button", { name: "Remove t:creature" })).toBeVisible();
+  await expect(draft.locator(".lab-group")).toHaveCount(1);
+  await expect(draft.getByRole("button", { name: "Rows" })).toHaveAttribute("aria-pressed", "true");
+  await page.reload();
+  await expect(page.locator(".lab")).toHaveAttribute("data-dock", "left");
+
+  await page.getByRole("button", { name: /^Layouts/u }).click();
+  await page.getByRole("button", { name: "Delete layout Creature rows" }).click();
+  await expect.poll(async () => readLayouts(workbench.cardsDir)).toEqual({ layouts: [] });
+  await draft.getByRole("button", { name: "Columns" }).click();
+  await draft.getByRole("button", { name: "Mana value", exact: true }).click();
+  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await page.getByRole("button", { name: "Remove t:creature" }).click();
+});

@@ -85,6 +85,10 @@ A saved, named set of conditions that picks cards out of the cube. Cube Cobra us
 
 A project-defined term with no outside source: the workbench view (`#/lab`) that puts the cards in contention, charts, and filter blocks in one layout the user arranges, where applied filters change the cards and charts at once ([T-031](tickets/T-031-lab-view.md)). Not the Board, which sketches [sections](#section).
 
+## Layout
+
+A project-defined term with no outside source: a named snapshot of the [Lab](#lab)'s settings (dock blocks and their scopes, grouping, card layout, switches, and applied filters), saved to `cube/layouts.json` to switch between setups. The Lab remembers its current settings without one ([T-031](tickets/T-031-lab-view.md)). Not an Insights dashboard layout, which stays in the browser ([T-015](tickets/T-015-insights-dashboard-layout.md)).
+
 ## Version
 
 A project-defined term with no outside source: a named, dated snapshot of the whole cube (every card with its status, tags, notes, and printing, plus the tag list and Board [sections](#section)), saved to `cube/versions/<date>-<label>.json` from the workbench's Versions view. Comparing two versions, or one with the current cube, lists what changed ([T-014](tickets/T-014-versions-and-compare.md)). Not a git commit, though version files are committed like other cube data.

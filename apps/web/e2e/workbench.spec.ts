@@ -1645,6 +1645,14 @@ test("the Lab creature charts peek, pick, and preview a move in a top and a side
   await expect(row).toHaveAttribute("data-picked", "");
   await pill.click();
   await page.getByRole("button", { name: "Charts on the top" }).click();
+
+  await balance.hover();
+  await page.getByRole("button", { name: "Collapse Creature balance" }).click();
+  const rail = page.locator('.lab-block[data-block="lab:balance"]');
+  await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeLessThan(50);
+  await expect(rail.locator(".lab-tile-head")).toHaveCSS("writing-mode", "vertical-rl");
+  await page.getByRole("button", { name: "Expand Creature balance" }).click();
+  await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeGreaterThan(200);
 });
 
 test("the Lab sorts its cards by a chain of keys that survives a reload", async ({

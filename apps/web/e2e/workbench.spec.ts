@@ -1233,7 +1233,11 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
       },
     ]);
   await block.scrollIntoViewIfNeeded();
-  await page.screenshot({ path: "test-results/filter-block.png" });
+  const firstStrip = block.locator(".strip").first();
+  await firstStrip.hover();
+  const stripBox = await firstStrip.boundingBox();
+  const previewBox = await page.locator(".preview").boundingBox();
+  expect(previewBox?.y ?? 9999).toBeLessThan((stripBox?.y ?? 0) + (stripBox?.height ?? 0));
 
   await block.getByLabel("Show Cheap red as").selectOption("curve");
   await expect(block.getByRole("img", { name: "Mana curve" })).toBeVisible();

@@ -1,6 +1,7 @@
 import { mode } from "#mode";
 import { colorKey } from "@repo/cube/browser";
 import type { CSSProperties, DragEvent, PointerEvent, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { CardLink } from "./card-pane.tsx";
 import { ManaCost } from "./mana.tsx";
 import type { GridCard } from "./modes/mode.ts";
@@ -97,7 +98,8 @@ export function Strip({
 
 export function Preview({ hover }: { hover: Hover | undefined }): ReactNode {
   return (
-    hover && (
+    hover &&
+    createPortal(
       <img
         key={hover.card.slug}
         className="preview"
@@ -106,7 +108,8 @@ export function Preview({ hover }: { hover: Hover | undefined }): ReactNode {
         width={PREVIEW_WIDTH}
         height={PREVIEW_HEIGHT}
         style={hover.style}
-      />
+      />,
+      document.body,
     )
   );
 }

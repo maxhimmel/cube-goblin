@@ -1,6 +1,6 @@
 import { compileQuery, cubeStats } from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { z } from "zod";
 import type { Block } from "../insights/block.tsx";
 import type { CardSet } from "../insights/filter-widgets.tsx";
@@ -11,7 +11,8 @@ import { QueryInput } from "../query/query-input.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { CurveBars, Heat, PtDots } from "./lab-charts.tsx";
 import { curveTallies, heatRows, resolvePill } from "./model.ts";
-import type { Lab } from "./use-lab.ts";
+import type { Lab, Pin } from "./use-lab.ts";
+import { PINS } from "./use-lab.ts";
 
 export const DOCKS = ["top", "right", "bottom", "left"] as const;
 export type Dock = (typeof DOCKS)[number];
@@ -50,6 +51,12 @@ const DEFAULT_ORDER = [
 ];
 
 const DEFAULT_HIDDEN = [...DUPLICATES];
+
+const CHARTS = new Set<string>(["lab:curve", "lab:heat", "lab:pt"]);
+
+const pinSchema = z.enum(["filter", "draft", "considered", "all"]);
+
+const TileExtras = createContext<ReactNode>(null);
 
 const BLOCK_IDS = new Set<string>(BLOCKS.map((block) => block.id));
 
@@ -223,6 +230,10 @@ export interface DockState {
   order: string[];
   hidden: Set<string>;
   collapsed: Set<string>;
+  pins: Partial<Record<string, Pin>>;
+  baselines: Partial<Record<string, boolean>>;
+  setPin: (id: string, pin: Pin) => void;
+  setBaseline: (id: string, on: boolean | undefined) => void;
   move: (id: string, before: string) => void;
   setHidden: (id: string, hide: boolean) => void;
   toggle: (id: string) => void;
@@ -234,6 +245,16 @@ export function useDockState(): DockState {
   const [order, setOrder] = useRemembered("labc.order", DEFAULT_ORDER, ids);
   const [hidden, setHidden] = useRemembered("labc.hidden", DEFAULT_HIDDEN, ids);
   const [collapsed, setCollapsed] = useRemembered<string[]>("labc.collapsed", [], ids);
+  const [pins, setPins] = useRemembered<Partial<Record<string, Pin>>>(
+    "lab.pins",
+    {},
+    z.partialRecord(z.string(), pinSchema),
+  );
+  const [baselines, setBaselines] = useRemembered<Partial<Record<string, boolean>>>(
+    "lab.baselines",
+    {},
+    z.partialRecord(z.string(), z.boolean()),
+  );
   const known = [
     ...order.filter((id) => ALL_BLOCKS.some((block) => block.id === id)),
     ...ALL_BLOCKS.map((block) => block.id).filter((id) => !order.includes(id)),
@@ -242,6 +263,15 @@ export function useDockState(): DockState {
     order: known,
     hidden: new Set(hidden),
     collapsed: new Set(collapsed),
+    pins,
+    baselines,
+    setPin: (id, pin) => {
+      setPins({ ...pins, [id]: pin });
+    },
+    setBaseline: (id, on) => {
+      const rest = Object.fromEntries(Object.entries(baselines).filter(([key]) => key !== id));
+      setBaselines(on === undefined ? rest : { ...rest, [id]: on });
+    },
     move: (id, before) => {
       if (id === before) {
         return;
@@ -262,6 +292,8 @@ export function useDockState(): DockState {
       setOrder(DEFAULT_ORDER);
       setHidden(DEFAULT_HIDDEN);
       setCollapsed([]);
+      setPins({});
+      setBaselines({});
     },
   };
 }
@@ -389,6 +421,7 @@ function Tile({
   children,
 }: Parameters<typeof Block>[0]): ReactNode {
   const [asTable, setAsTable] = useState(false);
+  const extras = useContext(TileExtras);
   const short = typeof caption === "string" && caption.length <= SHORT_CAPTION;
   return (
     <section className="lab-tile" data-collapsed={collapsed ? "" : undefined} aria-label={title}>
@@ -397,6 +430,7 @@ function Tile({
         {short && !collapsed && <span className="lab-tile-caption">{caption}</span>}
         <span className="lab-tile-actions">
           {!collapsed && actions}
+          {!collapsed && extras}
           {table !== undefined && !collapsed && (
             <button
               type="button"
@@ -429,18 +463,60 @@ function Tile({
   );
 }
 
+function BlockControls({
+  id,
+  title,
+  dock,
+  global,
+}: {
+  id: string;
+  title: string;
+  dock: DockState;
+  global: boolean;
+}): ReactNode {
+  const pin = dock.pins[id] ?? "filter";
+  const override = dock.baselines[id];
+  const on = override ?? global;
+  return (
+    <>
+      <select
+        aria-label={`Scope of ${title}`}
+        title="Follow the filter, or pin to a scope"
+        value={pin}
+        onChange={(event) => {
+          dock.setPin(id, pinSchema.parse(event.target.value));
+        }}
+      >
+        {PINS.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {CHARTS.has(id) && pin === "filter" && (
+        <button
+          type="button"
+          aria-pressed={on}
+          aria-label={`Baseline for ${title}`}
+          title={
+            override === undefined
+              ? "Baseline follows the global switch"
+              : "Baseline set for this block; click again to follow the global switch"
+          }
+          data-override={override === undefined ? undefined : ""}
+          onClick={() => {
+            dock.setBaseline(id, on === global ? !on : undefined);
+          }}
+        >
+          ◐
+        </button>
+      )}
+    </>
+  );
+}
+
 export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
   const [dragging, setDragging] = useState<string | undefined>(undefined);
-  const lensed = lab.lens ? lab.scope.filter(lab.lens) : lab.scope;
-  const set: CardSet = {
-    cards: lensed,
-    stats: cubeStats(lensed, lab.vocabulary),
-    bucket: undefined,
-    selectedBucket: undefined,
-    pick: (key) => {
-      lab.events.onPick(key);
-    },
-  };
   const controls = (id: string) => ({
     collapsed: dock.collapsed.has(id),
     onToggle: () => {
@@ -450,57 +526,68 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
       dock.setHidden(id, true);
     },
   });
-  const caption = lab.lens !== undefined ? "filtered · baseline faint" : "draft";
-  const tile = (id: string, title: string, body: ReactNode, live?: boolean): ReactNode => (
-    <Tile title={title} caption={live ? caption : undefined} {...controls(id)}>
-      {body}
-    </Tile>
-  );
   const body = (id: string): ReactNode => {
+    const pin = dock.pins[id] ?? "filter";
+    const view = lab.view(pin, dock.baselines[id] ?? lab.baseline);
+    const label = PINS.find((option) => option.id === pin)?.label ?? pin;
+    const caption =
+      pin !== "filter" ? label : view.lens !== undefined ? "filtered · baseline faint" : "draft";
+    const tile = (title: string, chart: ReactNode, live?: boolean): ReactNode => (
+      <Tile title={title} caption={live ? caption : undefined} {...controls(id)}>
+        {chart}
+      </Tile>
+    );
     switch (id) {
       case "lab:filters":
-        return tile(id, "Filters", <FiltersBody lab={lab} />);
+        return tile("Filters", <FiltersBody lab={lab} />);
       case "lab:tags":
-        return tile(id, "Tags in draft", <TagsBody lab={lab} />);
+        return tile("Tags in draft", <TagsBody lab={lab} />);
       case "lab:curve":
         return tile(
-          id,
           "Curve",
           <CurveBars
-            tallies={curveTallies(lab.scope, lab.next, lab.lens)}
-            events={lab.events}
-            used={lab.used}
+            tallies={curveTallies(view.scope, view.next, view.lens)}
+            events={view.events}
+            used={view.used}
           />,
           true,
         );
       case "lab:heat":
         return tile(
-          id,
           "Color × mana value",
           <Heat
-            rows={heatRows(lab.scope, lab.next, lab.lens)}
-            events={lab.events}
-            used={lab.used}
+            rows={heatRows(view.scope, view.next, view.lens)}
+            events={view.events}
+            used={view.used}
           />,
           true,
         );
       case "lab:pt":
         return tile(
-          id,
           "Power × toughness",
           <PtDots
-            scope={lab.scope}
-            next={lab.next}
-            lens={lab.lens}
-            events={lab.events}
-            used={lab.used}
+            scope={view.scope}
+            next={view.next}
+            lens={view.lens}
+            events={view.events}
+            used={view.used}
           />,
           true,
         );
-      default:
-        return isInsightsBlock(id)
-          ? chartBlock(id, set, Tile, { ...controls(id), selectedCard: undefined })
-          : null;
+      default: {
+        if (!isInsightsBlock(id)) {
+          return null;
+        }
+        const cards = view.lens ? view.scope.filter(view.lens) : view.scope;
+        const set: CardSet = {
+          cards,
+          stats: cubeStats(cards, lab.vocabulary),
+          bucket: undefined,
+          selectedBucket: undefined,
+          pick: view.events.onPick,
+        };
+        return chartBlock(id, set, Tile, { ...controls(id), selectedCard: undefined });
+      }
     }
   };
   return dock.order
@@ -511,6 +598,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
         spec?.h === undefined || dock.collapsed.has(id)
           ? undefined
           : Math.min(440, Math.max(220, spec.h * 18));
+      const scoped = id !== "lab:filters" && id !== "lab:tags";
       return (
         <DockBlock
           key={id}
@@ -520,7 +608,20 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
           setDragging={setDragging}
           height={height}
         >
-          {body(id)}
+          <TileExtras.Provider
+            value={
+              scoped && (
+                <BlockControls
+                  id={id}
+                  title={spec?.title ?? id}
+                  dock={dock}
+                  global={lab.baseline}
+                />
+              )
+            }
+          >
+            {body(id)}
+          </TileExtras.Provider>
         </DockBlock>
       );
     });

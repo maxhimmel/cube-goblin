@@ -756,10 +756,17 @@
 }
 
 .lab-tile-actions {
+  position: absolute;
+  top: -3px;
+  right: 0;
+  z-index: 1;
   display: flex;
   gap: 2px;
-  margin-left: auto;
+  padding-left: 8px;
+  background: var(--panel);
+  box-shadow: -10px 0 8px -4px var(--panel);
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
 }
 
@@ -767,6 +774,7 @@
 .lab-tile:focus-within .lab-tile-actions,
 .lab-tile[data-collapsed] .lab-tile-actions {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .lab-tile-actions button,
@@ -1232,4 +1240,8 @@
 .lab-strip:hover::after,
 .lab-row:hover::after {
   opacity: 0.45;
+}
+
+.lab-tile-actions button[data-override] {
+  color: var(--accent);
 }

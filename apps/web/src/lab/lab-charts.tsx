@@ -72,9 +72,10 @@ export function CurveBars({
   const rows = tallies.filter(
     (row) => !used || used.curve.has(curveId(row)) || row.baseGhost !== 0,
   );
+  const scaleToBase = events.baseline || !events.filtered;
   const top = Math.max(
     1,
-    ...rows.map((row) => Math.max(row.base + row.baseGhost, row.hit + row.ghost)),
+    ...rows.map((row) => Math.max(scaleToBase ? row.base + row.baseGhost : 0, row.hit + row.ghost)),
   );
   const pct = (value: number): string => `${String((value / top) * 100)}%`;
   return (

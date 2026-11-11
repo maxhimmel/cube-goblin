@@ -1383,3 +1383,37 @@ test("the Lab moves cards by drag and filters them with typed, applied, and peek
   await expect(dim).toHaveCount(redDim);
   await page.screenshot({ path: "test-results/lab-peek.png" });
 });
+
+test("a Lab chart pins to a scope or follows the filter, with its own baseline", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const curve = page.getByRole("region", { name: "Curve" });
+  const three = curve.locator('.lab-bar[aria-label^="MV 3:"]');
+  const unfiltered = await three.getAttribute("aria-label");
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("c=g");
+  await query.press("Enter");
+  await expect(three).not.toHaveAttribute("aria-label", unfiltered ?? "");
+  await expect(curve.locator(".lab-bar-base").first()).toBeVisible();
+
+  await curve.hover();
+  await curve.getByLabel("Baseline for Curve").click();
+  await expect(curve.locator(".lab-bar-base")).toHaveCount(0);
+  await expect(page.getByLabel("Baseline", { exact: true })).toBeChecked();
+
+  await curve.getByLabel("Scope of Curve").selectOption("draft");
+  await expect(three).toHaveAttribute("aria-label", unfiltered ?? "");
+  await expect(curve.getByLabel("Baseline for Curve")).toHaveCount(0);
+  await page.reload();
+  await expect(three).toHaveAttribute("aria-label", unfiltered ?? "");
+  await curve.hover();
+  await curve.getByLabel("Scope of Curve").selectOption("filter");
+  await expect(three).not.toHaveAttribute("aria-label", unfiltered ?? "");
+  await expect(curve.locator(".lab-bar-base")).toHaveCount(0);
+  await curve.getByLabel("Baseline for Curve").click();
+  await expect(curve.locator(".lab-bar-base").first()).toBeVisible();
+  await page.getByRole("button", { name: "Remove c=g" }).click();
+});

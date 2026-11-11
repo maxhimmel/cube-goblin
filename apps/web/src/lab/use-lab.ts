@@ -20,6 +20,30 @@ function flip(status: CardStatus): CardStatus {
   return status === "draft" ? "prospect" : "draft";
 }
 
+export const PINS = [
+  { id: "filter", label: "Follows filter" },
+  { id: "draft", label: "Draft" },
+  { id: "considered", label: "Draft + prospects" },
+  { id: "all", label: "All cards" },
+] as const;
+
+export type Pin = (typeof PINS)[number]["id"];
+
+const PIN_INCLUDES: Record<Pin, (card: GridCard) => boolean> = {
+  filter: (card) => card.status === "draft",
+  draft: (card) => card.status === "draft",
+  considered: (card) => card.status !== "cut",
+  all: () => true,
+};
+
+export interface BlockView {
+  scope: GridCard[];
+  next: GridCard[];
+  lens: Test | undefined;
+  used: Used;
+  events: ChartEvents;
+}
+
 export interface Lab {
   cards: GridCard[];
   vocabulary: Tag[];
@@ -51,6 +75,7 @@ export interface Lab {
   scope: GridCard[];
   next: GridCard[];
   events: ChartEvents;
+  view: (pin: Pin, baseline: boolean) => BlockView;
   hover: Hover | undefined;
   onHover: (hover: Hover | undefined) => void;
   zone: (status: CardStatus) => {
@@ -99,8 +124,13 @@ export function useLab(): Lab | undefined {
   const hovered = hoverSlug === undefined ? undefined : all.find((c) => c.slug === hoverSlug);
   const ghost: Drag | undefined =
     drag ?? (hovered ? { slug: hovered.slug, to: flip(hovered.status) } : undefined);
-  const scope = all.filter((card) => card.status === "draft");
-  const next = project(all, ghost).filter((card) => card.status === "draft");
+  const projected = project(all, ghost);
+  const scope = all.filter(PIN_INCLUDES.draft);
+  const next = projected.filter(PIN_INCLUDES.draft);
+  const pick = (key: string): void => {
+    togglePill(key);
+    setPeek(undefined);
+  };
   const togglePill = (key: string): void => {
     setPillKeys(
       pillKeys.includes(key) ? pillKeys.filter((other) => other !== key) : [...pillKeys, key],
@@ -156,14 +186,19 @@ export function useLab(): Lab | undefined {
     drag,
     scope,
     next,
-    events: {
-      onPeek: setPeek,
-      onPick: (key) => {
-        togglePill(key);
-        setPeek(undefined);
-      },
-      baseline,
-      filtered: lens !== undefined,
+    events: { onPeek: setPeek, onPick: pick, baseline, filtered: lens !== undefined },
+    view: (pin, on) => {
+      const follows = pin === "filter";
+      const blockScope = follows ? scope : all.filter(PIN_INCLUDES[pin]);
+      const blockNext = follows ? next : projected.filter(PIN_INCLUDES[pin]);
+      const blockLens = follows ? lens : undefined;
+      return {
+        scope: blockScope,
+        next: blockNext,
+        lens: blockLens,
+        used: usedIn([...blockScope, ...blockNext]),
+        events: { onPeek: setPeek, onPick: pick, baseline: on, filtered: blockLens !== undefined },
+      };
     },
     hover,
     onHover: setHover,

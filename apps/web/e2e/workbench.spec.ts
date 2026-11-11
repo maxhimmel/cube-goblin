@@ -1079,6 +1079,10 @@ test("the tags view counts overlaps and filters the Wall to one", async ({ page,
 
 test("a saved version compares with the current cube", async ({ page, workbench }) => {
   const slug = "brazen-scourge";
+  const drafted = await page.request.patch(`${workbench.url}api/cards/${slug}`, {
+    data: { status: "draft" },
+  });
+  expect(drafted.status()).toBe(200);
   await page.goto(`${workbench.url}#/`);
   await page
     .getByRole("navigation", { name: "Views" })

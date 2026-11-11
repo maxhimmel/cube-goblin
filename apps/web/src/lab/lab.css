@@ -1514,3 +1514,25 @@ button.lab-stat[data-picked] {
   color: var(--accent);
   font-weight: 650;
 }
+
+.lab-chips .lab-chip {
+  position: relative;
+  overflow: hidden;
+}
+
+.lab-chips .lab-chip[data-filtered] {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--accent) 28%, var(--field)) calc(var(--share) * 100%),
+    var(--field) calc(var(--share) * 100%)
+  );
+}
+
+.lab-chips .lab-chip .lab-ghost-label {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  margin: 0;
+  font-size: 0.6rem;
+  line-height: 1;
+}

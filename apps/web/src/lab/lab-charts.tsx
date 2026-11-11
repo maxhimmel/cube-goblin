@@ -470,14 +470,15 @@ export function TagChips({
           className="lab-chip"
           data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
           aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}`}
+          data-filtered={events.filtered ? "" : undefined}
+          style={
+            {
+              "--share": String(row.base === 0 ? 0 : Math.min(1, row.hit / row.base)),
+            } as CSSProperties
+          }
           {...peekProps(row.id, events)}
         >
-          {row.label}{" "}
-          <span>
-            {events.filtered && events.baseline
-              ? `${String(row.hit)}/${String(row.base)}`
-              : row.hit}
-          </span>
+          {row.label} <span>{row.base}</span>
           {row.ghost !== 0 && <Ghost delta={row.ghost} />}
           {row.ghost === 0 && row.baseGhost !== 0 && events.baseline && (
             <Ghost delta={row.baseGhost} faint />

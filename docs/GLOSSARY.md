@@ -81,6 +81,10 @@ The cards that carry exactly one combination of the tags picked in the Tags view
 
 A saved, named set of conditions that picks cards out of the cube. Cube Cobra uses the same word for the parsed search terms its cube views check each card against ("converts them to a filter object, which can be used to check if a card matches all of the filters within"). Here a filter is a list of chips, each an Insights [bucket](tickets/T-016-insights-drill-down.md) (status, color, mana value, card type, tag, or any chart bar or cell), optionally negated. Chips of one kind match any of them; tags and chips of different kinds must all match. Filters live in `cube/filters.json` and show as blocks on Insights ([T-027](tickets/T-027-filter-widgets.md)). Not the Wall's tag filter (`?with=&without=`), which is not saved. In code: `matchesFilter` (`packages/cube/src/filters.ts`). ([Cube Cobra parser docs](https://github.com/dekkerglen/CubeCobra/blob/master/packages/docs/parser.md))
 
+## Lab
+
+A project-defined term with no outside source: the workbench view (`#/lab`) that puts the cards in contention, charts, and filter blocks in one layout the user arranges, where applied filters change the cards and charts at once ([T-031](tickets/T-031-lab-view.md)). Not the Board, which sketches [sections](#section).
+
 ## Version
 
 A project-defined term with no outside source: a named, dated snapshot of the whole cube (every card with its status, tags, notes, and printing, plus the tag list and Board [sections](#section)), saved to `cube/versions/<date>-<label>.json` from the workbench's Versions view. Comparing two versions, or one with the current cube, lists what changed ([T-014](tickets/T-014-versions-and-compare.md)). Not a git commit, though version files are committed like other cube data.

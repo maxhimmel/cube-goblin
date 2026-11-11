@@ -245,6 +245,7 @@ export const BUCKET_KINDS = [
   "type",
   "pt",
   "body",
+  "creatureCurve",
   "status",
   "tag",
 ] as const;
@@ -288,6 +289,8 @@ export function inBucket(card: StatCard, bucket: Bucket): boolean {
       return inPtCell(card, first, second);
     case "body":
       return isCreature(card) && card.power === first && card.toughness === second;
+    case "creatureCurve":
+      return isCreature(card) && curveKey(card) === first;
     case "status":
       return card.status === first;
     case "tag":

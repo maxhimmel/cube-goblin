@@ -646,6 +646,8 @@ export function bucketQuery(bucket: Bucket): string {
       return `t:creature ${ptTerm("pow", first)} ${ptTerm("tou", second)}`;
     case "body":
       return `t:creature pow=${quote(first)} tou=${quote(second)}`;
+    case "creatureCurve":
+      return `t:creature ${curveTerm(first)}`;
     case "status":
       return `is:${first}`;
     case "tag":

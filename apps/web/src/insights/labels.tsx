@@ -69,6 +69,7 @@ export const KIND_TITLES: Record<BucketKind, string> = {
   type: "Card types",
   pt: "Power and toughness",
   body: "Combat matchups",
+  creatureCurve: "Creature balance",
   status: "Status",
   tag: "Tags",
 };
@@ -95,6 +96,8 @@ export function bucketLabel(bucket: Bucket, stats: CubeStats): string {
       return `${ptLabel(first)}/${ptLabel(second)}`;
     case "body":
       return `${first}/${second}`;
+    case "creatureCurve":
+      return `Creatures, mana value ${curveLabel(first)}`;
     case "status":
       return find(stats.status);
     case "tag":

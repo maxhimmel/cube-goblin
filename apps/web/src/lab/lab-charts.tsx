@@ -2,8 +2,8 @@ import { colorKey } from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
 import { colorLabel, ptLabel } from "../insights/labels.tsx";
 import type { GridCard } from "../modes/mode.ts";
-import type { HeatRow, Tally, Test, Used } from "./model.ts";
-import { PT_AXIS, ghostLabel, isCreatureCard, ptCell } from "./model.ts";
+import type { BalanceRow, HeatRow, Matchups, Tally, Test, Used } from "./model.ts";
+import { MATCHUP_CORNERS, PT_AXIS, ghostLabel, isCreatureCard, ptCell } from "./model.ts";
 
 export interface ChartEvents {
   onPeek: (key: string | undefined) => void;
@@ -485,6 +485,196 @@ export function TagChips({
           )}
         </button>
       ))}
+    </div>
+  );
+}
+
+const STACK_GAP = 4;
+const STACK_REACH = 6;
+
+function stackOffsets<T>(items: readonly T[], key: (item: T) => number): number[] {
+  const seen = new Map<number, number>();
+  const totals = new Map<number, number>();
+  for (const item of items) {
+    totals.set(key(item), (totals.get(key(item)) ?? 0) + 1);
+  }
+  return items.map((item) => {
+    const index = seen.get(key(item)) ?? 0;
+    seen.set(key(item), index + 1);
+    const total = totals.get(key(item)) ?? 1;
+    const gap = total < 2 ? 0 : Math.min(STACK_GAP, (2 * STACK_REACH) / (total - 1));
+    return (index - (total - 1) / 2) * gap;
+  });
+}
+
+export function BalanceStrips({
+  rows,
+  events,
+}: {
+  rows: readonly BalanceRow[];
+  events: ChartEvents;
+}): ReactNode {
+  if (rows.length === 0) {
+    return <p className="lab-empty">No creatures in this scope</p>;
+  }
+  const top = Math.max(
+    1,
+    ...rows.flatMap((row) => [row.range?.max ?? 0, ...row.dots.map((dot) => dot.size)]),
+  );
+  const pct = (value: number): string => `${String((value / top) * 100)}%`;
+  return (
+    <div className="lab-balance" role="list" aria-label="Creature balance">
+      {rows.map((row) => {
+        const shownDots = row.dots.filter((dot) => dot.state !== "faint" || events.baseline);
+        const offsets = stackOffsets(shownDots, (dot) => dot.size);
+        return (
+          <button
+            key={row.tally.id}
+            type="button"
+            role="listitem"
+            className="lab-balance-row"
+            data-ghost={row.tally.ghost === 0 ? undefined : row.tally.ghost > 0 ? "up" : "down"}
+            aria-label={`MV ${row.tally.label}: ${String(row.tally.hit)} of ${String(row.tally.base)} creatures`}
+            {...peekProps(row.tally.id, events)}
+          >
+            <span className="lab-balance-mv">{row.tally.label}</span>
+            <span className="lab-balance-track">
+              {row.range && (
+                <>
+                  <span
+                    className="lab-balance-range"
+                    style={{ left: pct(row.range.min), width: pct(row.range.max - row.range.min) }}
+                  />
+                  <span
+                    className="lab-balance-band"
+                    style={{ left: pct(row.range.q1), width: pct(row.range.q3 - row.range.q1) }}
+                  />
+                  <span className="lab-balance-median" style={{ left: pct(row.range.median) }} />
+                </>
+              )}
+              {shownDots.map((dot, index) => (
+                <i
+                  key={dot.card.slug}
+                  data-state={dot.state}
+                  data-place={dot.place}
+                  title={`${dot.card.name} ${String(dot.power)}/${String(dot.toughness)}`}
+                  style={
+                    {
+                      left: pct(dot.size),
+                      "--stack": String(offsets[index] ?? 0),
+                    } as CSSProperties
+                  }
+                />
+              ))}
+            </span>
+            <span className="lab-balance-value">
+              {events.filtered && events.baseline
+                ? `${String(row.tally.hit)}/${String(row.tally.base)}`
+                : row.tally.hit}
+              {row.tally.ghost !== 0 && <Ghost delta={row.tally.ghost} />}
+              {row.tally.ghost === 0 && row.tally.baseGhost !== 0 && events.baseline && (
+                <Ghost delta={row.tally.baseGhost} faint />
+              )}
+            </span>
+          </button>
+        );
+      })}
+      <div className="lab-balance-foot" aria-hidden="true">
+        <span>MV</span>
+        <span className="lab-balance-scale">
+          <span>0</span>
+          <span>power + toughness</span>
+          <span>{top}</span>
+        </span>
+        <span />
+      </div>
+    </div>
+  );
+}
+
+function dotRadius(count: number): number {
+  return 3 + Math.sqrt(count) * 2.2;
+}
+
+export function CombatPlot({ data, events }: { data: Matchups; events: ChartEvents }): ReactNode {
+  if (data.dots.length === 0) {
+    return <p className="lab-empty">No creatures in this scope</p>;
+  }
+  return (
+    <div className="lab-combat" aria-label="Combat matchups">
+      {data.corners.map((corner) => (
+        <span
+          key={corner.id}
+          className="lab-combat-corner"
+          data-corner={corner.corner}
+          style={{ gridArea: corner.corner }}
+        >
+          <span className="lab-combat-title">
+            {MATCHUP_CORNERS.find((entry) => entry.id === corner.corner)?.title}
+          </span>
+          <span className="lab-combat-count">
+            {events.filtered && events.baseline
+              ? `${String(corner.hit)}/${String(corner.base)}`
+              : corner.hit}
+            {corner.ghost !== 0 && <Ghost delta={corner.ghost} />}
+            {corner.ghost === 0 && corner.baseGhost !== 0 && events.baseline && (
+              <Ghost delta={corner.baseGhost} faint />
+            )}
+          </span>
+        </span>
+      ))}
+      <div className="lab-combat-field">
+        <div className="lab-combat-tints" aria-hidden="true">
+          {MATCHUP_CORNERS.map((corner) => (
+            <i key={corner.id} data-corner={corner.id} style={{ gridArea: corner.id }} />
+          ))}
+        </div>
+        <div className="lab-combat-plot" role="list" aria-label="Bodies">
+          {data.dots.map((dot) => {
+            const { tally: row } = dot;
+            const faint = events.filtered && row.hit === 0 && row.ghost === 0;
+            if (faint && !events.baseline) {
+              return null;
+            }
+            const state = dot.arriving
+              ? "arriving"
+              : dot.leaving
+                ? "leaving"
+                : faint
+                  ? "faint"
+                  : "hit";
+            const count = Math.max(row.base, row.base + row.baseGhost, 1);
+            return (
+              <button
+                key={row.id}
+                type="button"
+                role="listitem"
+                className="lab-combat-dot"
+                data-state={state}
+                data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
+                aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}`}
+                title={`${row.label} · kills ${String(Math.round(dot.kills * 100))}%, survives ${String(Math.round(dot.survives * 100))}%\n${dot.names.join(", ")}`}
+                style={
+                  {
+                    left: `${String(dot.kills * 100)}%`,
+                    bottom: `${String(dot.survives * 100)}%`,
+                    "--r": `${String(dotRadius(count))}px`,
+                  } as CSSProperties
+                }
+                {...peekProps(row.id, events)}
+              >
+                {row.ghost !== 0 && <Ghost delta={row.ghost} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <span className="lab-combat-axis" data-axis="x" aria-hidden="true">
+        kills →
+      </span>
+      <span className="lab-combat-axis" data-axis="y" aria-hidden="true">
+        survives →
+      </span>
     </div>
   );
 }

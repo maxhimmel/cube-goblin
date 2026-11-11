@@ -1,4 +1,4 @@
-import type { CardStatus, Filter } from "@repo/cube/browser";
+import type { CardStatus, Filter, Spread } from "@repo/cube/browser";
 import {
   COLOR_GROUPS,
   CURVE_COLUMNS,
@@ -13,6 +13,8 @@ import {
   parseBucket,
   bucketQuery,
   joinQuery,
+  creatureBalance,
+  size,
 } from "@repo/cube/browser";
 import type { GridCard } from "../modes/mode.ts";
 
@@ -59,8 +61,11 @@ function bucketLabel(id: string): string {
   if (kind === "tag") {
     return `#${first}`;
   }
-  if (kind === "pt") {
+  if (kind === "pt" || kind === "body") {
     return `${first}/${second}`;
+  }
+  if (kind === "creatureCurve") {
+    return `Creatures · MV ${label(first)}`;
   }
   if (kind === "presence") {
     return first === "multicolored" ? "Multicolored" : `Has ${COLOR_LABEL.get(first) ?? first}`;
@@ -283,4 +288,173 @@ export function usedIn(cards: readonly GridCard[]): Used {
 
 export function ghostLabel(delta: number): string {
   return delta > 0 ? `+${String(delta)}` : String(delta);
+}
+
+export type DotState = "hit" | "faint" | "arriving" | "leaving";
+
+function dotState(
+  card: GridCard,
+  now: ReadonlySet<string>,
+  later: ReadonlySet<string>,
+  lens: Test | undefined,
+): DotState {
+  if (!now.has(card.slug)) {
+    return "arriving";
+  }
+  if (!later.has(card.slug)) {
+    return "leaving";
+  }
+  return lens && !lens(card) ? "faint" : "hit";
+}
+
+export interface BalanceDot {
+  card: GridCard;
+  power: number;
+  toughness: number;
+  size: number;
+  place: "above" | "within" | "below";
+  state: DotState;
+}
+
+export interface BalanceRow {
+  tally: Tally;
+  range: Spread | undefined;
+  dots: BalanceDot[];
+}
+
+function placeIn(total: number, range: Spread | undefined): BalanceDot["place"] {
+  if (range === undefined || (total >= range.q1 && total <= range.q3)) {
+    return "within";
+  }
+  return total > range.q3 ? "above" : "below";
+}
+
+export function balanceRows(
+  scope: readonly GridCard[],
+  next: readonly GridCard[],
+  lens: Test | undefined,
+): BalanceRow[] {
+  const now = new Set(scope.map((card) => card.slug));
+  const later = new Set(next.map((card) => card.slug));
+  const ranges = new Map(creatureBalance(scope).curve.map((row) => [row.id, row.size]));
+  const union = [...new Map([...scope, ...next].map((card) => [card.slug, card])).values()];
+  const bodies = creatureBalance(union).bodies;
+  return CURVE_COLUMNS.flatMap((column) => {
+    const id = `creatureCurve:${column.id}`;
+    const bucket = parseBucket(id);
+    if (!bucket) {
+      return [];
+    }
+    const row = tally(id, column.label, scope, next, (card) => inBucket(card, bucket), lens);
+    const range = ranges.get(column.id);
+    const dots = bodies
+      .filter((entry) => curveKey(entry.card) === column.id)
+      .map((entry) => ({
+        card: entry.card,
+        power: entry.power,
+        toughness: entry.toughness,
+        size: size(entry),
+        place: placeIn(size(entry), range),
+        state: dotState(entry.card, now, later, lens),
+      }))
+      .toSorted((a, b) => a.size - b.size || a.card.name.localeCompare(b.card.name));
+    const empty = row.base === 0 && row.baseGhost === 0 && dots.length === 0;
+    return empty ? [] : [{ tally: row, range, dots }];
+  });
+}
+
+export const MATCHUP_CORNERS = [
+  { id: "wins", title: "Wins most fights", kills: true, survives: true },
+  { id: "wall", title: "Walls", kills: false, survives: true },
+  { id: "cannon", title: "Glass cannons", kills: true, survives: false },
+  { id: "chump", title: "Chump blockers", kills: false, survives: false },
+] as const;
+
+export type CornerId = (typeof MATCHUP_CORNERS)[number]["id"];
+
+export interface MatchupDot {
+  tally: Tally;
+  power: number;
+  toughness: number;
+  kills: number;
+  survives: number;
+  corner: CornerId;
+  names: string[];
+  arriving: boolean;
+  leaving: boolean;
+}
+
+export interface Matchups {
+  dots: MatchupDot[];
+  corners: (Tally & { corner: CornerId })[];
+}
+
+const HALF = 0.5;
+
+function cornerOf(kills: number, survives: number): CornerId {
+  const corner = MATCHUP_CORNERS.find(
+    (entry) => entry.kills === kills >= HALF && entry.survives === survives >= HALF,
+  );
+  return corner?.id ?? "chump";
+}
+
+export function matchups(
+  scope: readonly GridCard[],
+  next: readonly GridCard[],
+  lens: Test | undefined,
+): Matchups {
+  const opponents = creatureBalance(scope).bodies;
+  const share = (test: (other: (typeof opponents)[number]) => boolean): number =>
+    opponents.length === 0 ? 0 : opponents.filter(test).length / opponents.length;
+  const union = [...new Map([...scope, ...next].map((card) => [card.slug, card])).values()];
+  const groups = new Map<string, { power: number; toughness: number; names: string[] }>();
+  for (const entry of creatureBalance(union).bodies) {
+    const key = `body:${String(entry.power)}:${String(entry.toughness)}`;
+    const group = groups.get(key) ?? { power: entry.power, toughness: entry.toughness, names: [] };
+    groups.set(key, { ...group, names: [...group.names, entry.card.name] });
+  }
+  const dots = [...groups.entries()].flatMap(([id, group]) => {
+    const bucket = parseBucket(id);
+    if (!bucket) {
+      return [];
+    }
+    const row = tally(
+      id,
+      `${String(group.power)}/${String(group.toughness)}`,
+      scope,
+      next,
+      (card) => inBucket(card, bucket),
+      lens,
+    );
+    const kills = share((other) => group.power >= other.toughness);
+    const survives = share((other) => other.power < group.toughness);
+    return [
+      {
+        tally: row,
+        power: group.power,
+        toughness: group.toughness,
+        kills,
+        survives,
+        corner: cornerOf(kills, survives),
+        names: group.names.toSorted((a, b) => a.localeCompare(b)),
+        arriving: row.base === 0,
+        leaving: row.base + row.baseGhost === 0,
+      },
+    ];
+  });
+  const corners = MATCHUP_CORNERS.map((corner) => {
+    const here = dots.filter((dot) => dot.corner === corner.id).map((dot) => dot.tally);
+    const sum = (pick: (row: Tally) => number): number =>
+      here.reduce((total, row) => total + pick(row), 0);
+    return {
+      id: `corner:${corner.id}`,
+      label: corner.title,
+      corner: corner.id,
+      base: sum((row) => row.base),
+      hit: sum((row) => row.hit),
+      ghost: sum((row) => row.ghost),
+      baseGhost: sum((row) => row.baseGhost),
+    };
+  });
+  return { dots, corners };
 }

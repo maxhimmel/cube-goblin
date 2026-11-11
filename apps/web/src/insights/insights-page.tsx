@@ -439,12 +439,7 @@ export interface BlockUi {
   selectedCard: string | undefined;
 }
 
-export function chartBlock(
-  id: BlockId,
-  set: CardSet,
-  Frame: FrameComponent,
-  ui: BlockUi,
-): ReactNode {
+function chartBlock(id: BlockId, set: CardSet, Frame: FrameComponent, ui: BlockUi): ReactNode {
   const { cards, stats, bucket, pick } = set;
   const nonland = stats.total - stats.lands;
   const collapsed = ui.collapsed;

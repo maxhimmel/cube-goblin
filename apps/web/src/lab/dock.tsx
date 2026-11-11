@@ -435,6 +435,7 @@ function Tile({
             <button
               type="button"
               aria-pressed={asTable}
+              aria-label="Table"
               title="Table"
               onClick={() => {
                 setAsTable(!asTable);
@@ -505,7 +506,7 @@ function BlockControls({
           }
           data-override={override === undefined ? undefined : ""}
           onClick={() => {
-            dock.setBaseline(id, on === global ? !on : undefined);
+            dock.setBaseline(id, override === undefined ? !global : undefined);
           }}
         >
           ◐

@@ -53,7 +53,7 @@ function SavePill({ lab, pill }: { lab: Lab; pill: Pill }): ReactNode {
       onSubmit={(event) => {
         event.preventDefault();
         if (label.trim() !== "") {
-          lab.replacePill(pill.key, `f:${save(label.trim(), pill.key.slice(2))}`);
+          save(label.trim(), pill.key.slice(2), [pill.key]);
         }
       }}
     >
@@ -132,7 +132,7 @@ function SaveStack({ save }: { save: (label: string) => void }): ReactNode {
 
 function PillBar({ lab }: { lab: Lab }): ReactNode {
   return (
-    <div className="lab-pills" aria-label="Applied filters">
+    <div className="lab-pills" role="group" aria-label="Applied filters">
       {lab.pills.length === 0 && lab.typing === "" && (
         <span className="lab-pills-empty">No filter · hover a chart or filter to peek</span>
       )}
@@ -191,7 +191,7 @@ export function QueryBar({ lab }: { lab: Lab }): ReactNode {
             : `${String(count)} in draft · Enter applies, then Save on the pill keeps it`
         }
         onSubmit={(next) => {
-          if (next.trim() !== "") {
+          if (next.trim() !== "" && compileQuery(next).ok) {
             lab.addPill(`x:${next.trim()}`);
             lab.setTyping("");
             setRound(round + 1);

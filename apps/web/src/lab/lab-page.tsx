@@ -71,7 +71,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
               type="button"
               className="lab-dock-toggle"
               aria-pressed={!open}
-              aria-label={open ? "Collapse charts" : "Show charts"}
+              aria-label="Collapse charts"
               title={open ? "Collapse charts" : "Show charts"}
               onClick={() => {
                 setOpen(!open);

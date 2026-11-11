@@ -3,6 +3,7 @@ import {
   readCards,
   readConfig,
   readFilters,
+  readLayouts,
   readTags,
   readVersionFiles,
   validateBoard,
@@ -14,19 +15,21 @@ import { chalk } from "zx";
 import { CUBE_PATHS } from "../paths.ts";
 
 export async function validate(): Promise<number> {
-  const [cards, tags, config, board, versions, filters] = await Promise.all([
+  const [cards, tags, config, board, versions, filters, layouts] = await Promise.all([
     readCards(CUBE_PATHS),
     readTags(CUBE_PATHS),
     readConfig(CUBE_PATHS),
     readBoard(CUBE_PATHS).catch((error: unknown) => new Error(String(error))),
     readVersionFiles(CUBE_PATHS),
     readFilters(CUBE_PATHS).catch((error: unknown) => new Error(String(error))),
+    readLayouts(CUBE_PATHS).catch((error: unknown) => new Error(String(error))),
   ]);
   const problems = [
     ...validateCube(cards, tags),
     ...(board instanceof Error ? [board.message] : validateBoard(board, cards, tags)),
     ...versionProblems(versions),
     ...(filters instanceof Error ? [filters.message] : validateFilters(filters, tags)),
+    ...(layouts instanceof Error ? [layouts.message] : []),
   ];
   for (const problem of problems) {
     console.error(chalk.red(problem));

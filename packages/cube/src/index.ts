@@ -20,6 +20,7 @@ export {
   readCards,
   readConfig,
   readFilters,
+  readLayouts,
   readTags,
   readVersionFiles,
   readVersions,

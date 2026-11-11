@@ -875,7 +875,9 @@
   opacity: 0;
 }
 
-.lab-filter-entry:hover .lab-filter-remove {
+.lab-filter-entry:hover .lab-filter-remove,
+.lab-filter-entry:focus-within .lab-filter-remove,
+.lab-layout:focus-within .lab-filter-remove {
   opacity: 1;
 }
 

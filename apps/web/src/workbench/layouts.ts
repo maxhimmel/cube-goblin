@@ -20,6 +20,10 @@ export function useWorkbenchLayouts(): Layout[] | undefined {
   return useQuery({ queryKey: LAYOUTS_QUERY_KEY, queryFn: loadLayouts }).data?.layouts;
 }
 
+export function layoutSavesPending(): boolean {
+  return queryClient.isMutating({ mutationKey: LAYOUTS_SAVE_KEY }) > 0;
+}
+
 function current(): LayoutsFile {
   return queryClient.getQueryData<LayoutsFile>(LAYOUTS_QUERY_KEY) ?? EMPTY_LAYOUTS;
 }

@@ -7,7 +7,7 @@ import { z } from "zod";
 import type { GridCard } from "../modes/mode.ts";
 import type { Hover } from "../strip.tsx";
 import { DRAG_TYPE } from "../strip.tsx";
-import { useRemembered } from "../view-choices.ts";
+import { recallState, useRemembered } from "../view-choices.ts";
 import type { ChartEvents } from "./lab-charts.tsx";
 import type { Drag, Pill, Test, Used } from "./model.ts";
 import { allOf, project, resolvePill, stackQuery, usedIn } from "./model.ts";
@@ -48,10 +48,9 @@ export interface Lab {
   cards: GridCard[];
   vocabulary: Tag[];
   filters: Filter[];
-  saveFilter: ((label: string, query: string) => string) | undefined;
+  saveFilter: ((label: string, query: string, replaces?: readonly string[]) => void) | undefined;
   deleteFilter: ((id: string) => void) | undefined;
   addPill: (key: string) => void;
-  replacePill: (from: string, to: string) => void;
   typing: string;
   setTyping: (query: string) => void;
   used: Used;
@@ -137,27 +136,29 @@ export function useLab(): Lab | undefined {
       pillKeys.includes(key) ? pillKeys.filter((other) => other !== key) : [...pillKeys, key],
     );
   };
+  const saveFilter = (label: string, query: string, replaces: readonly string[] = []): void => {
+    const id = newFilterId(filters);
+    void mode.putFilter?.({ id, label, query, view: "cards" }).then((saved) => {
+      if (saved && replaces.length > 0) {
+        const current = recallState("lab.pills", z.array(z.string())) ?? [];
+        const kept = current.filter((key) => !replaces.includes(key));
+        const at = current.findIndex((key) => replaces.includes(key));
+        setPillKeys([...kept.slice(0, Math.max(at, 0)), `f:${id}`, ...kept.slice(Math.max(at, 0))]);
+      }
+    });
+  };
   const move = mode.moveCard;
   return {
     cards,
     vocabulary: cube.vocabulary,
     filters,
-    saveFilter: mode.putFilter
-      ? (label, query) => {
-          const id = newFilterId(filters);
-          mode.putFilter?.({ id, label, query, view: "cards" });
-          return id;
-        }
-      : undefined,
+    saveFilter: mode.putFilter ? saveFilter : undefined,
     deleteFilter: mode.deleteFilter
       ? (id) => {
           mode.deleteFilter?.(id);
           setPillKeys(pillKeys.filter((key) => key !== `f:${id}`));
         }
       : undefined,
-    replacePill: (from, to) => {
-      setPillKeys(pillKeys.map((key) => (key === from ? to : key)));
-    },
     typing,
     setTyping,
     addPill: (key) => {
@@ -174,10 +175,8 @@ export function useLab(): Lab | undefined {
     },
     saveStack: mode.putFilter
       ? (label) => {
-          const id = newFilterId(filters);
           const keys = pills.map((pill) => pill.key);
-          mode.putFilter?.({ id, label, query: stackQuery(keys, filters), view: "cards" });
-          setPillKeys([`f:${id}`]);
+          saveFilter(label, stackQuery(keys, filters), keys);
         }
       : undefined,
     setPeek,

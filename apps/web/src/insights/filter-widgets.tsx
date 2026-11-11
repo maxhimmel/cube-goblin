@@ -1,5 +1,5 @@
 import type { Bucket, CubeStats, Filter, Tag } from "@repo/cube/browser";
-import { filterCards, namesStatus, queryParts } from "@repo/cube/browser";
+import { compileQuery, filterCards, namesStatus, queryParts } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { GridCard } from "../modes/mode.ts";
@@ -230,7 +230,7 @@ export function FilterEditor({
         method="dialog"
         onSubmit={(event) => {
           event.preventDefault();
-          if (name === "") {
+          if (name === "" || !compileQuery(query).ok) {
             return;
           }
           onSave({ ...filter, label: name, query });
@@ -279,7 +279,11 @@ export function FilterEditor({
               Delete filter
             </button>
           )}
-          <button type="submit" className="primary" disabled={name === ""}>
+          <button
+            type="submit"
+            className="primary"
+            disabled={name === "" || !compileQuery(query).ok}
+          >
             {isNew ? "Add to dashboard" : "Save"}
           </button>
         </footer>

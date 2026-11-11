@@ -182,7 +182,7 @@ function SaveAs({
       <button
         type="button"
         className="query-tool"
-        disabled={query.trim() === ""}
+        disabled={query.trim() === "" || !compileQuery(query).ok}
         title="Save as a filter in the Filters block"
         onClick={() => {
           setNaming(true);
@@ -197,7 +197,7 @@ function SaveAs({
       className="labc-save"
       onSubmit={(event) => {
         event.preventDefault();
-        if (label.trim() !== "") {
+        if (label.trim() !== "" && compileQuery(query).ok) {
           onSaved(save(label.trim(), query));
           setNaming(false);
           setLabel("");

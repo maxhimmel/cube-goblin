@@ -235,9 +235,15 @@ function Picker({
               setState({ ...state, value: event.target.value });
             }}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && valid) {
+              if (event.key === "Enter") {
                 event.preventDefault();
-                onDone(preview);
+                if (valid) {
+                  onDone(preview);
+                }
+              }
+              if (event.key === "Escape") {
+                event.preventDefault();
+                onClose();
               }
             }}
           />
@@ -345,9 +351,13 @@ export function QueryInput({
     : "";
 
   const publish = (nextCommitted: string, nextDraft: string): void => {
-    const next = joinQuery(nextCommitted, nextDraft);
-    if (compileQuery(next).ok) {
-      onChange(next);
+    onChange(joinQuery(nextCommitted, nextDraft));
+  };
+
+  const stopEditing = (): void => {
+    if (editing) {
+      setEditing(undefined);
+      setPanel(undefined);
     }
   };
 
@@ -382,6 +392,17 @@ export function QueryInput({
     const next = removePart(committed, part);
     setCommitted(next);
     publish(next, draft);
+    stopEditing();
+  };
+
+  const reopen = (part: QueryPart): void => {
+    const next = removePart(committed, part);
+    const text = joinQuery(part.text, draft);
+    setCommitted(next);
+    setDraft(text);
+    publish(next, text);
+    stopEditing();
+    input.current?.focus();
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
@@ -401,6 +422,9 @@ export function QueryInput({
       return;
     }
     if (event.key === "Escape") {
+      if (panel !== undefined || (suggestions.length > 0 && token !== "")) {
+        event.preventDefault();
+      }
       setPanel(undefined);
       setActive(0);
       return;
@@ -419,10 +443,7 @@ export function QueryInput({
       event.preventDefault();
       const last = parts.at(-1);
       if (last) {
-        const next = removePart(committed, last);
-        setCommitted(next);
-        setDraft(last.text);
-        publish(next, last.text);
+        reopen(last);
       }
     }
   };
@@ -456,9 +477,7 @@ export function QueryInput({
                 title="Edit"
                 onClick={() => {
                   if (part.kind === "group") {
-                    remove(part);
-                    setDraft(part.text);
-                    input.current?.focus();
+                    reopen(part);
                     return;
                   }
                   setEditing(part);
@@ -560,7 +579,9 @@ export function QueryInput({
       {panel === "legend" && (
         <Legend
           onPick={(text) => {
-            setDraft(text);
+            const next = joinQuery(draft, text);
+            setDraft(next);
+            publish(committed, next);
             setPanel(undefined);
             input.current?.focus();
           }}

@@ -1205,6 +1205,7 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
   await expect(pills).toHaveText(["c=r", "mv<=2", "-t:creature"]);
   await query.pressSequentially("pow>");
   await expect(editor.locator(".query-error")).toBeVisible();
+  await expect(editor.getByRole("button", { name: "Add to dashboard" })).toBeDisabled();
   await query.fill("");
   await expect(editor.locator(".query-error")).toHaveCount(0);
   const preview = Number(

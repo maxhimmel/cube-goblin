@@ -12,6 +12,13 @@ import {
   parseBucket,
 } from "@repo/cube/browser";
 import type { GridCard } from "../modes/mode.ts";
+import { tryQuery } from "./query.ts";
+
+export interface SavedQuery {
+  id: string;
+  label: string;
+  query: string;
+}
 
 export type Test = (card: GridCard) => boolean;
 
@@ -59,7 +66,20 @@ function bucketLabel(id: string): string {
   return id;
 }
 
-export function resolvePill(key: string, filters: readonly Filter[]): Pill | undefined {
+export function resolvePill(
+  key: string,
+  filters: readonly Filter[],
+  queries: readonly SavedQuery[] = [],
+): Pill | undefined {
+  if (key.startsWith("q:")) {
+    const saved = queries.find((candidate) => candidate.id === key.slice(2));
+    const test = saved && tryQuery(saved.query).test;
+    return saved && test && { key, label: saved.label, test };
+  }
+  if (key.startsWith("x:")) {
+    const test = tryQuery(key.slice(2)).test;
+    return test && { key, label: key.slice(2), test };
+  }
   if (key.startsWith("f:")) {
     const filter = filters.find((candidate) => candidate.id === key.slice(2));
     return (
@@ -172,6 +192,24 @@ export function heatRows(
 }
 
 export const PT_AXIS = PT_VALUES.map((value) => value.id);
+
+export interface Used {
+  curve: Set<string>;
+  colors: Set<string>;
+  power: Set<string>;
+  toughness: Set<string>;
+}
+
+export function usedIn(cards: readonly GridCard[]): Used {
+  const spells = cards.filter((card) => !isLand(card));
+  const creatures = cards.filter(isCreatureCard);
+  return {
+    curve: new Set(spells.map(curveKey)),
+    colors: new Set(spells.map(colorGroup)),
+    power: new Set(creatures.flatMap((card) => ptCell(card.power) ?? [])),
+    toughness: new Set(creatures.flatMap((card) => ptCell(card.toughness) ?? [])),
+  };
+}
 
 export const MANA_COLORS = COLORS.map((color) => color.id);
 

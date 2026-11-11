@@ -4,6 +4,7 @@ import { COLUMN_AXES, colorKey, columnsBy, curveKey } from "@repo/cube/browser";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { useState } from "react";
+import { VariantC } from "./variant-c.tsx";
 import { z } from "zod";
 import { CardLink } from "../card-pane.tsx";
 import { Gauge } from "../gauge.tsx";
@@ -14,10 +15,18 @@ import { DRAG_TYPE, Preview, Strip, previewAt } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import type { ChartEvents } from "./lab-charts.tsx";
 import { CurveBars, Heat, PtDots } from "./lab-charts.tsx";
-import type { Drag, Pill, Test } from "./model.ts";
-import { allOf, curveTallies, ghostLabel, heatRows, project, resolvePill } from "./model.ts";
+import type { Drag, Pill, SavedQuery, Test, Used } from "./model.ts";
+import {
+  allOf,
+  curveTallies,
+  ghostLabel,
+  heatRows,
+  project,
+  resolvePill,
+  usedIn,
+} from "./model.ts";
 
-type Axis = ColumnAxis | "none";
+export type Axis = ColumnAxis | "none";
 
 const AXES: { id: Axis; label: string }[] = [...COLUMN_AXES, { id: "none", label: "None" }];
 
@@ -31,7 +40,7 @@ const MANA_VAR: Record<string, string> = {
   C: "var(--mana-c)",
 };
 
-function stripeOf(card: GridCard): string {
+export function stripeOf(card: GridCard): string {
   const key = colorKey(card);
   if (key !== "M") {
     return MANA_VAR[key] ?? "var(--mana-c)";
@@ -47,17 +56,22 @@ function byCost(a: GridCard, b: GridCard): number {
   return a.cmc - b.cmc || colorKey(a).localeCompare(colorKey(b)) || a.name.localeCompare(b.name);
 }
 
-function groups(cards: readonly GridCard[], axis: Axis): Column<GridCard>[] {
+export function groups(cards: readonly GridCard[], axis: Axis): Column<GridCard>[] {
   if (axis === "none") {
     return [{ id: "all", label: "All", cards: cards.toSorted(byCost) }];
   }
   return columnsBy(cards, axis);
 }
 
-interface Lab {
+export interface Lab {
   cards: GridCard[];
   vocabulary: Tag[];
   filters: Filter[];
+  queries: SavedQuery[];
+  saveQuery: (query: SavedQuery) => void;
+  removeQuery: (id: string) => void;
+  addPill: (key: string) => void;
+  used: Used;
   size: { min: number; max: number } | undefined;
   pills: Pill[];
   togglePill: (key: string) => void;
@@ -94,10 +108,15 @@ interface Lab {
   };
 }
 
-function useLab(): Lab | undefined {
+export function useLab(): Lab | undefined {
   const cube = mode.useCube();
   const filters = mode.useFilters() ?? [];
   const [pillKeys, setPillKeys] = useRemembered("lab.pills", [], z.array(z.string()));
+  const [queries, setQueries] = useRemembered<SavedQuery[]>(
+    "lab.queries",
+    [],
+    z.array(z.object({ id: z.string(), label: z.string(), query: z.string() })),
+  );
   const [baseline, setBaseline] = useRemembered("lab.baseline", true, z.boolean());
   const [hide, setHide] = useRemembered("lab.hide", false, z.boolean());
   const [showCut, setShowCut] = useRemembered("lab.showCut", false, z.boolean());
@@ -114,8 +133,8 @@ function useLab(): Lab | undefined {
   }
   const all = cube.cards;
   const cards = all.filter((card) => showCut || card.status !== "cut");
-  const pills = pillKeys.flatMap((key) => resolvePill(key, filters) ?? []);
-  const peekPill = peek === undefined ? undefined : resolvePill(peek, filters);
+  const pills = pillKeys.flatMap((key) => resolvePill(key, filters, queries) ?? []);
+  const peekPill = peek === undefined ? undefined : resolvePill(peek, filters, queries);
   const applied = allOf(pills.map((pill) => pill.test));
   const lens = allOf([...pills, ...(peekPill ? [peekPill] : [])].map((pill) => pill.test));
   const hoverSlug = hover?.card.slug;
@@ -134,6 +153,20 @@ function useLab(): Lab | undefined {
     cards,
     vocabulary: cube.vocabulary,
     filters,
+    queries,
+    saveQuery: (query) => {
+      setQueries([...queries.filter((other) => other.id !== query.id), query]);
+    },
+    removeQuery: (id) => {
+      setQueries(queries.filter((other) => other.id !== id));
+      setPillKeys(pillKeys.filter((key) => key !== `q:${id}`));
+    },
+    addPill: (key) => {
+      if (!pillKeys.includes(key)) {
+        setPillKeys([...pillKeys, key]);
+      }
+    },
+    used: usedIn(cards),
     size: cube.size,
     pills,
     togglePill,
@@ -209,24 +242,26 @@ function useLab(): Lab | undefined {
   };
 }
 
-function DraftCount({ lab }: { lab: Lab }): ReactNode {
+export function DraftCount({ lab }: { lab: Lab }): ReactNode {
   const now = lab.scope.length;
   const later = lab.next.length;
   return (
     <div className="lab-count">
       <span className="lab-count-label">Draft</span>
       <strong className="lab-count-value">{now}</strong>
-      {later !== now && (
-        <span className="lab-count-ghost" data-up={later > now ? "" : undefined}>
-          → {later}
-        </span>
-      )}
+      <span
+        className="lab-count-ghost"
+        data-up={later > now ? "" : undefined}
+        data-idle={later === now ? "" : undefined}
+      >
+        → {later}
+      </span>
       {lab.size && <Gauge count={later} size={lab.size} />}
     </div>
   );
 }
 
-function PillBar({ lab }: { lab: Lab }): ReactNode {
+export function PillBar({ lab }: { lab: Lab }): ReactNode {
   return (
     <div className="lab-pills" aria-label="Applied filters">
       {lab.pills.length === 0 && (
@@ -257,7 +292,7 @@ function PillBar({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
-function Switches({ lab }: { lab: Lab }): ReactNode {
+export function Switches({ lab }: { lab: Lab }): ReactNode {
   return (
     <div className="lab-switches">
       <label>
@@ -294,7 +329,7 @@ function Switches({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
-function AxisTabs({ lab, className }: { lab: Lab; className: string }): ReactNode {
+export function AxisTabs({ lab, className }: { lab: Lab; className: string }): ReactNode {
   return (
     <div className={className} role="group" aria-label="Group by">
       {AXES.map((option) => (
@@ -314,38 +349,63 @@ function AxisTabs({ lab, className }: { lab: Lab; className: string }): ReactNod
   );
 }
 
-function FilterList({ lab, className }: { lab: Lab; className: string }): ReactNode {
+export function FilterList({
+  lab,
+  className,
+  onRemove,
+}: {
+  lab: Lab;
+  className: string;
+  onRemove?: (id: string) => void;
+}): ReactNode {
   const draft = lab.scope.length || 1;
+  const entries = [
+    ...lab.filters.map((filter) => ({ key: `f:${filter.id}`, id: filter.id, label: filter.label })),
+    ...lab.queries.map((query) => ({ key: `q:${query.id}`, id: query.id, label: query.label })),
+  ];
   return (
     <div className={className}>
-      {lab.filters.map((filter) => {
-        const key = `f:${filter.id}`;
-        const pill = resolvePill(key, lab.filters);
+      {entries.map((entry) => {
+        const pill = resolvePill(entry.key, lab.filters, lab.queries);
         const count = pill ? lab.scope.filter(pill.test).length : 0;
-        const on = lab.pills.some((applied) => applied.key === key);
+        const on = lab.pills.some((applied) => applied.key === entry.key);
         return (
-          <button
-            key={filter.id}
-            type="button"
-            className={on ? "on" : undefined}
-            aria-pressed={on}
-            onPointerEnter={() => {
-              lab.setPeek(key);
-            }}
-            onPointerLeave={() => {
-              lab.setPeek(undefined);
-            }}
-            onClick={() => {
-              lab.togglePill(key);
-              lab.setPeek(undefined);
-            }}
-          >
-            <span className="lab-filter-name">{filter.label}</span>
-            <span className="lab-filter-count">{count}</span>
-            <span className="lab-filter-bar">
-              <i style={{ width: `${String((count / draft) * 100)}%` }} />
-            </span>
-          </button>
+          <div key={entry.key} className="lab-filter-entry">
+            <button
+              type="button"
+              className={on ? "on" : undefined}
+              aria-pressed={on}
+              title={lab.queries.find((query) => `q:${query.id}` === entry.key)?.query}
+              onPointerEnter={() => {
+                lab.setPeek(entry.key);
+              }}
+              onPointerLeave={() => {
+                lab.setPeek(undefined);
+              }}
+              onClick={() => {
+                lab.togglePill(entry.key);
+                lab.setPeek(undefined);
+              }}
+            >
+              <span className="lab-filter-name">{entry.label}</span>
+              <span className="lab-filter-count">{count}</span>
+              <span className="lab-filter-bar">
+                <i style={{ width: `${String((count / draft) * 100)}%` }} />
+              </span>
+            </button>
+            {onRemove && entry.key.startsWith("q:") && (
+              <button
+                type="button"
+                className="lab-filter-remove"
+                aria-label={`Delete ${entry.label}`}
+                onClick={() => {
+                  onRemove(entry.id);
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
         );
       })}
     </div>
@@ -411,15 +471,29 @@ function VariantA({ lab }: { lab: Lab }): ReactNode {
         </section>
         <section className="lab-a-tile">
           <h2>Curve</h2>
-          <CurveBars tallies={curveTallies(lab.scope, lab.next, lab.lens)} events={lab.events} />
+          <CurveBars
+            tallies={curveTallies(lab.scope, lab.next, lab.lens)}
+            events={lab.events}
+            used={lab.used}
+          />
         </section>
         <section className="lab-a-tile lab-a-wide">
           <h2>Color × mana value</h2>
-          <Heat rows={heatRows(lab.scope, lab.next, lab.lens)} events={lab.events} />
+          <Heat
+            rows={heatRows(lab.scope, lab.next, lab.lens)}
+            events={lab.events}
+            used={lab.used}
+          />
         </section>
         <section className="lab-a-tile">
           <h2>Power × toughness</h2>
-          <PtDots scope={lab.scope} next={lab.next} lens={lab.lens} events={lab.events} />
+          <PtDots
+            scope={lab.scope}
+            next={lab.next}
+            lens={lab.lens}
+            events={lab.events}
+            used={lab.used}
+          />
         </section>
       </div>
       <div className="lab-a-floor">
@@ -444,7 +518,7 @@ function VariantA({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
-function Row({ lab, card }: { lab: Lab; card: GridCard }): ReactNode {
+export function Row({ lab, card }: { lab: Lab; card: GridCard }): ReactNode {
   const tags = card.tags
     .slice(0, 3)
     .map((id) => lab.vocabulary.find((tag) => tag.id === id)?.label ?? id);
@@ -623,15 +697,29 @@ function VariantB({ lab }: { lab: Lab }): ReactNode {
           <h5>
             Curve <span className="n">{live ? "filtered · baseline faint" : "draft"}</span>
           </h5>
-          <CurveBars tallies={curveTallies(lab.scope, lab.next, lab.lens)} events={lab.events} />
+          <CurveBars
+            tallies={curveTallies(lab.scope, lab.next, lab.lens)}
+            events={lab.events}
+            used={lab.used}
+          />
         </section>
         <section className="lab-b-box">
           <h5>Color × mana value</h5>
-          <Heat rows={heatRows(lab.scope, lab.next, lab.lens)} events={lab.events} />
+          <Heat
+            rows={heatRows(lab.scope, lab.next, lab.lens)}
+            events={lab.events}
+            used={lab.used}
+          />
         </section>
         <section className="lab-b-box">
           <h5>Power × toughness</h5>
-          <PtDots scope={lab.scope} next={lab.next} lens={lab.lens} events={lab.events} />
+          <PtDots
+            scope={lab.scope}
+            next={lab.next}
+            lens={lab.lens}
+            events={lab.events}
+            used={lab.used}
+          />
         </section>
         {lab.ghost?.to && (
           <p className="lab-b-hint">
@@ -653,11 +741,11 @@ export function LabPage(): ReactNode {
   if (!lab) {
     return <p className="muted">Loading cube…</p>;
   }
-  const chosen = variant === "b" ? "b" : "a";
+  const chosen = variant === "b" ? "b" : variant === "c" ? "c" : "a";
   return (
     <>
       <div className="lab-variant" role="group" aria-label="Spike variant">
-        {(["a", "b"] as const).map((id) => (
+        {(["a", "b", "c"] as const).map((id) => (
           <button
             key={id}
             type="button"
@@ -670,7 +758,9 @@ export function LabPage(): ReactNode {
           </button>
         ))}
       </div>
-      {chosen === "a" ? <VariantA lab={lab} /> : <VariantB lab={lab} />}
+      {chosen === "a" && <VariantA lab={lab} />}
+      {chosen === "b" && <VariantB lab={lab} />}
+      {chosen === "c" && <VariantC lab={lab} />}
     </>
   );
 }

@@ -5,6 +5,7 @@ import {
   putFilter,
   useWorkbenchFilters,
 } from "../workbench/filters.ts";
+import { deleteLayout, putLayout, useWorkbenchLayouts } from "../workbench/layouts.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -89,6 +90,9 @@ export const mode: Mode = {
   useFilters: useWorkbenchFilters,
   putFilter,
   deleteFilter,
+  useLayouts: useWorkbenchLayouts,
+  putLayout,
+  deleteLayout,
   name: "workbench",
   moveCard: (card, status) => {
     if (card.status === status) {

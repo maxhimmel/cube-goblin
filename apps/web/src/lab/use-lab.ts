@@ -55,8 +55,6 @@ const PIN_INCLUDES: Record<Pin, (card: GridCard) => boolean> = {
   all: () => true,
 };
 
-export type DropMode = "move" | "queue";
-
 export interface PendingMove {
   card: GridCard;
   to: Pile;
@@ -127,8 +125,6 @@ export interface Lab {
   unqueue: (slug: string) => void;
   clearPending: () => void;
   applyPending: (() => void) | undefined;
-  dropMode: DropMode;
-  setDropMode: (mode: DropMode) => void;
   pendingZone: {
     "data-over": string | undefined;
     onDragOver: (event: DragEvent) => void;
@@ -166,11 +162,6 @@ export function useLab(): Lab | undefined {
     setSorts({ ...sorts, [axis]: keys });
   };
   const [storedPending, setStoredPending] = useRemembered("pending.lab", [], pendingSchema);
-  const [dropMode, setDropMode] = useRemembered<DropMode>(
-    "pending.drop",
-    "move",
-    z.enum(["move", "queue"]),
-  );
   const [overPending, setOverPending] = useState(false);
   const [peek, setPeek] = useState<string | undefined>(undefined);
   const [typing, setTyping] = useState("");
@@ -342,8 +333,7 @@ export function useLab(): Lab | undefined {
         event.stopPropagation();
         event.dataTransfer.dropEffect = "move";
         const card = all.find((candidate) => candidate.slug === drag.slug);
-        const from = card && (dropMode === "queue" ? statusOf(card.slug) : card.status);
-        const to = card && from !== status ? status : undefined;
+        const to = card && card.status !== status ? status : undefined;
         if (drag.to !== to) {
           setDrag({ slug: drag.slug, to });
         }
@@ -352,10 +342,7 @@ export function useLab(): Lab | undefined {
         event.preventDefault();
         event.stopPropagation();
         const card = all.find((candidate) => candidate.slug === drag?.slug);
-        if (card && dropMode === "queue" && status !== "cut") {
-          const others = pending.filter((entry) => entry.card.slug !== card.slug);
-          setPending(card.status === status ? others : [...others, { card, to: status }]);
-        } else if (card && card.status !== status && move) {
+        if (card && card.status !== status && move) {
           move(card, status);
         }
         setDrag(undefined);
@@ -385,8 +372,6 @@ export function useLab(): Lab | undefined {
             setPending([]);
           }
         : undefined,
-    dropMode,
-    setDropMode,
     pendingZone: {
       "data-over": overPending ? "" : undefined,
       onDragOver: (event) => {

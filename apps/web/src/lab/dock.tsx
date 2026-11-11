@@ -36,6 +36,7 @@ export type Dock = (typeof DOCKS)[number];
 const BLOCK_DRAG = "application/x-lab-block";
 
 const LAB_BLOCKS = [
+  { id: "lab:pending", title: "Pending" },
   { id: "lab:summary", title: "Summary" },
   { id: "lab:filters", title: "Filters" },
   { id: "lab:curve", title: "Curve" },
@@ -98,7 +99,7 @@ const DEFAULT_HIDDEN: string[] = [];
 const TAG_BLOCKS = new Set<string>(["lab:archetypes", "lab:groups"]);
 
 const CHARTS = new Set<string>(
-  LAB_BLOCKS.map((block) => block.id).filter((id) => id !== "lab:filters"),
+  LAB_BLOCKS.map((block) => block.id).filter((id) => id !== "lab:filters" && id !== "lab:pending"),
 );
 
 function renameKeys<T>(record: Partial<Record<string, T>>): Partial<Record<string, T>> {
@@ -330,7 +331,13 @@ export function useDockState(): DockState {
   };
 }
 
-export function BlocksMenu({ dock }: { dock: DockState }): ReactNode {
+export function BlocksMenu({
+  dock,
+  skip,
+}: {
+  dock: DockState;
+  skip?: string | undefined;
+}): ReactNode {
   const [open, setOpen] = useState(false);
   return (
     <div
@@ -357,21 +364,23 @@ export function BlocksMenu({ dock }: { dock: DockState }): ReactNode {
       </button>
       {open && (
         <div className="lab-menu-list">
-          {dock.order.map((id) => {
-            const block = ALL_BLOCKS.find((entry) => entry.id === id);
-            return (
-              <label key={id}>
-                <input
-                  type="checkbox"
-                  checked={!dock.hidden.has(id)}
-                  onChange={(event) => {
-                    dock.setHidden(id, !event.target.checked);
-                  }}
-                />
-                {block?.title ?? id}
-              </label>
-            );
-          })}
+          {dock.order
+            .filter((id) => id !== skip)
+            .map((id) => {
+              const block = ALL_BLOCKS.find((entry) => entry.id === id);
+              return (
+                <label key={id}>
+                  <input
+                    type="checkbox"
+                    checked={!dock.hidden.has(id)}
+                    onChange={(event) => {
+                      dock.setHidden(id, !event.target.checked);
+                    }}
+                  />
+                  {block?.title ?? id}
+                </label>
+              );
+            })}
           <button type="button" className="lab-link" onClick={dock.reset}>
             Reset blocks
           </button>
@@ -566,7 +575,15 @@ function BlockControls({
   );
 }
 
-export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
+export function DockBlocks({
+  lab,
+  dock,
+  pending,
+}: {
+  lab: Lab;
+  dock: DockState;
+  pending?: ReactNode;
+}): ReactNode {
   const [dragging, setDragging] = useState<string | undefined>(undefined);
   const controls = (id: string) => ({
     collapsed: dock.collapsed.has(id),
@@ -589,6 +606,8 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
       </Tile>
     );
     switch (id) {
+      case "lab:pending":
+        return tile("Pending", pending);
       case "lab:filters":
         return tile("Filters", <FiltersBody lab={lab} />);
       case "lab:summary":
@@ -703,10 +722,10 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
     }
   };
   return dock.order
-    .filter((id) => !dock.hidden.has(id))
+    .filter((id) => !dock.hidden.has(id) && (id !== "lab:pending" || pending !== undefined))
     .map((id) => {
       const spec = ALL_BLOCKS.find((block) => block.id === id);
-      const scoped = id !== "lab:filters" && id !== "lab:tags";
+      const scoped = id !== "lab:filters" && id !== "lab:tags" && id !== "lab:pending";
       return (
         <DockBlock key={id} id={id} dock={dock} dragging={dragging} setDragging={setDragging}>
           <TileExtras.Provider

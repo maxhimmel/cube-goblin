@@ -105,7 +105,17 @@ function cardLinkProps(lab: Lab, card: GridCard) {
   };
 }
 
-function CardStrip({ lab, card, tags }: { lab: Lab; card: GridCard; tags: boolean }): ReactNode {
+function CardStrip({
+  lab,
+  card,
+  tags,
+  removable,
+}: {
+  lab: Lab;
+  card: GridCard;
+  tags: boolean;
+  removable?: boolean;
+}): ReactNode {
   const labels = tags ? tagLabels(lab, card) : [];
   return (
     <li
@@ -129,7 +139,39 @@ function CardStrip({ lab, card, tags }: { lab: Lab; card: GridCard; tags: boolea
           </span>
         )}
       </CardLink>
+      {removable && (
+        <button
+          type="button"
+          className="lab-strip-remove"
+          aria-label={`Remove ${card.name} from pending`}
+          title="Remove from pending"
+          onClick={() => {
+            lab.onHover(undefined);
+            lab.unqueue(card.slug);
+          }}
+        >
+          ×
+        </button>
+      )}
     </li>
+  );
+}
+
+export function PendingStrips({
+  lab,
+  cards,
+  tags,
+}: {
+  lab: Lab;
+  cards: readonly GridCard[];
+  tags: boolean;
+}): ReactNode {
+  return (
+    <ul className="lab-stack pending-stack">
+      {sortCards(cards, lab.sort).map((card) => (
+        <CardStrip key={card.slug} lab={lab} card={card} tags={tags} removable />
+      ))}
+    </ul>
   );
 }
 

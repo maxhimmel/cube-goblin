@@ -1875,12 +1875,14 @@ button.lab-stat[data-picked] {
 }
 
 .lab-cell[data-pending="add"],
-.lab-row-cell[data-pending="add"] {
+.lab-row-cell[data-pending="add"],
+.pending-side[data-mark="add"] {
   --pending-mark: var(--keep);
 }
 
 .lab-cell[data-pending="cut"],
-.lab-row-cell[data-pending="cut"] {
+.lab-row-cell[data-pending="cut"],
+.pending-side[data-mark="cut"] {
   --pending-mark: var(--cut);
 }
 
@@ -1911,6 +1913,30 @@ button.lab-stat[data-picked] {
   content: "−";
 }
 
+.lab-cell {
+  position: relative;
+}
+
+.lab-strip-remove {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: none;
+  padding: 0 6px;
+  color: var(--fg);
+  font-weight: 700;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.lab-cell:hover .lab-strip-remove,
+.lab-strip-remove:focus-visible {
+  display: block;
+}
+
 .pending-title {
   color: var(--muted);
   font-size: 0.72rem;
@@ -1926,13 +1952,11 @@ button.lab-stat[data-picked] {
   font-variant-numeric: tabular-nums;
 }
 
-.pending-tally [data-mark="add"],
-.pending-chip[data-mark="add"] .pending-chip-sign {
+.pending-tally [data-mark="add"] {
   color: var(--keep);
 }
 
-.pending-tally [data-mark="cut"],
-.pending-chip[data-mark="cut"] .pending-chip-sign {
+.pending-tally [data-mark="cut"] {
   color: var(--cut);
 }
 
@@ -1942,58 +1966,39 @@ button.lab-stat[data-picked] {
   align-items: center;
 }
 
-.pending-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+.pending-side {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pending-side h3 {
   margin: 0;
-  padding: 0;
-  list-style: none;
+  color: var(--pending-mark);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.pending-chips:empty {
-  display: none;
-}
-
-.pending-chip {
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  max-width: 220px;
-  padding: 2px 4px 2px 7px;
-  font-size: 0.78rem;
-  background: color-mix(in oklab, var(--panel) 85%, var(--fg) 4%);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-}
-
-.pending-chip[data-mark="cut"] .pending-chip-name {
-  text-decoration: line-through;
-  text-decoration-color: var(--cut);
-}
-
-.pending-chip-sign {
-  font-weight: 800;
-}
-
-.pending-chip-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pending-chip button {
-  padding: 0 4px;
+.pending-side h3 span {
   color: var(--muted);
-  background: none;
-  border: 0;
-  cursor: pointer;
+}
+
+.pending-stack {
+  margin: 0;
+}
+
+.pending-hint {
+  margin: 0;
+  font-size: 0.8rem;
 }
 
 .pending-a,
 .pending-b,
 .pending-c,
-.pending-d {
+.pending-e {
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -2002,7 +2007,7 @@ button.lab-stat[data-picked] {
 .pending-a[data-over],
 .pending-b[data-over],
 .pending-c[data-over],
-.pending-d[data-over] {
+.pending-e[data-over] {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 30%, transparent);
 }
@@ -2012,13 +2017,31 @@ button.lab-stat[data-picked] {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 4px 10px;
+  padding: 2px 8px 2px 2px;
   border: 1px solid var(--line);
   border-radius: 999px;
 }
 
-.pending-a[data-empty] .pending-actions {
-  display: none;
+.pending-a-toggle {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 10px;
+  color: var(--fg);
+  background: color-mix(in oklab, var(--panel) 80%, var(--fg) 5%);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.pending-a-toggle:hover,
+.pending-a[data-open] .pending-a-toggle {
+  background: color-mix(in oklab, var(--accent) 18%, var(--panel));
+}
+
+.pending-caret {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 
 .pending-a-list {
@@ -2027,17 +2050,19 @@ button.lab-stat[data-picked] {
   left: 0;
   z-index: 40;
   display: grid;
-  gap: 8px;
-  width: min(520px, 80vw);
+  grid-template-columns: repeat(2, 190px);
+  gap: 12px;
+  max-height: 60vh;
   padding: 10px 12px;
+  overflow: auto;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
 }
 
-.pending-a-list p {
-  margin: 0;
+.pending-a-list .pending-hint {
+  grid-column: 1 / -1;
 }
 
 .pending-b {
@@ -2045,8 +2070,8 @@ button.lab-stat[data-picked] {
   flex-basis: 100%;
   gap: 10px;
   align-items: center;
-  min-height: 34px;
-  padding: 3px 10px;
+  min-height: 38px;
+  padding: 4px 10px;
   border: 1px dashed var(--line);
   border-radius: 10px;
 }
@@ -2054,24 +2079,43 @@ button.lab-stat[data-picked] {
 .pending-b-sides {
   display: flex;
   flex: 1;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
   min-width: 0;
   overflow-x: auto;
 }
 
-.pending-b-sides .pending-chips {
-  flex-wrap: nowrap;
+.pending-b .pending-side {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pending-b .pending-side h3 {
+  white-space: nowrap;
+}
+
+.pending-b .pending-stack {
+  display: flex;
+  gap: 4px;
+}
+
+.pending-b .pending-stack .lab-cell {
+  flex: 0 0 170px;
 }
 
 .lab[data-pending-layout="c"] .lab-floor {
-  grid-template-columns: minmax(0, 2.4fr) 150px minmax(240px, 1fr);
+  grid-template-columns: minmax(0, 2.4fr) 34px minmax(240px, 1fr);
+}
+
+.lab[data-pending-layout="c"][data-gutter-open] .lab-floor {
+  grid-template-columns: minmax(0, 2.4fr) 190px minmax(240px, 1fr);
 }
 
 .pending-c {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 6px;
+  gap: 8px;
   min-height: 0;
   padding: 10px 8px;
   border: 1px dashed var(--line);
@@ -2080,80 +2124,72 @@ button.lab-stat[data-picked] {
 
 .pending-c header {
   display: flex;
-  justify-content: space-between;
+  gap: 6px;
+  align-items: center;
+}
+
+.pending-c header .pending-tally {
+  flex: 1;
+}
+
+.pending-c-close {
+  padding: 0 6px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
 
 .pending-c-sides {
   display: grid;
   align-content: start;
-  gap: 4px;
+  gap: 10px;
   overflow: auto;
 }
 
-.pending-c-sides h3 {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.pending-c .pending-chips {
+.pending-c-rail {
+  display: flex;
   flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 0;
+  color: var(--fg);
+  background: color-mix(in oklab, var(--panel) 45%, transparent);
+  cursor: pointer;
 }
 
-.pending-c .pending-chip {
-  max-width: none;
-  border-radius: 8px;
+.pending-c-rail .pending-title,
+.pending-c-rail .pending-tally {
+  writing-mode: vertical-rl;
 }
 
-.pending-c .pending-chip .ms {
-  display: none;
+.pending-c-rail:hover {
+  border-color: var(--accent);
 }
 
-.pending-c-sides p {
-  margin: 0;
-  font-size: 0.78rem;
+.pending-c-arrows {
+  color: var(--muted);
 }
 
-.lab[data-pending-layout="d"] {
-  padding-bottom: 44px;
+.pending-e {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 100%;
+  border: 1px dashed transparent;
+  border-radius: 10px;
 }
 
-.pending-d {
-  position: fixed;
-  right: 16px;
-  bottom: 8px;
-  left: 16px;
-  z-index: 30;
+.pending-e-head {
   display: flex;
   gap: 10px;
   align-items: center;
-  height: 36px;
-  padding: 0 12px;
-  background: color-mix(in oklab, var(--panel) 92%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 25%);
-  backdrop-filter: blur(6px);
+  justify-content: space-between;
 }
 
-.pending-d-sides {
-  display: flex;
-  flex: 1;
+.pending-e-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 10px;
-  align-items: center;
-  min-width: 0;
-  overflow-x: auto;
-}
-
-.pending-d-sides .pending-chips {
-  flex-wrap: nowrap;
-}
-
-.pending-d-rule {
-  align-self: stretch;
-  width: 1px;
-  margin: 8px 0;
-  background: var(--line);
 }

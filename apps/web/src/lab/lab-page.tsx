@@ -11,14 +11,14 @@ import { BlocksMenu, DOCKS, DockBlocks, useDockState } from "./dock.tsx";
 import { LayoutsMenu } from "./layouts-menu.tsx";
 import type { PendingLayout } from "./pending.tsx";
 import {
-  DropSwitch,
   PENDING_LAYOUTS,
   PENDING_LAYOUT_LABELS,
-  PendingBar,
+  PendingBlockBody,
   PendingChip,
   PendingGutter,
   PendingStrip,
   pendingLayout,
+  useGutterOpen,
 } from "./pending.tsx";
 import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx";
 import type { Lab } from "./use-lab.ts";
@@ -41,6 +41,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
   const search: { pending?: string | undefined } = useSearch({ strict: false });
   const navigate = useNavigate();
   const layout = pendingLayout(search.pending);
+  const [gutterOpen, setGutterOpen] = useGutterOpen();
   const setLayout = (next: PendingLayout): void => {
     void navigate({
       to: ".",
@@ -63,12 +64,13 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
       data-dock={dockAt}
       data-dock-open={open ? "" : undefined}
       data-pending-layout={layout}
+      data-gutter-open={layout === "c" && gutterOpen ? "" : undefined}
       {...lab.dragRoot}
     >
       <header className="lab-top">
         <h1>Lab</h1>
         <DraftCount lab={lab} />
-        {layout === "a" && <PendingChip lab={lab} />}
+        {layout === "a" && <PendingChip lab={lab} tags={tags} />}
         <QueryBar lab={lab} />
         <div className="lab-controls">
           <Segmented
@@ -106,7 +108,6 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
               {open ? "⊟" : "⊞"}
             </button>
           </div>
-          <DropSwitch lab={lab} />
           <Segmented
             label="Pending layout (demo)"
             caption="Pending layout"
@@ -118,7 +119,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
             value={layout}
             onChange={setLayout}
           />
-          <BlocksMenu dock={dock} />
+          <BlocksMenu dock={dock} skip={layout === "e" ? undefined : "lab:pending"} />
           <LayoutsMenu onApply={onApply} />
           <div className="lab-switches">
             <Toggle label="Baseline" checked={lab.baseline} onChange={lab.setBaseline} />
@@ -131,11 +132,15 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
             <Toggle label="Show cut" checked={lab.showCut} onChange={lab.setShowCut} />
           </div>
         </div>
-        {layout === "b" && <PendingStrip lab={lab} />}
+        {layout === "b" && <PendingStrip lab={lab} tags={tags} />}
       </header>
       <div className="lab-dock">
         {open ? (
-          <DockBlocks lab={lab} dock={dock} />
+          <DockBlocks
+            lab={lab}
+            dock={dock}
+            pending={layout === "e" ? <PendingBlockBody lab={lab} tags={tags} /> : undefined}
+          />
         ) : (
           <button
             type="button"
@@ -168,7 +173,9 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           </header>
           {pile(draft, false)}
         </section>
-        {layout === "c" && <PendingGutter lab={lab} />}
+        {layout === "c" && (
+          <PendingGutter lab={lab} tags={tags} open={gutterOpen} setOpen={setGutterOpen} />
+        )}
         <section
           className="lab-pile"
           data-pile="prospects"
@@ -183,7 +190,6 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           {pile(prospects, true)}
         </section>
       </div>
-      {layout === "d" && <PendingBar lab={lab} />}
       <Preview hover={lab.hover} />
     </div>
   );

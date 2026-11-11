@@ -34,6 +34,7 @@ Build [variant C of the spike](T-030-lab-spike.md#verdict-user-2026-11-11): a ch
 - Group by None flows the sorted cards into newspaper columns.
 - With two or more pills, "Save as filter" saves the stack as one [filter](../GLOSSARY.md#filter) (`stackQuery` in `model.ts`) and replaces the pills with it.
 - Named [layouts](../GLOSSARY.md#layout) live in `cube/layouts.json` (`GET`/`PUT /api/layouts`) and snapshot every remembered `lab.*` and `labc.*` setting; picking one restores them.
+- A card opened in the detail pane (`?card=`) stays outlined, and every chart and the draft count preview its move between draft and prospects until the pane closes; a hover or drag takes over meanwhile (user, 2026-11-11).
 - E2E: drag, typed and applied pills, peek, hide, saving a pill and a stack, pinning, and a layout surviving a reload.
 
 Not covered here: Insights chart blocks in the dock don't peek on hover, draw a baseline, or show ghost deltas ([T-035](T-035-lab-insights-blocks.md)); sorting waits on [T-032](T-032-sort-chain.md) and Hide empty on [T-033](T-033-hide-empty.md).

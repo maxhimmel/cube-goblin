@@ -162,103 +162,35 @@ function CColumns({
   );
 }
 
-function SaveAs({
-  lab,
-  query,
-  onSaved,
-}: {
-  lab: Lab;
-  query: string;
-  onSaved: (id: string) => void;
-}): ReactNode {
-  const [naming, setNaming] = useState(false);
-  const [label, setLabel] = useState("");
-  const save = lab.saveFilter;
-  if (!save) {
-    return null;
-  }
-  if (!naming) {
-    return (
-      <button
-        type="button"
-        className="query-tool"
-        disabled={query.trim() === "" || !compileQuery(query).ok}
-        title="Save as a filter in the Filters block"
-        onClick={() => {
-          setNaming(true);
-        }}
-      >
-        Save
-      </button>
-    );
-  }
-  return (
-    <form
-      className="labc-save"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (label.trim() !== "" && compileQuery(query).ok) {
-          onSaved(save(label.trim(), query));
-          setNaming(false);
-          setLabel("");
-        }
-      }}
-    >
-      <input
-        aria-label="Filter name"
-        placeholder="Name"
-        value={label}
-        autoFocus
-        onChange={(event) => {
-          setLabel(event.target.value);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            setNaming(false);
-          }
-        }}
-      />
-      <button type="submit" className="query-tool" disabled={label.trim() === ""}>
-        Save
-      </button>
-    </form>
-  );
-}
-
 function QueryBar({ lab }: { lab: Lab }): ReactNode {
-  const [query, setQuery] = useState("");
   const [round, setRound] = useState(0);
-  const result = compileQuery(query);
-  const count = result.ok && query.trim() !== "" ? lab.scope.filter(result.test).length : undefined;
+  const result = compileQuery(lab.typing);
+  const count = result.ok && lab.typing !== "" ? lab.scope.filter(result.test).length : undefined;
   return (
     <div className="labc-query">
       <PillBar lab={lab} />
       <QueryInput
         key={round}
         initial=""
-        onChange={setQuery}
+        onChange={(query) => {
+          const valid = compileQuery(query).ok;
+          lab.setTyping(valid ? query.trim() : lab.typing);
+        }}
         vocabulary={lab.vocabulary}
         label="Filter the Lab"
         slashFocus
-        status={count === undefined ? undefined : `${String(count)} in draft · Enter applies`}
+        status={
+          count === undefined
+            ? undefined
+            : `${String(count)} in draft · Enter applies, then Save on the pill keeps it`
+        }
         onSubmit={(next) => {
           if (next.trim() !== "") {
             lab.addPill(`x:${next.trim()}`);
-            setQuery("");
+            lab.setTyping("");
             setRound(round + 1);
           }
         }}
-        actions={
-          <SaveAs
-            lab={lab}
-            query={query}
-            onSaved={(id) => {
-              lab.addPill(`f:${id}`);
-              setQuery("");
-              setRound(round + 1);
-            }}
-          />
-        }
       />
     </div>
   );

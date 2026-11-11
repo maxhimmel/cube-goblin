@@ -36,6 +36,7 @@ const test = base.extend<object, { workbench: Workbench }>({
         `${JSON.stringify({ tags: TEST_VOCABULARY }, null, 2)}\n`,
       );
       await writeFile(join(root, "cube", "board.json"), `${JSON.stringify({ sections: [] })}\n`);
+      await writeFile(join(root, "cube", "filters.json"), `${JSON.stringify({ filters: [] })}\n`);
       const cardsDir = join(root, "cube", "cards");
       for (const file of await readdir(cardsDir)) {
         const path = join(cardsDir, file);
@@ -1161,4 +1162,131 @@ test("each view keeps its choices across views and reloads", async ({ page, work
   await go("Insights");
   await expect(page.getByLabel("Count cards in")).toHaveValue("draft");
   await expect(page).not.toHaveURL(/scope=/u);
+});
+
+async function readFilters(cardsDir: string): Promise<{
+  filters: {
+    id: string;
+    label: string;
+    chips: { bucket: string; not?: boolean }[];
+    view: string;
+  }[];
+}> {
+  return JSON.parse(await readFile(join(cardsDir, "..", "filters.json"), "utf8")) as {
+    filters: {
+      id: string;
+      label: string;
+      chips: { bucket: string; not?: boolean }[];
+      view: string;
+    }[];
+  };
+}
+
+test("a saved filter becomes an Insights block that can chart, hide, and be deleted", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1300, height: 1000 });
+  await page.goto(`${workbench.url}#/insights`);
+  await page.getByRole("button", { name: "+ New filter" }).click();
+  const editor = page.getByRole("dialog", { name: "New filter" });
+  await editor.getByLabel("Filter name").fill("Cheap red");
+  await editor.getByRole("button", { name: "Red", exact: true }).first().click();
+  await editor.getByRole("button", { name: "Mana value 1", exact: true }).click();
+  await editor.getByRole("button", { name: "Mana value 2", exact: true }).click();
+  await editor
+    .getByRole("group", { name: "Card type" })
+    .getByRole("button", { name: "Creature" })
+    .click();
+  await editor
+    .getByRole("group", { name: "Card type" })
+    .getByRole("button", { name: "Creature" })
+    .click();
+  const preview = Number(
+    (await editor.getByTestId("filter-preview-count").textContent())?.split(" ")[0],
+  );
+  expect(preview).toBeGreaterThan(0);
+  await page.screenshot({ path: "test-results/filter-editor.png" });
+  await editor.getByRole("button", { name: "Add to dashboard" }).click();
+  await expect(editor).toHaveCount(0);
+
+  const block = page.getByRole("region", { name: "Cheap red" });
+  await expect(block.locator(".strip")).toHaveCount(preview);
+  await expect(block.getByRole("heading")).toContainText(String(preview));
+  await expect
+    .poll(async () => (await readFilters(workbench.cardsDir)).filters)
+    .toEqual([
+      {
+        id: "filter-1",
+        label: "Cheap red",
+        chips: [
+          { bucket: "color:R" },
+          { bucket: "curve:1" },
+          { bucket: "curve:2" },
+          { bucket: "type:creature", not: true },
+        ],
+        view: "cards",
+      },
+    ]);
+  await block.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/filter-block.png" });
+
+  await block.getByLabel("Show Cheap red as").selectOption("curve");
+  await expect(block.getByRole("img", { name: "Mana curve" })).toBeVisible();
+  await expect
+    .poll(async () => (await readFilters(workbench.cardsDir)).filters[0]?.view)
+    .toBe("curve");
+  await block.getByRole("button", { name: "Table" }).click();
+  const row = block.locator('tr[data-stat="2"]');
+  const two = Number(await row.locator("td").textContent());
+  await row.getByRole("button").click();
+  await expect(page).toHaveURL(/in=filter-1/u);
+  const panel = page.getByRole("complementary", { name: "Cards in bucket" });
+  await expect(panel.getByRole("heading")).toContainText("Mana value 2");
+  await expect(panel.locator(".strip")).toHaveCount(two);
+  await panel.getByRole("button", { name: "Close card list" }).click();
+
+  await page.getByRole("button", { name: "Hide Mana curve", exact: true }).click();
+  await block.getByRole("button", { name: "Hide Cheap red" }).click();
+  await expect(page.locator('[data-block="curve"]')).toHaveCount(0);
+  await expect(block).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('[data-block="curve"]')).toHaveCount(0);
+  const menu = page.locator(".blocks-menu");
+  await menu.getByText(/Blocks/u).click();
+  await expect(menu).toContainText("2 hidden");
+  await menu.getByLabel("Cheap red").check();
+  await expect(block).toBeVisible();
+  await page.getByRole("button", { name: "Reset layout" }).click();
+  await expect(page.locator('[data-block="curve"]')).toHaveCount(1);
+
+  await block.getByRole("button", { name: "Edit" }).click();
+  await page
+    .getByRole("dialog", { name: "Edit Cheap red" })
+    .getByRole("button", { name: "Delete filter" })
+    .click();
+  await expect(block).toHaveCount(0);
+  await expect.poll(async () => (await readFilters(workbench.cardsDir)).filters).toEqual([]);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(block).toBeVisible();
+  await expect.poll(async () => (await readFilters(workbench.cardsDir)).filters).toHaveLength(1);
+});
+
+test("a chart bucket saves as a filter", async ({ page, workbench }) => {
+  await page.goto(`${workbench.url}#/insights`);
+  await page
+    .getByRole("region", { name: "Mana curve" })
+    .locator(".ts-chart__bar path")
+    .nth(2)
+    .click();
+  const panel = page.getByRole("complementary", { name: "Cards in bucket" });
+  const count = await panel.locator(".strip").count();
+  await panel.getByRole("button", { name: "Save as filter" }).click();
+  const editor = page.getByRole("dialog", { name: "New filter" });
+  await expect(editor.getByLabel("Filter name")).toHaveValue("Mana value 2");
+  await expect(editor.getByTestId("filter-preview-count")).toHaveText(`${String(count)} cards`);
+  await editor.getByRole("button", { name: "Add to dashboard" }).click();
+  await expect(page.getByRole("region", { name: "Mana value 2" }).locator(".strip")).toHaveCount(
+    count,
+  );
 });

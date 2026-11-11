@@ -10,9 +10,10 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-037: Try several moves at once in the Lab](tickets/T-037-lab-scenario.md)
+
 ## Next
 
-- [T-037: Try several moves at once in the Lab](tickets/T-037-lab-scenario.md)
 - [T-038: Change log](tickets/T-038-change-log.md)
 - [T-034: Persistence audit](tickets/T-034-persistence-audit.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)

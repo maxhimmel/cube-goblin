@@ -1,7 +1,7 @@
 ---
 id: T-030
 title: Lab spike
-status: doing
+status: done
 ---
 
 A rough prototype of the [Lab](../GLOSSARY.md#lab) ([T-031](T-031-lab-view.md)) to see what it looks like before building it properly (user, 2026-11-11). Built inside the app on real cube data at `#/lab?variant=a|b`; the code is rewritten in T-031, not shipped as is.
@@ -29,3 +29,7 @@ Both variants liked. Edits go into **variant C** (`#/lab?variant=c`), the work-i
 - "Hide non-matches" was unclear: now "Non-matches: Dim | Hide".
 - No empty rows or columns (no 0 mana value column until a card has it); P/T labels say 6+.
 - Mana font symbols on chart axes; hovering cards must not shift the layout.
+
+## Verdict (user, 2026-11-11)
+
+Variant C is the direction, after a second round: charts keep plain text labels (mana font only on the card area's section titles), dock tiles stay slim like variant A (small uppercase titles, controls on hover, dotted grab hint), the whole dock collapses, cards switch between Columns (A's strips, tags optional) and Rows (B's table with tags), empty chart rows and columns follow the draft, and sticky section titles sit flush. [T-031](T-031-lab-view.md) rebuilds C properly; the spike code stays in `apps/web/src/lab/` until then.

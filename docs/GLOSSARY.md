@@ -83,7 +83,7 @@ A saved, named set of conditions that picks cards out of the cube. Cube Cobra us
 
 ## Lab
 
-A project-defined term with no outside source: the workbench view (`#/lab`) that puts the cards in contention, charts, and filter blocks in one layout the user arranges, where applied filters change the cards and charts at once ([T-031](tickets/T-031-lab-view.md)). Not the Board, which sketches [sections](#section).
+A project-defined term with no outside source: the workbench view (`#/lab`) that puts the cards in contention, charts, and filter blocks in one layout the user arranges, where applied filters change the cards and charts at once ([T-031](tickets/T-031-lab-view.md)). Clicking two buckets in one Lab chart applies them as one `or` filter; filters from different charts `and` ([T-035](tickets/T-035-lab-insights-blocks.md)). Not the Board, which sketches [sections](#section).
 
 ## Layout
 

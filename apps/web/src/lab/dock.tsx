@@ -17,7 +17,15 @@ import { BLOCKS } from "../insights/layout.ts";
 import { QueryInput } from "../query/query-input.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { colorIcon } from "../insights/labels.tsx";
-import { BarList, CurveBars, Heat, PtDots, SummaryTiles, manaVar } from "./lab-charts.tsx";
+import {
+  BarList,
+  CurveBars,
+  Heat,
+  PtDots,
+  SummaryTiles,
+  TagChips,
+  manaVar,
+} from "./lab-charts.tsx";
 import type { Tally } from "./model.ts";
 import { bucketTallies, curveTallies, heatRows, resolvePill, tally } from "./model.ts";
 import type { BlockView, Lab, Pin } from "./use-lab.ts";
@@ -92,6 +100,8 @@ const ALL_BLOCKS: { id: string; title: string; h?: number }[] = [
 const DEFAULT_ORDER = ALL_BLOCKS.map((block) => block.id);
 
 const DEFAULT_HIDDEN: string[] = [];
+
+const TAG_BLOCKS = new Set<string>(["lab:archetypes", "lab:groups"]);
 
 const CHARTS = new Set<string>(
   LAB_BLOCKS.map((block) => block.id).filter((id) => id !== "lab:filters"),
@@ -248,6 +258,8 @@ export interface DockState {
   collapsed: Set<string>;
   pins: Partial<Record<string, Pin>>;
   baselines: Partial<Record<string, boolean>>;
+  chips: Set<string>;
+  setChips: (id: string, on: boolean) => void;
   setPin: (id: string, pin: Pin) => void;
   setBaseline: (id: string, on: boolean | undefined) => void;
   move: (id: string, before: string) => void;
@@ -271,6 +283,7 @@ export function useDockState(): DockState {
     {},
     z.partialRecord(z.string(), z.boolean()),
   );
+  const [storedChips, setStoredChips] = useRemembered<string[]>("lab.chips", [], ids);
   const pins = renameKeys(storedPins);
   const baselines = renameKeys(storedBaselines);
   const hidden = migrate(storedHidden);
@@ -285,6 +298,14 @@ export function useDockState(): DockState {
     collapsed: new Set(collapsed),
     pins,
     baselines,
+    chips: new Set(storedChips),
+    setChips: (id, on) => {
+      setStoredChips(
+        on
+          ? [...storedChips.filter((other) => other !== id), id]
+          : storedChips.filter((other) => other !== id),
+      );
+    },
     setPin: (id, pin) => {
       setPins({ ...pins, [id]: pin });
     },
@@ -314,6 +335,7 @@ export function useDockState(): DockState {
       setCollapsed([]);
       setPins({});
       setBaselines({});
+      setStoredChips([]);
     },
   };
 }
@@ -513,6 +535,19 @@ function BlockControls({
           </option>
         ))}
       </select>
+      {TAG_BLOCKS.has(id) && (
+        <button
+          type="button"
+          aria-pressed={dock.chips.has(id)}
+          aria-label={`Show ${title} as chips`}
+          title={dock.chips.has(id) ? "Show as bars" : "Show as chips"}
+          onClick={() => {
+            dock.setChips(id, !dock.chips.has(id));
+          }}
+        >
+          ◫
+        </button>
+      )}
       {CHARTS.has(id) && pin === "filter" && (
         <button
           type="button"
@@ -607,15 +642,16 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
         const rows = lab.vocabulary
           .filter((tag) => tag.kind === kind)
           .map((tag) => ({ id: `tag:${tag.id}`, label: tag.label }));
+        const tallies = bucketTallies(rows, view.scope, view.next, view.lens).toSorted(
+          (a, b) => b.base - a.base || a.label.localeCompare(b.label),
+        );
         return tile(
           title,
-          <BarList
-            name={title}
-            tallies={bucketTallies(rows, view.scope, view.next, view.lens).toSorted(
-              (a, b) => b.base - a.base || b.hit - a.hit,
-            )}
-            events={view.events}
-          />,
+          dock.chips.has(id) ? (
+            <TagChips name={title} tallies={tallies} events={view.events} />
+          ) : (
+            <BarList name={title} tallies={tallies} events={view.events} />
+          ),
           true,
         );
       }

@@ -74,7 +74,56 @@ function bucketLabel(id: string): string {
   return id;
 }
 
+const OR_PREFIX = "or:";
+
+export function pillMembers(key: string): string[] {
+  return key.startsWith(OR_PREFIX) ? key.slice(OR_PREFIX.length).split("|") : [key];
+}
+
+function bucketKind(key: string): string | undefined {
+  const [first = ""] = pillMembers(key);
+  return first.startsWith("x:") || first.startsWith("f:") ? undefined : parseBucket(first)?.kind;
+}
+
+export function pickKeys(keys: readonly string[], key: string): string[] {
+  const kind = bucketKind(key);
+  const at = kind === undefined ? -1 : keys.findIndex((other) => bucketKind(other) === kind);
+  const group = keys[at];
+  if (group === undefined) {
+    return keys.includes(key) ? keys.filter((other) => other !== key) : [...keys, key];
+  }
+  const members = pillMembers(group);
+  const next = members.includes(key)
+    ? members.filter((member) => member !== key)
+    : [...members, key];
+  const [only] = next;
+  if (only === undefined) {
+    return keys.filter((_, index) => index !== at);
+  }
+  const merged = next.length === 1 ? only : `${OR_PREFIX}${next.join("|")}`;
+  return keys.map((other, index) => (index === at ? merged : other));
+}
+
+export function peekKeys(keys: readonly string[], key: string): string[] {
+  const kind = bucketKind(key);
+  if (kind === undefined) {
+    return keys.includes(key) ? [...keys] : [...keys, key];
+  }
+  const applied = keys.some((other) => pillMembers(other).includes(key));
+  return applied ? [...keys] : pickKeys(keys, key);
+}
+
 export function resolvePill(key: string, filters: readonly Filter[]): Pill | undefined {
+  if (key.startsWith(OR_PREFIX)) {
+    const parts = pillMembers(key).flatMap((member) => resolvePill(member, filters) ?? []);
+    return parts.length === 0
+      ? undefined
+      : {
+          key,
+          label: parts.map((part) => part.label).join(" or "),
+          test: (card) => parts.some((part) => part.test(card)),
+        };
+  }
   if (key.startsWith("x:")) {
     const result = compileQuery(key.slice(2));
     return result.ok ? { key, label: key.slice(2), test: result.test } : undefined;
@@ -94,6 +143,10 @@ export function resolvePill(key: string, filters: readonly Filter[]): Pill | und
 }
 
 export function pillQuery(key: string, filters: readonly Filter[]): string | undefined {
+  if (key.startsWith(OR_PREFIX)) {
+    const parts = pillMembers(key).flatMap((member) => pillQuery(member, filters) ?? []);
+    return parts.length < 2 ? parts[0] : `(${parts.map((part) => `(${part})`).join(" or ")})`;
+  }
   if (key.startsWith("x:")) {
     return key.slice(2);
   }

@@ -10,6 +10,7 @@ export interface ChartEvents {
   onPick: (key: string) => void;
   baseline: boolean;
   filtered: boolean;
+  picked: ReadonlySet<string>;
 }
 
 const MANA_VAR: Record<string, string> = {
@@ -30,6 +31,7 @@ export function manaVar(id: string): string | undefined {
 
 function peekProps(key: string, events: ChartEvents) {
   return {
+    "data-picked": events.picked.has(key) ? "" : undefined,
     onPointerEnter: () => {
       events.onPeek(key);
     },
@@ -441,6 +443,48 @@ export function SummaryTiles({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+export function TagChips({
+  name,
+  tallies,
+  events,
+}: {
+  name: string;
+  tallies: readonly Tally[];
+  events: ChartEvents;
+}): ReactNode {
+  const rows = tallies.filter(shown);
+  if (rows.length === 0) {
+    return <p className="lab-empty">None in this scope</p>;
+  }
+  return (
+    <div className="lab-chips" role="list" aria-label={name}>
+      {rows.map((row) => (
+        <button
+          key={row.id}
+          type="button"
+          role="listitem"
+          className="lab-chip"
+          data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
+          aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}`}
+          data-filtered={events.filtered ? "" : undefined}
+          style={
+            {
+              "--share": String(row.base === 0 ? 0 : Math.min(1, row.hit / row.base)),
+            } as CSSProperties
+          }
+          {...peekProps(row.id, events)}
+        >
+          {row.label} <span>{row.base}</span>
+          {row.ghost !== 0 && <Ghost delta={row.ghost} />}
+          {row.ghost === 0 && row.baseGhost !== 0 && events.baseline && (
+            <Ghost delta={row.baseGhost} faint />
+          )}
+        </button>
+      ))}
     </div>
   );
 }

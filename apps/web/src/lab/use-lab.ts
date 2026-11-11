@@ -10,7 +10,16 @@ import { DRAG_TYPE } from "../strip.tsx";
 import { recallState, useRemembered } from "../view-choices.ts";
 import type { ChartEvents } from "./lab-charts.tsx";
 import type { Drag, Pill, Test, Used } from "./model.ts";
-import { allOf, project, resolvePill, stackQuery, usedIn } from "./model.ts";
+import {
+  allOf,
+  peekKeys,
+  pickKeys,
+  pillMembers,
+  project,
+  resolvePill,
+  stackQuery,
+  usedIn,
+} from "./model.ts";
 
 export type Axis = ColumnAxis | "none";
 
@@ -118,15 +127,19 @@ export function useLab(): Lab | undefined {
   }
   const all = cube.cards;
   const cards = all.filter((card) => showCut || card.status !== "cut");
-  const pills = pillKeys.flatMap((key) => resolvePill(key, filters) ?? []);
-  const peekPill =
+  const resolve = (keys: readonly string[]) =>
+    keys.flatMap((key) => resolvePill(key, filters) ?? []);
+  const pills = resolve(pillKeys);
+  const lensKeys =
     peek !== undefined
-      ? resolvePill(peek, filters)
+      ? peekKeys(pillKeys, peek)
       : typing === ""
-        ? undefined
-        : resolvePill(`x:${typing}`, filters);
+        ? pillKeys
+        : [...pillKeys, `x:${typing}`];
+  const peeking = peek !== undefined || typing !== "";
   const applied = allOf(pills.map((pill) => pill.test));
-  const lens = allOf([...pills, ...(peekPill ? [peekPill] : [])].map((pill) => pill.test));
+  const lens = allOf(resolve(lensKeys).map((pill) => pill.test));
+  const picked = new Set(pillKeys.flatMap(pillMembers));
   const hoverSlug = hover?.card.slug;
   const hovered = hoverSlug === undefined ? undefined : all.find((c) => c.slug === hoverSlug);
   const ghost: Drag | undefined =
@@ -135,7 +148,7 @@ export function useLab(): Lab | undefined {
   const scope = all.filter(PIN_INCLUDES.draft);
   const next = projected.filter(PIN_INCLUDES.draft);
   const pick = (key: string): void => {
-    togglePill(key);
+    setPillKeys(pickKeys(pillKeys, key));
     setPeek(undefined);
   };
   const togglePill = (key: string): void => {
@@ -188,8 +201,11 @@ export function useLab(): Lab | undefined {
       : undefined,
     setPeek,
     lens,
-    dimmed: (card) => (peekPill ? !lens?.(card) : !hide && applied !== undefined && !applied(card)),
-    hidden: (card) => hide && !peekPill && applied !== undefined && !applied(card),
+    dimmed: (card) =>
+      peeking
+        ? lens !== undefined && !lens(card)
+        : !hide && applied !== undefined && !applied(card),
+    hidden: (card) => hide && !peeking && applied !== undefined && !applied(card),
     baseline,
     setBaseline,
     hide,
@@ -203,7 +219,7 @@ export function useLab(): Lab | undefined {
     drag,
     scope,
     next,
-    events: { onPeek: setPeek, onPick: pick, baseline, filtered: lens !== undefined },
+    events: { onPeek: setPeek, onPick: pick, baseline, filtered: lens !== undefined, picked },
     view: (pin, on) => {
       const follows = pin === "filter";
       const blockScope = follows ? scope : all.filter(PIN_INCLUDES[pin]);
@@ -214,7 +230,13 @@ export function useLab(): Lab | undefined {
         next: blockNext,
         lens: blockLens,
         used: usedIn([...blockScope, ...blockNext]),
-        events: { onPeek: setPeek, onPick: pick, baseline: on, filtered: blockLens !== undefined },
+        events: {
+          onPeek: setPeek,
+          onPick: pick,
+          baseline: on,
+          filtered: blockLens !== undefined,
+          picked,
+        },
       };
     },
     hover,

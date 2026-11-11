@@ -343,7 +343,19 @@ export function useDockState(): DockState {
 export function BlocksMenu({ dock }: { dock: DockState }): ReactNode {
   const [open, setOpen] = useState(false);
   return (
-    <div className="lab-menu">
+    <div
+      className="lab-menu"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setOpen(false);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          setOpen(false);
+        }
+      }}
+    >
       <button
         type="button"
         aria-expanded={open}

@@ -59,8 +59,11 @@ function bucketLabel(id: string): string {
   if (kind === "tag") {
     return `#${first}`;
   }
-  if (kind === "pt") {
+  if (kind === "pt" || kind === "body") {
     return `${first}/${second}`;
+  }
+  if (kind === "creatureCurve") {
+    return `Creatures · MV ${label(first)}`;
   }
   if (kind === "presence") {
     return first === "multicolored" ? "Multicolored" : `Has ${COLOR_LABEL.get(first) ?? first}`;

@@ -120,6 +120,7 @@ function buckets(): Bucket[] {
     make("body", "2", "2"),
     make("body", "0", "4"),
     make("body", "9", "9"),
+    ...curve.map((key) => make("creatureCurve", key)),
     make("status", "draft"),
     make("status", "prospect"),
     make("status", "cut"),

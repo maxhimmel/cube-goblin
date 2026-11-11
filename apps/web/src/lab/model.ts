@@ -3,6 +3,7 @@ import {
   COLOR_GROUPS,
   CURVE_COLUMNS,
   PT_VALUES,
+  TYPE_COLUMNS,
   colorGroup,
   curveKey,
   inBucket,
@@ -60,6 +61,15 @@ function bucketLabel(id: string): string {
   }
   if (kind === "pt") {
     return `${first}/${second}`;
+  }
+  if (kind === "presence") {
+    return first === "multicolored" ? "Multicolored" : `Has ${COLOR_LABEL.get(first) ?? first}`;
+  }
+  if (kind === "heavy") {
+    return `Heavy ${COLOR_LABEL.get(first) ?? first}`;
+  }
+  if (kind === "type") {
+    return TYPE_COLUMNS.find((column) => column.id === first)?.label ?? first;
   }
   return id;
 }
@@ -119,7 +129,7 @@ export interface Tally {
   baseGhost: number;
 }
 
-function tally(
+export function tally(
   id: string,
   label: string,
   scope: readonly GridCard[],
@@ -138,6 +148,20 @@ function tally(
     ghost: next.filter(pass).length - hit,
     baseGhost: next.filter(inside).length - base,
   };
+}
+
+export function bucketTallies(
+  rows: readonly { id: string; label: string }[],
+  scope: readonly GridCard[],
+  next: readonly GridCard[],
+  lens: Test | undefined,
+): Tally[] {
+  return rows.flatMap((row) => {
+    const bucket = parseBucket(row.id);
+    return bucket
+      ? [tally(row.id, row.label, scope, next, (card) => inBucket(card, bucket), lens)]
+      : [];
+  });
 }
 
 export function curveTallies(

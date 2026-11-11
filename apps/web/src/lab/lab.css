@@ -1302,3 +1302,166 @@
   border-color: var(--accent);
   border-radius: 999px;
 }
+
+.lab-hbars {
+  display: grid;
+  gap: 3px;
+}
+
+.lab-hbar {
+  display: grid;
+  grid-template-columns: minmax(70px, 34%) 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+}
+
+.lab-hbar:hover {
+  background: color-mix(in oklab, var(--fg) 6%, transparent);
+}
+
+.lab-hbar-label {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.lab-hbar-label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lab-hbar-track {
+  position: relative;
+  height: 12px;
+}
+
+.lab-hbar-base,
+.lab-hbar-fill,
+.lab-hbar-ghost,
+.lab-hbar-loss {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px 5px 5px 2px;
+  transition:
+    width 0.35s var(--lift),
+    left 0.35s var(--lift);
+}
+
+.lab-hbar-base,
+.lab-hbar-fill {
+  left: 0;
+}
+
+.lab-hbar-base {
+  background: var(--lab-base);
+}
+
+.lab-hbar-fill {
+  background: var(--swatch);
+}
+
+.lab-hbar-ghost {
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklab, var(--lab-ghost) 55%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+  outline: 1.5px dashed var(--lab-ghost);
+  outline-offset: -1.5px;
+}
+
+.lab-hbar-loss {
+  background: color-mix(in oklab, var(--lab-loss) 30%, transparent);
+  outline: 1.5px dashed var(--lab-loss);
+  outline-offset: -1.5px;
+}
+
+.lab-hbar-value {
+  position: relative;
+  min-width: 2.5em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.lab-hbar-value .lab-ghost-label {
+  position: static;
+  margin-left: 4px;
+  font-size: 0.7rem;
+}
+
+.lab-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.lab-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lab-stat {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+  background: color-mix(in oklab, var(--fg) 4%, transparent);
+  border: 0;
+  border-radius: 10px;
+}
+
+button.lab-stat:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.lab-stat-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lab-stat-value {
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lab-stat-base {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.lab-stat .lab-ghost-label {
+  top: 6px;
+  right: 10px;
+  font-size: 0.8rem;
+}
+
+.lab-hbar-base-ghost {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px 5px 5px 2px;
+  outline: 1.5px dashed color-mix(in oklab, var(--lab-ghost) 60%, transparent);
+  outline-offset: -1.5px;
+}
+
+.lab-hbar-base-ghost[data-down] {
+  outline-color: color-mix(in oklab, var(--lab-loss) 60%, transparent);
+}

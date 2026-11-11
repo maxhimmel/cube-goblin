@@ -24,6 +24,10 @@ const MANA_VAR: Record<string, string> = {
   colorless: "var(--mana-c)",
 };
 
+export function manaVar(id: string): string | undefined {
+  return MANA_VAR[id];
+}
+
 function peekProps(key: string, events: ChartEvents) {
   return {
     onPointerEnter: () => {
@@ -300,6 +304,143 @@ export function PtDots({
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+function scaleTop(rows: readonly Tally[], events: ChartEvents): number {
+  const toBase = events.baseline || !events.filtered;
+  return Math.max(
+    1,
+    ...rows.map((row) => Math.max(toBase ? row.base + row.baseGhost : 0, row.hit + row.ghost)),
+  );
+}
+
+function shown(row: Tally): boolean {
+  return row.base > 0 || row.baseGhost !== 0 || row.hit > 0 || row.ghost !== 0;
+}
+
+export function BarList({
+  name,
+  tallies,
+  events,
+  swatch,
+  icon,
+}: {
+  name: string;
+  tallies: readonly Tally[];
+  events: ChartEvents;
+  swatch?: ((id: string) => string | undefined) | undefined;
+  icon?: ((id: string) => ReactNode) | undefined;
+}): ReactNode {
+  const rows = tallies.filter(shown);
+  const top = scaleTop(rows, events);
+  const pct = (value: number): string => `${String((value / top) * 100)}%`;
+  const key = (row: Tally): string => row.id.split(":").slice(1).join(":");
+  if (rows.length === 0) {
+    return <p className="lab-empty">None in this scope</p>;
+  }
+  return (
+    <div className="lab-hbars" role="list" aria-label={name}>
+      {rows.map((row) => (
+        <button
+          key={row.id}
+          type="button"
+          role="listitem"
+          className="lab-hbar"
+          data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
+          aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}`}
+          style={{ "--swatch": swatch?.(key(row)) ?? "var(--lab-hit)" } as CSSProperties}
+          {...peekProps(row.id, events)}
+        >
+          <span className="lab-hbar-label">
+            {icon?.(key(row))}
+            <span>{row.label}</span>
+          </span>
+          <span className="lab-hbar-track">
+            {events.baseline && events.filtered && (
+              <span className="lab-hbar-base" style={{ width: pct(row.base) }} />
+            )}
+            {events.baseline && events.filtered && row.ghost === 0 && row.baseGhost !== 0 && (
+              <span
+                className="lab-hbar-base-ghost"
+                data-down={row.baseGhost < 0 ? "" : undefined}
+                style={{
+                  left: pct(Math.min(row.base, row.base + row.baseGhost)),
+                  width: pct(Math.abs(row.baseGhost)),
+                }}
+              />
+            )}
+            <span className="lab-hbar-fill" style={{ width: pct(row.hit) }} />
+            {row.ghost > 0 && (
+              <span
+                className="lab-hbar-ghost"
+                style={{ left: pct(row.hit), width: pct(row.ghost) }}
+              />
+            )}
+            {row.ghost < 0 && (
+              <span
+                className="lab-hbar-loss"
+                style={{ left: pct(row.hit + row.ghost), width: pct(-row.ghost) }}
+              />
+            )}
+          </span>
+          <span className="lab-hbar-value">
+            {events.filtered && events.baseline
+              ? `${String(row.hit)}/${String(row.base)}`
+              : row.hit}
+            {row.ghost !== 0 && <Ghost delta={row.ghost} />}
+            {row.ghost === 0 && row.baseGhost !== 0 && events.baseline && (
+              <Ghost delta={row.baseGhost} faint />
+            )}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function SummaryTiles({
+  tallies,
+  events,
+}: {
+  tallies: readonly Tally[];
+  events: ChartEvents;
+}): ReactNode {
+  return (
+    <div className="lab-tiles" role="list" aria-label="Summary">
+      {tallies.map((row) => {
+        const pickable = row.id.includes(":");
+        const body = (
+          <>
+            <span className="lab-stat-label">{row.label}</span>
+            <strong className="lab-stat-value">
+              {row.hit}
+              {events.filtered && <span className="lab-stat-base">/{row.base}</span>}
+            </strong>
+            {row.ghost !== 0 && <Ghost delta={row.ghost} />}
+            {row.ghost === 0 && row.baseGhost !== 0 && events.baseline && (
+              <Ghost delta={row.baseGhost} faint />
+            )}
+          </>
+        );
+        return pickable ? (
+          <button
+            key={row.id}
+            type="button"
+            role="listitem"
+            className="lab-stat"
+            aria-label={`${row.label}: ${String(row.hit)}`}
+            {...peekProps(row.id, events)}
+          >
+            {body}
+          </button>
+        ) : (
+          <div key={row.id} role="listitem" className="lab-stat">
+            {body}
+          </div>
+        );
+      })}
     </div>
   );
 }

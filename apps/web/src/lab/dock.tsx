@@ -1,4 +1,11 @@
-import { compileQuery, cubeStats } from "@repo/cube/browser";
+import {
+  COLORS,
+  PRESENCE_GROUPS,
+  TYPE_COLUMNS,
+  compileQuery,
+  cubeStats,
+  isLand,
+} from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 import { z } from "zod";
@@ -9,9 +16,11 @@ import type { BlockId } from "../insights/layout.ts";
 import { BLOCKS } from "../insights/layout.ts";
 import { QueryInput } from "../query/query-input.tsx";
 import { useRemembered } from "../view-choices.ts";
-import { CurveBars, Heat, PtDots } from "./lab-charts.tsx";
-import { curveTallies, heatRows, resolvePill } from "./model.ts";
-import type { Lab, Pin } from "./use-lab.ts";
+import { colorIcon } from "../insights/labels.tsx";
+import { BarList, CurveBars, Heat, PtDots, SummaryTiles, manaVar } from "./lab-charts.tsx";
+import type { Tally } from "./model.ts";
+import { bucketTallies, curveTallies, heatRows, resolvePill, tally } from "./model.ts";
+import type { BlockView, Lab, Pin } from "./use-lab.ts";
 import { PINS } from "./use-lab.ts";
 
 export const DOCKS = ["top", "right", "bottom", "left"] as const;
@@ -20,48 +29,90 @@ export type Dock = (typeof DOCKS)[number];
 const BLOCK_DRAG = "application/x-lab-block";
 
 const LAB_BLOCKS = [
+  { id: "lab:summary", title: "Summary" },
   { id: "lab:filters", title: "Filters" },
-  { id: "lab:tags", title: "Tags in draft" },
   { id: "lab:curve", title: "Curve" },
+  { id: "lab:color", title: "Color" },
   { id: "lab:heat", title: "Color × mana value" },
   { id: "lab:pt", title: "Power × toughness" },
+  { id: "lab:types", title: "Card types" },
+  { id: "lab:heavy", title: "Heavy pips" },
+  { id: "lab:archetypes", title: "Archetypes" },
+  { id: "lab:groups", title: "Groups" },
 ] as const;
 
-const DUPLICATES = new Set(["curve", "heat", "pt", "status"]);
+const COLOR_ROWS = [
+  ...PRESENCE_GROUPS.map((group) => ({ id: `presence:${group.id}`, label: group.label })),
+  { id: "color:colorless", label: "Colorless" },
+];
+
+const HEAVY_ROWS = COLORS.map((color) => ({ id: `heavy:${color.id}`, label: color.label }));
+
+const TYPE_ROWS = TYPE_COLUMNS.map((column) => ({ id: `type:${column.id}`, label: column.label }));
+
+function summaryTallies(view: BlockView): Tally[] {
+  const row = (id: string, label: string, inside: (card: BlockView["scope"][number]) => boolean) =>
+    tally(id, label, view.scope, view.next, inside, view.lens);
+  return [
+    row("cards", "Cards", () => true),
+    row("nonland", "Nonland", (card) => !isLand(card)),
+    ...bucketTallies(
+      [
+        { id: "type:land", label: "Lands" },
+        { id: "type:creature", label: "Creatures" },
+      ],
+      view.scope,
+      view.next,
+      view.lens,
+    ),
+  ];
+}
+
+const INSIGHTS_IN_LAB = new Set<string>(["creature-balance", "combat"]);
+
+const RENAMED: Partial<Record<string, string>> = {
+  "lab:tags": "lab:groups",
+  summary: "lab:summary",
+  color: "lab:color",
+  heavy: "lab:heavy",
+  types: "lab:types",
+  groups: "lab:groups",
+  archetypes: "lab:archetypes",
+};
 
 const ALL_BLOCKS: { id: string; title: string; h?: number }[] = [
   ...LAB_BLOCKS,
-  ...BLOCKS.map((block) => ({ id: block.id, title: block.title, h: block.h })),
+  ...BLOCKS.filter((block) => INSIGHTS_IN_LAB.has(block.id)).map((block) => ({
+    id: block.id,
+    title: block.title,
+    h: block.h,
+  })),
 ];
 
-const DEFAULT_ORDER = [
-  ...LAB_BLOCKS.map((block) => block.id),
-  "combat",
-  "creature-balance",
-  "color",
-  "heavy",
-  "types",
-  "groups",
-  "archetypes",
-  "summary",
-  "curve",
-  "heat",
-  "pt",
-  "status",
-];
+const DEFAULT_ORDER = ALL_BLOCKS.map((block) => block.id);
 
-const DEFAULT_HIDDEN = [...DUPLICATES];
+const DEFAULT_HIDDEN: string[] = [];
 
-const CHARTS = new Set<string>(["lab:curve", "lab:heat", "lab:pt"]);
+const CHARTS = new Set<string>(
+  LAB_BLOCKS.map((block) => block.id).filter((id) => id !== "lab:filters"),
+);
+
+function renameKeys<T>(record: Partial<Record<string, T>>): Partial<Record<string, T>> {
+  return Object.fromEntries(
+    Object.entries(record).map(([key, value]) => [RENAMED[key] ?? key, value]),
+  );
+}
+
+function migrate(ids: readonly string[]): string[] {
+  return [...new Set(ids.map((id) => RENAMED[id] ?? id))];
+}
 
 const pinSchema = z.enum(["filter", "draft", "considered", "all"]);
 
 const TileExtras = createContext<ReactNode>(null);
 
-const BLOCK_IDS = new Set<string>(BLOCKS.map((block) => block.id));
-
 function isInsightsBlock(id: string): id is BlockId {
-  return BLOCK_IDS.has(id);
+  return INSIGHTS_IN_LAB.has(id);
 }
 
 function FilterList({ lab }: { lab: Lab }): ReactNode {
@@ -191,41 +242,6 @@ function FiltersBody({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
-function TagsBody({ lab }: { lab: Lab }): ReactNode {
-  const counts = lab.vocabulary
-    .map((tag) => ({ tag, count: lab.scope.filter((card) => card.tags.includes(tag.id)).length }))
-    .filter((entry) => entry.count > 0)
-    .toSorted((a, b) => b.count - a.count);
-  return (
-    <div className="lab-chips">
-      {counts.map(({ tag, count }) => {
-        const key = `tag:${tag.id}`;
-        const on = lab.pills.some((pill) => pill.key === key);
-        return (
-          <button
-            key={tag.id}
-            type="button"
-            className={`lab-chip${on ? " on" : ""}`}
-            aria-pressed={on}
-            onPointerEnter={() => {
-              lab.setPeek(key);
-            }}
-            onPointerLeave={() => {
-              lab.setPeek(undefined);
-            }}
-            onClick={() => {
-              lab.togglePill(key);
-              lab.setPeek(undefined);
-            }}
-          >
-            {tag.label} <span>{count}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export interface DockState {
   order: string[];
   hidden: Set<string>;
@@ -243,21 +259,25 @@ export interface DockState {
 export function useDockState(): DockState {
   const ids = z.array(z.string());
   const [order, setOrder] = useRemembered("labc.order", DEFAULT_ORDER, ids);
-  const [hidden, setHidden] = useRemembered("labc.hidden", DEFAULT_HIDDEN, ids);
-  const [collapsed, setCollapsed] = useRemembered<string[]>("labc.collapsed", [], ids);
-  const [pins, setPins] = useRemembered<Partial<Record<string, Pin>>>(
+  const [storedHidden, setHidden] = useRemembered("labc.hidden", DEFAULT_HIDDEN, ids);
+  const [storedCollapsed, setCollapsed] = useRemembered<string[]>("labc.collapsed", [], ids);
+  const [storedPins, setPins] = useRemembered<Partial<Record<string, Pin>>>(
     "lab.pins",
     {},
     z.partialRecord(z.string(), pinSchema),
   );
-  const [baselines, setBaselines] = useRemembered<Partial<Record<string, boolean>>>(
+  const [storedBaselines, setBaselines] = useRemembered<Partial<Record<string, boolean>>>(
     "lab.baselines",
     {},
     z.partialRecord(z.string(), z.boolean()),
   );
+  const pins = renameKeys(storedPins);
+  const baselines = renameKeys(storedBaselines);
+  const hidden = migrate(storedHidden);
+  const collapsed = migrate(storedCollapsed);
   const known = [
-    ...order.filter((id) => ALL_BLOCKS.some((block) => block.id === id)),
-    ...ALL_BLOCKS.map((block) => block.id).filter((id) => !order.includes(id)),
+    ...migrate(order).filter((id) => ALL_BLOCKS.some((block) => block.id === id)),
+    ...ALL_BLOCKS.map((block) => block.id).filter((id) => !migrate(order).includes(id)),
   ];
   return {
     order: known,
@@ -325,7 +345,6 @@ export function BlocksMenu({ dock }: { dock: DockState }): ReactNode {
                   }}
                 />
                 {block?.title ?? id}
-                {DUPLICATES.has(id) && <span className="muted"> (Insights)</span>}
               </label>
             );
           })}
@@ -541,8 +560,65 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
     switch (id) {
       case "lab:filters":
         return tile("Filters", <FiltersBody lab={lab} />);
-      case "lab:tags":
-        return tile("Tags in draft", <TagsBody lab={lab} />);
+      case "lab:summary":
+        return tile(
+          "Summary",
+          <SummaryTiles tallies={summaryTallies(view)} events={view.events} />,
+          true,
+        );
+      case "lab:color":
+        return tile(
+          "Color",
+          <BarList
+            name="Color"
+            tallies={bucketTallies(COLOR_ROWS, view.scope, view.next, view.lens)}
+            events={view.events}
+            swatch={manaVar}
+            icon={colorIcon}
+          />,
+          true,
+        );
+      case "lab:heavy":
+        return tile(
+          "Heavy pips",
+          <BarList
+            name="Heavy pips"
+            tallies={bucketTallies(HEAVY_ROWS, view.scope, view.next, view.lens)}
+            events={view.events}
+            swatch={manaVar}
+            icon={colorIcon}
+          />,
+          true,
+        );
+      case "lab:types":
+        return tile(
+          "Card types",
+          <BarList
+            name="Card types"
+            tallies={bucketTallies(TYPE_ROWS, view.scope, view.next, view.lens)}
+            events={view.events}
+          />,
+          true,
+        );
+      case "lab:archetypes":
+      case "lab:groups": {
+        const kind = id === "lab:archetypes" ? "archetype" : "group";
+        const title = id === "lab:archetypes" ? "Archetypes" : "Groups";
+        const rows = lab.vocabulary
+          .filter((tag) => tag.kind === kind)
+          .map((tag) => ({ id: `tag:${tag.id}`, label: tag.label }));
+        return tile(
+          title,
+          <BarList
+            name={title}
+            tallies={bucketTallies(rows, view.scope, view.next, view.lens).toSorted(
+              (a, b) => b.base - a.base || b.hit - a.hit,
+            )}
+            events={view.events}
+          />,
+          true,
+        );
+      }
       case "lab:curve":
         return tile(
           "Curve",

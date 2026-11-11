@@ -1296,3 +1296,90 @@ test("a chart bucket saves as a filter", async ({ page, workbench }) => {
     count,
   );
 });
+
+test("the Lab moves cards by drag and filters them with typed, applied, and peeked queries", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
+  const entries = await Promise.all(
+    files.map(async (file) => {
+      const slug = file.replace(/\.json$/u, "");
+      return { slug, ...(await readEntry(workbench.cardsDir, slug)) };
+    }),
+  );
+  const prospect = entries.find((entry) => entry.status === "prospect");
+  if (!prospect) {
+    throw new Error("fixture has no prospect");
+  }
+  const drafted = await draftCount(workbench.cardsDir);
+
+  await page.goto(`${workbench.url}#/lab`);
+  const count = page.locator(".lab-count-value");
+  await expect(count).toHaveText(String(drafted));
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  const prospects = page.getByRole("region", { name: "Prospects", exact: true });
+  const named = (pile: Locator, name: string): Locator =>
+    pile.locator(`.lab-strip:has(.lab-strip-name:text-is(${JSON.stringify(name)}))`);
+
+  await named(prospects, prospect.name).dragTo(draft);
+  await expect(named(draft, prospect.name)).toBeVisible();
+  await expect(count).toHaveText(String(drafted + 1));
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
+    .toBe("draft");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(named(prospects, prospect.name)).toBeVisible();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
+    .toBe("prospect");
+
+  const cells = draft.locator(".lab-cell");
+  const dim = draft.locator(".lab-cell[data-dim]");
+  const total = await cells.count();
+  await expect(dim).toHaveCount(0);
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("c=r");
+  await expect.poll(async () => dim.count()).toBeGreaterThan(0);
+  const redDim = await dim.count();
+  await query.press("Enter");
+  await expect(page.getByRole("button", { name: "Remove c=r" })).toBeVisible();
+  await expect(query).toHaveValue("");
+  await expect(dim).toHaveCount(redDim);
+
+  const curve = page.getByRole("region", { name: "Curve" });
+  const two = curve.locator('.lab-bar[aria-label^="MV 2:"]');
+  await two.hover();
+  await expect.poll(async () => dim.count()).toBeGreaterThan(redDim);
+  await page.locator(".lab-top h1").hover();
+  await expect(dim).toHaveCount(redDim);
+  await two.click();
+  await expect(page.getByRole("button", { name: "Remove MV 2" })).toBeVisible();
+  const both = await dim.count();
+  expect(both).toBeGreaterThan(redDim);
+
+  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  await expect(cells).toHaveCount(total - both);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Remove c=r" })).toBeVisible();
+  await expect(cells).toHaveCount(total - both);
+  await page.getByRole("button", { name: "Dim", exact: true }).click();
+  await page.getByRole("button", { name: "Remove MV 2" }).click();
+  await expect(dim).toHaveCount(redDim);
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByLabel("Name for c=r").fill("Red");
+  await page.getByLabel("Name for c=r").press("Enter");
+  await expect(page.getByRole("button", { name: "Remove Red" })).toBeVisible();
+  await expect
+    .poll(async () => (await readFilters(workbench.cardsDir)).filters)
+    .toContainEqual(expect.objectContaining({ label: "Red", query: "c=r" }));
+  const filters = page.getByRole("region", { name: "Filters" });
+  await expect(filters.getByRole("button", { name: /^Red/u, pressed: true })).toBeVisible();
+  await page.getByRole("button", { name: "Remove Red" }).click();
+  await expect(dim).toHaveCount(0);
+  await filters.getByRole("button", { name: /^Red/u }).hover();
+  await expect(dim).toHaveCount(redDim);
+  await page.screenshot({ path: "test-results/lab-peek.png" });
+});

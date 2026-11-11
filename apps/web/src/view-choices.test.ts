@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { recallSearch, recallState, rememberSearch, rememberState } from "./view-choices.ts";
+import {
+  recallSearch,
+  recallState,
+  recallStates,
+  rememberSearch,
+  rememberState,
+  replaceStates,
+} from "./view-choices.ts";
 
 function memory() {
   const data = new Map<string, string>();
@@ -63,5 +70,23 @@ describe("view choices", () => {
     rememberState("wall.trayOpen", false, store);
     expect(recallState("board.poolStatus", z.enum(["all", "draft"]), store)).toBe("draft");
     expect(recallState("wall.trayOpen", z.boolean(), store)).toBe(false);
+  });
+
+  it("snapshots and replaces a group of remembered states", () => {
+    const store = memory();
+    const lab = (key: string): boolean => key.startsWith("lab.");
+    rememberState("lab.axis", "none", store);
+    rememberState("lab.hide", true, store);
+    rememberState("wall.other", 1, store);
+    const snapshot = recallStates(lab, store);
+    expect(snapshot).toEqual({ "lab.axis": "none", "lab.hide": true });
+    rememberState("lab.axis", "mv", store);
+    rememberState("lab.extra", 2, store);
+    replaceStates(lab, { ...snapshot, "wall.other": 9 }, store);
+    expect(recallStates(() => true, store)).toEqual({
+      "wall.other": 1,
+      "lab.axis": "none",
+      "lab.hide": true,
+    });
   });
 });

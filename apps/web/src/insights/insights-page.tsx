@@ -790,7 +790,7 @@ export function InsightsPage(): ReactNode {
             onView={
               mode.putFilter
                 ? (view) => {
-                    mode.putFilter?.({ ...filter, view });
+                    void mode.putFilter?.({ ...filter, view });
                   }
                 : undefined
             }
@@ -882,7 +882,7 @@ export function InsightsPage(): ReactNode {
           scoped={cards}
           vocabulary={cube.vocabulary}
           onSave={(filter) => {
-            mode.putFilter?.(filter);
+            void mode.putFilter?.(filter);
             dashboard.setHidden(filterBlockId(filter.id), false);
             setTimeout(() => {
               document

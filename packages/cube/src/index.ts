@@ -20,6 +20,7 @@ export {
   readCards,
   readConfig,
   readFilters,
+  readLayouts,
   readTags,
   readVersionFiles,
   readVersions,
@@ -39,6 +40,8 @@ export { validateCube } from "./validate.ts";
 export { loadBoard, saveBoard } from "./save-board.ts";
 export type { BoardResult } from "./save-board.ts";
 export { loadFilters, saveFilters } from "./save-filters.ts";
+export { loadLayouts, saveLayouts } from "./save-layouts.ts";
+export type { LayoutsResult } from "./save-layouts.ts";
 export type { FiltersResult } from "./save-filters.ts";
 export {
   compareVersions,

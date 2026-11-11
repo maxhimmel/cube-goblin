@@ -109,6 +109,7 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
 
 export const mode: Mode = {
   useFilters: () => snapshot.filters,
+  useLayouts: () => undefined,
   name: "share",
   useCube: () => view,
   useTileMark: (slug) => ({ "data-vote": useReview().cards[slug]?.vote ?? undefined }),

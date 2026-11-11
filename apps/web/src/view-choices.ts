@@ -131,3 +131,24 @@ export function useRemembered<T>(
     },
   ];
 }
+
+export function recallStates(
+  match: (key: string) => boolean,
+  store: KeyValueStore | undefined = browserStore(),
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(read(store, STATE_KEY, stateSchema) ?? {}).filter(([key]) => match(key)),
+  );
+}
+
+export function replaceStates(
+  match: (key: string) => boolean,
+  values: Record<string, unknown>,
+  store: KeyValueStore | undefined = browserStore(),
+): void {
+  const kept = Object.entries(read(store, STATE_KEY, stateSchema) ?? {}).filter(
+    ([key]) => !match(key),
+  );
+  const added = Object.entries(values).filter(([key]) => match(key));
+  write(store, STATE_KEY, Object.fromEntries([...kept, ...added]));
+}

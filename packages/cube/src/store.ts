@@ -5,6 +5,8 @@ import type { z } from "zod";
 import { EMPTY_BOARD } from "./board.ts";
 import type { FiltersFile } from "./filters.ts";
 import { EMPTY_FILTERS, filtersFileSchema } from "./filters.ts";
+import type { LayoutsFile } from "./layouts.ts";
+import { EMPTY_LAYOUTS, layoutsFileSchema } from "./layouts.ts";
 import type { Board, CardEntry, CubeConfig, Tag, Version } from "./schema.ts";
 import { slugify } from "./slug.ts";
 import {
@@ -23,6 +25,7 @@ export interface CubePaths {
   tagsFile: string;
   boardFile: string;
   filtersFile: string;
+  layoutsFile: string;
   versionsDir: string;
   configFile: string;
   workbenchBatch: string;
@@ -35,6 +38,7 @@ export function cubePaths(repoRoot: string): CubePaths {
     tagsFile: join(repoRoot, "cube", "tags.json"),
     boardFile: join(repoRoot, "cube", "board.json"),
     filtersFile: join(repoRoot, "cube", "filters.json"),
+    layoutsFile: join(repoRoot, "cube", "layouts.json"),
     versionsDir: join(repoRoot, "cube", "versions"),
     configFile: join(repoRoot, "cube.config.json"),
     workbenchBatch: join(repoRoot, "cube", "inbox", `${WORKBENCH_BATCH}.txt`),
@@ -80,6 +84,17 @@ export async function readFilters(paths: CubePaths): Promise<FiltersFile> {
   }
 }
 
+export async function readLayouts(paths: CubePaths): Promise<LayoutsFile> {
+  try {
+    return await readJson(paths.layoutsFile, layoutsFileSchema);
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return EMPTY_LAYOUTS;
+    }
+    throw error;
+  }
+}
+
 async function writeJsonAtomic(path: string, value: unknown): Promise<void> {
   const temp = `${path}.${randomUUID()}.tmp`;
   await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`);
@@ -96,6 +111,10 @@ export async function writeBoard(paths: CubePaths, board: Board): Promise<void> 
 
 export async function writeFilters(paths: CubePaths, file: FiltersFile): Promise<void> {
   await writeJsonAtomic(paths.filtersFile, filtersFileSchema.parse(file));
+}
+
+export async function writeLayouts(paths: CubePaths, file: LayoutsFile): Promise<void> {
+  await writeJsonAtomic(paths.layoutsFile, layoutsFileSchema.parse(file));
 }
 
 export async function readCards(paths: CubePaths): Promise<CardEntry[]> {

@@ -5,6 +5,12 @@ import {
   putFilter,
   useWorkbenchFilters,
 } from "../workbench/filters.ts";
+import {
+  deleteLayout,
+  layoutSavesPending,
+  putLayout,
+  useWorkbenchLayouts,
+} from "../workbench/layouts.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -14,6 +20,7 @@ import {
   VERSIONS_QUERY_KEY,
   CUBE_CHANGED_EVENT,
   FILTERS_QUERY_KEY,
+  LAYOUTS_QUERY_KEY,
   CUBE_QUERY_KEY,
   fetchCube,
 } from "../workbench/api.ts";
@@ -42,6 +49,7 @@ if (import.meta.hot) {
     void refetch(CUBE_QUERY_KEY, editsPending);
     void refetch(BOARD_QUERY_KEY, boardSavesPending);
     void refetch(FILTERS_QUERY_KEY, filterSavesPending);
+    void refetch(LAYOUTS_QUERY_KEY, layoutSavesPending);
     void queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
   });
 }
@@ -89,6 +97,9 @@ export const mode: Mode = {
   useFilters: useWorkbenchFilters,
   putFilter,
   deleteFilter,
+  useLayouts: useWorkbenchLayouts,
+  putLayout,
+  deleteLayout,
   name: "workbench",
   moveCard: (card, status) => {
     if (card.status === status) {

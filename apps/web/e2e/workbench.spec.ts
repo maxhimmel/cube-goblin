@@ -1315,3 +1315,216 @@ test("typing or joins the next term with the last pill, and and adds nothing", a
   await expect(editor.locator(".query-error")).toHaveCount(0);
   await editor.getByRole("button", { name: "Close filter editor" }).click();
 });
+
+test("the Lab moves cards by drag and filters them with typed, applied, and peeked queries", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
+  const entries = await Promise.all(
+    files.map(async (file) => {
+      const slug = file.replace(/\.json$/u, "");
+      return { slug, ...(await readEntry(workbench.cardsDir, slug)) };
+    }),
+  );
+  const prospect = entries.find((entry) => entry.status === "prospect");
+  if (!prospect) {
+    throw new Error("fixture has no prospect");
+  }
+  const drafted = await draftCount(workbench.cardsDir);
+
+  await page.goto(`${workbench.url}#/lab`);
+  const count = page.locator(".lab-count-value");
+  await expect(count).toHaveText(String(drafted));
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  const prospects = page.getByRole("region", { name: "Prospects", exact: true });
+  const named = (pile: Locator, name: string): Locator =>
+    pile.locator(`.lab-strip:has(.lab-strip-name:text-is(${JSON.stringify(name)}))`);
+
+  await named(prospects, prospect.name).dragTo(draft);
+  await expect(named(draft, prospect.name)).toBeVisible();
+  await expect(count).toHaveText(String(drafted + 1));
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
+    .toBe("draft");
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(named(prospects, prospect.name)).toBeVisible();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
+    .toBe("prospect");
+
+  const cells = draft.locator(".lab-cell");
+  const dim = draft.locator(".lab-cell[data-dim]");
+  const total = await cells.count();
+  await expect(dim).toHaveCount(0);
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("c=r");
+  await expect.poll(async () => dim.count()).toBeGreaterThan(0);
+  const redDim = await dim.count();
+  await query.press("Enter");
+  await expect(page.getByRole("button", { name: "Remove c=r" })).toBeVisible();
+  await expect(query).toHaveValue("");
+  await expect(dim).toHaveCount(redDim);
+
+  const curve = page.getByRole("region", { name: "Curve" });
+  const two = curve.locator('.lab-bar[aria-label^="MV 2:"]');
+  await two.hover();
+  await expect.poll(async () => dim.count()).toBeGreaterThan(redDim);
+  await page.locator(".lab-top h1").hover();
+  await expect(dim).toHaveCount(redDim);
+  await two.click();
+  await expect(page.getByRole("button", { name: "Remove MV 2" })).toBeVisible();
+  const both = await dim.count();
+  expect(both).toBeGreaterThan(redDim);
+
+  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  await expect(cells).toHaveCount(total - both);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Remove c=r" })).toBeVisible();
+  await expect(cells).toHaveCount(total - both);
+  await page.getByRole("button", { name: "Dim", exact: true }).click();
+  await page.getByRole("button", { name: "Remove MV 2" }).click();
+  await expect(dim).toHaveCount(redDim);
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByLabel("Name for c=r").fill("Red");
+  await page.getByLabel("Name for c=r").press("Enter");
+  await expect(page.getByRole("button", { name: "Remove Red" })).toBeVisible();
+  await expect
+    .poll(async () => (await readFilters(workbench.cardsDir)).filters)
+    .toContainEqual(expect.objectContaining({ label: "Red", query: "c=r" }));
+  const filters = page.getByRole("region", { name: "Filters" });
+  await expect(filters.getByRole("button", { name: /^Red/u, pressed: true })).toBeVisible();
+  await page.getByRole("button", { name: "Remove Red" }).click();
+  await expect(dim).toHaveCount(0);
+  await filters.getByRole("button", { name: /^Red/u }).hover();
+  await expect(dim).toHaveCount(redDim);
+  await page.screenshot({ path: "test-results/lab-peek.png" });
+});
+
+test("a Lab chart pins to a scope or follows the filter, with its own baseline", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const curve = page.getByRole("region", { name: "Curve" });
+  const three = curve.locator('.lab-bar[aria-label^="MV 3:"]');
+  const unfiltered = await three.getAttribute("aria-label");
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("c=g");
+  await query.press("Enter");
+  await expect(three).not.toHaveAttribute("aria-label", unfiltered ?? "");
+  await expect(curve.locator(".lab-bar-base").first()).toBeVisible();
+
+  await curve.hover();
+  await curve.getByLabel("Baseline for Curve").click();
+  await expect(curve.locator(".lab-bar-base")).toHaveCount(0);
+  await expect(page.getByLabel("Baseline", { exact: true })).toBeChecked();
+
+  await curve.getByLabel("Scope of Curve").selectOption("draft");
+  await expect(three).toHaveAttribute("aria-label", unfiltered ?? "");
+  await expect(curve.getByLabel("Baseline for Curve")).toHaveCount(0);
+  await page.reload();
+  await expect(three).toHaveAttribute("aria-label", unfiltered ?? "");
+  await curve.hover();
+  await curve.getByLabel("Scope of Curve").selectOption("filter");
+  await expect(three).not.toHaveAttribute("aria-label", unfiltered ?? "");
+  await expect(curve.locator(".lab-bar-base")).toHaveCount(0);
+  await curve.getByLabel("Baseline for Curve").click();
+  await expect(curve.locator(".lab-bar-base").first()).toBeVisible();
+  await page.getByRole("button", { name: "Remove c=g" }).click();
+});
+
+async function readLayouts(cardsDir: string): Promise<unknown> {
+  try {
+    return JSON.parse(await readFile(join(cardsDir, "..", "layouts.json"), "utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+test("a named Lab layout saves to the cube and brings its settings back", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  await draft.getByRole("button", { name: "Rows" }).click();
+  await draft.getByRole("button", { name: "None", exact: true }).click();
+  await page.getByRole("button", { name: "Charts on the left" }).click();
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("t:creature");
+  await query.press("Enter");
+  await expect(draft.locator(".lab-group")).toHaveCount(1);
+
+  await page.getByRole("button", { name: /^Layouts/u }).click();
+  await page.getByLabel("Layout name").fill("Creature rows");
+  await page.getByLabel("Layout name").press("Enter");
+  await expect
+    .poll(async () => readLayouts(workbench.cardsDir))
+    .toEqual({
+      layouts: [
+        {
+          id: expect.stringMatching(/^layout-[a-z0-9]+$/u),
+          label: "Creature rows",
+          settings: expect.objectContaining({
+            "labc.view": "rows",
+            "lab.axis": "none",
+            "labc.dockAt": "left",
+            "lab.pills": ["x:t:creature"],
+          }),
+        },
+      ],
+    });
+
+  await draft.getByRole("button", { name: "Columns" }).click();
+  await draft.getByRole("button", { name: "Mana value", exact: true }).click();
+  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await page.getByRole("button", { name: "Remove t:creature" }).click();
+  await expect(page.locator(".lab")).toHaveAttribute("data-dock", "top");
+
+  await page.reload();
+  await page.getByRole("button", { name: /^Layouts/u }).click();
+  await page.getByRole("button", { name: "Creature rows", exact: true }).click();
+  await expect(page.locator(".lab")).toHaveAttribute("data-dock", "left");
+  await expect(page.getByRole("button", { name: "Remove t:creature" })).toBeVisible();
+  await expect(draft.locator(".lab-group")).toHaveCount(1);
+  await expect(draft.getByRole("button", { name: "Rows" })).toHaveAttribute("aria-pressed", "true");
+  await page.reload();
+  await expect(page.locator(".lab")).toHaveAttribute("data-dock", "left");
+
+  await page.getByRole("button", { name: /^Layouts/u }).click();
+  await page.getByRole("button", { name: "Delete layout Creature rows" }).click();
+  await expect.poll(async () => readLayouts(workbench.cardsDir)).toEqual({ layouts: [] });
+  await draft.getByRole("button", { name: "Columns" }).click();
+  await draft.getByRole("button", { name: "Mana value", exact: true }).click();
+  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await page.getByRole("button", { name: "Remove t:creature" }).click();
+});
+
+test("the Lab saves its stack of applied filters as one filter", async ({ page, workbench }) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await query.pressSequentially("c=u");
+  await query.press("Enter");
+  await page
+    .getByRole("region", { name: "Curve" })
+    .locator('.lab-bar[aria-label^="MV 2:"]')
+    .click();
+  const dim = page.locator(".lab-cell[data-dim]");
+  const dimmed = await dim.count();
+  await page.getByRole("button", { name: "Save as filter" }).click();
+  await page.getByLabel("Name for the applied filters").fill("Cheap blue");
+  await page.getByLabel("Name for the applied filters").press("Enter");
+  await expect(page.getByRole("button", { name: "Remove Cheap blue" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove c=u" })).toHaveCount(0);
+  await expect(dim).toHaveCount(dimmed);
+  await expect
+    .poll(async () => (await readFilters(workbench.cardsDir)).filters)
+    .toContainEqual(expect.objectContaining({ label: "Cheap blue", query: "c=u mv=2" }));
+  await page.getByRole("button", { name: "Remove Cheap blue" }).click();
+});

@@ -54,12 +54,15 @@ function save(change: FiltersChange): Promise<FiltersFile> {
   return new MutationObserver(queryClient, saveOptions).mutate(change);
 }
 
-export function putFilter(filter: Filter): void {
-  save((filters) =>
+export function putFilter(filter: Filter): Promise<boolean> {
+  return save((filters) =>
     filters.some((entry) => entry.id === filter.id)
       ? filters.map((entry) => (entry.id === filter.id ? filter : entry))
       : [...filters, filter],
-  ).catch(() => undefined);
+  ).then(
+    () => true,
+    () => false,
+  );
 }
 
 export function deleteFilter(id: string): void {

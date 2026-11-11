@@ -1,6 +1,7 @@
 import type {
   Board,
   FiltersFile,
+  LayoutsFile,
   CubeDiff,
   VersionSummary,
   CardChange,
@@ -15,6 +16,7 @@ import type {
 import {
   boardSchema,
   filtersFileSchema,
+  layoutsFileSchema,
   cardEntrySchema,
   cubeDiffSchema,
   versionSummarySchema,
@@ -27,6 +29,7 @@ import {
 export const CUBE_QUERY_KEY = ["cube"] as const;
 export const BOARD_QUERY_KEY = ["board"] as const;
 export const FILTERS_QUERY_KEY = ["filters"] as const;
+export const LAYOUTS_QUERY_KEY = ["layouts"] as const;
 export const VERSIONS_QUERY_KEY = ["versions"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
@@ -122,6 +125,18 @@ export async function fetchFilters(): Promise<FiltersFile> {
 
 export async function saveFiltersRequest(file: FiltersFile): Promise<FiltersFile> {
   return filtersFileSchema.parse(await sendJson("PUT", "/api/filters", file));
+}
+
+export async function fetchLayouts(): Promise<LayoutsFile> {
+  const response = await fetch("/api/layouts");
+  if (!response.ok) {
+    throw await failure("GET", "/api/layouts", response);
+  }
+  return layoutsFileSchema.parse(await response.json());
+}
+
+export async function saveLayoutsRequest(file: LayoutsFile): Promise<LayoutsFile> {
+  return layoutsFileSchema.parse(await sendJson("PUT", "/api/layouts", file));
 }
 
 export async function fetchPrintings(slug: string): Promise<Printing[]> {

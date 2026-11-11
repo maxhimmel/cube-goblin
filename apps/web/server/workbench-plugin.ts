@@ -5,6 +5,7 @@ import type {
   BatchResult,
   BoardResult,
   FiltersResult,
+  LayoutsResult,
   CubePaths,
   FoundCard,
   Printing,
@@ -32,11 +33,13 @@ import {
   patchCards,
   loadBoard,
   loadFilters,
+  loadLayouts,
   readCards,
   readConfig,
   readTags,
   saveBoard,
   saveFilters,
+  saveLayouts,
   slugify,
 } from "@repo/cube";
 import {
@@ -132,7 +135,14 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
 }
 
 type WriteResult =
-  UpdateResult | TagResult | BatchResult | AddResult | BoardResult | FiltersResult | VersionResult;
+  | UpdateResult
+  | TagResult
+  | BatchResult
+  | AddResult
+  | BoardResult
+  | FiltersResult
+  | LayoutsResult
+  | VersionResult;
 type Write = (body: unknown) => Promise<WriteResult>;
 
 function written(result: Extract<WriteResult, { ok: true }>): unknown {
@@ -144,6 +154,9 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   }
   if ("filters" in result) {
     return result.filters;
+  }
+  if ("layouts" in result) {
+    return result.layouts;
   }
   if ("version" in result) {
     return result.version;
@@ -288,6 +301,9 @@ function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: Oracle
     if (url === "/api/filters" && method === "PUT") {
       return (body) => saveFilters(paths, body);
     }
+    if (url === "/api/layouts" && method === "PUT") {
+      return (body) => saveLayouts(paths, body);
+    }
     if (url === "/api/tags" && method === "POST") {
       return (body) => createTag(paths, body);
     }
@@ -390,6 +406,17 @@ export function workbench(options: WorkbenchOptions): Plugin {
               } else {
                 send(res, result.status, { error: result.error });
               }
+            },
+            (error: unknown) => {
+              send(res, 500, { error: String(error) });
+            },
+          );
+          return;
+        }
+        if (url === "/api/layouts" && req.method === "GET") {
+          loadLayouts(paths).then(
+            (layouts) => {
+              send(res, 200, layouts);
             },
             (error: unknown) => {
               send(res, 500, { error: String(error) });

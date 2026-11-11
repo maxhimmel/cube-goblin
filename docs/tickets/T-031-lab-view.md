@@ -1,7 +1,7 @@
 ---
 id: T-031
 title: Lab view
-status: todo
+status: done
 ---
 
 One workbench view to see every card in contention, lay out charts and filter blocks as the user likes, apply filters that change the card area at once, make edits, and watch the stats move (user, 2026-11-11). Built after the [spike](T-030-lab-spike.md) picks a direction, and after query filters ([T-028](T-028-filter-query-syntax.md)), which its pills use.
@@ -26,3 +26,14 @@ Build [variant C of the spike](T-030-lab-spike.md#verdict-user-2026-11-11): a ch
 ## Done when
 
 - Every decision above works in the workbench, with e2e coverage of drag, filter pills, peek, and a named layout surviving a reload.
+
+## Built (2026-11-11)
+
+- Variant C is the Lab; variants A and B and `?variant=` are gone. Code: `apps/web/src/lab/` (`use-lab.ts` state, `cards.tsx` card area, `toolbar.tsx`, `dock.tsx`, `layouts-menu.tsx`, `lab-charts.tsx`, `model.ts`).
+- Each dock block has a scope select (Follows filter, Draft, Draft + prospects, All cards), and each Lab chart that follows the filter has a ◐ button that overrides the global Baseline switch. Both are remembered.
+- Group by None flows the sorted cards into newspaper columns.
+- With two or more pills, "Save as filter" saves the stack as one [filter](../GLOSSARY.md#filter) (`stackQuery` in `model.ts`) and replaces the pills with it.
+- Named [layouts](../GLOSSARY.md#layout) live in `cube/layouts.json` (`GET`/`PUT /api/layouts`) and snapshot every remembered `lab.*` and `labc.*` setting; picking one restores them.
+- E2E: drag, typed and applied pills, peek, hide, saving a pill and a stack, pinning, and a layout surviving a reload.
+
+Not covered here: Insights chart blocks in the dock don't peek on hover, draw a baseline, or show ghost deltas ([T-035](T-035-lab-insights-blocks.md)); sorting waits on [T-032](T-032-sort-chain.md) and Hide empty on [T-033](T-033-hide-empty.md).

@@ -9,6 +9,7 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { InsightsPage } from "./insights/insights-page.tsx";
+import { LabPage } from "./lab/lab-page.tsx";
 import { GridPage } from "./pages/grid-page.tsx";
 import { WallPage } from "./pages/wall-page.tsx";
 import { Shell } from "./shell.tsx";
@@ -133,6 +134,14 @@ const versionsRoute = createRoute({
   component: () => <mode.VersionsPage />,
 });
 
+const labRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/lab",
+  validateSearch: (search: Record<string, unknown>): { variant?: string | undefined } =>
+    typeof search["variant"] === "string" ? { variant: search["variant"] } : {},
+  component: LabPage,
+});
+
 const addRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/add",
@@ -153,6 +162,7 @@ export const router = createRouter({
     tagsRoute,
     boardRoute,
     versionsRoute,
+    labRoute,
     addRoute,
   ]),
   history: createHashHistory(),

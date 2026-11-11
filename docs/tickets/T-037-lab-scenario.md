@@ -37,6 +37,14 @@ Real Pending state (queue, chart and draft-count deltas, Apply as one undoable e
 - A's hover list closed while moving the mouse into it: now click-to-open.
 - D (floor bar) not picked: removed.
 
+### Feedback round 2 (user, 2026-11-11)
+
+- Chose **C**: Pending sits between Draft and Prospects (the move from one to the other), a thin rail until opened. A, B, E, the demo switch, and `?pending=` are gone.
+- The rail opens and closes with the dock tiles' own `+`/`–` button (`CollapseButton` in `dock.tsx`).
+- The hint shows the key as a keycap: `⌥` on a Mac, `Alt` elsewhere.
+- Dashed outlines appearing on drag were confusing. Now a drag gives only the places it can drop on a soft pulsing accent outline (none on the pile the card came from); the one under the pointer turns solid with a "Drop to …" label. The pulse stops under reduced motion.
+- The label pushed the pile's cards down: it now floats over the pile's top and takes no space.
+
 ## Done when
 
 - Several queued moves show in every chart at once, apply as one undoable edit, survive a reload, and are covered by e2e.

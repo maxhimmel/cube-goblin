@@ -160,10 +160,11 @@ export function useLab(): Lab | undefined {
   const hoverSlug = hover?.card.slug;
   const hovered = hoverSlug === undefined ? undefined : all.find((c) => c.slug === hoverSlug);
   const opened = selected === undefined ? undefined : all.find((c) => c.slug === selected);
-  const previewed = hovered ?? opened;
-  const ghost: Drag | undefined =
-    drag ?? (previewed ? { slug: previewed.slug, to: flip(previewed.status) } : undefined);
-  const projected = project(all, ghost);
+  const moves: Drag[] = [
+    ...(opened ? [{ slug: opened.slug, to: flip(opened.status) }] : []),
+    ...(drag ? [drag] : hovered ? [{ slug: hovered.slug, to: flip(hovered.status) }] : []),
+  ];
+  const projected = project(all, moves);
   const scope = all.filter(PIN_INCLUDES.draft);
   const next = projected.filter(PIN_INCLUDES.draft);
   const pick = (key: string): void => {

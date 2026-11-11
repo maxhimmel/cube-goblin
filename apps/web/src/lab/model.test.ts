@@ -1,6 +1,6 @@
 import type { Filter } from "@repo/cube/browser";
 import { describe, expect, it } from "vitest";
-import { peekKeys, pickKeys, resolvePill, stackQuery } from "./model.ts";
+import { peekKeys, pickKeys, project, resolvePill, stackQuery } from "./model.ts";
 
 const filters: Filter[] = [
   { id: "cheap", label: "Cheap", query: "mv<=2 or t:land", view: "cards" },
@@ -46,5 +46,21 @@ describe("picking chart buckets", () => {
     const pill = resolvePill("or:curve:2|tag:removal", filters);
     expect(pill?.label).toBe("MV 2 or #removal");
     expect(stackQuery(["or:curve:2|curve:3", "x:c=r"], filters)).toBe("((mv=2) or (mv=3)) c=r");
+  });
+});
+
+describe("project", () => {
+  const card = (slug: string, status: "draft" | "prospect") =>
+    ({ slug, status }) as unknown as Parameters<typeof project>[0][number];
+
+  it("applies every pending move, the last one winning for a card", () => {
+    const cards = [card("a", "draft"), card("b", "prospect"), card("c", "draft")];
+    const moved = project(cards, [
+      { slug: "a", to: "prospect" },
+      { slug: "b", to: "draft" },
+      { slug: "a", to: "draft" },
+      { slug: "c" },
+    ]);
+    expect(moved.map((entry) => entry.status)).toEqual(["draft", "draft", "draft"]);
   });
 });

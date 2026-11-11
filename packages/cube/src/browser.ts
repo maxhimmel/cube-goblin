@@ -141,3 +141,29 @@ export {
   statusCounts,
 } from "./diff.ts";
 export type { CardDiff, CubeDiff, CubeState, SectionDiff } from "./diff.ts";
+export {
+  KEYWORDS,
+  OPERATORS,
+  SYNTAX,
+  bucketQuery,
+  compileQuery,
+  joinQuery,
+  keyword,
+  matchesQuery,
+  namesStatus,
+  parse,
+  queryParts,
+  quote,
+  removePart,
+  tagsIn,
+  term,
+} from "./query.ts";
+export type {
+  Keyword,
+  KeywordKind,
+  Operator,
+  QueryCard,
+  QueryNode,
+  QueryPart,
+  QueryResult,
+} from "./query.ts";

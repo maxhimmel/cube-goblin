@@ -165,12 +165,12 @@ export function allOf(tests: readonly Test[]): Test | undefined {
   return tests.length === 0 ? undefined : (card) => tests.every((test) => test(card));
 }
 
-export function project(cards: readonly GridCard[], drag: Drag | undefined): GridCard[] {
-  if (!drag?.to) {
-    return [...cards];
-  }
-  const to = drag.to;
-  return cards.map((card) => (card.slug === drag.slug ? { ...card, status: to } : card));
+export function project(cards: readonly GridCard[], moves: readonly Drag[]): GridCard[] {
+  const to = new Map(moves.flatMap((move) => (move.to ? [[move.slug, move.to] as const] : [])));
+  return cards.map((card) => {
+    const status = to.get(card.slug);
+    return status === undefined ? card : { ...card, status };
+  });
 }
 
 export interface Tally {

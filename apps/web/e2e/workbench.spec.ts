@@ -1686,6 +1686,11 @@ test("an opened card stays highlighted in the Lab and previews its move in every
   await expect(page.locator(".lab-count-ghost")).toHaveText(`→ ${String(count + 1)}`);
   const summary = page.getByRole("region", { name: "Summary" });
   await expect(summary.locator(".lab-ghost-label").first()).toHaveText("+1");
+  await page.locator('[data-pile="prospects"] .lab-strip').nth(1).hover();
+  await expect(page.locator(".lab-count-ghost")).toHaveText(`→ ${String(count + 2)}`);
+  await expect(summary.locator(".lab-ghost-label").first()).toHaveText("+2");
+  await page.mouse.move(5, 500);
+  await expect(page.locator(".lab-count-ghost")).toHaveText(`→ ${String(count + 1)}`);
   await page.getByRole("button", { name: "Close" }).click();
   await expect(page.locator(".lab-cell[data-selected]")).toHaveCount(0);
   await expect(summary.locator(".lab-ghost-label")).toHaveCount(0);

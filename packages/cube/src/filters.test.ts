@@ -78,6 +78,12 @@ describe("filters", () => {
     };
     expect(validateFilters(file, [])).toHaveLength(2);
     expect(pruneFilters(file, []).filters[0]?.query).toBe("mv=1");
+    expect(
+      pruneFilters(
+        { filters: [{ id: "b", label: "B", query: "a  tag:x  tag:y", view: "cards" }] },
+        [],
+      ).filters[0]?.query,
+    ).toBe("a");
   });
 
   it("never reuses an id", () => {

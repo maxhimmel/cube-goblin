@@ -147,7 +147,7 @@ export interface Span {
 }
 
 export type QueryNode =
-  | ({ type: "and" | "or"; parts: QueryNode[] } & Span)
+  | ({ type: "and" | "or"; parts: QueryNode[]; grouped?: boolean } & Span)
   | ({ type: "not"; part: QueryNode } & Span)
   | ({ type: "term"; field: string; op: Operator; value: string } & Span)
   | ({ type: "word"; value: string } & Span);
@@ -178,13 +178,17 @@ function tokenize(source: string): Token[] {
       i += 1;
       continue;
     }
-    if (char === "-" && /[^\s)]/u.test(source[i + 1] ?? " ")) {
+    if (char === "-") {
+      if (!/[^\s)]/u.test(source[i + 1] ?? " ")) {
+        throw new QueryError("- needs something after it", i);
+      }
       tokens.push({ kind: "not", start: i, end: i + 1 });
       i += 1;
       continue;
     }
     const start = i;
     let text = "";
+    let quoted = false;
     while (i < source.length && !/[\s()]/u.test(source[i] ?? "")) {
       if (source[i] === '"') {
         const close = source.indexOf('"', i + 1);
@@ -192,6 +196,7 @@ function tokenize(source: string): Token[] {
           throw new QueryError("Missing closing quote", i);
         }
         text += source.slice(i + 1, close);
+        quoted = true;
         i = close + 1;
         continue;
       }
@@ -199,7 +204,7 @@ function tokenize(source: string): Token[] {
       i += 1;
     }
     tokens.push(
-      text.toLowerCase() === "or"
+      !quoted && text.toLowerCase() === "or"
         ? { kind: "or", start, end: i }
         : { kind: "text", text, start, end: i },
     );
@@ -227,6 +232,14 @@ function readTerm(token: Token & { kind: "text" }): QueryNode {
   }
   if (value === "") {
     throw new QueryError(`"${entry.name}${op}" needs a value`, token.end);
+  }
+  if (
+    entry.kind === "number" &&
+    value === VARIABLE_PT.id &&
+    effective !== "=" &&
+    effective !== "!="
+  ) {
+    throw new QueryError(`"${entry.name}" compares * only with = or !=`, token.start);
   }
   if (entry.kind === "number" && !isNumberValue(value)) {
     throw new QueryError(`"${entry.name}" needs a number, *, or mv/pow/tou`, token.start);
@@ -283,7 +296,12 @@ export function parse(source: string): QueryNode | undefined {
         throw new QueryError("Missing )", source.length);
       }
       at += 1;
-      return { ...inner, start: token.start, end: close.end };
+      return {
+        ...inner,
+        ...(inner.type === "and" || inner.type === "or" ? { grouped: true } : {}),
+        start: token.start,
+        end: close.end,
+      };
     }
     if (token.kind === "text") {
       return readTerm(token);
@@ -483,22 +501,24 @@ function walk(
   visit(node, negated);
 }
 
+function requiredTerms(node: QueryNode | undefined): QueryNode[] {
+  if (!node) {
+    return [];
+  }
+  if (node.type === "and") {
+    return node.parts.flatMap(requiredTerms);
+  }
+  return node.type === "term" ? [node] : [];
+}
+
 export function namesStatus(source: string): boolean {
   const result = compileQuery(source);
-  let found = false;
-  if (result.ok) {
-    walk(result.node, (term, negated) => {
-      if (
-        !negated &&
-        term.type === "term" &&
-        term.field === "is" &&
-        term.value.toLowerCase() !== "spell"
-      ) {
-        found = true;
-      }
-    });
-  }
-  return found;
+  return (
+    result.ok &&
+    requiredTerms(result.node).some(
+      (node) => node.type === "term" && node.field === "is" && node.value.toLowerCase() !== "spell",
+    )
+  );
 }
 
 export function tagsIn(source: string): string[] {
@@ -524,17 +544,24 @@ export function queryParts(source: string): QueryPart[] {
   if (!result.ok || !result.node) {
     return [];
   }
-  const top = result.node.type === "and" ? result.node.parts : [result.node];
-  return top.map((node) => ({
-    start: node.start,
-    end: node.end,
-    text: source.slice(node.start, node.end),
-    kind: node.type === "term" || node.type === "word" ? "term" : "group",
-  }));
+  const top =
+    result.node.type === "and" && !result.node.grouped ? result.node.parts : [result.node];
+  return top.map((node) => {
+    const inner = node.type === "not" ? node.part : node;
+    const simple =
+      (inner.type === "term" || inner.type === "word") &&
+      !source.slice(inner.start, inner.end).trim().startsWith("(");
+    return {
+      start: node.start,
+      end: node.end,
+      text: source.slice(node.start, node.end),
+      kind: simple ? "term" : "group",
+    };
+  });
 }
 
 export function removePart(source: string, part: Span): string {
-  return `${source.slice(0, part.start)} ${source.slice(part.end)}`.replace(/\s+/gu, " ").trim();
+  return `${source.slice(0, part.start).trimEnd()} ${source.slice(part.end).trimStart()}`.trim();
 }
 
 export function quote(value: string): string {
@@ -545,11 +572,20 @@ export function term(field: string, op: Operator, value: string): string {
   return `${field}${op}${quote(value)}`;
 }
 
+function topLevelOr(part: string): boolean {
+  try {
+    const node = parse(part);
+    return node?.type === "or" && node.grouped !== true;
+  } catch {
+    return /\sor\s/iu.test(part);
+  }
+}
+
 export function joinQuery(...parts: readonly string[]): string {
   return parts
     .map((part) => part.trim())
     .filter((part) => part !== "")
-    .map((part) => (/\sor\s/iu.test(part) && !part.startsWith("(") ? `(${part})` : part))
+    .map((part) => (topLevelOr(part) ? `(${part})` : part))
     .join(" ");
 }
 

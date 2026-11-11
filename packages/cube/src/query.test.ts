@@ -196,7 +196,7 @@ describe("query helpers", () => {
     const parts = queryParts(query);
     expect(parts.map((part) => [part.text, part.kind])).toEqual([
       ["t:creature", "term"],
-      ["-c:g", "group"],
+      ["-c:g", "term"],
       ["(tag:a or tag:b)", "group"],
     ]);
     const second = parts[1];
@@ -212,5 +212,49 @@ describe("query helpers", () => {
     expect(namesStatus("tag:x is:draft")).toBe(true);
     expect(namesStatus("-is:draft is:spell")).toBe(false);
     expect(tagsIn("tag:a -(tag:b or c:r)")).toEqual(["a", "b"]);
+  });
+});
+
+describe("review fixes", () => {
+  it("wraps any top-level or when joining", () => {
+    expect(joinQuery("mv=2", "(t:creature or t:artifact) or c:w")).toBe(
+      "mv=2 ((t:creature or t:artifact) or c:w)",
+    );
+    expect(joinQuery("mv=2", "(c:w or c:u)")).toBe("mv=2 (c:w or c:u)");
+  });
+
+  it("removes parts without disturbing the rest", () => {
+    const query = 'o:"a  b"  tag:x  tag:y';
+    const parts = queryParts(query);
+    const rest = parts
+      .toReversed()
+      .filter((part) => part.text.startsWith("tag:"))
+      .reduce((current, part) => removePart(current, part), query);
+    expect(rest).toBe('o:"a  b"');
+  });
+
+  it("keeps a wrapped group as one part and negated terms as terms", () => {
+    expect(queryParts("(a b) c").map((part) => [part.text, part.kind])).toEqual([
+      ["(a b)", "group"],
+      ["c", "term"],
+    ]);
+    expect(queryParts("(mv=2)").map((part) => part.kind)).toEqual(["group"]);
+    expect(queryParts("-tag:x").map((part) => part.kind)).toEqual(["term"]);
+  });
+
+  it("rejects a lone minus and * with an ordering operator", () => {
+    expect(compileQuery("a -")).toMatchObject({ ok: false });
+    expect(compileQuery("-")).toMatchObject({ ok: false });
+    expect(compileQuery("pow<*")).toMatchObject({ ok: false });
+  });
+
+  it("treats a quoted or as a word", () => {
+    expect(names('"or"')).toEqual([]);
+    expect(compileQuery('a "or" b')).toMatchObject({ ok: true });
+  });
+
+  it("only counts a status that every match must have", () => {
+    expect(namesStatus("is:draft or t:creature")).toBe(false);
+    expect(namesStatus("(is:draft t:creature) mv=2")).toBe(true);
   });
 });

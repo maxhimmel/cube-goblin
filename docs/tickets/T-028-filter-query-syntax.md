@@ -1,7 +1,7 @@
 ---
 id: T-028
 title: Filter query syntax
-status: todo
+status: done
 ---
 
 Phase 2 of [T-027](T-027-filter-widgets.md) (user, 2026-11-10), widened on 2026-11-11: the chips felt clunky (one chip per power value), so a query replaces them as the way to write every [filter](../GLOSSARY.md#filter). Research: [filter-ui.md](../research/filter-ui.md).
@@ -22,3 +22,12 @@ Phase 2 of [T-027](T-027-filter-widgets.md) (user, 2026-11-10), widened on 2026-
 - A filter is written as a query, typed or built with the picker, and it matches the same cards as the chart bucket it came from (unit-tested against `inBucket`).
 - The legend lists every keyword the parser knows.
 - `cube/filters.json` holds only queries.
+
+## What shipped
+
+- **Engine**: `packages/cube/src/query.ts`: tokenizer, parser with source spans, compiler, the keyword table (`KEYWORDS`, also the legend's source), `bucketQuery` for every chart bucket, and helpers to split a query into top-level parts. A test checks every bucket's query matches the same cards as `inBucket`; run against the real cube on 2026-11-11, all 218 buckets matched.
+- **Keywords**: `mv` (lands have none), `pow`, `tou` (numbers, `*`, or each other), `c` (`c:` has all, `c=` exactly, `m`, `c`), `t` (type or subtype on the front face), `o`, `name` (bare words too), `tag`, `is` (`draft`, `prospect`, `cut`, `spell`), `heavy`.
+- **Filters**: `cube/filters.json` holds `query` instead of `chips`; old chip filters upgrade when read (`chipsToQuery`), and the four saved filters were rewritten. A tag that leaves the vocabulary removes the top-level parts that use it.
+- **Input**: `apps/web/src/query/query-input.tsx`: pills for top-level parts (new ones settle in with a short animation), Tab accepts the suggestion shown faded inline, arrows move through suggestions, Backspace in an empty box pulls the last pill back into text, `/` focuses the Lab's bar, "+ Add" builds a part (field, operator, value, not) and clicking a pill edits it, "?" opens the legend. The Insights filter editor uses it; so does the Lab spike's bar, with a Save button that writes a real filter.
+- **Review (independent, 2026-11-11)**: fixed six bugs: top-level `or` lost its parentheses when joined, reopened group pills and legend picks never reached the saved query, Save could write a stale query from an invalid draft, Enter in the picker submitted the dialog, and pruning corrupted queries with extra spaces. Also tightened: a lone `-`, `pow<*`, a quoted `or`, Escape closing the dialog, and a status inside an `or` no longer widens the scope.
+- **Known gaps**: fractional mana values (Un-cards) floor in charts but compare exactly in `mv=`; a combat body with non-numeric P/T would make an invalid query (none in the cube); renaming a tag still drops it from filters (now just that part); a group in parentheses is edited as text.

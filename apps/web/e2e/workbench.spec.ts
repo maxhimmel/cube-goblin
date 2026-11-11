@@ -1172,7 +1172,7 @@ async function readFilters(cardsDir: string): Promise<{
   filters: {
     id: string;
     label: string;
-    chips: { bucket: string; not?: boolean }[];
+    query: string;
     view: string;
   }[];
 }> {
@@ -1180,7 +1180,7 @@ async function readFilters(cardsDir: string): Promise<{
     filters: {
       id: string;
       label: string;
-      chips: { bucket: string; not?: boolean }[];
+      query: string;
       view: string;
     }[];
   };
@@ -1195,17 +1195,19 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
   await page.getByRole("button", { name: "+ New filter" }).click();
   const editor = page.getByRole("dialog", { name: "New filter" });
   await editor.getByLabel("Filter name").fill("Cheap red");
-  await editor.getByRole("button", { name: "Red", exact: true }).first().click();
-  await editor.getByRole("button", { name: "Mana value 1", exact: true }).click();
-  await editor.getByRole("button", { name: "Mana value 2", exact: true }).click();
-  await editor
-    .getByRole("group", { name: "Card type" })
-    .getByRole("button", { name: "Creature" })
-    .click();
-  await editor
-    .getByRole("group", { name: "Card type" })
-    .getByRole("button", { name: "Creature" })
-    .click();
+  const query = editor.getByRole("textbox", { name: "Filter query" });
+  await query.pressSequentially("c=r mv<=2 ");
+  const pills = editor.locator(".query-pill-text");
+  await expect(pills).toHaveText(["c=r", "mv<=2"]);
+  await query.pressSequentially("-t:crea");
+  await expect(editor.getByRole("option", { selected: true })).toContainText("-t:creature");
+  await query.press("Tab");
+  await expect(pills).toHaveText(["c=r", "mv<=2", "-t:creature"]);
+  await query.pressSequentially("pow>");
+  await expect(editor.locator(".query-error")).toBeVisible();
+  await expect(editor.getByRole("button", { name: "Add to dashboard" })).toBeDisabled();
+  await query.fill("");
+  await expect(editor.locator(".query-error")).toHaveCount(0);
   const preview = Number(
     (await editor.getByTestId("filter-preview-count").textContent())?.split(" ")[0],
   );
@@ -1223,12 +1225,7 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
       {
         id: expect.stringMatching(/^filter-[a-z0-9]+$/u),
         label: "Cheap red",
-        chips: [
-          { bucket: "color:R" },
-          { bucket: "curve:1" },
-          { bucket: "curve:2" },
-          { bucket: "type:creature", not: true },
-        ],
+        query: "c=r mv<=2 -t:creature",
         view: "cards",
       },
     ]);
@@ -1292,6 +1289,7 @@ test("a chart bucket saves as a filter", async ({ page, workbench }) => {
   await panel.getByRole("button", { name: "Save as filter" }).click();
   const editor = page.getByRole("dialog", { name: "New filter" });
   await expect(editor.getByLabel("Filter name")).toHaveValue("Mana value 2");
+  await expect(editor.locator(".query-pill-text")).toHaveText(["mv=2"]);
   await expect(editor.getByTestId("filter-preview-count")).toHaveText(`${String(count)} cards`);
   await editor.getByRole("button", { name: "Add to dashboard" }).click();
   await expect(page.getByRole("region", { name: "Mana value 2" }).locator(".strip")).toHaveCount(

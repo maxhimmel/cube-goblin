@@ -8,17 +8,11 @@ import {
   curveKey,
   inBucket,
   isLand,
-  matchesFilter,
+  compileQuery,
+  filterTest,
   parseBucket,
 } from "@repo/cube/browser";
 import type { GridCard } from "../modes/mode.ts";
-import { tryQuery } from "./query.ts";
-
-export interface SavedQuery {
-  id: string;
-  label: string;
-  query: string;
-}
 
 export type Test = (card: GridCard) => boolean;
 
@@ -66,19 +60,10 @@ function bucketLabel(id: string): string {
   return id;
 }
 
-export function resolvePill(
-  key: string,
-  filters: readonly Filter[],
-  queries: readonly SavedQuery[] = [],
-): Pill | undefined {
-  if (key.startsWith("q:")) {
-    const saved = queries.find((candidate) => candidate.id === key.slice(2));
-    const test = saved && tryQuery(saved.query).test;
-    return saved && test && { key, label: saved.label, test };
-  }
+export function resolvePill(key: string, filters: readonly Filter[]): Pill | undefined {
   if (key.startsWith("x:")) {
-    const test = tryQuery(key.slice(2)).test;
-    return test && { key, label: key.slice(2), test };
+    const result = compileQuery(key.slice(2));
+    return result.ok ? { key, label: key.slice(2), test: result.test } : undefined;
   }
   if (key.startsWith("f:")) {
     const filter = filters.find((candidate) => candidate.id === key.slice(2));
@@ -86,7 +71,7 @@ export function resolvePill(
       filter && {
         key,
         label: filter.label,
-        test: (card) => matchesFilter(card, filter.chips),
+        test: filterTest(filter),
       }
     );
   }

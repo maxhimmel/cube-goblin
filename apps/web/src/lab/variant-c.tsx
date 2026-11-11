@@ -1,6 +1,6 @@
 import { mode } from "#mode";
 import type { CardStatus } from "@repo/cube/browser";
-import { cubeStats } from "@repo/cube/browser";
+import { compileQuery, cubeStats } from "@repo/cube/browser";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { useState } from "react";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import { chartBlock } from "../insights/insights-page.tsx";
 import type { BlockId } from "../insights/layout.ts";
 import { BLOCKS } from "../insights/layout.ts";
 import { ManaCost } from "../mana.tsx";
+import { QueryInput } from "../query/query-input.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import { DRAG_TYPE, Preview, previewAt } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
@@ -27,7 +28,6 @@ import {
   stripeOf,
 } from "./lab-page.tsx";
 import { curveTallies, heatRows } from "./model.ts";
-import { KEYWORDS, SYNTAX_NOTES, tryQuery } from "./query.ts";
 
 const DOCKS = ["top", "right", "bottom", "left"] as const;
 type Dock = (typeof DOCKS)[number];
@@ -162,101 +162,104 @@ function CColumns({
   );
 }
 
-function Legend({ onClose }: { onClose: () => void }): ReactNode {
+function SaveAs({
+  lab,
+  query,
+  onSaved,
+}: {
+  lab: Lab;
+  query: string;
+  onSaved: (id: string) => void;
+}): ReactNode {
+  const [naming, setNaming] = useState(false);
+  const [label, setLabel] = useState("");
+  const save = lab.saveFilter;
+  if (!save) {
+    return null;
+  }
+  if (!naming) {
+    return (
+      <button
+        type="button"
+        className="query-tool"
+        disabled={query.trim() === "" || !compileQuery(query).ok}
+        title="Save as a filter in the Filters block"
+        onClick={() => {
+          setNaming(true);
+        }}
+      >
+        Save
+      </button>
+    );
+  }
   return (
-    <div className="labc-legend" role="dialog" aria-label="Query syntax">
-      <header>
-        <strong>Query syntax</strong>
-        <button type="button" className="lab-link" onClick={onClose}>
-          Close
-        </button>
-      </header>
-      <table>
-        <tbody>
-          {KEYWORDS.map((keyword) => (
-            <tr key={keyword.names[0]}>
-              <td>
-                <code>{keyword.names.join(" / ")}</code>
-              </td>
-              <td>{keyword.help}</td>
-              <td>
-                <code>{keyword.example}</code>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <table>
-        <tbody>
-          {SYNTAX_NOTES.map((note) => (
-            <tr key={note.syntax}>
-              <td>
-                <code>{note.syntax}</code>
-              </td>
-              <td>{note.help}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="muted">
-        Try <code>t:creature pow&gt;=3 -c:g</code> or{" "}
-        <code>(tag:removal or tag:burn) mv&lt;=2</code>
-      </p>
-    </div>
+    <form
+      className="labc-save"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (label.trim() !== "" && compileQuery(query).ok) {
+          onSaved(save(label.trim(), query));
+          setNaming(false);
+          setLabel("");
+        }
+      }}
+    >
+      <input
+        aria-label="Filter name"
+        placeholder="Name"
+        value={label}
+        autoFocus
+        onChange={(event) => {
+          setLabel(event.target.value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setNaming(false);
+          }
+        }}
+      />
+      <button type="submit" className="query-tool" disabled={label.trim() === ""}>
+        Save
+      </button>
+    </form>
   );
 }
 
 function QueryBar({ lab }: { lab: Lab }): ReactNode {
-  const [text, setText] = useState("");
-  const [legend, setLegend] = useState(false);
-  const parsed = text.trim() === "" ? undefined : tryQuery(text);
-  const count = parsed?.test ? lab.scope.filter(parsed.test).length : undefined;
+  const [query, setQuery] = useState("");
+  const [round, setRound] = useState(0);
+  const result = compileQuery(query);
+  const count = result.ok && query.trim() !== "" ? lab.scope.filter(result.test).length : undefined;
   return (
     <div className="labc-query">
       <PillBar lab={lab} />
-      <form
-        className="labc-query-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (parsed?.test) {
-            lab.addPill(`x:${text.trim()}`);
-            setText("");
+      <QueryInput
+        key={round}
+        initial=""
+        onChange={setQuery}
+        vocabulary={lab.vocabulary}
+        label="Filter the Lab"
+        slashFocus
+        status={count === undefined ? undefined : `${String(count)} in draft · Enter applies`}
+        onSubmit={(next) => {
+          if (next.trim() !== "") {
+            lab.addPill(`x:${next.trim()}`);
+            setQuery("");
+            setRound(round + 1);
           }
         }}
-      >
-        <input
-          type="search"
-          value={text}
-          placeholder="Filter: t:creature pow>=3 …"
-          aria-label="Filter query"
-          aria-invalid={parsed?.error !== undefined}
-          onChange={(event) => {
-            setText(event.target.value);
-          }}
-        />
-        <button
-          type="button"
-          className="labc-help"
-          aria-label="Query syntax"
-          aria-expanded={legend}
-          onClick={() => {
-            setLegend(!legend);
-          }}
-        >
-          ?
-        </button>
-        {parsed?.error !== undefined && <span className="labc-query-error">{parsed.error}</span>}
-        {count !== undefined && (
-          <span className="labc-query-count">{count} in draft · Enter to apply</span>
-        )}
-      </form>
-      {legend && (
-        <Legend
-          onClose={() => {
-            setLegend(false);
-          }}
-        />
-      )}
+        actions={
+          <SaveAs
+            lab={lab}
+            query={query}
+            onSaved={(id) => {
+              lab.addPill(`f:${id}`);
+              setQuery("");
+              setRound(round + 1);
+            }}
+          />
+        }
+      />
     </div>
   );
 }
@@ -264,19 +267,16 @@ function QueryBar({ lab }: { lab: Lab }): ReactNode {
 function NewFilter({ lab, onDone }: { lab: Lab; onDone: () => void }): ReactNode {
   const [label, setLabel] = useState("");
   const [query, setQuery] = useState("");
-  const parsed = query.trim() === "" ? undefined : tryQuery(query);
-  const count = parsed?.test ? lab.scope.filter(parsed.test).length : undefined;
+  const result = compileQuery(query);
+  const count = result.ok ? lab.scope.filter(result.test).length : undefined;
+  const save = lab.saveFilter;
   return (
     <form
       className="labc-new-filter"
       onSubmit={(event) => {
         event.preventDefault();
-        if (parsed?.test && label.trim() !== "") {
-          lab.saveQuery({
-            id: String(Date.now()),
-            label: label.trim(),
-            query: query.trim(),
-          });
+        if (save && result.ok && label.trim() !== "" && query.trim() !== "") {
+          save(label.trim(), query);
           onDone();
         }
       }}
@@ -285,27 +285,27 @@ function NewFilter({ lab, onDone }: { lab: Lab; onDone: () => void }): ReactNode
         value={label}
         placeholder="Name"
         aria-label="Filter name"
+        autoFocus
         onChange={(event) => {
           setLabel(event.target.value);
         }}
       />
-      <input
-        value={query}
-        placeholder="Query, e.g. pow>=4 -t:dragon"
-        aria-label="Filter query"
-        aria-invalid={parsed?.error !== undefined}
-        onChange={(event) => {
-          setQuery(event.target.value);
-        }}
+      <QueryInput
+        initial=""
+        onChange={setQuery}
+        vocabulary={lab.vocabulary}
+        label="New filter query"
+        status={count === undefined ? undefined : `${String(count)} in draft`}
       />
       <div className="labc-new-filter-foot">
-        <span className={parsed?.error === undefined ? "muted" : "labc-query-error"}>
-          {parsed?.error ?? (count === undefined ? "Type a query" : `${String(count)} in draft`)}
-        </span>
+        <span />
         <button type="button" className="lab-link" onClick={onDone}>
           Cancel
         </button>
-        <button type="submit" disabled={!parsed?.test || label.trim() === ""}>
+        <button
+          type="submit"
+          disabled={!save || !result.ok || label.trim() === "" || query.trim() === ""}
+        >
           Save
         </button>
       </div>
@@ -317,7 +317,7 @@ function FiltersBody({ lab }: { lab: Lab }): ReactNode {
   const [adding, setAdding] = useState(false);
   return (
     <>
-      <FilterList lab={lab} className="lab-a-filter-list" onRemove={lab.removeQuery} />
+      <FilterList lab={lab} className="lab-a-filter-list" onRemove={lab.deleteFilter} />
       {adding ? (
         <NewFilter
           lab={lab}
@@ -326,15 +326,17 @@ function FiltersBody({ lab }: { lab: Lab }): ReactNode {
           }}
         />
       ) : (
-        <button
-          type="button"
-          className="labc-add"
-          onClick={() => {
-            setAdding(true);
-          }}
-        >
-          + New filter
-        </button>
+        lab.saveFilter && (
+          <button
+            type="button"
+            className="labc-add"
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            + New filter
+          </button>
+        )
       )}
     </>
   );

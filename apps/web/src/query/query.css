@@ -1,0 +1,363 @@
+.query-input {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.query-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  min-height: 34px;
+  padding: 3px 4px 3px 6px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: text;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.query-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.query-input[data-invalid] .query-field {
+  border-color: var(--cut);
+}
+
+.query-pills {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.query-pill {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  background: color-mix(in oklab, var(--accent) 16%, var(--strip));
+  border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--line));
+  border-radius: 8px;
+}
+
+.query-pill[data-fresh] {
+  animation: query-settle 0.45s var(--lift);
+}
+
+@keyframes query-settle {
+  from {
+    background: color-mix(in oklab, var(--accent) 55%, var(--strip));
+    transform: translateY(2px) scale(0.92);
+    opacity: 0.4;
+  }
+}
+
+.query-pill[data-not] {
+  background: color-mix(in oklab, var(--cut) 12%, var(--strip));
+  border-color: color-mix(in oklab, var(--cut) 40%, var(--line));
+}
+
+.query-pill[data-kind="group"] {
+  border-style: dashed;
+}
+
+.query-pill button {
+  padding: 2px 6px;
+  font: inherit;
+  font-weight: 500;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.query-pill-text:hover {
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.query-pill-remove {
+  color: var(--muted);
+}
+
+.query-pill-remove:hover {
+  color: var(--fg);
+}
+
+.query-typing {
+  position: relative;
+  display: grid;
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.query-typing > * {
+  grid-area: 1 / 1;
+}
+
+.query-ghost,
+.query-text {
+  padding: 3px 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: pre;
+}
+
+.query-ghost {
+  overflow: hidden;
+  color: color-mix(in oklab, var(--muted) 70%, transparent);
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.query-ghost-typed {
+  visibility: hidden;
+}
+
+.query-text {
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+}
+
+.query-tools {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.query-tool {
+  padding: 2px 10px;
+  font-size: 0.8rem;
+}
+
+.query-help {
+  width: 26px;
+  padding: 2px 0;
+}
+
+.query-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  display: grid;
+  min-width: 280px;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+}
+
+.query-suggestions li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.query-suggestions li[aria-selected="true"] {
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+.query-suggestions span {
+  color: var(--muted);
+}
+
+.query-suggestions kbd {
+  margin-left: auto;
+  padding: 0 5px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.query-status {
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.query-error {
+  color: var(--cut);
+}
+
+.query-legend,
+.query-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  width: min(560px, 92vw);
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+}
+
+.query-legend table {
+  width: 100%;
+  margin-bottom: 8px;
+  border-collapse: collapse;
+}
+
+.query-legend th,
+.query-legend td {
+  padding: 3px 6px;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid var(--line);
+}
+
+.query-legend th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.query-legend p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.query-example {
+  padding: 0 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  border-radius: 6px;
+}
+
+.query-picker-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.query-picker-fields button {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  width: 100%;
+  padding: 5px 8px;
+  text-align: left;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.query-picker-fields span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.query-picker-body {
+  display: grid;
+  gap: 8px;
+}
+
+.query-picker-row,
+.query-picker-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.query-picker-field,
+.query-picker-op,
+.query-picker-options button {
+  padding: 2px 10px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+
+.query-picker-op[aria-pressed="true"],
+.query-picker-options button[aria-pressed="true"] {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.query-picker-options {
+  max-height: 160px;
+  overflow: auto;
+}
+
+.query-picker-not {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.query-picker-value {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  border-radius: 8px;
+}
+
+.query-picker-foot {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.query-picker-preview {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.query-link {
+  color: var(--accent);
+  background: none;
+  border: 0;
+}
+
+.query-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.query-readonly .query-pill {
+  padding: 1px 7px;
+}
+
+.filter-editor .query-picker,
+.filter-editor .query-legend {
+  position: static;
+  width: auto;
+  margin-top: 4px;
+  box-shadow: none;
+}

@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import type { FilterChip } from "./filters.ts";
 import {
-  cycleChip,
+  chipsToQuery,
   filterCards,
-  matchesFilter,
+  filterTest,
+  filtersFileSchema,
   narrowTo,
   newFilterId,
   pruneFilters,
   validateFilters,
 } from "./filters.ts";
-import type { StatCard } from "./stats.ts";
+import type { QueryCard } from "./query.ts";
 
-function card(overrides: Partial<StatCard>): StatCard {
+function card(overrides: Partial<QueryCard>): QueryCard {
   return { status: "draft", colors: [], cmc: 0, typeLine: "Instant", tags: [], ...overrides };
 }
 
@@ -27,67 +27,63 @@ const helix = card({ colors: ["R", "W"], cmc: 2, tags: ["removal"], status: "pro
 const land = card({ typeLine: "Land", tags: ["removal"] });
 const cards = [bolt, bear, helix, land];
 
-function matching(chips: FilterChip[]): StatCard[] {
-  return cards.filter((entry) => matchesFilter(entry, chips));
+function matching(query: string): QueryCard[] {
+  return cards.filter(filterTest({ query }));
 }
 
 describe("filters", () => {
-  it("matches everything with no chips", () => {
-    expect(matching([])).toEqual(cards);
+  it("matches everything with an empty query", () => {
+    expect(matching("")).toEqual(cards);
   });
 
-  it("ors chips of one kind and ands kinds", () => {
-    expect(matching([{ bucket: "curve:1" }, { bucket: "curve:2" }])).toEqual([bolt, bear, helix]);
-    expect(matching([{ bucket: "curve:2" }, { bucket: "tag:removal" }])).toEqual([helix]);
-  });
-
-  it("needs every tag, like the Wall's with", () => {
-    expect(matching([{ bucket: "tag:removal" }, { bucket: "tag:burn" }])).toEqual([bolt]);
-  });
-
-  it("drops cards that match an excluded chip", () => {
-    expect(matching([{ bucket: "tag:removal" }, { bucket: "type:land", not: true }])).toEqual([
-      bolt,
-      helix,
-    ]);
-  });
-
-  it("matches chart buckets the same way the charts count them", () => {
-    expect(matching([{ bucket: "body:2:2" }])).toEqual([bear]);
-    expect(matching([{ bucket: "presence:W" }])).toEqual([helix]);
-  });
-
-  it("uses the page scope unless the filter names a status", () => {
+  it("uses the page scope unless the query names a status", () => {
     const scoped = cards.filter((entry) => entry.status === "draft");
-    expect(filterCards({ chips: [{ bucket: "tag:removal" }] }, cards, scoped)).toEqual([
-      bolt,
-      land,
-    ]);
-    expect(filterCards({ chips: [{ bucket: "status:prospect" }] }, cards, scoped)).toEqual([helix]);
+    expect(filterCards({ query: "tag:removal" }, cards, scoped)).toEqual([bolt, land]);
+    expect(filterCards({ query: "is:prospect" }, cards, scoped)).toEqual([helix]);
   });
 
-  it("cycles a chip from off to with to without and back", () => {
-    const once = cycleChip([], "color:R");
-    expect(once).toEqual([{ bucket: "color:R" }]);
-    const twice = cycleChip(once, "color:R");
-    expect(twice).toEqual([{ bucket: "color:R", not: true }]);
-    expect(cycleChip(twice, "color:R")).toEqual([]);
+  it("turns old chip filters into the same query", () => {
+    const chips = [
+      { bucket: "curve:1" },
+      { bucket: "curve:2" },
+      { bucket: "tag:removal" },
+      { bucket: "type:land", not: true },
+    ];
+    const query = chipsToQuery(chips);
+    expect(query).toBe("(mv=1 or mv=2) tag:removal -t:land");
+    expect(matching(query)).toEqual([bolt, helix]);
+    expect(chipsToQuery([{ bucket: "color:W", not: true }])).toBe("-(is:spell c=w)");
+    expect(chipsToQuery([{ bucket: "tag:a" }, { bucket: "tag:b" }])).toBe("tag:a tag:b");
+  });
+
+  it("upgrades chips when reading the file", () => {
+    const file = filtersFileSchema.parse({
+      filters: [{ id: "a", label: "A", chips: [{ bucket: "tag:burn" }], view: "color" }],
+    });
+    expect(file.filters[0]).toEqual({ id: "a", label: "A", query: "tag:burn", view: "color" });
+  });
+
+  it("rejects a query that doesn't parse", () => {
+    expect(
+      filtersFileSchema.safeParse({ filters: [{ id: "a", label: "A", query: "pow>" }] }).success,
+    ).toBe(false);
   });
 
   it("prunes and reports tags that left the vocabulary", () => {
     const file = {
       filters: [
-        {
-          id: "a",
-          label: "A",
-          chips: [{ bucket: "tag:gone" }, { bucket: "curve:1" }],
-          view: "cards",
-        },
-        { id: "a", label: "B", chips: [], view: "cards" },
+        { id: "a", label: "A", query: "tag:gone mv=1", view: "cards" },
+        { id: "a", label: "B", query: "", view: "cards" },
       ],
     };
     expect(validateFilters(file, [])).toHaveLength(2);
-    expect(pruneFilters(file, []).filters[0]?.chips).toEqual([{ bucket: "curve:1" }]);
+    expect(pruneFilters(file, []).filters[0]?.query).toBe("mv=1");
+    expect(
+      pruneFilters(
+        { filters: [{ id: "b", label: "B", query: "a  tag:x  tag:y", view: "cards" }] },
+        [],
+      ).filters[0]?.query,
+    ).toBe("a");
   });
 
   it("never reuses an id", () => {
@@ -95,23 +91,11 @@ describe("filters", () => {
     expect(newFilterId([{ id: "filter-a" }], () => rolls.shift() ?? "z")).toBe("filter-b");
   });
 
-  it("narrows to a bucket by replacing chips of its kind", () => {
-    const chips: FilterChip[] = [
-      { bucket: "color:W" },
-      { bucket: "color:U" },
-      { bucket: "color:B", not: true },
-      { bucket: "tag:removal" },
-      { bucket: "curve:2" },
-    ];
-    expect(narrowTo(chips, "color:W")).toEqual([
-      { bucket: "color:B", not: true },
-      { bucket: "tag:removal" },
-      { bucket: "curve:2" },
-      { bucket: "color:W" },
-    ]);
-    expect(narrowTo([{ bucket: "tag:removal" }], "tag:burn")).toEqual([
-      { bucket: "tag:removal" },
-      { bucket: "tag:burn" },
-    ]);
+  it("narrows a query to a chart bucket", () => {
+    const query = narrowTo("(is:spell c=w or is:spell c=u) tag:removal", {
+      kind: "color",
+      keys: ["W"],
+    });
+    expect(query).toBe("(is:spell c=w or is:spell c=u) tag:removal is:spell c=w");
   });
 });

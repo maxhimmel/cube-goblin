@@ -1,6 +1,6 @@
 import { mode } from "#mode";
 import type { CardStatus, Column, ColumnAxis, Filter, Tag } from "@repo/cube/browser";
-import { COLUMN_AXES, colorKey, columnsBy, curveKey } from "@repo/cube/browser";
+import { COLUMN_AXES, colorKey, columnsBy, curveKey, newFilterId } from "@repo/cube/browser";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { useState } from "react";
@@ -16,7 +16,7 @@ import { DRAG_TYPE, Preview, Strip, previewAt } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import type { ChartEvents } from "./lab-charts.tsx";
 import { CurveBars, Heat, PtDots } from "./lab-charts.tsx";
-import type { Drag, Pill, SavedQuery, Test, Used } from "./model.ts";
+import type { Drag, Pill, Test, Used } from "./model.ts";
 import {
   allOf,
   curveTallies,
@@ -96,9 +96,8 @@ export interface Lab {
   cards: GridCard[];
   vocabulary: Tag[];
   filters: Filter[];
-  queries: SavedQuery[];
-  saveQuery: (query: SavedQuery) => void;
-  removeQuery: (id: string) => void;
+  saveFilter: ((label: string, query: string) => string) | undefined;
+  deleteFilter: ((id: string) => void) | undefined;
   addPill: (key: string) => void;
   used: Used;
   size: { min: number; max: number } | undefined;
@@ -141,11 +140,6 @@ export function useLab(): Lab | undefined {
   const cube = mode.useCube();
   const filters = mode.useFilters() ?? [];
   const [pillKeys, setPillKeys] = useRemembered("lab.pills", [], z.array(z.string()));
-  const [queries, setQueries] = useRemembered<SavedQuery[]>(
-    "lab.queries",
-    [],
-    z.array(z.object({ id: z.string(), label: z.string(), query: z.string() })),
-  );
   const [baseline, setBaseline] = useRemembered("lab.baseline", true, z.boolean());
   const [hide, setHide] = useRemembered("lab.hide", false, z.boolean());
   const [showCut, setShowCut] = useRemembered("lab.showCut", false, z.boolean());
@@ -162,8 +156,8 @@ export function useLab(): Lab | undefined {
   }
   const all = cube.cards;
   const cards = all.filter((card) => showCut || card.status !== "cut");
-  const pills = pillKeys.flatMap((key) => resolvePill(key, filters, queries) ?? []);
-  const peekPill = peek === undefined ? undefined : resolvePill(peek, filters, queries);
+  const pills = pillKeys.flatMap((key) => resolvePill(key, filters) ?? []);
+  const peekPill = peek === undefined ? undefined : resolvePill(peek, filters);
   const applied = allOf(pills.map((pill) => pill.test));
   const lens = allOf([...pills, ...(peekPill ? [peekPill] : [])].map((pill) => pill.test));
   const hoverSlug = hover?.card.slug;
@@ -182,14 +176,19 @@ export function useLab(): Lab | undefined {
     cards,
     vocabulary: cube.vocabulary,
     filters,
-    queries,
-    saveQuery: (query) => {
-      setQueries([...queries.filter((other) => other.id !== query.id), query]);
-    },
-    removeQuery: (id) => {
-      setQueries(queries.filter((other) => other.id !== id));
-      setPillKeys(pillKeys.filter((key) => key !== `q:${id}`));
-    },
+    saveFilter: mode.putFilter
+      ? (label, query) => {
+          const id = newFilterId(filters);
+          mode.putFilter?.({ id, label, query, view: "cards" });
+          return id;
+        }
+      : undefined,
+    deleteFilter: mode.deleteFilter
+      ? (id) => {
+          mode.deleteFilter?.(id);
+          setPillKeys(pillKeys.filter((key) => key !== `f:${id}`));
+        }
+      : undefined,
     addPill: (key) => {
       if (!pillKeys.includes(key)) {
         setPillKeys([...pillKeys, key]);
@@ -385,17 +384,16 @@ export function FilterList({
 }: {
   lab: Lab;
   className: string;
-  onRemove?: (id: string) => void;
+  onRemove?: ((id: string) => void) | undefined;
 }): ReactNode {
   const draft = lab.scope.length || 1;
   const entries = [
     ...lab.filters.map((filter) => ({ key: `f:${filter.id}`, id: filter.id, label: filter.label })),
-    ...lab.queries.map((query) => ({ key: `q:${query.id}`, id: query.id, label: query.label })),
   ];
   return (
     <div className={className}>
       {entries.map((entry) => {
-        const pill = resolvePill(entry.key, lab.filters, lab.queries);
+        const pill = resolvePill(entry.key, lab.filters);
         const count = pill ? lab.scope.filter(pill.test).length : 0;
         const on = lab.pills.some((applied) => applied.key === entry.key);
         return (
@@ -404,7 +402,7 @@ export function FilterList({
               type="button"
               className={on ? "on" : undefined}
               aria-pressed={on}
-              title={lab.queries.find((query) => `q:${query.id}` === entry.key)?.query}
+              title={lab.filters.find((filter) => `f:${filter.id}` === entry.key)?.query}
               onPointerEnter={() => {
                 lab.setPeek(entry.key);
               }}
@@ -422,7 +420,7 @@ export function FilterList({
                 <i style={{ width: `${String((count / draft) * 100)}%` }} />
               </span>
             </button>
-            {onRemove && entry.key.startsWith("q:") && (
+            {onRemove && (
               <button
                 type="button"
                 className="lab-filter-remove"

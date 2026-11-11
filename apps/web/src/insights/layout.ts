@@ -1,22 +1,40 @@
 import { useCallback, useState } from "react";
 import { z } from "zod";
 
+export interface BlockSpec {
+  id: string;
+  title: string;
+  span: number;
+  h: number;
+  minH: number;
+}
+
 export const BLOCKS = [
-  { id: "summary", span: 12, h: 4, minH: 3 },
-  { id: "curve", span: 4, h: 11, minH: 6 },
-  { id: "color", span: 4, h: 11, minH: 6 },
-  { id: "heavy", span: 4, h: 11, minH: 6 },
-  { id: "heat", span: 12, h: 12, minH: 7 },
-  { id: "types", span: 4, h: 12, minH: 6 },
-  { id: "pt", span: 8, h: 12, minH: 7 },
-  { id: "creature-balance", span: 12, h: 26, minH: 8 },
-  { id: "combat", span: 12, h: 20, minH: 10 },
-  { id: "status", span: 4, h: 8, minH: 5 },
-  { id: "archetypes", span: 4, h: 10, minH: 4 },
-  { id: "groups", span: 8, h: 26, minH: 8 },
-] as const;
+  { id: "summary", title: "Summary", span: 12, h: 4, minH: 3 },
+  { id: "curve", title: "Mana curve", span: 4, h: 11, minH: 6 },
+  { id: "color", title: "Color", span: 4, h: 11, minH: 6 },
+  { id: "heavy", title: "Heavy pips", span: 4, h: 11, minH: 6 },
+  { id: "heat", title: "Color by mana value", span: 12, h: 12, minH: 7 },
+  { id: "types", title: "Card types", span: 4, h: 12, minH: 6 },
+  { id: "pt", title: "Power and toughness", span: 8, h: 12, minH: 7 },
+  { id: "creature-balance", title: "Creature balance", span: 12, h: 26, minH: 8 },
+  { id: "combat", title: "Combat matchups", span: 12, h: 20, minH: 10 },
+  { id: "status", title: "Status", span: 4, h: 8, minH: 5 },
+  { id: "archetypes", title: "Archetypes", span: 4, h: 10, minH: 4 },
+  { id: "groups", title: "Groups", span: 8, h: 26, minH: 8 },
+] as const satisfies readonly BlockSpec[];
 
 export type BlockId = (typeof BLOCKS)[number]["id"];
+
+export const FILTER_BLOCK_PREFIX = "filter:";
+
+export function filterBlockId(filterId: string): string {
+  return `${FILTER_BLOCK_PREFIX}${filterId}`;
+}
+
+export function filterBlock(filterId: string, title: string): BlockSpec {
+  return { id: filterBlockId(filterId), title, span: 4, h: 12, minH: 4 };
+}
 
 export const BREAKPOINTS = { lg: 1000, md: 620, sm: 0 } as const;
 export const COLS = { lg: 12, md: 6, sm: 1 } as const;
@@ -39,17 +57,18 @@ export type Item = z.infer<typeof itemSchema> & { minW?: number; minH?: number }
 const storedSchema = z.object({
   layouts: z.record(z.string(), z.array(itemSchema)),
   collapsed: z.array(z.string()),
+  hidden: z.array(z.string()).default([]),
 });
 
 export type Layouts = Record<Breakpoint, Item[]>;
 
 const BREAKPOINT_IDS = Object.keys(BREAKPOINTS) as Breakpoint[];
 
-function packed(cols: number): Item[] {
+function packed(specs: readonly BlockSpec[], cols: number): Item[] {
   let x = 0;
   let y = 0;
   let rowHeight = 0;
-  return BLOCKS.map((block) => {
+  return specs.map((block) => {
     const w = Math.max(1, Math.min(cols, Math.round((block.span * cols) / 12)));
     if (x + w > cols) {
       x = 0;
@@ -63,40 +82,34 @@ function packed(cols: number): Item[] {
   });
 }
 
-export function defaultLayouts(): Layouts {
-  return {
-    lg: packed(COLS.lg),
-    md: packed(COLS.md),
-    sm: packed(COLS.sm),
-  };
+function emptyLayouts(): Record<Breakpoint, Item[]> {
+  return { lg: [], md: [], sm: [] };
 }
 
-function complete(items: readonly Item[], fallback: readonly Item[], cols: number): Item[] {
-  const known = new Set<string>(BLOCKS.map((block) => block.id));
+function complete(items: readonly Item[], specs: readonly BlockSpec[], cols: number): Item[] {
+  const known = new Set(specs.map((block) => block.id));
   const kept = items.filter((item) => known.has(item.i) && item.w <= cols);
   const ids = new Set(kept.map((item) => item.i));
   const bottom = Math.max(0, ...kept.map((item) => item.y + item.h));
-  return [
-    ...kept,
-    ...fallback.filter((item) => !ids.has(item.i)).map((item) => ({ ...item, y: bottom + item.y })),
-  ];
+  const missing = specs.filter((block) => !ids.has(block.id));
+  return [...kept, ...packed(missing, cols).map((item) => ({ ...item, y: bottom + item.y }))];
 }
 
 interface Stored {
-  layouts: Layouts;
+  layouts: Record<Breakpoint, Item[]>;
   collapsed: string[];
+  hidden: string[];
 }
 
 function load(): Stored {
-  const defaults = defaultLayouts();
   try {
     const parsed = storedSchema.parse(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"));
     const layouts = Object.fromEntries(
-      BREAKPOINT_IDS.map((bp) => [bp, complete(parsed.layouts[bp] ?? [], defaults[bp], COLS[bp])]),
+      BREAKPOINT_IDS.map((bp) => [bp, parsed.layouts[bp] ?? []]),
     ) as Layouts;
-    return { layouts, collapsed: parsed.collapsed };
+    return { layouts, collapsed: parsed.collapsed, hidden: parsed.hidden };
   } catch {
-    return { layouts: defaults, collapsed: [] };
+    return { layouts: emptyLayouts(), collapsed: [], hidden: [] };
   }
 }
 
@@ -113,16 +126,25 @@ function strip(item: Item): Item {
 }
 
 export interface Dashboard {
+  specs: readonly BlockSpec[];
+  visible: readonly BlockSpec[];
   layouts: Layouts;
   collapsed: ReadonlySet<string>;
+  hidden: ReadonlySet<string>;
   change: (next: Partial<Record<string, readonly Item[]>>) => void;
   toggle: (id: string) => void;
+  setHidden: (id: string, hidden: boolean) => void;
   reset: () => void;
 }
 
-export function useDashboard(): Dashboard {
+export function useDashboard(specs: readonly BlockSpec[]): Dashboard {
   const [stored, setStored] = useState<Stored>(load);
   const collapsed = new Set(stored.collapsed);
+  const hidden = new Set(stored.hidden);
+  const visible = specs.filter((block) => !hidden.has(block.id));
+  const layouts = Object.fromEntries(
+    BREAKPOINT_IDS.map((bp) => [bp, complete(stored.layouts[bp], visible, COLS[bp])]),
+  ) as Layouts;
 
   const commit = useCallback((next: Stored) => {
     setStored(next);
@@ -131,18 +153,24 @@ export function useDashboard(): Dashboard {
 
   const change = useCallback(
     (next: Partial<Record<string, readonly Item[]>>) => {
-      const hidden = new Set(stored.collapsed);
-      const layouts = Object.fromEntries(
+      const shut = new Set(stored.collapsed);
+      const merged = Object.fromEntries(
         BREAKPOINT_IDS.map((bp) => {
           const previous = new Map(stored.layouts[bp].map((item) => [item.i, item]));
-          const items = (next[bp] ?? stored.layouts[bp]).map((item) => {
+          const incoming = next[bp];
+          if (!incoming) {
+            return [bp, stored.layouts[bp]];
+          }
+          const items = incoming.map((item) => {
             const before = previous.get(item.i);
-            return strip(hidden.has(item.i) && before ? { ...item, h: before.h } : item);
+            return strip(shut.has(item.i) && before ? { ...item, h: before.h } : item);
           });
-          return [bp, items];
+          const placed = new Set(items.map((item) => item.i));
+          const kept = stored.layouts[bp].filter((item) => !placed.has(item.i));
+          return [bp, [...items, ...kept]];
         }),
       ) as Layouts;
-      commit({ layouts, collapsed: stored.collapsed });
+      commit({ ...stored, layouts: merged });
     },
     [commit, stored],
   );
@@ -152,20 +180,34 @@ export function useDashboard(): Dashboard {
       const next = stored.collapsed.includes(id)
         ? stored.collapsed.filter((entry) => entry !== id)
         : [...stored.collapsed, id];
-      commit({ layouts: stored.layouts, collapsed: next });
+      commit({ ...stored, collapsed: next });
+    },
+    [commit, stored],
+  );
+
+  const setHidden = useCallback(
+    (id: string, hide: boolean) => {
+      const rest = stored.hidden.filter((entry) => entry !== id);
+      commit({ ...stored, hidden: hide ? [...rest, id] : rest });
     },
     [commit, stored],
   );
 
   const reset = useCallback(() => {
-    commit({ layouts: defaultLayouts(), collapsed: [] });
+    commit({
+      layouts: Object.fromEntries(
+        BREAKPOINT_IDS.map((bp) => [bp, packed(BLOCKS, COLS[bp])]),
+      ) as Layouts,
+      collapsed: [],
+      hidden: [],
+    });
   }, [commit]);
 
-  return { layouts: stored.layouts, collapsed, change, toggle, reset };
+  return { specs, visible, layouts, collapsed, hidden, change, toggle, setHidden, reset };
 }
 
 export function shown(dashboard: Dashboard): Layouts {
-  const minH = new Map<string, number>(BLOCKS.map((block) => [block.id, block.minH]));
+  const minH = new Map<string, number>(dashboard.specs.map((block) => [block.id, block.minH]));
   return Object.fromEntries(
     BREAKPOINT_IDS.map((bp) => [
       bp,

@@ -93,9 +93,10 @@ const insightsRoute = createRoute({
   beforeLoad: restoreChoices("/insights"),
   validateSearch: (
     search: Record<string, unknown>,
-  ): { scope?: string | undefined; bucket?: string | undefined } => ({
+  ): { scope?: string | undefined; bucket?: string | undefined; in?: string | undefined } => ({
     ...(typeof search["scope"] === "string" ? { scope: search["scope"] } : {}),
     ...(typeof search["bucket"] === "string" ? { bucket: search["bucket"] } : {}),
+    ...(typeof search["in"] === "string" ? { in: search["in"] } : {}),
   }),
   component: InsightsPage,
 });

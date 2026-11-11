@@ -679,7 +679,31 @@
 
 .lab[data-dock="top"] .lab-block:has(.lab-tile[data-collapsed]),
 .lab[data-dock="bottom"] .lab-block:has(.lab-tile[data-collapsed]) {
-  width: 150px;
+  width: 36px;
+}
+
+.lab[data-dock="top"] .lab-tile[data-collapsed],
+.lab[data-dock="bottom"] .lab-tile[data-collapsed] {
+  height: 100%;
+  padding: 8px 0;
+}
+
+.lab[data-dock="top"] .lab-tile[data-collapsed] .lab-tile-head,
+.lab[data-dock="bottom"] .lab-tile[data-collapsed] .lab-tile-head {
+  flex: 1;
+  align-items: center;
+  min-height: 0;
+  writing-mode: vertical-rl;
+}
+
+.lab[data-dock="top"] .lab-tile[data-collapsed] .lab-tile-actions,
+.lab[data-dock="bottom"] .lab-tile[data-collapsed] .lab-tile-actions {
+  position: static;
+  order: -1;
+  padding: 0;
+  box-shadow: none;
+  writing-mode: horizontal-tb;
+  flex-direction: column;
 }
 
 .lab-block[data-dragging] {

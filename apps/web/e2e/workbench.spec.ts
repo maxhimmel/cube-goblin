@@ -1613,3 +1613,43 @@ test("the Lab sorts its cards by a chain of keys that survives a reload", async 
   await draft.getByRole("button", { name: "Mana value", exact: true }).click();
   await draft.getByRole("button", { name: "Columns" }).click();
 });
+
+test("clicks in one Lab chart or together, and tag charts switch to chips", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const heat = page.getByRole("region", { name: "Color × mana value" });
+  const cells = heat.locator(".lab-heat-cell:not([data-empty])");
+  const dim = page.locator(".lab-cell[data-dim]");
+  await cells.nth(1).click();
+  const one = await dim.count();
+  await cells.nth(9).click();
+  const pill = page.locator(".lab-pill");
+  await expect(pill).toHaveCount(1);
+  await expect(pill).toContainText(" or ");
+  await page.locator(".lab-top h1").hover();
+  const both = await dim.count();
+  expect(both).toBeLessThan(one);
+  await expect(heat.locator(".lab-heat-cell[data-picked]")).toHaveCount(2);
+  await cells.nth(14).hover();
+  await expect.poll(async () => dim.count()).toBeLessThan(both);
+  await cells.nth(9).click();
+  await expect(pill).not.toContainText(" or ");
+  await expect(heat.locator(".lab-heat-cell[data-picked]")).toHaveCount(1);
+  await cells.nth(1).click();
+  await expect(pill).toHaveCount(0);
+
+  const groups = page.getByRole("region", { name: "Groups" });
+  await groups.scrollIntoViewIfNeeded();
+  await groups.hover();
+  const toggle = groups.getByLabel("Show Groups as chips");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await page.reload();
+  await groups.hover();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+});

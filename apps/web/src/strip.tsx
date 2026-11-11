@@ -37,7 +37,7 @@ export interface Hover {
   style: CSSProperties;
 }
 
-function previewAt(card: GridCard, rect: DOMRect): Hover {
+export function previewAt(card: GridCard, rect: DOMRect): Hover {
   const right = rect.right + GAP;
   const left = right + PREVIEW_WIDTH <= window.innerWidth ? right : rect.left - GAP - PREVIEW_WIDTH;
   const top = Math.min(
@@ -52,14 +52,16 @@ export function Strip({
   onHover,
   dragFrom,
   after,
+  dim,
 }: {
   card: GridCard;
   onHover: (hover: Hover | undefined) => void;
   dragFrom?: string;
   after?: ReactNode;
+  dim?: boolean | undefined;
 }): ReactNode {
   return (
-    <li className="strip-cell" data-status={card.status}>
+    <li className="strip-cell" data-status={card.status} data-dim={dim ? "" : undefined}>
       <CardLink
         slug={card.slug}
         className="strip"

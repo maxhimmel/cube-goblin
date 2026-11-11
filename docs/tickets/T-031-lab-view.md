@@ -18,6 +18,10 @@ One workbench view to see every card in contention, lay out charts and filter bl
 - **Empty**: Hide empty ([T-033](T-033-hide-empty.md)) applies here.
 - **Layouts**: every setting saves as soon as it changes and comes back on reload. Named layouts are optional snapshots (blocks, grouping and sort, toggles, applied pills) saved to a file in `cube/`, to switch between setups.
 
+## Direction
+
+Build [variant C of the spike](T-030-lab-spike.md#verdict-user-2026-11-11): a chart dock (any Insights chart plus the live curve, color by mana value, and power by toughness charts; reorder, collapse, hide, move to any side, collapse whole), tags and saved filters as dock blocks, Columns or Rows for the cards, draft and prospects side by side.
+
 ## Done when
 
 - Every decision above works in the workbench, with e2e coverage of drag, filter pills, peek, and a named layout surviving a reload.

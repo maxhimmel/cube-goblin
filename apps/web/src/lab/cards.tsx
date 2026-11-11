@@ -102,7 +102,11 @@ function cardLinkProps(lab: Lab, card: GridCard) {
 function CardStrip({ lab, card, tags }: { lab: Lab; card: GridCard; tags: boolean }): ReactNode {
   const labels = tags ? tagLabels(lab, card) : [];
   return (
-    <li className="lab-cell" data-dim={lab.dimmed(card) ? "" : undefined}>
+    <li
+      className="lab-cell"
+      data-dim={lab.dimmed(card) ? "" : undefined}
+      data-selected={lab.selected === card.slug ? "" : undefined}
+    >
       <CardLink className="lab-strip" {...cardLinkProps(lab, card)}>
         <span className="lab-strip-top">
           <span className="lab-strip-name">{card.name}</span>
@@ -162,7 +166,11 @@ function CardRow({ lab, card }: { lab: Lab; card: GridCard }): ReactNode {
   const tags = tagLabels(lab, card).slice(0, 3);
   const pt = card.power === undefined ? "" : `${card.power}/${card.toughness ?? ""}`;
   return (
-    <li className="lab-row-cell" data-dim={lab.dimmed(card) ? "" : undefined}>
+    <li
+      className="lab-row-cell"
+      data-dim={lab.dimmed(card) ? "" : undefined}
+      data-selected={lab.selected === card.slug ? "" : undefined}
+    >
       <CardLink className="lab-row" {...cardLinkProps(lab, card)}>
         <span className="lab-row-stripe" />
         <span className="lab-row-cost">

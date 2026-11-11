@@ -1526,3 +1526,15 @@ button.lab-stat[data-picked] {
   font-size: 0.6rem;
   line-height: 1;
 }
+
+.lab-cell[data-selected] .lab-strip,
+.lab-row-cell[data-selected] .lab-row {
+  background: color-mix(in oklab, var(--accent) 14%, var(--strip, var(--panel)));
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
+.lab-cell[data-selected][data-dim],
+.lab-row-cell[data-selected][data-dim] {
+  opacity: 0.6;
+}

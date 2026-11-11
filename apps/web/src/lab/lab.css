@@ -390,16 +390,19 @@
 
 .lab-column-head {
   position: sticky;
-  top: 0;
-  z-index: 1;
+  top: -10px;
+  z-index: 2;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 4px 6px;
+  margin: 0 -2px;
+  padding: 8px 8px 6px;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 600;
   background: var(--panel);
-  border-radius: 6px;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 6px 8px -6px rgb(0 0 0 / 35%);
 }
 
 .lab-column-count {
@@ -751,6 +754,7 @@
 .lab-b-group > header {
   display: flex;
   gap: 8px;
+  align-items: center;
   padding: 4px 10px;
   color: var(--muted);
   font-size: 0.76rem;
@@ -1533,4 +1537,74 @@
 
 .labc .lab-a-prospects .lab-row-stripe {
   grid-row: span 2;
+}
+
+.labc .lab-b-group > header {
+  position: sticky;
+  top: -10px;
+  z-index: 2;
+  margin: 0 -10px;
+  padding: 8px 20px 6px;
+  font-size: 0.9rem;
+  background: var(--panel);
+  box-shadow: 0 6px 8px -6px rgb(0 0 0 / 35%);
+}
+
+.lab-title-symbol .ms {
+  font-size: 1rem;
+}
+
+.lab-title-symbol .ms-multicolor {
+  margin: 0 3px;
+  font-size: 1.3rem;
+  line-height: 0.8;
+  transform: scale(1.45);
+}
+
+.labc-tile-head,
+.labc .labc-strip,
+.labc .lab-row {
+  position: relative;
+}
+
+.labc-tile-head::after,
+.labc .labc-strip::after,
+.labc .lab-row::after {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--fg) 28%, transparent) 0.8px,
+    transparent 1.2px
+  );
+  background-size: 5px 5px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  content: "";
+}
+
+.labc-tile-head::after {
+  inset: -4px -6px;
+  border-radius: 8px;
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+}
+
+.labc .labc-strip::after,
+.labc .lab-row::after {
+  mask-image: linear-gradient(90deg, transparent 40%, #000);
+}
+
+.labc-tile-head:hover::after {
+  opacity: 0.7;
+}
+
+.labc .labc-strip:hover::after,
+.labc .lab-row:hover::after {
+  opacity: 0.45;
+}
+
+.labc .labc-strip,
+.labc .lab-row {
+  cursor: grab;
 }

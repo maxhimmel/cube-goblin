@@ -21,12 +21,21 @@ Hovering, dragging, or opening a card previews one move at a time. The user want
 
 ## Layout spike
 
-Real Pending state (queue, chart and draft-count deltas, Apply as one undoable edit, Clear, × per card, reload-safe), with four switchable layouts at `#/lab?pending=a|b|c|d` (header switch "Pending layout"). Common to all: queued cards stay in their pile with a dashed outline and +/− (cuts struck through); Alt-click a card to queue or unqueue it; "Drop: Move | Queue" makes dropping on the other pile queue instead of move.
+Real Pending state (queue, chart and draft-count deltas, Apply as one undoable edit, Clear, × per card, reload-safe), with switchable layouts at `#/lab?pending=a|b|c|e` (header switch "Pending layout"). Common to all: queued cards stay in their pile with a dashed outline and +/− (cuts struck through); Alt-click a card to queue or unqueue it; drag a card onto the tray to queue it. Trays list queued cards as the piles' own strips, in the Lab's sort order, under "Add to draft" and "Cut from draft".
 
-- **A Marks in place**: no tray; a header chip `Pending +3 −4 · Apply · Clear` that lists the cards on hover and takes drops.
-- **B Header strip**: a thin full-width chip row under the toolbar, a drop target.
-- **C Gutter**: a slim column between Draft and Prospects, adds over cuts.
-- **D Floor bar**: a thin bar fixed to the bottom of the window.
+- **A Header chip**: `Pending +3 −4 ▾ · Apply · Clear`; click opens the list, which stays open until a click outside or Esc.
+- **B Header strip**: a thin full-width row under the toolbar.
+- **C Gutter**: between Draft and Prospects (the move from one to the other); a thin rail until clicked, then a column.
+- **E Dock block**: a "Pending" block in the chart dock.
+
+### Feedback round 1 (user, 2026-11-11)
+
+- Likes A (succinct) and B and C. C's spot makes sense: it sits between the two piles.
+- B and C chips didn't match the card strips or sort: now they use the strips and the sort chain.
+- Wanted C collapsed until clicked, and a dock-block version to compare: added both (E).
+- "Drop: Move | Queue" was unclear and seemed to do nothing: removed; drop on the tray instead.
+- A's hover list closed while moving the mouse into it: now click-to-open.
+- D (floor bar) not picked: removed.
 
 ## Done when
 

@@ -16,12 +16,14 @@ export function BucketPanel({
   label,
   cards,
   onClose,
+  onSave,
 }: {
   bucket: Bucket;
   title: string;
   label: string;
   cards: readonly GridCard[];
   onClose: () => void;
+  onSave?: (() => void) | undefined;
 }): ReactNode {
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const listed = cards.filter((card) => inBucket(card, bucket)).sort(byCostThenName);
@@ -34,6 +36,11 @@ export function BucketPanel({
             {label} <span className="muted">{listed.length}</span>
           </h2>
         </div>
+        {onSave && (
+          <button type="button" className="toolbar-link bucket-save" onClick={onSave}>
+            Save as filter
+          </button>
+        )}
         <button
           type="button"
           className="bucket-close"

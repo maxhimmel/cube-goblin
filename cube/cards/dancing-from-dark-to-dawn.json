@@ -4,7 +4,8 @@
   "status": "draft",
   "printing": "550cd0b6-ca61-4db7-9d20-0b68c48066f9",
   "tags": [
-    "token-maker"
+    "token-maker",
+    "counters"
   ],
   "notes": "",
   "source": {

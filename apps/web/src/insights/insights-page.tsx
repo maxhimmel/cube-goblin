@@ -1,5 +1,14 @@
 import { mode } from "#mode";
-import type { Body, Bucket, BucketKind, Count, CubeStats, Spread } from "@repo/cube/browser";
+import type {
+  Body,
+  Bucket,
+  BucketKind,
+  Count,
+  CubeStats,
+  Filter,
+  FilterChip,
+  Spread,
+} from "@repo/cube/browser";
 import {
   COLORS,
   COLOR_GROUPS,
@@ -13,15 +22,18 @@ import {
   PT_VALUES,
   bucketId,
   cubeStats,
+  filterCards,
+  narrowTo,
+  newFilterId,
   parseBucket,
 } from "@repo/cube/browser";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { CardLink } from "../card-pane.tsx";
 import { Gauge } from "../gauge.tsx";
-import { ManaSymbol } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import { Block } from "./block.tsx";
 import { BucketPanel } from "./bucket-panel.tsx";
@@ -36,7 +48,38 @@ import {
   StackedRowChart,
 } from "./charts.tsx";
 import type { BlockId, Dashboard } from "./layout.ts";
-import { BLOCKS, BREAKPOINTS, COLS, ROW_HEIGHT, shown, useDashboard } from "./layout.ts";
+import {
+  BLOCKS,
+  BREAKPOINTS,
+  COLS,
+  FILTER_BLOCK_PREFIX,
+  ROW_HEIGHT,
+  filterBlock,
+  filterBlockId,
+  shown,
+  useDashboard,
+} from "./layout.ts";
+import {
+  KIND_TITLES,
+  MANA_FILLS,
+  bucketLabel,
+  colorLabel,
+  colorTick,
+  curveLabel,
+  curveTick,
+  manaFill,
+  ptLabel,
+  ptTick,
+} from "./labels.tsx";
+import {
+  BlockBody,
+  BlocksMenu,
+  FilterBlock,
+  FilterEditor,
+  chipLabel,
+  isBlockId,
+} from "./filter-widgets.tsx";
+import type { CardSet, FrameComponent } from "./filter-widgets.tsx";
 
 interface Scope {
   id: string;
@@ -50,61 +93,6 @@ const SCOPES: readonly Scope[] = [
   { id: "all", label: "All cards", includes: () => true },
   { id: "selected", label: "Selected", includes: (card, selection) => selection.has(card.slug) },
 ];
-
-const COLOR_SYMBOLS: Record<string, string> = { multicolored: "multicolor", colorless: "C" };
-
-const MANA_FILLS: Record<string, string> = {
-  W: "var(--mana-w)",
-  U: "var(--mana-u)",
-  B: "var(--mana-b)",
-  R: "var(--mana-r)",
-  G: "var(--mana-g)",
-  multicolored: "var(--mana-m)",
-  colorless: "var(--mana-c)",
-};
-
-function manaFill(row: Count): string {
-  return MANA_FILLS[row.id] ?? "var(--chart-bar)";
-}
-
-function colorIcon(id: string): ReactNode {
-  const symbol = COLOR_SYMBOLS[id] ?? id;
-  return symbol === "multicolor" ? (
-    <i className="ms ms-multicolor" aria-hidden="true" />
-  ) : (
-    <i className={`ms ms-${symbol.toLowerCase()} ms-cost`} aria-hidden="true" />
-  );
-}
-
-function colorLabel(id: string): string {
-  return COLOR_GROUPS.find((group) => group.id === id)?.label ?? id;
-}
-
-function ptLabel(id: string): string {
-  return PT_VALUES.find((value) => value.id === id)?.label ?? id;
-}
-
-const ptTick: TickLabel = (id) => ptLabel(id);
-
-function curveLabel(id: string): string {
-  return CURVE_COLUMNS.find((column) => column.id === id)?.label ?? id;
-}
-
-const colorTick: TickLabel = (id) => (
-  <>
-    {colorIcon(id)} {colorLabel(id)}
-  </>
-);
-
-const curveTick: TickLabel = (id) => {
-  const label = curveLabel(id);
-  return (
-    <>
-      <ManaSymbol symbol={id} label={label} />
-      {label.endsWith("+") && <span aria-hidden="true">+</span>}
-    </>
-  );
-};
 
 function Tile({ label, value, note }: { label: string; value: number; note?: string }): ReactNode {
   return (
@@ -362,49 +350,6 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
   },
 };
 
-const KIND_TITLES: Record<BucketKind, string> = {
-  curve: "Mana curve",
-  color: "Color",
-  colorCurve: "Color by mana value",
-  presence: "Color",
-  colorMulti: "Color",
-  heavy: "Heavy pips",
-  type: "Card types",
-  pt: "Power and toughness",
-  body: "Combat matchups",
-  status: "Status",
-  tag: "Tags",
-};
-
-function bucketLabel(bucket: Bucket, stats: CubeStats): string {
-  const [first = "", second = ""] = bucket.keys;
-  const find = (rows: readonly Count[]): string =>
-    rows.find((row) => row.id === first)?.label ?? first;
-  switch (bucket.kind) {
-    case "curve":
-      return `Mana value ${curveLabel(first)}`;
-    case "color":
-    case "presence":
-      return colorLabel(first);
-    case "colorMulti":
-      return `Multicolored with ${colorLabel(first)}`;
-    case "heavy":
-      return `${colorLabel(first)}, ${String(HEAVY_PIPS)}+ pips`;
-    case "colorCurve":
-      return `${colorLabel(first)}, mana value ${curveLabel(second)}`;
-    case "type":
-      return find(stats.types);
-    case "pt":
-      return `${ptLabel(first)}/${ptLabel(second)}`;
-    case "body":
-      return `${first}/${second}`;
-    case "status":
-      return find(stats.status);
-    case "tag":
-      return find(stats.tags);
-  }
-}
-
 const DARK_INK: ReadonlySet<string> = new Set(["W", "multicolored", "colorless"]);
 
 function colorRows(stats: CubeStats): StackedRow[] {
@@ -465,7 +410,7 @@ function DashboardGrid({
   render,
 }: {
   dashboard: Dashboard;
-  render: (id: BlockId) => ReactNode;
+  render: (id: string) => ReactNode;
 }): ReactNode {
   const { width, containerRef, mounted } = useContainerWidth();
   return (
@@ -484,7 +429,7 @@ function DashboardGrid({
             dashboard.change(all);
           }}
         >
-          {BLOCKS.map((block) => (
+          {dashboard.visible.map((block) => (
             <div key={block.id} className="block-cell" data-block={block.id}>
               {render(block.id)}
             </div>
@@ -498,9 +443,14 @@ function DashboardGrid({
 export function InsightsPage(): ReactNode {
   const cube = mode.useCube();
   const selection = mode.useSelection();
+  const filters = mode.useFilters() ?? [];
   const search = useSearch({ from: "/insights" });
   const navigate = useNavigate();
-  const dashboard = useDashboard();
+  const dashboard = useDashboard([
+    ...BLOCKS,
+    ...filters.map((filter) => filterBlock(filter.id, filter.label)),
+  ]);
+  const [editing, setEditing] = useState<Filter | undefined>(undefined);
   if (!cube) {
     return <p className="muted">Loading cube…</p>;
   }
@@ -509,32 +459,65 @@ export function InsightsPage(): ReactNode {
   const cards = scope ? cube.cards.filter((card) => scope.includes(card, selection)) : [];
   const stats = cubeStats(cards, cube.vocabulary);
   const drafted = cube.cards.filter((card) => card.status === "draft").length;
-  const nonland = stats.total - stats.lands;
   const bucket = search.bucket === undefined ? undefined : parseBucket(search.bucket);
+  const panelFilter = filters.find((filter) => filter.id === search.in);
+  const filterCardsOf = (filter: Filter): GridCard[] => filterCards(filter, cube.cards, cards);
 
-  const pick = (id: string): void => {
-    void navigate({
-      to: "/insights",
-      search: (prev) => ({ ...prev, bucket: prev.bucket === id ? undefined : id }),
-      resetScroll: false,
-    });
-  };
+  const pickIn =
+    (filterId: string | undefined) =>
+    (id: string): void => {
+      void navigate({
+        to: "/insights",
+        search: (prev) => {
+          const same = prev.bucket === id && prev.in === filterId;
+          return { ...prev, bucket: same ? undefined : id, in: same ? undefined : filterId };
+        },
+        resetScroll: false,
+      });
+    };
   const closeBucket = (): void => {
     void navigate({
       to: "/insights",
-      search: (prev) => ({ ...prev, bucket: undefined }),
+      search: (prev) => ({ ...prev, bucket: undefined, in: undefined }),
       resetScroll: false,
     });
   };
+  const pageSet: CardSet = {
+    cards,
+    stats,
+    bucket: panelFilter ? undefined : bucket,
+    selectedBucket: panelFilter ? undefined : search.bucket,
+    pick: pickIn(undefined),
+  };
+  const filterSet = (filter: Filter): CardSet => {
+    const own = filterCardsOf(filter);
+    const mine = search.in === filter.id;
+    return {
+      cards: own,
+      stats: cubeStats(own, cube.vocabulary),
+      bucket: mine ? bucket : undefined,
+      selectedBucket: mine ? search.bucket : undefined,
+      pick: pickIn(filter.id),
+    };
+  };
+  const panelCards = panelFilter ? filterCardsOf(panelFilter) : cards;
+  const startNew = (chips: FilterChip[] = [], label = ""): void => {
+    setEditing({ id: newFilterId(filters), label, chips, view: "cards" });
+  };
 
-  const content = (id: BlockId): ReactNode => {
+  const renderBlock = (id: BlockId, set: CardSet, Frame: FrameComponent): ReactNode => {
+    const { cards, stats, bucket, pick } = set;
+    const nonland = stats.total - stats.lands;
     const collapsed = dashboard.collapsed.has(id);
     const toggle = (): void => {
       dashboard.toggle(id);
     };
+    const hide = (): void => {
+      dashboard.setHidden(id, true);
+    };
     if (id === "summary") {
       return (
-        <Block title="Summary" collapsed={collapsed} onToggle={toggle}>
+        <Frame title="Summary" collapsed={collapsed} onToggle={toggle} onHide={hide}>
           <div className="stat-tiles" data-testid="stat-tiles">
             <Tile label="Cards" value={stats.total} />
             <Tile label="Nonland" value={nonland} />
@@ -545,7 +528,7 @@ export function InsightsPage(): ReactNode {
               note={`${percent(stats.creatures, nonland)} of nonland`}
             />
           </div>
-        </Block>
+        </Frame>
       );
     }
     if (id === "curve") {
@@ -554,11 +537,12 @@ export function InsightsPage(): ReactNode {
         pick(bucketId("curve", key));
       };
       return (
-        <Block
+        <Frame
           title="Mana curve"
           caption="Nonland cards by mana value"
           collapsed={collapsed}
           onToggle={toggle}
+          onHide={hide}
           table={
             <CountTable
               caption="Mana curve"
@@ -577,22 +561,23 @@ export function InsightsPage(): ReactNode {
             selected={selected}
             onPick={onPick}
           />
-        </Block>
+        </Frame>
       );
     }
     if (id === "color") {
       const rows = colorRows(stats);
       return (
-        <Block
+        <Frame
           title="Color"
           caption="Nonland cards by color. The pale part of a bar is multicolored cards with that color. Click a part for those cards, or a color's name for all of them."
           collapsed={collapsed}
           onToggle={toggle}
+          onHide={hide}
           table={
             <CountTable
               caption="Color"
               rows={colorTable(rows)}
-              selected={search.bucket}
+              selected={set.selectedBucket}
               onPick={pick}
             />
           }
@@ -601,39 +586,41 @@ export function InsightsPage(): ReactNode {
             rows={rows}
             name="Color"
             tick={colorTick}
-            selected={search.bucket}
+            selected={set.selectedBucket}
             onPick={pick}
           />
-        </Block>
+        </Frame>
       );
     }
     if (id === "creature-balance") {
       return (
-        <Block
+        <Frame
           title="Creature balance"
           caption="Printed bodies, compared with this cube’s own medians so one huge creature can’t skew them. Biggest and smallest go by power + toughness. Creatures with * or 0/0 (they grow with counters or copy something) are left out. Click a dot or name to open the card."
           collapsed={collapsed}
           onToggle={toggle}
+          onHide={hide}
         >
           <CreatureBalanceView cards={cards} selected={search.card} />
-        </Block>
+        </Frame>
       );
     }
     if (id === "combat") {
       return (
-        <Block
+        <Frame
           title="Combat matchups"
           caption="Each dot is a power/toughness, sized by how many creatures have it. It kills a creature when its power is at least that creature’s toughness, and survives one whose power is less than its toughness. Counts the same creatures as the rest of the page; * and 0/0 left out. Click a dot to list its creatures."
           collapsed={collapsed}
           onToggle={toggle}
+          onHide={hide}
         >
           <MatchupChart
             points={matchupPoints(cards)}
             name="Combat matchups"
-            selected={search.bucket}
+            selected={set.selectedBucket}
             onPick={pick}
           />
-        </Block>
+        </Frame>
       );
     }
     if (id === "pt") {
@@ -642,11 +629,12 @@ export function InsightsPage(): ReactNode {
           ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
           : undefined;
       return (
-        <Block
+        <Frame
           title="Power and toughness"
           caption="Creatures by power and toughness; * means it varies, like */* or 1+*"
           collapsed={collapsed}
           onToggle={toggle}
+          onHide={hide}
           table={
             <CountTable
               caption="Power and toughness"
@@ -657,7 +645,7 @@ export function InsightsPage(): ReactNode {
                   label: `${ptLabel(entry.row)}/${ptLabel(entry.column)}`,
                   count: entry.count,
                 }))}
-              selected={search.bucket}
+              selected={set.selectedBucket}
               onPick={pick}
             />
           }
@@ -676,7 +664,7 @@ export function InsightsPage(): ReactNode {
               pick(bucketId("pt", row, column));
             }}
           />
-        </Block>
+        </Frame>
       );
     }
     if (id === "heat") {
@@ -685,11 +673,12 @@ export function InsightsPage(): ReactNode {
           ? { row: bucket.keys[0] ?? "", column: bucket.keys[1] ?? "" }
           : undefined;
       return (
-        <Block
+        <Frame
           title="Color by mana value"
           caption="Nonland cards by color and mana value; stronger color means more"
           collapsed={collapsed}
           onToggle={toggle}
+          onHide={hide}
           table={
             <CountTable
               caption="Color by mana value"
@@ -698,7 +687,7 @@ export function InsightsPage(): ReactNode {
                 label: `${colorLabel(entry.row)}, ${curveLabel(entry.column)}`,
                 count: entry.count,
               }))}
-              selected={search.bucket}
+              selected={set.selectedBucket}
               onPick={pick}
             />
           }
@@ -715,7 +704,7 @@ export function InsightsPage(): ReactNode {
               pick(bucketId("colorCurve", row, column));
             }}
           />
-        </Block>
+        </Frame>
       );
     }
     const spec = BAR_BLOCKS[id];
@@ -728,11 +717,12 @@ export function InsightsPage(): ReactNode {
       pick(bucketId(spec.kind, key));
     };
     return (
-      <Block
+      <Frame
         title={spec.title}
         caption={spec.caption?.()}
         collapsed={collapsed}
         onToggle={toggle}
+        onHide={hide}
         {...(rows.length > 0
           ? {
               table: (
@@ -759,8 +749,46 @@ export function InsightsPage(): ReactNode {
             onPick={onPick}
           />
         )}
-      </Block>
+      </Frame>
     );
+  };
+
+  const render = (id: string): ReactNode => {
+    if (id.startsWith(FILTER_BLOCK_PREFIX)) {
+      const filter = filters.find((entry) => filterBlockId(entry.id) === id);
+      return (
+        filter && (
+          <FilterBlock
+            filter={filter}
+            set={filterSet(filter)}
+            vocabulary={cube.vocabulary}
+            collapsed={dashboard.collapsed.has(id)}
+            onToggle={() => {
+              dashboard.toggle(id);
+            }}
+            onHide={() => {
+              dashboard.setHidden(id, true);
+            }}
+            onEdit={
+              mode.putFilter
+                ? () => {
+                    setEditing(filter);
+                  }
+                : undefined
+            }
+            onView={
+              mode.putFilter
+                ? (view) => {
+                    mode.putFilter?.({ ...filter, view });
+                  }
+                : undefined
+            }
+            renderChart={(chart, set) => renderBlock(chart, set, BlockBody)}
+          />
+        )
+      );
+    }
+    return isBlockId(id) ? renderBlock(id, pageSet, Block) : null;
   };
 
   return (
@@ -790,22 +818,80 @@ export function InsightsPage(): ReactNode {
           </select>
         </label>
         {cube.size && <Gauge count={drafted} size={cube.size} />}
+        {mode.putFilter && (
+          <button
+            type="button"
+            className="toolbar-link"
+            onClick={() => {
+              startNew();
+            }}
+          >
+            + New filter
+          </button>
+        )}
+        <BlocksMenu dashboard={dashboard} />
         <button type="button" className="toolbar-link" onClick={dashboard.reset}>
           Reset layout
         </button>
       </div>
       <div className="insights-body">
-        <DashboardGrid dashboard={dashboard} render={content} />
+        <DashboardGrid dashboard={dashboard} render={render} />
         {bucket && (
           <BucketPanel
             bucket={bucket}
-            title={KIND_TITLES[bucket.kind]}
+            title={
+              panelFilter
+                ? `${panelFilter.label} · ${KIND_TITLES[bucket.kind]}`
+                : KIND_TITLES[bucket.kind]
+            }
             label={bucketLabel(bucket, stats)}
-            cards={cards}
+            cards={panelCards}
             onClose={closeBucket}
+            onSave={
+              mode.putFilter
+                ? () => {
+                    startNew(
+                      narrowTo(panelFilter?.chips ?? [], bucketId(bucket.kind, ...bucket.keys)),
+                      panelFilter
+                        ? `${panelFilter.label}: ${bucketLabel(bucket, stats)}`
+                        : bucketLabel(bucket, stats),
+                    );
+                  }
+                : undefined
+            }
           />
         )}
       </div>
+      {editing && (
+        <FilterEditor
+          key={editing.id}
+          filter={editing}
+          isNew={!filters.some((entry) => entry.id === editing.id)}
+          cards={cube.cards}
+          scoped={cards}
+          vocabulary={cube.vocabulary}
+          labelOf={(chip) => chipLabel(chip, stats)}
+          onSave={(filter) => {
+            mode.putFilter?.(filter);
+            dashboard.setHidden(filterBlockId(filter.id), false);
+            setTimeout(() => {
+              document
+                .querySelector(`[data-block="${filterBlockId(filter.id)}"]`)
+                ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }, 150);
+          }}
+          onDelete={
+            mode.deleteFilter
+              ? (id) => {
+                  mode.deleteFilter?.(id);
+                }
+              : undefined
+          }
+          onClose={() => {
+            setEditing(undefined);
+          }}
+        />
+      )}
     </div>
   );
 }

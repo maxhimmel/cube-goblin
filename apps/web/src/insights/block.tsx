@@ -7,6 +7,9 @@ export function Block({
   table,
   collapsed,
   onToggle,
+  onHide,
+  heading,
+  actions,
   children,
 }: {
   title: string;
@@ -14,6 +17,9 @@ export function Block({
   table?: ReactNode;
   collapsed: boolean;
   onToggle: () => void;
+  onHide?: (() => void) | undefined;
+  heading?: ReactNode;
+  actions?: ReactNode;
   children: ReactNode;
 }): ReactNode {
   const [asTable, setAsTable] = useState(false);
@@ -21,8 +27,9 @@ export function Block({
     <section className="block" data-collapsed={collapsed} aria-label={title}>
       <header className="block-head" title="Drag to move">
         <span className="block-grip" aria-hidden="true" />
-        <h2>{title}</h2>
+        <h2>{heading ?? title}</h2>
         <div className="block-actions">
+          {!collapsed && actions}
           {table !== undefined && !collapsed && (
             <button
               type="button"
@@ -42,6 +49,17 @@ export function Block({
             aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
             onClick={onToggle}
           />
+          {onHide && (
+            <button
+              type="button"
+              className="block-hide"
+              aria-label={`Hide ${title}`}
+              title="Hide (bring it back from Blocks)"
+              onClick={onHide}
+            >
+              ×
+            </button>
+          )}
         </div>
       </header>
       {!collapsed && (

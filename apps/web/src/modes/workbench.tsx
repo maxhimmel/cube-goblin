@@ -1,4 +1,10 @@
 import type { Workbench, WorkbenchCard } from "@repo/cube/browser";
+import {
+  deleteFilter,
+  filterSavesPending,
+  putFilter,
+  useWorkbenchFilters,
+} from "../workbench/filters.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -7,6 +13,7 @@ import {
   BOARD_QUERY_KEY,
   VERSIONS_QUERY_KEY,
   CUBE_CHANGED_EVENT,
+  FILTERS_QUERY_KEY,
   CUBE_QUERY_KEY,
   fetchCube,
 } from "../workbench/api.ts";
@@ -34,6 +41,7 @@ if (import.meta.hot) {
   import.meta.hot.on(CUBE_CHANGED_EVENT, () => {
     void refetch(CUBE_QUERY_KEY, editsPending);
     void refetch(BOARD_QUERY_KEY, boardSavesPending);
+    void refetch(FILTERS_QUERY_KEY, filterSavesPending);
     void queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
   });
 }
@@ -78,6 +86,9 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
 }
 
 export const mode: Mode = {
+  useFilters: useWorkbenchFilters,
+  putFilter,
+  deleteFilter,
   name: "workbench",
   moveCard: (card, status) => {
     if (card.status === status) {

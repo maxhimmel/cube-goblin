@@ -100,6 +100,24 @@ export {
   takeCard,
   validateBoard,
 } from "./board.ts";
+export {
+  EMPTY_FILTERS,
+  chipKind,
+  chipState,
+  cycleChip,
+  filterCards,
+  filterChipSchema,
+  filterSchema,
+  filtersFileSchema,
+  hasStatusChip,
+  matchesFilter,
+  narrowTo,
+  newFilterId,
+  pruneFilters,
+  tagChip,
+  validateFilters,
+} from "./filters.ts";
+export type { ChipState, Filter, FilterChip, FiltersFile } from "./filters.ts";
 export { CARD_SORTS, isCardSort, sortCards } from "./sort.ts";
 export type { CardSort } from "./sort.ts";
 export {

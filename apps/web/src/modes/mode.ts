@@ -1,4 +1,4 @@
-import type { CardStatus, SnapshotCard, Tag } from "@repo/cube/browser";
+import type { CardStatus, Filter, SnapshotCard, Tag } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 
 export type GridCard = SnapshotCard;
@@ -26,4 +26,7 @@ export interface Mode {
   useSelection: () => ReadonlySet<string>;
   AddPage: (props: { replaces: string | undefined }) => ReactNode;
   moveCard?: (card: GridCard, status: CardStatus) => void;
+  useFilters: () => Filter[] | undefined;
+  putFilter?: (filter: Filter) => void;
+  deleteFilter?: (id: string) => void;
 }

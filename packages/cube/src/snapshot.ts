@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { filterSchema } from "./filters.ts";
 import { cardStatusSchema, cubeConfigSchema, tagSchema } from "./schema.ts";
 
 export const snapshotCardSchema = z.strictObject({
@@ -24,6 +25,7 @@ export const snapshotSchema = z.strictObject({
   createdAt: z.string(),
   cards: z.array(snapshotCardSchema),
   vocabulary: z.array(tagSchema),
+  filters: z.array(filterSchema).default([]),
 });
 
 export const printingSchema = z.strictObject({

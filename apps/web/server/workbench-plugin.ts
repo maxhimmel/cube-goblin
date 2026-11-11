@@ -4,6 +4,7 @@ import type {
   AddResult,
   BatchResult,
   BoardResult,
+  FiltersResult,
   CubePaths,
   FoundCard,
   Printing,
@@ -30,10 +31,12 @@ import {
   patchCard,
   patchCards,
   loadBoard,
+  loadFilters,
   readCards,
   readConfig,
   readTags,
   saveBoard,
+  saveFilters,
   slugify,
 } from "@repo/cube";
 import {
@@ -128,7 +131,8 @@ async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<
   };
 }
 
-type WriteResult = UpdateResult | TagResult | BatchResult | AddResult | BoardResult | VersionResult;
+type WriteResult =
+  UpdateResult | TagResult | BatchResult | AddResult | BoardResult | FiltersResult | VersionResult;
 type Write = (body: unknown) => Promise<WriteResult>;
 
 function written(result: Extract<WriteResult, { ok: true }>): unknown {
@@ -137,6 +141,9 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   }
   if ("board" in result) {
     return result.board;
+  }
+  if ("filters" in result) {
+    return result.filters;
   }
   if ("version" in result) {
     return result.version;
@@ -278,6 +285,9 @@ function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: Oracle
     if (url === "/api/board" && method === "PUT") {
       return (body) => saveBoard(paths, body);
     }
+    if (url === "/api/filters" && method === "PUT") {
+      return (body) => saveFilters(paths, body);
+    }
     if (url === "/api/tags" && method === "POST") {
       return (body) => createTag(paths, body);
     }
@@ -380,6 +390,17 @@ export function workbench(options: WorkbenchOptions): Plugin {
               } else {
                 send(res, result.status, { error: result.error });
               }
+            },
+            (error: unknown) => {
+              send(res, 500, { error: String(error) });
+            },
+          );
+          return;
+        }
+        if (url === "/api/filters" && req.method === "GET") {
+          loadFilters(paths).then(
+            (filters) => {
+              send(res, 200, filters);
             },
             (error: unknown) => {
               send(res, 500, { error: String(error) });

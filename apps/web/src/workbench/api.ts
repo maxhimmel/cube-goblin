@@ -1,5 +1,6 @@
 import type {
   Board,
+  FiltersFile,
   CubeDiff,
   VersionSummary,
   CardChange,
@@ -13,6 +14,7 @@ import type {
 } from "@repo/cube/browser";
 import {
   boardSchema,
+  filtersFileSchema,
   cardEntrySchema,
   cubeDiffSchema,
   versionSummarySchema,
@@ -24,6 +26,7 @@ import {
 
 export const CUBE_QUERY_KEY = ["cube"] as const;
 export const BOARD_QUERY_KEY = ["board"] as const;
+export const FILTERS_QUERY_KEY = ["filters"] as const;
 export const VERSIONS_QUERY_KEY = ["versions"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
@@ -107,6 +110,18 @@ export async function fetchBoard(): Promise<Board> {
 
 export async function saveBoardRequest(board: Board): Promise<Board> {
   return boardSchema.parse(await sendJson("PUT", "/api/board", board));
+}
+
+export async function fetchFilters(): Promise<FiltersFile> {
+  const response = await fetch("/api/filters");
+  if (!response.ok) {
+    throw await failure("GET", "/api/filters", response);
+  }
+  return filtersFileSchema.parse(await response.json());
+}
+
+export async function saveFiltersRequest(file: FiltersFile): Promise<FiltersFile> {
+  return filtersFileSchema.parse(await sendJson("PUT", "/api/filters", file));
 }
 
 export async function fetchPrintings(slug: string): Promise<Printing[]> {

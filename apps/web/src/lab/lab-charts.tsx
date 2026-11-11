@@ -1,6 +1,6 @@
 import { colorKey } from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
-import { colorIcon, colorLabel, curveTick, ptLabel } from "../insights/labels.tsx";
+import { colorLabel, ptLabel } from "../insights/labels.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import type { HeatRow, Tally, Test, Used } from "./model.ts";
 import { PT_AXIS, ghostLabel, isCreatureCard, ptCell } from "./model.ts";
@@ -124,7 +124,7 @@ export function CurveBars({
               />
             )}
           </span>
-          <span className="lab-bar-label">{curveTick(curveId(row))}</span>
+          <span className="lab-bar-label">{row.label}</span>
         </button>
       ))}
     </div>
@@ -143,7 +143,7 @@ export function Heat({
   const ghosted = (row: HeatRow): boolean => row.cells.some((cell) => cell.baseGhost !== 0);
   const shownRows = rows.filter((row) => !used || used.colors.has(row.id) || ghosted(row));
   const columns = (rows[0]?.cells ?? [])
-    .map((cell, index) => ({ id: curveId(cell), index }))
+    .map((cell, index) => ({ id: curveId(cell), label: cell.label, index }))
     .filter(
       ({ id, index }) =>
         !used || used.curve.has(id) || rows.some((row) => row.cells[index]?.baseGhost !== 0),
@@ -157,16 +157,18 @@ export function Heat({
       aria-label="Color by mana value"
     >
       <span />
-      {columns.map(({ id }) => (
+      {columns.map(({ id, label }) => (
         <span key={id} className="lab-heat-head">
-          {curveTick(id)}
+          {label}
         </span>
       ))}
       {shownRows.map((row) => (
         <div key={row.id} className="lab-heat-row" role="row">
-          <span className="lab-heat-color" title={colorLabel(row.id)}>
-            {colorIcon(row.id)}
-          </span>
+          <span
+            className="lab-heat-color"
+            title={colorLabel(row.id)}
+            style={{ "--swatch": MANA_VAR[row.id] } as CSSProperties}
+          />
           {columns.map(({ index }) => {
             const cell = row.cells[index];
             if (!cell) {

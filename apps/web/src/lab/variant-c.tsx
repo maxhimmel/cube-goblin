@@ -5,7 +5,7 @@ import type { CSSProperties, DragEvent, ReactNode } from "react";
 import { useState } from "react";
 import { z } from "zod";
 import { CardLink } from "../card-pane.tsx";
-import { Block } from "../insights/block.tsx";
+import type { Block } from "../insights/block.tsx";
 import type { CardSet } from "../insights/filter-widgets.tsx";
 import { chartBlock } from "../insights/insights-page.tsx";
 import type { BlockId } from "../insights/layout.ts";
@@ -16,7 +16,16 @@ import { DRAG_TYPE, Preview, previewAt } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { CurveBars, Heat, PtDots } from "./lab-charts.tsx";
 import type { Lab } from "./lab-page.tsx";
-import { AxisTabs, DraftCount, FilterList, PillBar, groups, stripeOf } from "./lab-page.tsx";
+import {
+  AxisTabs,
+  ColumnTitle,
+  DraftCount,
+  FilterList,
+  PillBar,
+  RowGroups,
+  groups,
+  stripeOf,
+} from "./lab-page.tsx";
 import { curveTallies, heatRows } from "./model.ts";
 import { KEYWORDS, SYNTAX_NOTES, tryQuery } from "./query.ts";
 
@@ -134,7 +143,7 @@ function CColumns({
         return (
           <section key={column.id} className="lab-column">
             <header className="lab-column-head">
-              <span>{column.label}</span>
+              <ColumnTitle axis={lab.axis} column={column} />
               <span className="lab-column-count">
                 {lit === column.cards.length
                   ? lit
@@ -521,6 +530,59 @@ function DockBlock({
   );
 }
 
+const SHORT_CAPTION = 40;
+
+function SlimFrame({
+  title,
+  caption,
+  table,
+  collapsed,
+  onToggle,
+  onHide,
+  actions,
+  children,
+}: Parameters<typeof Block>[0]): ReactNode {
+  const [asTable, setAsTable] = useState(false);
+  const short = typeof caption === "string" && caption.length <= SHORT_CAPTION;
+  return (
+    <section className="labc-tile" data-collapsed={collapsed ? "" : undefined} aria-label={title}>
+      <header className="block-head labc-tile-head">
+        <h2 title={typeof caption === "string" && !short ? caption : undefined}>{title}</h2>
+        {short && !collapsed && <span className="labc-tile-caption">{caption}</span>}
+        <span className="labc-tile-actions">
+          {!collapsed && actions}
+          {table !== undefined && !collapsed && (
+            <button
+              type="button"
+              aria-pressed={asTable}
+              title="Table"
+              onClick={() => {
+                setAsTable(!asTable);
+              }}
+            >
+              ▤
+            </button>
+          )}
+          <button
+            type="button"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
+            onClick={onToggle}
+          >
+            {collapsed ? "+" : "–"}
+          </button>
+          {onHide && (
+            <button type="button" aria-label={`Hide ${title}`} onClick={onHide}>
+              ×
+            </button>
+          )}
+        </span>
+      </header>
+      {!collapsed && <div className="labc-tile-body">{asTable ? table : children}</div>}
+    </section>
+  );
+}
+
 function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
   const [dragging, setDragging] = useState<string | undefined>(undefined);
   const lensed = lab.lens ? lab.scope.filter(lab.lens) : lab.scope;
@@ -534,7 +596,7 @@ function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
     },
   };
   const frame = (id: string, title: string, body: ReactNode, caption?: string): ReactNode => (
-    <Block
+    <SlimFrame
       title={title}
       caption={caption}
       collapsed={dock.collapsed.has(id)}
@@ -546,7 +608,7 @@ function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
       }}
     >
       {body}
-    </Block>
+    </SlimFrame>
   );
   const live = lab.lens !== undefined ? "filtered · baseline faint" : "draft";
   const body = (id: string): ReactNode => {
@@ -592,7 +654,7 @@ function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
         );
       default:
         return isInsightsBlock(id)
-          ? chartBlock(id, set, Block, {
+          ? chartBlock(id, set, SlimFrame, {
               collapsed: dock.collapsed.has(id),
               onToggle: () => {
                 dock.toggle(id);
@@ -612,7 +674,7 @@ function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
       const height =
         spec?.h === undefined || dock.collapsed.has(id)
           ? undefined
-          : Math.min(520, Math.max(240, spec.h * 22));
+          : Math.min(440, Math.max(220, spec.h * 18));
       return (
         <DockBlock
           key={id}
@@ -630,13 +692,24 @@ function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactNode {
 
 export function VariantC({ lab }: { lab: Lab }): ReactNode {
   const [dockAt, setDockAt] = useRemembered<Dock>("labc.dockAt", "top", z.enum(DOCKS));
-  const [tags, setTags] = useRemembered("labc.tags", true, z.boolean());
+  const [tags, setTags] = useRemembered("labc.stripTags", false, z.boolean());
+  const [open, setOpen] = useRemembered("labc.dockOpen", true, z.boolean());
+  const [view, setView] = useRemembered<"columns" | "rows">(
+    "labc.view",
+    "columns",
+    z.enum(["columns", "rows"]),
+  );
   const dock = useDockState();
   const draft = lab.cards.filter((card) => card.status === "draft");
   const prospects = lab.cards.filter((card) => card.status !== "draft");
   const zone = (status: CardStatus) => lab.zone(status);
   return (
-    <div className="lab labc" data-dock={dockAt} {...lab.dragRoot}>
+    <div
+      className="lab labc"
+      data-dock={dockAt}
+      data-dock-open={open ? "" : undefined}
+      {...lab.dragRoot}
+    >
       <header className="labc-top">
         <h1>Lab</h1>
         <DraftCount lab={lab} />
@@ -679,6 +752,18 @@ export function VariantC({ lab }: { lab: Lab }): ReactNode {
                 {{ top: "↑", right: "→", bottom: "↓", left: "←" }[id]}
               </button>
             ))}
+            <button
+              type="button"
+              className={open ? undefined : "on"}
+              aria-pressed={!open}
+              aria-label={open ? "Collapse charts" : "Show charts"}
+              title={open ? "Collapse charts" : "Show charts"}
+              onClick={() => {
+                setOpen(!open);
+              }}
+            >
+              {open ? "⊟" : "⊞"}
+            </button>
           </div>
           <BlocksMenu dock={dock} />
           <div className="lab-switches">
@@ -692,7 +777,7 @@ export function VariantC({ lab }: { lab: Lab }): ReactNode {
               />
               Baseline
             </label>
-            <label>
+            <label hidden={view === "rows"}>
               <input
                 type="checkbox"
                 checked={tags}
@@ -716,15 +801,48 @@ export function VariantC({ lab }: { lab: Lab }): ReactNode {
         </div>
       </header>
       <div className="labc-dock">
-        <DockBlocks lab={lab} dock={dock} />
+        {open ? (
+          <DockBlocks lab={lab} dock={dock} />
+        ) : (
+          <button
+            type="button"
+            className="labc-dock-bar"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            Charts · {dock.order.length - dock.hidden.size} blocks · show
+          </button>
+        )}
       </div>
       <div className="labc-floor">
         <section className="lab-a-draft" {...zone("draft")}>
           <header className="lab-a-floor-head">
             <h2>Draft</h2>
-            <AxisTabs lab={lab} className="lab-b-seg" />
+            <div className="labc-floor-tools">
+              <div className="lab-b-seg" role="group" aria-label="Card layout">
+                {(["columns", "rows"] as const).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={view === id ? "on" : undefined}
+                    aria-pressed={view === id}
+                    onClick={() => {
+                      setView(id);
+                    }}
+                  >
+                    {id === "columns" ? "Columns" : "Rows"}
+                  </button>
+                ))}
+              </div>
+              <AxisTabs lab={lab} className="lab-b-seg" />
+            </div>
           </header>
-          <CColumns lab={lab} cards={draft} compact={false} tags={tags} />
+          {view === "columns" ? (
+            <CColumns lab={lab} cards={draft} compact={false} tags={tags} />
+          ) : (
+            <RowGroups lab={lab} cards={draft} />
+          )}
         </section>
         <section className="lab-a-prospects" {...zone("prospect")}>
           <header className="lab-a-floor-head">
@@ -732,7 +850,11 @@ export function VariantC({ lab }: { lab: Lab }): ReactNode {
               Prospects <span className="muted">{prospects.length}</span>
             </h2>
           </header>
-          <CColumns lab={lab} cards={prospects} compact tags={tags} />
+          {view === "columns" ? (
+            <CColumns lab={lab} cards={prospects} compact tags={tags} />
+          ) : (
+            <RowGroups lab={lab} cards={prospects} />
+          )}
         </section>
       </div>
       <Preview hover={lab.hover} />

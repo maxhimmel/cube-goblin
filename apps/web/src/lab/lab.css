@@ -942,29 +942,6 @@
   line-height: 1;
 }
 
-.lab-bar-label .ms,
-.lab-heat-head .ms {
-  font-size: 0.8rem;
-}
-
-.lab-heat-color {
-  display: grid;
-  place-items: center;
-  width: auto;
-  height: auto;
-  background: none;
-  box-shadow: none;
-}
-
-.lab-heat-color .ms {
-  font-size: 0.85rem;
-}
-
-.lab-pt-cell {
-  height: 22px;
-  overflow: hidden;
-}
-
 .lab-bars {
   padding-top: 1em;
 }
@@ -974,24 +951,31 @@
   gap: 12px;
   height: calc(100dvh - var(--topbar-height, 64px) - 8px);
   min-height: 640px;
+  --dock-row: auto;
+  --dock-col: auto;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 320px minmax(0, 1fr);
+  grid-template-rows: auto var(--dock-row) minmax(0, 1fr);
   grid-template-areas: "head" "dock" "floor";
 }
 
+.labc[data-dock-open] {
+  --dock-row: 262px;
+  --dock-col: 360px;
+}
+
 .labc[data-dock="bottom"] {
-  grid-template-rows: auto minmax(0, 1fr) 320px;
+  grid-template-rows: auto minmax(0, 1fr) var(--dock-row);
   grid-template-areas: "head" "floor" "dock";
 }
 
 .labc[data-dock="right"] {
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 1fr) var(--dock-col);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas: "head head" "floor dock";
 }
 
 .labc[data-dock="left"] {
-  grid-template-columns: 380px minmax(0, 1fr);
+  grid-template-columns: var(--dock-col) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas: "head head" "dock floor";
 }
@@ -1172,13 +1156,18 @@
 
 .labc[data-dock="top"] .labc-block,
 .labc[data-dock="bottom"] .labc-block {
-  width: 330px;
+  width: 300px;
   height: 100%;
 }
 
 .labc[data-dock="top"] .labc-block[data-insights],
 .labc[data-dock="bottom"] .labc-block[data-insights] {
-  width: 460px;
+  width: 440px;
+}
+
+.labc[data-dock="top"] .labc-block:has(.labc-tile[data-collapsed]),
+.labc[data-dock="bottom"] .labc-block:has(.labc-tile[data-collapsed]) {
+  width: 150px;
 }
 
 .labc[data-dock="right"] .labc-block[data-insights],
@@ -1392,4 +1381,156 @@
 .lab-filter-entry .lab-filter-remove {
   top: -6px;
   right: -6px;
+}
+
+.lab-title-symbol {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.lab-title-symbol .ms {
+  font-size: 0.85rem;
+}
+
+.lab-title-text {
+  font-size: 0.78rem;
+}
+
+.labc-tile {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  padding: 10px 14px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.labc-tile-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  min-height: 20px;
+  margin-bottom: 8px;
+  cursor: grab;
+}
+
+.labc-tile-head h2 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.labc-tile-caption {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.75;
+}
+
+.labc-tile-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.labc-tile:hover .labc-tile-actions,
+.labc-tile:focus-within .labc-tile-actions,
+.labc-tile[data-collapsed] .labc-tile-actions {
+  opacity: 1;
+}
+
+.labc-tile-actions button,
+.labc-tile-actions select {
+  height: 20px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1;
+  background: none;
+  border-color: transparent;
+}
+
+.labc-tile-actions button:hover,
+.labc-tile-actions button[aria-pressed="true"] {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.labc-tile[data-collapsed] {
+  height: auto;
+}
+
+.labc-tile[data-collapsed] .labc-tile-head {
+  margin-bottom: 0;
+}
+
+.labc-tile-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.labc-block[data-insights] .labc-tile-body {
+  overflow: hidden;
+}
+
+.labc-block[data-insights] .labc-tile-body > * {
+  height: 100%;
+}
+
+.labc-dock-bar {
+  flex: 1;
+  padding: 6px 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: left;
+  background: var(--panel);
+  border-radius: 12px;
+}
+
+.labc[data-dock="right"] .labc-dock-bar,
+.labc[data-dock="left"] .labc-dock-bar {
+  writing-mode: vertical-rl;
+  text-align: center;
+}
+
+.labc-floor-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.labc .lab-b-group {
+  margin-bottom: 12px;
+}
+
+.labc .lab-a-prospects .lab-row {
+  grid-template-columns: 3px 64px minmax(0, 1fr);
+  row-gap: 2px;
+}
+
+.labc .lab-a-prospects .lab-row-type,
+.labc .lab-a-prospects .lab-row-pt {
+  display: none;
+}
+
+.labc .lab-a-prospects .lab-row-tags {
+  grid-column: 3;
+  flex-wrap: wrap;
+}
+
+.labc .lab-a-prospects .lab-row-stripe {
+  grid-row: span 2;
 }

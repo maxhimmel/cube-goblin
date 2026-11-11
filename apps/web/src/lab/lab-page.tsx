@@ -8,6 +8,7 @@ import { VariantC } from "./variant-c.tsx";
 import { z } from "zod";
 import { CardLink } from "../card-pane.tsx";
 import { Gauge } from "../gauge.tsx";
+import { colorIcon, curveTick } from "../insights/labels.tsx";
 import { ManaCost } from "../mana.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import type { Hover } from "../strip.tsx";
@@ -54,6 +55,34 @@ function flip(status: CardStatus): CardStatus {
 
 function byCost(a: GridCard, b: GridCard): number {
   return a.cmc - b.cmc || colorKey(a).localeCompare(colorKey(b)) || a.name.localeCompare(b.name);
+}
+
+const COLOR_COLUMN: Record<string, string> = {
+  W: "W",
+  U: "U",
+  B: "B",
+  R: "R",
+  G: "G",
+  C: "colorless",
+  M: "multicolored",
+};
+
+export function ColumnTitle({ axis, column }: { axis: Axis; column: Column<GridCard> }): ReactNode {
+  if (axis === "mv") {
+    return <span className="lab-title-symbol">{curveTick(column.id)}</span>;
+  }
+  const color = axis === "color" ? COLOR_COLUMN[column.id] : undefined;
+  if (color !== undefined) {
+    return (
+      <span className="lab-title-symbol" title={column.label}>
+        {colorIcon(color)}
+        {(color === "multicolored" || color === "colorless") && (
+          <span className="lab-title-text">{column.label}</span>
+        )}
+      </span>
+    );
+  }
+  return <span>{column.label}</span>;
 }
 
 export function groups(cards: readonly GridCard[], axis: Axis): Column<GridCard>[] {
@@ -166,7 +195,7 @@ export function useLab(): Lab | undefined {
         setPillKeys([...pillKeys, key]);
       }
     },
-    used: usedIn(cards),
+    used: usedIn([...scope, ...next]),
     size: cube.size,
     pills,
     togglePill,
@@ -434,7 +463,7 @@ function StripColumns({
         return (
           <section key={column.id} className="lab-column">
             <header className="lab-column-head">
-              <span>{column.label}</span>
+              <ColumnTitle axis={lab.axis} column={column} />
               <span className="lab-column-count">
                 {lit === column.cards.length
                   ? lit
@@ -562,7 +591,7 @@ export function Row({ lab, card }: { lab: Lab; card: GridCard }): ReactNode {
   );
 }
 
-function RowGroups({ lab, cards }: { lab: Lab; cards: readonly GridCard[] }): ReactNode {
+export function RowGroups({ lab, cards }: { lab: Lab; cards: readonly GridCard[] }): ReactNode {
   const shown = cards.filter((card) => !lab.hidden(card));
   const columns = groups(shown, lab.axis).filter((column) => column.cards.length > 0);
   return columns.map((column) => {
@@ -570,7 +599,7 @@ function RowGroups({ lab, cards }: { lab: Lab; cards: readonly GridCard[] }): Re
     return (
       <div key={column.id} className="lab-b-group">
         <header>
-          <span>{lab.axis === "mv" ? `MV ${column.label}` : column.label}</span>
+          <ColumnTitle axis={lab.axis} column={column} />
           <span className="n">
             {lit === column.cards.length ? lit : `${String(lit)} of ${String(column.cards.length)}`}
           </span>

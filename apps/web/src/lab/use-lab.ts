@@ -33,7 +33,9 @@ const DEFAULT_SORTS: Record<Axis, CardSort[]> = {
   none: ["mv", "color"],
 };
 
-function flip(status: CardStatus): CardStatus {
+type Pile = "draft" | "prospect";
+
+function flip(status: CardStatus): Pile {
   return status === "draft" ? "prospect" : "draft";
 }
 
@@ -52,6 +54,19 @@ const PIN_INCLUDES: Record<Pin, (card: GridCard) => boolean> = {
   considered: (card) => card.status !== "cut",
   all: () => true,
 };
+
+export interface PendingMove {
+  card: GridCard;
+  to: Pile;
+}
+
+export type PendingMark = "add" | "cut";
+
+const pendingSchema = z.array(z.object({ slug: z.string(), to: z.enum(["draft", "prospect"]) }));
+
+function markOf(to: CardStatus): PendingMark {
+  return to === "draft" ? "add" : "cut";
+}
 
 export interface BlockView {
   scope: GridCard[];
@@ -101,7 +116,23 @@ export interface Lab {
   zone: (status: CardStatus) => {
     "data-zone": string;
     "data-over": string | undefined;
+    "data-target": string | undefined;
+    "data-drop": string | undefined;
     onDragOver: (event: DragEvent) => void;
+    onDrop: (event: DragEvent) => void;
+  };
+  pending: PendingMove[];
+  pendingOf: (card: GridCard) => PendingMark | undefined;
+  queue: (card: GridCard) => void;
+  unqueue: (slug: string) => void;
+  clearPending: () => void;
+  applyPending: (() => void) | undefined;
+  pendingZone: {
+    "data-over": string | undefined;
+    "data-target": string | undefined;
+    "data-drop": string | undefined;
+    onDragOver: (event: DragEvent) => void;
+    onDragLeave: () => void;
     onDrop: (event: DragEvent) => void;
   };
   dragRoot: {
@@ -134,6 +165,8 @@ export function useLab(): Lab | undefined {
   const setSort = (keys: CardSort[]): void => {
     setSorts({ ...sorts, [axis]: keys });
   };
+  const [storedPending, setStoredPending] = useRemembered("pending.lab", [], pendingSchema);
+  const [overPending, setOverPending] = useState(false);
   const [peek, setPeek] = useState<string | undefined>(undefined);
   const [typing, setTyping] = useState("");
   const [drag, setDrag] = useState<Drag | undefined>(undefined);
@@ -157,12 +190,44 @@ export function useLab(): Lab | undefined {
   const applied = allOf(pills.map((pill) => pill.test));
   const lens = allOf(resolve(lensKeys).map((pill) => pill.test));
   const picked = new Set(pillKeys.flatMap(pillMembers));
+  const pending: PendingMove[] = storedPending.flatMap((entry) => {
+    const card = all.find((candidate) => candidate.slug === entry.slug);
+    return card && card.status !== "cut" && card.status !== entry.to
+      ? [{ card, to: entry.to }]
+      : [];
+  });
+  const pendingTo = new Map(pending.map((entry) => [entry.card.slug, entry.to]));
+  const queued = project(
+    all,
+    pending.map((entry) => ({ slug: entry.card.slug, to: entry.to })),
+  );
+  const statusOf = (slug: string): CardStatus | undefined =>
+    queued.find((card) => card.slug === slug)?.status;
+  const setPending = (next: readonly PendingMove[]): void => {
+    setStoredPending(next.map((entry) => ({ slug: entry.card.slug, to: entry.to })));
+  };
+  const queue = (card: GridCard): void => {
+    if (card.status === "cut") {
+      return;
+    }
+    setPending(
+      pendingTo.has(card.slug)
+        ? pending.filter((entry) => entry.card.slug !== card.slug)
+        : [...pending, { card, to: flip(card.status) }],
+    );
+  };
+  const dragged = drag && all.find((candidate) => candidate.slug === drag.slug);
   const hoverSlug = hover?.card.slug;
   const hovered = hoverSlug === undefined ? undefined : all.find((c) => c.slug === hoverSlug);
   const opened = selected === undefined ? undefined : all.find((c) => c.slug === selected);
+  const flipNow = (card: GridCard): Drag => ({
+    slug: card.slug,
+    to: flip(statusOf(card.slug) ?? card.status),
+  });
   const moves: Drag[] = [
-    ...(opened ? [{ slug: opened.slug, to: flip(opened.status) }] : []),
-    ...(drag ? [drag] : hovered ? [{ slug: hovered.slug, to: flip(hovered.status) }] : []),
+    ...pending.map((entry) => ({ slug: entry.card.slug, to: entry.to })),
+    ...(opened ? [flipNow(opened)] : []),
+    ...(drag ? [drag] : hovered ? [flipNow(hovered)] : []),
   ];
   const projected = project(all, moves);
   const scope = all.filter(PIN_INCLUDES.draft);
@@ -264,7 +329,12 @@ export function useLab(): Lab | undefined {
     onHover: setHover,
     zone: (status) => ({
       "data-zone": status,
-      "data-over": drag?.to === status ? "" : undefined,
+      "data-over": drag?.to === status && !overPending ? "" : undefined,
+      "data-target": dragged && dragged.status !== status ? "" : undefined,
+      "data-drop":
+        dragged && dragged.status !== status
+          ? `Drop to move to ${status === "draft" ? "draft" : "prospects"}`
+          : undefined,
       onDragOver: (event) => {
         if (!event.dataTransfer.types.includes(DRAG_TYPE) || !drag) {
           return;
@@ -288,6 +358,62 @@ export function useLab(): Lab | undefined {
         setDrag(undefined);
       },
     }),
+    pending,
+    pendingOf: (card) => {
+      const to = pendingTo.get(card.slug);
+      return to === undefined ? undefined : markOf(to);
+    },
+    queue,
+    unqueue: (slug) => {
+      setPending(pending.filter((entry) => entry.card.slug !== slug));
+    },
+    clearPending: () => {
+      setPending([]);
+    },
+    applyPending:
+      mode.moveCards && pending.length > 0
+        ? () => {
+            const adds = pending.filter((entry) => entry.to === "draft").length;
+            const cuts = pending.length - adds;
+            mode.moveCards?.(
+              pending.map((entry) => ({ card: entry.card, status: entry.to })),
+              `pending: +${String(adds)} −${String(cuts)}`,
+            );
+            setPending([]);
+          }
+        : undefined,
+    pendingZone: {
+      "data-over": overPending ? "" : undefined,
+      "data-target": dragged && !pendingTo.has(dragged.slug) ? "" : undefined,
+      "data-drop": dragged && !pendingTo.has(dragged.slug) ? "Drop to queue" : undefined,
+      onDragOver: (event) => {
+        if (!event.dataTransfer.types.includes(DRAG_TYPE) || !drag) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "move";
+        setOverPending(true);
+        const card = all.find((candidate) => candidate.slug === drag.slug);
+        const to = card && !pendingTo.has(card.slug) ? flip(card.status) : undefined;
+        if (drag.to !== to) {
+          setDrag({ slug: drag.slug, to });
+        }
+      },
+      onDragLeave: () => {
+        setOverPending(false);
+      },
+      onDrop: (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setOverPending(false);
+        const card = all.find((candidate) => candidate.slug === drag?.slug);
+        if (card && !pendingTo.has(card.slug)) {
+          queue(card);
+        }
+        setDrag(undefined);
+      },
+    },
     dragRoot: {
       onDragStart: (event) => {
         const slug = event.dataTransfer.getData(DRAG_TYPE);
@@ -298,6 +424,7 @@ export function useLab(): Lab | undefined {
       },
       onDragEnd: () => {
         setDrag(undefined);
+        setOverPending(false);
       },
     },
   };

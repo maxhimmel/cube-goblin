@@ -8,6 +8,7 @@ import { CardColumns, CardRows } from "./cards.tsx";
 import type { Dock } from "./dock.tsx";
 import { BlocksMenu, DOCKS, DockBlocks, useDockState } from "./dock.tsx";
 import { LayoutsMenu } from "./layouts-menu.tsx";
+import { PendingGutter, usePendingOpen } from "./pending.tsx";
 import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx";
 import type { Lab } from "./use-lab.ts";
 import { useLab } from "./use-lab.ts";
@@ -26,6 +27,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
     z.enum(["columns", "rows"]),
   );
   const dock = useDockState();
+  const [pendingOpen, setPendingOpen] = usePendingOpen();
   const draft = lab.cards.filter((card) => card.status === "draft");
   const prospects = lab.cards.filter((card) => card.status !== "draft");
   const pile = (cards: typeof draft, compact: boolean): ReactNode =>
@@ -39,6 +41,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
       className="lab"
       data-dock={dockAt}
       data-dock-open={open ? "" : undefined}
+      data-pending-open={pendingOpen ? "" : undefined}
       {...lab.dragRoot}
     >
       <header className="lab-top">
@@ -130,6 +133,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           </header>
           {pile(draft, false)}
         </section>
+        <PendingGutter lab={lab} tags={tags} open={pendingOpen} setOpen={setPendingOpen} />
         <section
           className="lab-pile"
           data-pile="prospects"

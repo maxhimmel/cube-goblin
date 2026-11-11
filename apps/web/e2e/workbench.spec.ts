@@ -1765,3 +1765,76 @@ test("an opened card stays highlighted in the Lab and previews its move in every
   await expect(page.locator(".lab-cell[data-selected]")).toHaveCount(0);
   await expect(summary.locator(".lab-ghost-label")).toHaveCount(0);
 });
+
+test("Lab Pending queues adds and cuts, previews them together, and applies as one undoable edit", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  const prospects = page.getByRole("region", { name: "Prospects", exact: true });
+  const pending = page.getByRole("region", { name: "Pending", exact: true });
+  const count = Number(await page.locator(".lab-count-value").textContent());
+  const ghost = page.locator(".lab-count-ghost");
+  const nameOf = async (cell: Locator): Promise<string> =>
+    (await cell.locator(".lab-strip-name").textContent()) ?? "";
+  const slugOf = async (cell: Locator): Promise<string> =>
+    ((await cell.locator(".lab-strip").getAttribute("href")) ?? "").replace(/^.*card=/u, "");
+
+  const add = prospects.locator(".lab-cell").first();
+  const addName = await nameOf(add);
+  const addSlug = await slugOf(add);
+  const cutA = draft.locator(".lab-cell").nth(0);
+  const cutB = draft.locator(".lab-cell").nth(1);
+  const cutAName = await nameOf(cutA);
+  const cutASlug = await slugOf(cutA);
+  const cutBName = await nameOf(cutB);
+  const cutBSlug = await slugOf(cutB);
+
+  await pending.getByRole("button", { name: "Expand Pending" }).click();
+  await expect(pending).toContainText("-click a card");
+  await add.locator(".lab-strip").dragTo(pending);
+  await expect(prospects.locator(`.lab-cell[data-pending="add"]`)).toHaveCount(1);
+  await cutA.locator(".lab-strip").click({ modifiers: ["Alt"] });
+  await cutB.locator(".lab-strip").click({ modifiers: ["Alt"] });
+  await expect(page.getByRole("complementary", { name: cutAName })).toHaveCount(0);
+  await expect(draft.locator(`.lab-cell[data-pending="cut"]`)).toHaveCount(2);
+  await page.mouse.move(5, 990);
+  await expect(pending.locator(".pending-tally")).toHaveText("+1−2");
+  await expect(ghost).toHaveText(`→ ${String(count - 1)}`);
+  await expect(page.locator(".lab-count-value")).toHaveText(String(count));
+  expect((await readEntry(workbench.cardsDir, cutASlug)).status).toBe("draft");
+
+  await page.reload();
+  await expect(pending.locator(".pending-tally")).toHaveText("+1−2");
+  await expect(pending.locator(".lab-strip-name")).toHaveCount(3);
+  for (const name of [addName, cutAName, cutBName]) {
+    await expect(pending.locator(".lab-strip-name", { hasText: name })).toHaveCount(1);
+  }
+
+  await pending.locator(".lab-cell", { hasText: cutBName }).hover();
+  await pending.getByRole("button", { name: `Remove ${cutBName} from pending` }).click();
+  await page.mouse.move(5, 990);
+  await expect(pending.locator(".pending-tally")).toHaveText("+1−1");
+  await expect(ghost).toHaveText(`→ ${String(count)}`);
+
+  await pending.getByRole("button", { name: "Apply" }).click();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, addSlug)).status)
+    .toBe("draft");
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, cutASlug)).status)
+    .toBe("prospect");
+  expect((await readEntry(workbench.cardsDir, cutBSlug)).status).toBe("draft");
+  await expect(pending.locator(".pending-tally")).toHaveText("+0−0");
+  await expect(page.locator(".lab-cell[data-pending]")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, addSlug)).status)
+    .toBe("prospect");
+  await expect
+    .poll(async () => (await readEntry(workbench.cardsDir, cutASlug)).status)
+    .toBe("draft");
+});

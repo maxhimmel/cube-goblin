@@ -445,6 +445,27 @@ function DockBlock({
   );
 }
 
+export function CollapseButton({
+  title,
+  collapsed,
+  onToggle,
+}: {
+  title: string;
+  collapsed: boolean;
+  onToggle: () => void;
+}): ReactNode {
+  return (
+    <button
+      type="button"
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
+      onClick={onToggle}
+    >
+      {collapsed ? "+" : "–"}
+    </button>
+  );
+}
+
 const SHORT_CAPTION = 40;
 
 function Tile({
@@ -481,14 +502,7 @@ function Tile({
               ▤
             </button>
           )}
-          <button
-            type="button"
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
-            onClick={onToggle}
-          >
-            {collapsed ? "+" : "–"}
-          </button>
+          <CollapseButton title={title} collapsed={collapsed} onToggle={onToggle} />
           {onHide && (
             <button type="button" aria-label={`Hide ${title}`} onClick={onHide}>
               ×

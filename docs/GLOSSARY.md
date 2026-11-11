@@ -89,6 +89,10 @@ A project-defined term with no outside source: the workbench view (`#/lab`) that
 
 A project-defined term with no outside source: a named snapshot of the [Lab](#lab)'s settings (dock blocks and their scopes, grouping, card layout, switches, and applied filters), saved to `cube/layouts.json` to switch between setups. The Lab remembers its current settings without one ([T-031](tickets/T-031-lab-view.md)). Not an Insights dashboard layout, which stays in the browser ([T-015](tickets/T-015-insights-dashboard-layout.md)).
 
+## Pending
+
+A project-defined term with no outside source: the [Lab](#lab)'s queue of card moves (adds to the draft and cuts from it) that every Lab chart and the draft count show together as ghost deltas before any is saved. Apply saves them all as one undoable change; until then they live in the browser and survive a reload ([T-037](tickets/T-037-lab-scenario.md)). Not a [version](#version), which saves the whole cube.
+
 ## Version
 
 A project-defined term with no outside source: a named, dated snapshot of the whole cube (every card with its status, tags, notes, and printing, plus the tag list and Board [sections](#section)), saved to `cube/versions/<date>-<label>.json` from the workbench's Versions view. Comparing two versions, or one with the current cube, lists what changed ([T-014](tickets/T-014-versions-and-compare.md)). Not a git commit, though version files are committed like other cube data.

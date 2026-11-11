@@ -953,14 +953,20 @@ test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
 
   await page.getByLabel("Sort cards by").selectOption("mv");
   await expect.poll(() => names(burn)).toEqual(["Shock", "Lasting Tarfire"]);
-  await page.getByLabel("Then by").selectOption("color");
+  await page.getByLabel("Then by", { exact: true }).selectOption("color");
   await expect(page).toHaveURL(/sort=mv\.color/u);
+  await page.getByLabel("Then by, key 3").selectOption("power");
+  await page.getByLabel("Then by, key 4").selectOption("toughness");
+  await expect(page).toHaveURL(/sort=mv\.color\.power\.toughness/u);
   await page.reload();
   await expect.poll(() => names(burn)).toEqual(["Shock", "Lasting Tarfire"]);
+  await expect(page.getByLabel("Then by, key 4")).toHaveValue("toughness");
+  await page.getByLabel("Then by, key 3").selectOption("");
+  await expect(page).toHaveURL(/sort=mv\.color\.toughness(?!\.)/u);
 
   await page.getByLabel("Sort cards by").selectOption("added");
   await expect.poll(() => names(burn)).toEqual(["Lasting Tarfire", "Shock"]);
-  await expect(page.getByLabel("Then by")).toBeDisabled();
+  await expect(page.getByLabel("Then by", { exact: true })).toBeDisabled();
   expect((await readBoard(workbench.cardsDir)).sections[0]?.cards).toEqual([
     "lasting-tarfire",
     "shock",
@@ -1569,4 +1575,41 @@ test("every Lab chart previews a hovered card's move and peeks at a hovered bar"
   );
   await page.getByRole("button", { name: "Remove Has Red" }).click();
   await page.getByRole("button", { name: "Charts on the top" }).click();
+});
+
+test("the Lab sorts its cards by a chain of keys that survives a reload", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 });
+  await page.goto(`${workbench.url}#/lab`);
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  await draft.getByRole("button", { name: "Rows" }).click();
+  await draft.getByRole("button", { name: "Card type", exact: true }).click();
+  const sorter = draft.getByRole("group", { name: "Sort order" });
+  await sorter.getByLabel("Sort cards by").selectOption("power");
+  await sorter.getByLabel("Then by", { exact: true }).selectOption("toughness");
+  const creatures = draft
+    .locator(".lab-group")
+    .filter({ has: page.locator(".lab-group-head", { hasText: /^Creature/u }) });
+  const stats = async (): Promise<number[][]> =>
+    (await creatures.locator(".lab-row-pt").allTextContents())
+      .map((pt) => pt.split("/").map(Number))
+      .filter((pair) => pair.every((value) => Number.isFinite(value)));
+  const ascending = (pairs: number[][]): boolean =>
+    pairs.every((pair, at) => {
+      const prev = pairs[at - 1];
+      const [p = 0, t = 0] = pair;
+      const [pp = 0, pt = 0] = prev ?? [];
+      return prev === undefined || pp < p || (pp === p && pt <= t);
+    });
+  await expect.poll(async () => (await stats()).length).toBeGreaterThan(5);
+  expect(ascending(await stats())).toBe(true);
+  await page.reload();
+  await expect(sorter.getByLabel("Then by", { exact: true })).toHaveValue("toughness");
+  expect(ascending(await stats())).toBe(true);
+  await sorter.getByLabel("Sort cards by").selectOption("mv");
+  await sorter.getByLabel("Then by", { exact: true }).selectOption("color");
+  await draft.getByRole("button", { name: "Mana value", exact: true }).click();
+  await draft.getByRole("button", { name: "Columns" }).click();
 });

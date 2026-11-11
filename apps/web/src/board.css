@@ -242,9 +242,10 @@
   gap: 8px 16px;
 }
 
-.board-sort {
+.sort-chain {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   font-size: 0.85rem;
 }
 

@@ -1,6 +1,6 @@
 import { mode } from "#mode";
-import type { CardStatus, ColumnAxis, Filter, Tag } from "@repo/cube/browser";
-import { COLUMN_AXES, newFilterId } from "@repo/cube/browser";
+import type { CardSort, CardStatus, ColumnAxis, Filter, Tag } from "@repo/cube/browser";
+import { COLUMN_AXES, isCardSort, newFilterId } from "@repo/cube/browser";
 import type { DragEvent } from "react";
 import { useState } from "react";
 import { z } from "zod";
@@ -71,6 +71,8 @@ export interface Lab {
   setShowCut: (on: boolean) => void;
   axis: Axis;
   setAxis: (axis: Axis) => void;
+  sort: CardSort[];
+  setSort: (keys: CardSort[]) => void;
   drag: Drag | undefined;
   scope: GridCard[];
   next: GridCard[];
@@ -101,6 +103,11 @@ export function useLab(): Lab | undefined {
     "lab.axis",
     "mv",
     z.enum(["mv", "color", "type", "none"]),
+  );
+  const [sort, setSort] = useRemembered<CardSort[]>(
+    "lab.sort",
+    ["mv", "color"],
+    z.array(z.string()).transform((keys) => keys.filter(isCardSort)),
   );
   const [peek, setPeek] = useState<string | undefined>(undefined);
   const [typing, setTyping] = useState("");
@@ -191,6 +198,8 @@ export function useLab(): Lab | undefined {
     setShowCut,
     axis,
     setAxis,
+    sort,
+    setSort,
     drag,
     scope,
     next,

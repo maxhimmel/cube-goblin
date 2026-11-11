@@ -116,7 +116,7 @@ export {
 export type { Filter, FiltersFile } from "./filters.ts";
 export { EMPTY_LAYOUTS, layoutSchema, layoutsFileSchema, newLayoutId } from "./layouts.ts";
 export type { Layout, LayoutsFile } from "./layouts.ts";
-export { CARD_SORTS, isCardSort, sortCards } from "./sort.ts";
+export { CARD_SORTS, formatSortKeys, isCardSort, parseSortKeys, sortCards } from "./sort.ts";
 export type { CardSort } from "./sort.ts";
 export {
   cardCount,

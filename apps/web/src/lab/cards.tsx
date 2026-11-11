@@ -1,6 +1,6 @@
 import { mode } from "#mode";
 import type { Column } from "@repo/cube/browser";
-import { colorKey, columnsBy } from "@repo/cube/browser";
+import { colorKey, columnsBy, sortCards } from "@repo/cube/browser";
 import type { CSSProperties, DragEvent, PointerEvent, ReactNode } from "react";
 import { CardLink } from "../card-pane.tsx";
 import { colorIcon, curveTick } from "../insights/labels.tsx";
@@ -37,20 +37,17 @@ function stripeOf(card: GridCard): string {
   return `linear-gradient(180deg, ${card.colors.map((color) => MANA_VAR[color] ?? "").join(", ")})`;
 }
 
-function byCost(a: GridCard, b: GridCard): number {
-  return a.cmc - b.cmc || colorKey(a).localeCompare(colorKey(b)) || a.name.localeCompare(b.name);
-}
-
 function groups(cards: readonly GridCard[], axis: Axis): Column<GridCard>[] {
-  if (axis === "none") {
-    return [{ id: "all", label: "All", cards: cards.toSorted(byCost) }];
-  }
-  return columnsBy(cards, axis);
+  return axis === "none"
+    ? [{ id: "all", label: "All", cards: [...cards] }]
+    : columnsBy(cards, axis);
 }
 
 function shownGroups(lab: Lab, cards: readonly GridCard[]): Column<GridCard>[] {
   const shown = cards.filter((card) => !lab.hidden(card));
-  return groups(shown, lab.axis).filter((column) => column.cards.length > 0);
+  return groups(shown, lab.axis)
+    .filter((column) => column.cards.length > 0)
+    .map((column) => ({ ...column, cards: sortCards(column.cards, lab.sort) }));
 }
 
 function GroupTitle({ axis, column }: { axis: Axis; column: Column<GridCard> }): ReactNode {

@@ -1867,3 +1867,293 @@ button.lab-stat[data-picked] {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
 }
+
+.lab-cell[data-pending] .lab-strip,
+.lab-row-cell[data-pending] .lab-row {
+  outline: 2px dashed var(--pending-mark);
+  outline-offset: -2px;
+}
+
+.lab-cell[data-pending="add"],
+.lab-row-cell[data-pending="add"] {
+  --pending-mark: var(--keep);
+}
+
+.lab-cell[data-pending="cut"],
+.lab-row-cell[data-pending="cut"] {
+  --pending-mark: var(--cut);
+}
+
+.lab-cell[data-pending="cut"] .lab-strip-name,
+.lab-row-cell[data-pending="cut"] .lab-row-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--cut);
+}
+
+.lab-cell[data-pending] .lab-strip::after,
+.lab-row-cell[data-pending] .lab-row::after {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  color: var(--pending-mark);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.lab-cell[data-pending="add"] .lab-strip::after,
+.lab-row-cell[data-pending="add"] .lab-row::after {
+  content: "+";
+}
+
+.lab-cell[data-pending="cut"] .lab-strip::after,
+.lab-row-cell[data-pending="cut"] .lab-row::after {
+  content: "−";
+}
+
+.pending-title {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pending-tally {
+  display: inline-flex;
+  gap: 6px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pending-tally [data-mark="add"],
+.pending-chip[data-mark="add"] .pending-chip-sign {
+  color: var(--keep);
+}
+
+.pending-tally [data-mark="cut"],
+.pending-chip[data-mark="cut"] .pending-chip-sign {
+  color: var(--cut);
+}
+
+.pending-actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pending-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pending-chips:empty {
+  display: none;
+}
+
+.pending-chip {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  max-width: 220px;
+  padding: 2px 4px 2px 7px;
+  font-size: 0.78rem;
+  background: color-mix(in oklab, var(--panel) 85%, var(--fg) 4%);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.pending-chip[data-mark="cut"] .pending-chip-name {
+  text-decoration: line-through;
+  text-decoration-color: var(--cut);
+}
+
+.pending-chip-sign {
+  font-weight: 800;
+}
+
+.pending-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-chip button {
+  padding: 0 4px;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.pending-a,
+.pending-b,
+.pending-c,
+.pending-d {
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.pending-a[data-over],
+.pending-b[data-over],
+.pending-c[data-over],
+.pending-d[data-over] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+.pending-a {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.pending-a[data-empty] .pending-actions {
+  display: none;
+}
+
+.pending-a-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  gap: 8px;
+  width: min(520px, 80vw);
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+}
+
+.pending-a-list p {
+  margin: 0;
+}
+
+.pending-b {
+  display: flex;
+  flex-basis: 100%;
+  gap: 10px;
+  align-items: center;
+  min-height: 34px;
+  padding: 3px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+
+.pending-b-sides {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.pending-b-sides .pending-chips {
+  flex-wrap: nowrap;
+}
+
+.lab[data-pending-layout="c"] .lab-floor {
+  grid-template-columns: minmax(0, 2.4fr) 150px minmax(240px, 1fr);
+}
+
+.pending-c {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  min-height: 0;
+  padding: 10px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+}
+
+.pending-c header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.pending-c-sides {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  overflow: auto;
+}
+
+.pending-c-sides h3 {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pending-c .pending-chips {
+  flex-direction: column;
+}
+
+.pending-c .pending-chip {
+  max-width: none;
+  border-radius: 8px;
+}
+
+.pending-c .pending-chip .ms {
+  display: none;
+}
+
+.pending-c-sides p {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.lab[data-pending-layout="d"] {
+  padding-bottom: 44px;
+}
+
+.pending-d {
+  position: fixed;
+  right: 16px;
+  bottom: 8px;
+  left: 16px;
+  z-index: 30;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 25%);
+  backdrop-filter: blur(6px);
+}
+
+.pending-d-sides {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.pending-d-sides .pending-chips {
+  flex-wrap: nowrap;
+}
+
+.pending-d-rule {
+  align-self: stretch;
+  width: 1px;
+  margin: 8px 0;
+  background: var(--line);
+}

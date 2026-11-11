@@ -137,6 +137,8 @@ const versionsRoute = createRoute({
 const labRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/lab",
+  validateSearch: (search: Record<string, unknown>): { pending?: string | undefined } =>
+    typeof search["pending"] === "string" ? { pending: search["pending"] } : {},
   component: LabPage,
 });
 

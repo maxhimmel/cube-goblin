@@ -1,3 +1,4 @@
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { z } from "zod";
@@ -8,6 +9,17 @@ import { CardColumns, CardRows } from "./cards.tsx";
 import type { Dock } from "./dock.tsx";
 import { BlocksMenu, DOCKS, DockBlocks, useDockState } from "./dock.tsx";
 import { LayoutsMenu } from "./layouts-menu.tsx";
+import type { PendingLayout } from "./pending.tsx";
+import {
+  DropSwitch,
+  PENDING_LAYOUTS,
+  PENDING_LAYOUT_LABELS,
+  PendingBar,
+  PendingChip,
+  PendingGutter,
+  PendingStrip,
+  pendingLayout,
+} from "./pending.tsx";
 import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx";
 import type { Lab } from "./use-lab.ts";
 import { useLab } from "./use-lab.ts";
@@ -26,6 +38,17 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
     z.enum(["columns", "rows"]),
   );
   const dock = useDockState();
+  const search: { pending?: string | undefined } = useSearch({ strict: false });
+  const navigate = useNavigate();
+  const layout = pendingLayout(search.pending);
+  const setLayout = (next: PendingLayout): void => {
+    void navigate({
+      to: ".",
+      search: (prev) => ({ ...prev, pending: next }),
+      replace: true,
+      resetScroll: false,
+    });
+  };
   const draft = lab.cards.filter((card) => card.status === "draft");
   const prospects = lab.cards.filter((card) => card.status !== "draft");
   const pile = (cards: typeof draft, compact: boolean): ReactNode =>
@@ -39,11 +62,13 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
       className="lab"
       data-dock={dockAt}
       data-dock-open={open ? "" : undefined}
+      data-pending-layout={layout}
       {...lab.dragRoot}
     >
       <header className="lab-top">
         <h1>Lab</h1>
         <DraftCount lab={lab} />
+        {layout === "a" && <PendingChip lab={lab} />}
         <QueryBar lab={lab} />
         <div className="lab-controls">
           <Segmented
@@ -81,6 +106,18 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
               {open ? "⊟" : "⊞"}
             </button>
           </div>
+          <DropSwitch lab={lab} />
+          <Segmented
+            label="Pending layout (demo)"
+            caption="Pending layout"
+            options={PENDING_LAYOUTS.map((id) => ({
+              id,
+              label: id.toUpperCase(),
+              title: PENDING_LAYOUT_LABELS[id],
+            }))}
+            value={layout}
+            onChange={setLayout}
+          />
           <BlocksMenu dock={dock} />
           <LayoutsMenu onApply={onApply} />
           <div className="lab-switches">
@@ -94,6 +131,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
             <Toggle label="Show cut" checked={lab.showCut} onChange={lab.setShowCut} />
           </div>
         </div>
+        {layout === "b" && <PendingStrip lab={lab} />}
       </header>
       <div className="lab-dock">
         {open ? (
@@ -130,6 +168,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           </header>
           {pile(draft, false)}
         </section>
+        {layout === "c" && <PendingGutter lab={lab} />}
         <section
           className="lab-pile"
           data-pile="prospects"
@@ -144,6 +183,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           {pile(prospects, true)}
         </section>
       </div>
+      {layout === "d" && <PendingBar lab={lab} />}
       <Preview hover={lab.hover} />
     </div>
   );

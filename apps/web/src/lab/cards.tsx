@@ -1,7 +1,7 @@
 import { mode } from "#mode";
 import type { Column } from "@repo/cube/browser";
 import { colorKey, columnsBy, sortCards } from "@repo/cube/browser";
-import type { CSSProperties, DragEvent, PointerEvent, ReactNode } from "react";
+import type { CSSProperties, DragEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 import { CardLink } from "../card-pane.tsx";
 import { colorIcon, curveTick } from "../insights/labels.tsx";
 import { ManaCost } from "../mana.tsx";
@@ -96,6 +96,12 @@ function cardLinkProps(lab: Lab, card: GridCard) {
     onPointerLeave: () => {
       lab.onHover(undefined);
     },
+    onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+      if (event.altKey) {
+        event.preventDefault();
+        lab.queue(card);
+      }
+    },
   };
 }
 
@@ -106,6 +112,7 @@ function CardStrip({ lab, card, tags }: { lab: Lab; card: GridCard; tags: boolea
       className="lab-cell"
       data-dim={lab.dimmed(card) ? "" : undefined}
       data-selected={lab.selected === card.slug ? "" : undefined}
+      data-pending={lab.pendingOf(card)}
     >
       <CardLink className="lab-strip" {...cardLinkProps(lab, card)}>
         <span className="lab-strip-top">
@@ -170,6 +177,7 @@ function CardRow({ lab, card }: { lab: Lab; card: GridCard }): ReactNode {
       className="lab-row-cell"
       data-dim={lab.dimmed(card) ? "" : undefined}
       data-selected={lab.selected === card.slug ? "" : undefined}
+      data-pending={lab.pendingOf(card)}
     >
       <CardLink className="lab-row" {...cardLinkProps(lab, card)}>
         <span className="lab-row-stripe" />

@@ -1528,3 +1528,45 @@ test("the Lab saves its stack of applied filters as one filter", async ({ page, 
     .toContainEqual(expect.objectContaining({ label: "Cheap blue", query: "c=u mv=2" }));
   await page.getByRole("button", { name: "Remove Cheap blue" }).click();
 });
+
+test("every Lab chart previews a hovered card's move and peeks at a hovered bar", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  await page.goto(`${workbench.url}#/lab`);
+  await page.getByRole("button", { name: "Charts on the left" }).click();
+  const menu = page.locator(".lab-menu").first();
+  await menu.getByRole("button", { name: /^Blocks/u }).click();
+  for (const box of await menu.locator("input[type=checkbox]").all()) {
+    await box.check();
+  }
+  await menu.getByRole("button", { name: /^Blocks/u }).click();
+
+  const color = page.getByRole("region", { name: "Color", exact: true });
+  const types = page.getByRole("region", { name: "Card types" });
+  const summary = page.getByRole("region", { name: "Summary" });
+  await expect(color.getByRole("listitem")).not.toHaveCount(0);
+  await expect(types.getByRole("listitem")).not.toHaveCount(0);
+  await expect(summary.locator(".lab-ghost-label")).toHaveCount(0);
+
+  const prospect = page.locator('[data-pile="prospects"] .lab-strip').first();
+  await prospect.hover();
+  await expect(summary.locator(".lab-ghost-label").first()).toHaveText("+1");
+  await expect(types.locator(".lab-ghost-label").first()).toHaveText("+1");
+  await page.locator(".lab-top h1").hover();
+  await expect(summary.locator(".lab-ghost-label")).toHaveCount(0);
+
+  const dim = page.locator(".lab-cell[data-dim]");
+  const redBar = color.getByRole("listitem", { name: /^Red:/u });
+  await redBar.hover();
+  await expect.poll(async () => dim.count()).toBeGreaterThan(0);
+  await redBar.click();
+  await expect(page.getByRole("button", { name: "Remove Has Red" })).toBeVisible();
+  await expect(color.getByRole("listitem", { name: /^Red:/u })).toHaveAttribute(
+    "aria-label",
+    /^Red: (\d+) of \1$/u,
+  );
+  await page.getByRole("button", { name: "Remove Has Red" }).click();
+  await page.getByRole("button", { name: "Charts on the top" }).click();
+});

@@ -129,8 +129,8 @@ export const KEYWORDS: readonly Keyword[] = [
 ];
 
 export const SYNTAX: readonly { syntax: string; help: string }[] = [
-  { syntax: "a b", help: "both" },
-  { syntax: "a or b", help: "either" },
+  { syntax: "a b", help: "both (a and b works too)" },
+  { syntax: "a or b", help: "either; typed after a pill, joins it with the next term" },
   { syntax: "-a", help: "not" },
   { syntax: "(a or b) c", help: "group" },
   { syntax: '"two words"', help: "a value with spaces" },
@@ -153,7 +153,8 @@ export type QueryNode =
   | ({ type: "word"; value: string } & Span);
 
 type Token =
-  ({ kind: "open" | "close" | "or" | "not" } & Span) | ({ kind: "text"; text: string } & Span);
+  | ({ kind: "open" | "close" | "or" | "and" | "not" } & Span)
+  | ({ kind: "text"; text: string } & Span);
 
 export class QueryError extends Error {
   readonly at: number;
@@ -203,9 +204,10 @@ function tokenize(source: string): Token[] {
       text += source[i] ?? "";
       i += 1;
     }
+    const word = quoted ? "" : text.toLowerCase();
     tokens.push(
-      !quoted && text.toLowerCase() === "or"
-        ? { kind: "or", start, end: i }
+      word === "or" || word === "and"
+        ? { kind: word, start, end: i }
         : { kind: "text", text, start, end: i },
     );
   }
@@ -307,7 +309,7 @@ export function parse(source: string): QueryNode | undefined {
       return readTerm(token);
     }
     throw new QueryError(
-      token.kind === "or" ? '"or" needs something before it' : "Unexpected )",
+      token.kind === "close" ? "Unexpected )" : `"${token.kind}" needs something before it`,
       token.start,
     );
   }
@@ -315,6 +317,14 @@ export function parse(source: string): QueryNode | undefined {
   function both(): QueryNode {
     const parts = [primary()];
     while (at < tokens.length && peek()?.kind !== "or" && peek()?.kind !== "close") {
+      const joiner = peek();
+      if (joiner?.kind === "and") {
+        at += 1;
+        const after = peek();
+        if (!after || after.kind === "or" || after.kind === "and" || after.kind === "close") {
+          throw new QueryError('"and" needs something after it', joiner.start);
+        }
+      }
       parts.push(primary());
     }
     const [only] = parts;
@@ -561,7 +571,12 @@ export function queryParts(source: string): QueryPart[] {
 }
 
 export function removePart(source: string, part: Span): string {
-  return `${source.slice(0, part.start).trimEnd()} ${source.slice(part.end).trimStart()}`.trim();
+  const before = source.slice(0, part.start).trimEnd();
+  const after = source.slice(part.end).trimStart();
+  const joined = /^and\b/iu.test(after)
+    ? `${before} ${after.replace(/^and\s*/iu, "")}`
+    : `${before.replace(/(^|\s)and$/iu, "")} ${after}`;
+  return joined.trim();
 }
 
 export function quote(value: string): string {

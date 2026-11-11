@@ -1,6 +1,6 @@
 import type { Tag } from "@repo/cube/browser";
 import { describe, expect, it } from "vitest";
-import { suggest } from "./query-input.tsx";
+import { joinTyped, suggest, typedQuery } from "./query-input.tsx";
 
 const tags: Tag[] = [
   { id: "removal", label: "Removal", kind: "group" },
@@ -26,5 +26,29 @@ describe("suggest", () => {
   it("offers nothing for unknown fields or finished values", () => {
     expect(suggest("zz:a", tags)).toEqual([]);
     expect(suggest("t:creature", tags)).toEqual([]);
+  });
+});
+
+describe("typed connectors", () => {
+  it("offers no keyword for and or or", () => {
+    expect(suggest("or", tags)).toEqual([]);
+    expect(suggest("AND", tags)).toEqual([]);
+  });
+
+  it("joins the term after or with the last pill", () => {
+    expect(joinTyped("t:creature c=r", "or c=g ")).toBe("t:creature (c=r or c=g)");
+    expect(joinTyped("t:creature (c=r or c=g)", "or c=w")).toBe("t:creature ((c=r or c=g) or c=w)");
+    expect(joinTyped("", "or c=g")).toBe("c=g");
+  });
+
+  it("drops an and, which pills already mean", () => {
+    expect(joinTyped("c=r", "and t:creature ")).toBe("c=r t:creature");
+    expect(joinTyped("c=r", "and ")).toBeUndefined();
+  });
+
+  it("holds a lone connector without breaking the query", () => {
+    expect(typedQuery("c=r", "or ")).toBe("c=r");
+    expect(typedQuery("c=r", "and")).toBe("c=r");
+    expect(typedQuery("t:creature c=r", "or c=g")).toBe("t:creature (c=r or c=g)");
   });
 });

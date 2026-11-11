@@ -1297,6 +1297,25 @@ test("a chart bucket saves as a filter", async ({ page, workbench }) => {
   );
 });
 
+test("typing or joins the next term with the last pill, and and adds nothing", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(`${workbench.url}#/insights`);
+  await page.getByRole("button", { name: "+ New filter" }).click();
+  const editor = page.getByRole("dialog", { name: "New filter" });
+  const query = editor.getByRole("textbox", { name: "Filter query" });
+  const pills = editor.locator(".query-pill-text");
+  await query.pressSequentially("t:creature c=r or");
+  await expect(editor.getByRole("listbox", { name: "Suggestions" })).toHaveCount(0);
+  await query.pressSequentially(" c=g ");
+  await expect(pills).toHaveText(["t:creature", "(c=r or c=g)"]);
+  await query.pressSequentially("and mv<=2 ");
+  await expect(pills).toHaveText(["t:creature", "(c=r or c=g)", "mv<=2"]);
+  await expect(editor.locator(".query-error")).toHaveCount(0);
+  await editor.getByRole("button", { name: "Close filter editor" }).click();
+});
+
 test("the Lab moves cards by drag and filters them with typed, applied, and peeked queries", async ({
   page,
   workbench,

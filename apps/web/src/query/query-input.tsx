@@ -33,9 +33,33 @@ function valuesFor(entry: Keyword, vocabulary: readonly Tag[]): { value: string;
   return (entry.values ?? []).map((value) => ({ value }));
 }
 
+const CONNECTORS = new Set(["and", "or"]);
+
+export function joinTyped(committed: string, text: string): string | undefined {
+  const piece = text.trim();
+  const connected = /^(and|or)\s+(.+)$/isu.exec(piece);
+  const [, connector = "", tail = ""] = connected ?? [];
+  const term = connected ? tail : piece;
+  if (term === "" || !compileQuery(term).ok) {
+    return undefined;
+  }
+  const last = queryParts(committed).at(-1);
+  if (connector.toLowerCase() === "or" && last) {
+    return joinQuery(removePart(committed, last), `${last.text} or ${term}`);
+  }
+  return joinQuery(committed, term);
+}
+
+export function typedQuery(committed: string, draft: string): string {
+  if (CONNECTORS.has(draft.trim().toLowerCase())) {
+    return committed;
+  }
+  return joinTyped(committed, draft) ?? joinQuery(committed, draft);
+}
+
 export function suggest(token: string, vocabulary: readonly Tag[]): Suggestion[] {
   const shape = TERM_SHAPE.exec(token);
-  if (!shape || token === "" || token === "-") {
+  if (!shape || token === "" || token === "-" || CONNECTORS.has(token.toLowerCase())) {
     return [];
   }
   const [, not = "", field = "", op, value = ""] = shape;
@@ -340,7 +364,7 @@ export function QueryInput({
     };
   }, [slashFocus]);
 
-  const full = joinQuery(committed, draft);
+  const full = typedQuery(committed, draft);
   const result = compileQuery(full);
   const parts = queryParts(committed);
   const token = lastToken(draft);
@@ -351,7 +375,7 @@ export function QueryInput({
     : "";
 
   const publish = (nextCommitted: string, nextDraft: string): void => {
-    onChange(joinQuery(nextCommitted, nextDraft));
+    onChange(typedQuery(nextCommitted, nextDraft));
   };
 
   const stopEditing = (): void => {
@@ -362,16 +386,15 @@ export function QueryInput({
   };
 
   const commit = (text: string, rest = ""): void => {
-    const piece = text.trim();
-    if (piece === "" || !compileQuery(piece).ok) {
+    const next = joinTyped(committed, text);
+    if (next === undefined) {
       setDraft(text + rest);
       publish(committed, text + rest);
       return;
     }
-    const next = joinQuery(committed, piece);
     setCommitted(next);
     setDraft(rest);
-    setFresh(piece);
+    setFresh(queryParts(next).at(-1)?.text);
     setActive(0);
     publish(next, rest);
   };
@@ -431,10 +454,13 @@ export function QueryInput({
     }
     if (event.key === "Enter") {
       event.preventDefault();
+      const typed = draft.trim() === "" ? undefined : joinTyped(committed, draft);
       if (draft.trim() !== "") {
         commit(draft);
       }
-      if (result.ok) {
+      if (typed !== undefined) {
+        onSubmit?.(typed);
+      } else if (result.ok) {
         onSubmit?.(full);
       }
       return;
@@ -518,7 +544,7 @@ export function QueryInput({
             onChange={(event) => {
               const text = event.target.value;
               setActive(0);
-              if (/\s$/u.test(text) && balanced(text) && compileQuery(text.trim()).ok) {
+              if (/\s$/u.test(text) && balanced(text) && joinTyped(committed, text) !== undefined) {
                 commit(text);
                 return;
               }

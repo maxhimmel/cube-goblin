@@ -1585,6 +1585,68 @@ test("every Lab chart previews a hovered card's move and peeks at a hovered bar"
   await page.getByRole("button", { name: "Charts on the top" }).click();
 });
 
+test("the Lab creature charts peek, pick, and preview a move in a top and a side dock", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  await page.goto(`${workbench.url}#/lab`);
+  const menu = page.locator(".lab-menu").first();
+  await menu.getByRole("button", { name: /^Blocks/u }).click();
+  for (const box of await menu.locator("input[type=checkbox]").all()) {
+    await box.check();
+  }
+  await menu.getByRole("button", { name: /^Blocks/u }).click();
+  const balance = page.getByRole("region", { name: "Creature balance" });
+  const combat = page.getByRole("region", { name: "Combat matchups" });
+  const dim = page.locator(".lab-cell[data-dim]");
+  const prospects = page.locator('[data-pile="prospects"] .lab-strip');
+
+  for (const dock of ["top", "left"]) {
+    await page.getByRole("button", { name: `Charts on the ${dock}` }).click();
+    await balance.scrollIntoViewIfNeeded();
+    const rows = balance.getByRole("listitem");
+    await expect(rows).not.toHaveCount(0);
+    await expect(balance.locator(".lab-ghost-label")).toHaveCount(0);
+    await rows.first().hover();
+    await expect.poll(async () => dim.count()).toBeGreaterThan(0);
+    await page.locator(".lab-top h1").hover();
+
+    await combat.scrollIntoViewIfNeeded();
+    const dots = combat.getByRole("listitem");
+    await expect(dots).not.toHaveCount(0);
+    await dots.first().hover();
+    await expect.poll(async () => dim.count()).toBeGreaterThan(0);
+    await page.locator(".lab-top h1").hover();
+    await expect(dim).toHaveCount(0);
+
+    let ghosts = { balance: false, combat: false };
+    for (let at = 0; at < (await prospects.count()) && !(ghosts.balance && ghosts.combat); at++) {
+      await prospects.nth(at).hover();
+      await expect(page.locator(".lab-count-ghost")).toBeVisible();
+      ghosts = {
+        balance: ghosts.balance || (await balance.locator(".lab-ghost-label").count()) > 0,
+        combat:
+          ghosts.combat ||
+          ((await combat.locator(".lab-combat-dot .lab-ghost-label").count()) > 0 &&
+            (await combat.locator(".lab-combat-count .lab-ghost-label").count()) > 0),
+      };
+    }
+    expect(ghosts).toEqual({ balance: true, combat: true });
+    await page.locator(".lab-top h1").hover();
+  }
+
+  const row = balance.getByRole("listitem").first();
+  const label = (await row.getAttribute("aria-label")) ?? "";
+  const mv = /^MV (\S+):/u.exec(label)?.[1] ?? "";
+  await row.click();
+  const pill = page.getByRole("button", { name: `Remove Creatures · MV ${mv}` });
+  await expect(pill).toBeVisible();
+  await expect(row).toHaveAttribute("data-picked", "");
+  await pill.click();
+  await page.getByRole("button", { name: "Charts on the top" }).click();
+});
+
 test("the Lab sorts its cards by a chain of keys that survives a reload", async ({
   page,
   workbench,

@@ -1,24 +1,15 @@
-import {
-  COLORS,
-  PRESENCE_GROUPS,
-  TYPE_COLUMNS,
-  compileQuery,
-  cubeStats,
-  isLand,
-} from "@repo/cube/browser";
-import type { CSSProperties, ReactNode } from "react";
+import { COLORS, PRESENCE_GROUPS, TYPE_COLUMNS, compileQuery, isLand } from "@repo/cube/browser";
+import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 import { z } from "zod";
 import type { Block } from "../insights/block.tsx";
-import type { CardSet } from "../insights/filter-widgets.tsx";
-import { chartBlock } from "../insights/insights-page.tsx";
-import type { BlockId } from "../insights/layout.ts";
-import { BLOCKS } from "../insights/layout.ts";
 import { QueryInput } from "../query/query-input.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { colorIcon } from "../insights/labels.tsx";
 import {
+  BalanceStrips,
   BarList,
+  CombatPlot,
   CurveBars,
   Heat,
   PtDots,
@@ -27,7 +18,15 @@ import {
   manaVar,
 } from "./lab-charts.tsx";
 import type { Tally } from "./model.ts";
-import { bucketTallies, curveTallies, heatRows, resolvePill, tally } from "./model.ts";
+import {
+  balanceRows,
+  bucketTallies,
+  curveTallies,
+  heatRows,
+  matchups,
+  resolvePill,
+  tally,
+} from "./model.ts";
 import type { BlockView, Lab, Pin } from "./use-lab.ts";
 import { PINS } from "./use-lab.ts";
 
@@ -43,6 +42,8 @@ const LAB_BLOCKS = [
   { id: "lab:color", title: "Color" },
   { id: "lab:heat", title: "Color × mana value" },
   { id: "lab:pt", title: "Power × toughness" },
+  { id: "lab:balance", title: "Creature balance" },
+  { id: "lab:combat", title: "Combat matchups" },
   { id: "lab:types", title: "Card types" },
   { id: "lab:heavy", title: "Heavy pips" },
   { id: "lab:archetypes", title: "Archetypes" },
@@ -76,8 +77,6 @@ function summaryTallies(view: BlockView): Tally[] {
   ];
 }
 
-const INSIGHTS_IN_LAB = new Set<string>(["creature-balance", "combat"]);
-
 const RENAMED: Partial<Record<string, string>> = {
   "lab:tags": "lab:groups",
   summary: "lab:summary",
@@ -86,16 +85,11 @@ const RENAMED: Partial<Record<string, string>> = {
   types: "lab:types",
   groups: "lab:groups",
   archetypes: "lab:archetypes",
+  "creature-balance": "lab:balance",
+  combat: "lab:combat",
 };
 
-const ALL_BLOCKS: { id: string; title: string; h?: number }[] = [
-  ...LAB_BLOCKS,
-  ...BLOCKS.filter((block) => INSIGHTS_IN_LAB.has(block.id)).map((block) => ({
-    id: block.id,
-    title: block.title,
-    h: block.h,
-  })),
-];
+const ALL_BLOCKS: readonly { id: string; title: string }[] = LAB_BLOCKS;
 
 const DEFAULT_ORDER = ALL_BLOCKS.map((block) => block.id);
 
@@ -120,10 +114,6 @@ function migrate(ids: readonly string[]): string[] {
 const pinSchema = z.enum(["filter", "draft", "considered", "all"]);
 
 const TileExtras = createContext<ReactNode>(null);
-
-function isInsightsBlock(id: string): id is BlockId {
-  return INSIGHTS_IN_LAB.has(id);
-}
 
 function FilterList({ lab }: { lab: Lab }): ReactNode {
   const draft = lab.scope.length || 1;
@@ -397,14 +387,12 @@ function DockBlock({
   dragging,
   setDragging,
   children,
-  height,
 }: {
   id: string;
   dock: DockState;
   dragging: string | undefined;
   setDragging: (id: string | undefined) => void;
   children: ReactNode;
-  height: number | undefined;
 }): ReactNode {
   const [grab, setGrab] = useState(false);
   const [over, setOver] = useState(false);
@@ -412,12 +400,8 @@ function DockBlock({
     <div
       className="lab-block"
       data-block={id}
-      data-insights={id.startsWith("lab:") ? undefined : ""}
       data-dragging={dragging === id ? "" : undefined}
       data-over={over && dragging !== id ? "" : undefined}
-      style={
-        height === undefined ? undefined : ({ "--block-h": `${String(height)}px` } as CSSProperties)
-      }
       draggable={grab}
       onPointerDown={(event) => {
         setGrab((event.target as HTMLElement).closest(".block-head") !== null);
@@ -699,40 +683,32 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
           />,
           true,
         );
-      default: {
-        if (!isInsightsBlock(id)) {
-          return null;
-        }
-        const cards = view.lens ? view.scope.filter(view.lens) : view.scope;
-        const set: CardSet = {
-          cards,
-          stats: cubeStats(cards, lab.vocabulary),
-          bucket: undefined,
-          selectedBucket: undefined,
-          pick: view.events.onPick,
-        };
-        return chartBlock(id, set, Tile, { ...controls(id), selectedCard: undefined });
-      }
+      case "lab:balance":
+        return tile(
+          "Creature balance",
+          <BalanceStrips
+            rows={balanceRows(view.scope, view.next, view.lens)}
+            events={view.events}
+          />,
+          true,
+        );
+      case "lab:combat":
+        return tile(
+          "Combat matchups",
+          <CombatPlot data={matchups(view.scope, view.next, view.lens)} events={view.events} />,
+          true,
+        );
+      default:
+        return null;
     }
   };
   return dock.order
     .filter((id) => !dock.hidden.has(id))
     .map((id) => {
       const spec = ALL_BLOCKS.find((block) => block.id === id);
-      const height =
-        spec?.h === undefined || dock.collapsed.has(id)
-          ? undefined
-          : Math.min(440, Math.max(220, spec.h * 18));
       const scoped = id !== "lab:filters" && id !== "lab:tags";
       return (
-        <DockBlock
-          key={id}
-          id={id}
-          dock={dock}
-          dragging={dragging}
-          setDragging={setDragging}
-          height={height}
-        >
+        <DockBlock key={id} id={id} dock={dock} dragging={dragging} setDragging={setDragging}>
           <TileExtras.Provider
             value={
               scoped && (

@@ -23,6 +23,7 @@ import {
   bucketId,
   cubeStats,
   filterCards,
+  narrowTo,
   newFilterId,
   parseBucket,
 } from "@repo/cube/browser";
@@ -484,8 +485,8 @@ export function InsightsPage(): ReactNode {
   const pageSet: CardSet = {
     cards,
     stats,
-    bucket: search.in === undefined ? bucket : undefined,
-    selectedBucket: search.in === undefined ? search.bucket : undefined,
+    bucket: panelFilter ? undefined : bucket,
+    selectedBucket: panelFilter ? undefined : search.bucket,
     pick: pickIn(undefined),
   };
   const filterSet = (filter: Filter): CardSet => {
@@ -850,10 +851,7 @@ export function InsightsPage(): ReactNode {
               mode.putFilter
                 ? () => {
                     startNew(
-                      [
-                        ...(panelFilter?.chips ?? []),
-                        { bucket: bucketId(bucket.kind, ...bucket.keys) },
-                      ],
+                      narrowTo(panelFilter?.chips ?? [], bucketId(bucket.kind, ...bucket.keys)),
                       panelFilter
                         ? `${panelFilter.label}: ${bucketLabel(bucket, stats)}`
                         : bucketLabel(bucket, stats),

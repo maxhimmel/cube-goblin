@@ -1221,7 +1221,7 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
     .poll(async () => (await readFilters(workbench.cardsDir)).filters)
     .toEqual([
       {
-        id: "filter-1",
+        id: expect.stringMatching(/^filter-[a-z0-9]+$/u),
         label: "Cheap red",
         chips: [
           { bucket: "color:R" },
@@ -1244,7 +1244,7 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
   const row = block.locator('tr[data-stat="2"]');
   const two = Number(await row.locator("td").textContent());
   await row.getByRole("button").click();
-  await expect(page).toHaveURL(/in=filter-1/u);
+  await expect(page).toHaveURL(/in=filter-/u);
   const panel = page.getByRole("complementary", { name: "Cards in bucket" });
   await expect(panel.getByRole("heading")).toContainText("Mana value 2");
   await expect(panel.locator(".strip")).toHaveCount(two);

@@ -111,6 +111,7 @@ export {
   filtersFileSchema,
   hasStatusChip,
   matchesFilter,
+  narrowTo,
   newFilterId,
   pruneFilters,
   tagChip,

@@ -119,13 +119,26 @@ export function validateFilters(file: FiltersFile, vocabulary: readonly Tag[]): 
   });
 }
 
-export function newFilterId(existing: readonly Pick<Filter, "id">[]): string {
+export function newFilterId(
+  existing: readonly Pick<Filter, "id">[],
+  random: () => string = () => Math.random().toString(36).slice(2, 8),
+): string {
   const ids = new Set(existing.map((filter) => filter.id));
-  let n = existing.length + 1;
-  while (ids.has(`filter-${String(n)}`)) {
-    n += 1;
+  let id = `filter-${random()}`;
+  while (ids.has(id)) {
+    id = `filter-${random()}`;
   }
-  return `filter-${String(n)}`;
+  return id;
+}
+
+export function narrowTo(chips: readonly FilterChip[], bucket: string): FilterChip[] {
+  const kind = parseBucket(bucket)?.kind;
+  const kept = chips.filter(
+    (chip) =>
+      chip.bucket !== bucket &&
+      (chip.not === true || ALL_OF.has(chipKind(chip) ?? "tag") || chipKind(chip) !== kind),
+  );
+  return [...kept, { bucket }];
 }
 
 export function tagChip(tag: string, not = false): FilterChip {

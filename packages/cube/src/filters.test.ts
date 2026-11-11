@@ -4,6 +4,7 @@ import {
   cycleChip,
   filterCards,
   matchesFilter,
+  narrowTo,
   newFilterId,
   pruneFilters,
   validateFilters,
@@ -89,8 +90,28 @@ describe("filters", () => {
     expect(pruneFilters(file, []).filters[0]?.chips).toEqual([{ bucket: "curve:1" }]);
   });
 
-  it("picks a fresh id", () => {
-    expect(newFilterId([{ id: "filter-2" }, { id: "x" }])).toBe("filter-3");
-    expect(newFilterId([{ id: "filter-1" }])).toBe("filter-2");
+  it("never reuses an id", () => {
+    const rolls = ["a", "a", "b"];
+    expect(newFilterId([{ id: "filter-a" }], () => rolls.shift() ?? "z")).toBe("filter-b");
+  });
+
+  it("narrows to a bucket by replacing chips of its kind", () => {
+    const chips: FilterChip[] = [
+      { bucket: "color:W" },
+      { bucket: "color:U" },
+      { bucket: "color:B", not: true },
+      { bucket: "tag:removal" },
+      { bucket: "curve:2" },
+    ];
+    expect(narrowTo(chips, "color:W")).toEqual([
+      { bucket: "color:B", not: true },
+      { bucket: "tag:removal" },
+      { bucket: "curve:2" },
+      { bucket: "color:W" },
+    ]);
+    expect(narrowTo([{ bucket: "tag:removal" }], "tag:burn")).toEqual([
+      { bucket: "tag:removal" },
+      { bucket: "tag:burn" },
+    ]);
   });
 });

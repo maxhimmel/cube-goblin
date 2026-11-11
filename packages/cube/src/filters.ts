@@ -1,103 +1,102 @@
 import { z } from "zod";
+import type { QueryCard } from "./query.ts";
+import {
+  bucketQuery,
+  compileQuery,
+  joinQuery,
+  namesStatus,
+  queryParts,
+  removePart,
+  tagsIn,
+} from "./query.ts";
 import type { Tag } from "./schema.ts";
-import type { BucketKind, StatCard } from "./stats.ts";
-import { bucketId, inBucket, parseBucket } from "./stats.ts";
+import type { Bucket } from "./stats.ts";
+import { parseBucket } from "./stats.ts";
 
-export const filterChipSchema = z.strictObject({
-  bucket: z.string().refine((id) => parseBucket(id) !== undefined, "unknown bucket"),
-  not: z.boolean().optional(),
-});
+const legacyChipSchema = z.object({ bucket: z.string(), not: z.boolean().optional() });
 
-export const filterSchema = z.strictObject({
-  id: z.string().regex(/^[a-z0-9-]+$/u),
-  label: z.string().trim().min(1),
-  chips: z.array(filterChipSchema),
-  view: z.string().default("cards"),
-});
-
-export const filtersFileSchema = z.strictObject({
-  filters: z.array(filterSchema),
-});
-
-export type FilterChip = z.infer<typeof filterChipSchema>;
-export type Filter = z.infer<typeof filterSchema>;
-export type FiltersFile = z.infer<typeof filtersFileSchema>;
-
-export const EMPTY_FILTERS: FiltersFile = { filters: [] };
-
-const ALL_OF: ReadonlySet<BucketKind> = new Set(["tag"]);
-
-export function chipKind(chip: FilterChip): BucketKind | undefined {
-  return parseBucket(chip.bucket)?.kind;
+function wrap(query: string): string {
+  return queryParts(query).length > 1 || /\sor\s/iu.test(query) ? `(${query})` : query;
 }
 
-export function hasStatusChip(filter: Pick<Filter, "chips">): boolean {
-  return filter.chips.some((chip) => !chip.not && chipKind(chip) === "status");
-}
-
-export function matchesFilter(card: StatCard, chips: readonly FilterChip[]): boolean {
-  const groups = new Map<BucketKind, boolean[]>();
+export function chipsToQuery(chips: readonly z.infer<typeof legacyChipSchema>[]): string {
+  const positive = new Map<string, string[]>();
+  const negative: string[] = [];
   for (const chip of chips) {
     const bucket = parseBucket(chip.bucket);
     if (!bucket) {
       continue;
     }
-    const hit = inBucket(card, bucket);
+    const query = bucketQuery(bucket);
     if (chip.not) {
-      if (hit) {
-        return false;
-      }
+      negative.push(`-${wrap(query)}`);
       continue;
     }
-    groups.set(bucket.kind, [...(groups.get(bucket.kind) ?? []), hit]);
+    const key = bucket.kind === "tag" ? chip.bucket : bucket.kind;
+    positive.set(key, [...(positive.get(key) ?? []), query]);
   }
-  return [...groups].every(([kind, hits]) =>
-    ALL_OF.has(kind) ? hits.every(Boolean) : hits.some(Boolean),
+  const groups = [...positive.values()].map((queries) =>
+    queries.length === 1 ? (queries[0] ?? "") : `(${queries.join(" or ")})`,
   );
+  return joinQuery(...groups, ...negative);
 }
 
-export function filterCards<T extends StatCard>(
-  filter: Pick<Filter, "chips">,
+function upgrade(input: unknown): unknown {
+  if (typeof input !== "object" || input === null || !("chips" in input) || "query" in input) {
+    return input;
+  }
+  const { chips, ...rest } = input;
+  const parsed = z.array(legacyChipSchema).safeParse(chips);
+  return parsed.success ? { ...rest, query: chipsToQuery(parsed.data) } : input;
+}
+
+export const filterSchema = z.preprocess(
+  upgrade,
+  z.strictObject({
+    id: z.string().regex(/^[a-z0-9-]+$/u),
+    label: z.string().trim().min(1),
+    query: z.string().refine((query) => compileQuery(query).ok, "query doesn't parse"),
+    view: z.string().default("cards"),
+  }),
+);
+
+export const filtersFileSchema = z.strictObject({
+  filters: z.array(filterSchema),
+});
+
+export type Filter = z.infer<typeof filterSchema>;
+export type FiltersFile = z.infer<typeof filtersFileSchema>;
+
+export const EMPTY_FILTERS: FiltersFile = { filters: [] };
+
+export function filterTest(filter: Pick<Filter, "query">): (card: QueryCard) => boolean {
+  const result = compileQuery(filter.query);
+  return result.ok ? result.test : () => false;
+}
+
+export function filterCards<T extends QueryCard>(
+  filter: Pick<Filter, "query">,
   all: readonly T[],
   scoped: readonly T[],
 ): T[] {
-  return (hasStatusChip(filter) ? all : scoped).filter((card) => matchesFilter(card, filter.chips));
+  const test = filterTest(filter);
+  return (namesStatus(filter.query) ? all : scoped).filter(test);
 }
 
-export type ChipState = "off" | "with" | "without";
-
-export function chipState(chips: readonly FilterChip[], bucket: string): ChipState {
-  const chip = chips.find((candidate) => candidate.bucket === bucket);
-  if (!chip) {
-    return "off";
+export function pruneQuery(query: string, tags: ReadonlySet<string>): string {
+  let next = query;
+  for (const part of queryParts(query).toReversed()) {
+    if (tagsIn(part.text).some((tag) => !tags.has(tag))) {
+      next = removePart(next, part);
+    }
   }
-  return chip.not ? "without" : "with";
-}
-
-export function cycleChip(chips: readonly FilterChip[], bucket: string): FilterChip[] {
-  const state = chipState(chips, bucket);
-  const rest = chips.filter((chip) => chip.bucket !== bucket);
-  if (state === "off") {
-    return [...rest, { bucket }];
-  }
-  if (state === "with") {
-    return chips.map((chip) => (chip.bucket === bucket ? { bucket, not: true } : chip));
-  }
-  return rest;
-}
-
-function knownTag(chip: FilterChip, tags: ReadonlySet<string>): boolean {
-  const bucket = parseBucket(chip.bucket);
-  return bucket?.kind !== "tag" || tags.has(bucket.keys[0] ?? "");
+  return next;
 }
 
 export function pruneFilters(file: FiltersFile, vocabulary: readonly Tag[]): FiltersFile {
   const tags = new Set(vocabulary.map((tag) => tag.id));
   return {
-    filters: file.filters.map((filter) => ({
-      ...filter,
-      chips: filter.chips.filter((chip) => knownTag(chip, tags)),
-    })),
+    filters: file.filters.map((filter) => ({ ...filter, query: pruneQuery(filter.query, tags) })),
   };
 }
 
@@ -110,9 +109,13 @@ export function validateFilters(file: FiltersFile, vocabulary: readonly Tag[]): 
       problems.push(`filters.json: duplicate filter id "${filter.id}"`);
     }
     seen.add(filter.id);
-    for (const chip of filter.chips) {
-      if (!knownTag(chip, tags)) {
-        problems.push(`filters.json: filter "${filter.id}" uses unknown tag in "${chip.bucket}"`);
+    const result = compileQuery(filter.query);
+    if (!result.ok) {
+      problems.push(`filters.json: filter "${filter.id}": ${result.error}`);
+    }
+    for (const tag of tagsIn(filter.query)) {
+      if (!tags.has(tag)) {
+        problems.push(`filters.json: filter "${filter.id}" uses unknown tag "${tag}"`);
       }
     }
     return problems;
@@ -131,16 +134,6 @@ export function newFilterId(
   return id;
 }
 
-export function narrowTo(chips: readonly FilterChip[], bucket: string): FilterChip[] {
-  const kind = parseBucket(bucket)?.kind;
-  const kept = chips.filter(
-    (chip) =>
-      chip.bucket !== bucket &&
-      (chip.not === true || ALL_OF.has(chipKind(chip) ?? "tag") || chipKind(chip) !== kind),
-  );
-  return [...kept, { bucket }];
-}
-
-export function tagChip(tag: string, not = false): FilterChip {
-  return not ? { bucket: bucketId("tag", tag), not } : { bucket: bucketId("tag", tag) };
+export function narrowTo(query: string, bucket: Bucket): string {
+  return joinQuery(query, bucketQuery(bucket));
 }

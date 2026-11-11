@@ -1,25 +1,12 @@
-import type { Bucket, ChipState, CubeStats, Filter, FilterChip, Tag } from "@repo/cube/browser";
-import {
-  CARD_STATUSES,
-  CARD_STATUS_LABELS,
-  COLORS,
-  COLOR_GROUPS,
-  CURVE_COLUMNS,
-  TYPE_COLUMNS,
-  bucketId,
-  chipState,
-  cycleChip,
-  filterCards,
-  hasStatusChip,
-  parseBucket,
-} from "@repo/cube/browser";
+import type { Bucket, CubeStats, Filter, Tag } from "@repo/cube/browser";
+import { filterCards, namesStatus, queryParts } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { GridCard } from "../modes/mode.ts";
 import type { Hover } from "../strip.tsx";
+import { QueryInput } from "../query/query-input.tsx";
 import { Preview, Strip } from "../strip.tsx";
 import { Block } from "./block.tsx";
-import { bucketLabel, colorIcon, colorLabel, curveTick } from "./labels.tsx";
 import type { BlockId, Dashboard } from "./layout.ts";
 import { BLOCKS } from "./layout.ts";
 
@@ -67,52 +54,23 @@ export function isBlockId(id: string): id is BlockId {
 
 const CHARTS = BLOCKS.filter((block) => block.id !== "summary");
 
-export function chipLabel(chip: FilterChip, stats: CubeStats): string {
-  const bucket = parseBucket(chip.bucket);
-  return bucket ? bucketLabel(bucket, stats) : chip.bucket;
-}
-
-const COLOR_KINDS: ReadonlySet<string> = new Set(["color", "presence", "colorMulti", "heavy"]);
-
-function chipIcon(chip: FilterChip): ReactNode {
-  const bucket = parseBucket(chip.bucket);
-  const first = bucket?.keys[0] ?? "";
-  if (bucket?.kind === "curve") {
-    return curveTick(first);
+function QueryPills({ query }: { query: string }): ReactNode {
+  const parts = queryParts(query);
+  if (parts.length === 0) {
+    return <p className="muted filter-empty">No conditions: every card in the page’s scope.</p>;
   }
-  return bucket && COLOR_KINDS.has(bucket.kind) ? colorIcon(first) : null;
-}
-
-function ChipList({
-  chips,
-  stats,
-  vocabulary,
-}: {
-  chips: readonly FilterChip[];
-  stats: CubeStats;
-  vocabulary: readonly Tag[];
-}): ReactNode {
-  if (chips.length === 0) {
-    return <p className="muted filter-empty">No chips: every card in the page’s scope.</p>;
-  }
-  const kinds = new Map(vocabulary.map((tag) => [tag.id, tag.kind]));
   return (
-    <ul className="chips filter-chips" aria-label="Filter chips">
-      {chips.map((chip) => {
-        const bucket = parseBucket(chip.bucket);
-        const kind = bucket?.kind === "tag" ? kinds.get(bucket.keys[0] ?? "") : undefined;
-        return (
-          <li
-            key={chip.bucket}
-            className="chip filter-chip"
-            data-not={chip.not === true}
-            data-kind={kind}
-          >
-            {chip.not && <span className="visually-hidden">not </span>}
-            {chipIcon(chip)} {chipLabel(chip, stats)}
-          </li>
-        );
-      })}
+    <ul className="query-readonly" aria-label="Filter query">
+      {parts.map((part) => (
+        <li
+          key={`${String(part.start)}-${part.text}`}
+          className="query-pill"
+          data-kind={part.kind}
+          data-not={part.text.startsWith("-") ? "" : undefined}
+        >
+          {part.text}
+        </li>
+      ))}
     </ul>
   );
 }
@@ -124,7 +82,6 @@ function byCostThenName(a: GridCard, b: GridCard): number {
 export function FilterBlock({
   filter,
   set,
-  vocabulary,
   collapsed,
   onToggle,
   onHide,
@@ -134,7 +91,6 @@ export function FilterBlock({
 }: {
   filter: Filter;
   set: CardSet;
-  vocabulary: readonly Tag[];
   collapsed: boolean;
   onToggle: () => void;
   onHide: () => void;
@@ -188,7 +144,7 @@ export function FilterBlock({
       }
     >
       <div className="filter-block">
-        <ChipList chips={filter.chips} stats={set.stats} vocabulary={vocabulary} />
+        <QueryPills query={filter.query} />
         {chart ? (
           <div className="filter-chart">{renderChart(chart, set)}</div>
         ) : set.cards.length === 0 ? (
@@ -232,76 +188,12 @@ export function BlocksMenu({ dashboard }: { dashboard: Dashboard }): ReactNode {
   );
 }
 
-interface PaletteChip {
-  bucket: string;
-  label: string;
-  icon?: ReactNode;
-  iconOnly?: boolean;
-  kind?: string | undefined;
-}
-
-function paletteRows(vocabulary: readonly Tag[]): { title: string; chips: PaletteChip[] }[] {
-  return [
-    {
-      title: "Status",
-      chips: CARD_STATUSES.map((status) => ({
-        bucket: bucketId("status", status),
-        label: CARD_STATUS_LABELS[status],
-      })),
-    },
-    {
-      title: "Color",
-      chips: COLOR_GROUPS.map((group) => ({
-        bucket: bucketId("color", group.id),
-        label: group.label,
-        icon: colorIcon(group.id),
-      })),
-    },
-    {
-      title: "Has color",
-      chips: COLORS.map((color) => ({
-        bucket: bucketId("presence", color.id),
-        label: colorLabel(color.id),
-        icon: colorIcon(color.id),
-      })),
-    },
-    {
-      title: "Mana value",
-      chips: CURVE_COLUMNS.map((column) => ({
-        bucket: bucketId("curve", column.id),
-        label: `Mana value ${column.label}`,
-        icon: curveTick(column.id),
-        iconOnly: true,
-      })),
-    },
-    {
-      title: "Card type",
-      chips: TYPE_COLUMNS.map((type) => ({ bucket: bucketId("type", type.id), label: type.label })),
-    },
-    {
-      title: "Tags",
-      chips: vocabulary.map((tag) => ({
-        bucket: bucketId("tag", tag.id),
-        label: tag.label,
-        kind: tag.kind,
-      })),
-    },
-  ];
-}
-
-const STATE_HINT: Record<ChipState, string> = {
-  off: "",
-  with: "",
-  without: "not ",
-};
-
 export function FilterEditor({
   filter,
   isNew,
   cards,
   scoped,
   vocabulary,
-  labelOf,
   onSave,
   onDelete,
   onClose,
@@ -311,21 +203,17 @@ export function FilterEditor({
   cards: readonly GridCard[];
   scoped: readonly GridCard[];
   vocabulary: readonly Tag[];
-  labelOf: (chip: FilterChip) => string;
   onSave: (filter: Filter) => void;
   onDelete: ((id: string) => void) | undefined;
   onClose: () => void;
 }): ReactNode {
   const dialog = useRef<HTMLDialogElement>(null);
   const [label, setLabel] = useState(filter.label);
-  const [chips, setChips] = useState<FilterChip[]>(filter.chips);
+  const [query, setQuery] = useState(filter.query);
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
-  const rows = paletteRows(vocabulary);
-  const inPalette = new Set(rows.flatMap((row) => row.chips.map((chip) => chip.bucket)));
-  const extra = chips.filter((chip) => !inPalette.has(chip.bucket));
-  const count = filterCards({ chips }, cards, scoped).length;
+  const count = filterCards({ query }, cards, scoped).length;
   const name = label.trim();
   const close = (): void => {
     dialog.current?.close();
@@ -345,7 +233,7 @@ export function FilterEditor({
           if (name === "") {
             return;
           }
-          onSave({ ...filter, label: name, chips });
+          onSave({ ...filter, label: name, query });
           close();
         }}
       >
@@ -367,56 +255,17 @@ export function FilterEditor({
             ×
           </button>
         </header>
-        <p className="muted filter-editor-hint">
-          Click a chip to include it, again to exclude it, and once more to clear it. Chips of one
-          kind match any of them; tags and different kinds must all match.
-          {hasStatusChip({ chips }) ? "" : " With no status chip, it counts the page’s scope."}
-        </p>
-        {rows.map((row) => (
-          <fieldset key={row.title} className="filter-palette">
-            <legend>{row.title}</legend>
-            {row.chips.length === 0 && <span className="muted">None yet.</span>}
-            {row.chips.map((chip) => {
-              const state = chipState(chips, chip.bucket);
-              return (
-                <button
-                  key={chip.bucket}
-                  type="button"
-                  className="chip filter-chip"
-                  data-state={state}
-                  data-kind={chip.kind}
-                  aria-label={`${STATE_HINT[state]}${chip.label}`}
-                  aria-pressed={state === "off" ? "false" : state === "with" ? "true" : "mixed"}
-                  onClick={() => {
-                    setChips(cycleChip(chips, chip.bucket));
-                  }}
-                >
-                  {chip.icon}
-                  {chip.iconOnly ? null : ` ${chip.label}`}
-                </button>
-              );
-            })}
-          </fieldset>
-        ))}
-        {extra.length > 0 && (
-          <fieldset className="filter-palette">
-            <legend>From charts</legend>
-            {extra.map((chip) => (
-              <button
-                key={chip.bucket}
-                type="button"
-                className="chip filter-chip"
-                data-state={chip.not ? "without" : "with"}
-                aria-label={`Remove ${chip.not ? "not " : ""}${labelOf(chip)}`}
-                onClick={() => {
-                  setChips(chips.filter((entry) => entry.bucket !== chip.bucket));
-                }}
-              >
-                {chipIcon(chip)} {labelOf(chip)} ×
-              </button>
-            ))}
-          </fieldset>
-        )}
+        <QueryInput
+          initial={filter.query}
+          onChange={setQuery}
+          vocabulary={vocabulary}
+          label="Filter query"
+          status={
+            namesStatus(query)
+              ? "Counts the whole cube (the query names a status)."
+              : "Counts the page’s scope; add is:draft, is:prospect, or is:cut to pick one."
+          }
+        />
         <footer className="filter-editor-foot">
           {!isNew && onDelete && (
             <button

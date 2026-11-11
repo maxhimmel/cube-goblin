@@ -6,7 +6,6 @@ import type {
   Count,
   CubeStats,
   Filter,
-  FilterChip,
   Spread,
 } from "@repo/cube/browser";
 import {
@@ -71,14 +70,7 @@ import {
   ptLabel,
   ptTick,
 } from "./labels.tsx";
-import {
-  BlockBody,
-  BlocksMenu,
-  FilterBlock,
-  FilterEditor,
-  chipLabel,
-  isBlockId,
-} from "./filter-widgets.tsx";
+import { BlockBody, BlocksMenu, FilterBlock, FilterEditor, isBlockId } from "./filter-widgets.tsx";
 import type { CardSet, FrameComponent } from "./filter-widgets.tsx";
 
 interface Scope {
@@ -757,8 +749,8 @@ export function InsightsPage(): ReactNode {
     };
   };
   const panelCards = panelFilter ? filterCardsOf(panelFilter) : cards;
-  const startNew = (chips: FilterChip[] = [], label = ""): void => {
-    setEditing({ id: newFilterId(filters), label, chips, view: "cards" });
+  const startNew = (query = "", label = ""): void => {
+    setEditing({ id: newFilterId(filters), label, query, view: "cards" });
   };
 
   const renderBlock = (id: BlockId, set: CardSet, Frame: FrameComponent): ReactNode =>
@@ -781,7 +773,6 @@ export function InsightsPage(): ReactNode {
           <FilterBlock
             filter={filter}
             set={filterSet(filter)}
-            vocabulary={cube.vocabulary}
             collapsed={dashboard.collapsed.has(id)}
             onToggle={() => {
               dashboard.toggle(id);
@@ -871,7 +862,7 @@ export function InsightsPage(): ReactNode {
               mode.putFilter
                 ? () => {
                     startNew(
-                      narrowTo(panelFilter?.chips ?? [], bucketId(bucket.kind, ...bucket.keys)),
+                      narrowTo(panelFilter?.query ?? "", bucket),
                       panelFilter
                         ? `${panelFilter.label}: ${bucketLabel(bucket, stats)}`
                         : bucketLabel(bucket, stats),
@@ -890,7 +881,6 @@ export function InsightsPage(): ReactNode {
           cards={cube.cards}
           scoped={cards}
           vocabulary={cube.vocabulary}
-          labelOf={(chip) => chipLabel(chip, stats)}
           onSave={(filter) => {
             mode.putFilter?.(filter);
             dashboard.setHidden(filterBlockId(filter.id), false);

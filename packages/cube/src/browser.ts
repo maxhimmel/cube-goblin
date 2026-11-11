@@ -102,22 +102,18 @@ export {
 } from "./board.ts";
 export {
   EMPTY_FILTERS,
-  chipKind,
-  chipState,
-  cycleChip,
+  chipsToQuery,
   filterCards,
-  filterChipSchema,
   filterSchema,
+  filterTest,
   filtersFileSchema,
-  hasStatusChip,
-  matchesFilter,
   narrowTo,
   newFilterId,
   pruneFilters,
-  tagChip,
+  pruneQuery,
   validateFilters,
 } from "./filters.ts";
-export type { ChipState, Filter, FilterChip, FiltersFile } from "./filters.ts";
+export type { Filter, FiltersFile } from "./filters.ts";
 export { CARD_SORTS, isCardSort, sortCards } from "./sort.ts";
 export type { CardSort } from "./sort.ts";
 export {

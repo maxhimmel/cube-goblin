@@ -1608,3 +1608,18 @@
 .labc .lab-row {
   cursor: grab;
 }
+
+.labc-query .query-input {
+  flex: 1 1 360px;
+}
+
+.labc-save {
+  display: flex;
+  gap: 4px;
+}
+
+.labc-save input {
+  width: 120px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+}

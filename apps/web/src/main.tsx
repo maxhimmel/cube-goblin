@@ -16,6 +16,7 @@ import "./insights/insights.css";
 import "./overlaps/overlap.css";
 import "./versions.css";
 import "./lab/lab.css";
+import "./query/query.css";
 
 const root = document.getElementById("root");
 if (!root) {

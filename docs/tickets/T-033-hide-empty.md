@@ -9,3 +9,7 @@ Zeros take up space (user, 2026-11-11). One "Hide empty" toggle, on by default, 
 ## Done when
 
 - The toggle works on Wall, Insights, and the [Lab](T-031-lab-view.md), survives a reload, and is covered by e2e.
+
+## Re-check (2026-11-11)
+
+The Lab already does this without a switch: its charts drop zero rows, columns, and bars, the card area drops empty columns and groups, and filters dim rather than collapse. What's left is the Wall (`columnsBy` returns every column, empty ones included) and a few Insights charts (curve and heatmap keep zero buckets). Moved to Later: worth doing only if the Wall or Insights feel cramped, and then without a toggle, as the Lab does.

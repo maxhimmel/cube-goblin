@@ -1,11 +1,18 @@
 ---
 id: T-035
-title: Insights blocks in the Lab follow peek, baseline, and ghosts
-status: todo
+title: Lab-native charts
+status: done
 ---
 
-The Lab's own charts (curve, color by mana value, power by toughness) dim cards while a bar is hovered, draw the unfiltered scope faint behind a filter, and show a ghost delta while a card is dragged or hovered ([T-031](T-031-lab-view.md) decisions). The Insights charts docked in the Lab (`chartBlock`, `@tanstack/charts`) only redraw for the filter and add a pill on click.
+The Insights charts docked in the [Lab](../GLOSSARY.md#lab) only redrew for the filter and added a pill on click; they didn't peek on hover, draw the faint baseline, or show a ghost delta, so they couldn't show what one small change does across the cube ([T-031](T-031-lab-view.md) decisions). The user asked to simplify them for the Lab instead of forcing Insights charts in (2026-11-11).
+
+## Built (2026-11-11)
+
+- Summary (cards, nonland, lands, creatures), Color (each color, multicolored, colorless), Heavy pips, Card types, Archetypes, and Groups are Lab charts: `BarList` and `SummaryTiles` in `apps/web/src/lab/lab-charts.tsx`, counted from chart buckets by `bucketTallies` (`model.ts`), so every bar is a peek, a pill, and a query.
+- They replace the Insights summary, color, heavy, types, archetypes, and groups blocks and the "Tags in draft" chips. Insights' curve, color by mana value, power and toughness, and status blocks leave the Lab (the Lab has its own). Creature balance and combat matchups stay Insights blocks.
+- Saved dock settings (order, hidden, collapsed, pins, baselines) move to the new ids.
+- E2E: hovering a prospect shows +1 on the summary and card types; hovering a color bar dims cards; clicking it applies "Has Red".
 
 ## Done when
 
-- Hovering a bar or cell of a docked Insights chart peeks at that bucket, filtered charts draw the faint baseline, and dragging a card shows its ghost delta, with e2e coverage of the peek.
+- Every Lab chart except creature balance and combat matchups peeks on hover, draws the baseline under a filter, and shows ghost deltas, with e2e coverage.

@@ -3,14 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LogState, LogStats } from "./log.ts";
-import {
-  buildEntry,
-  logChanges,
-  logStats,
-  parseMessage,
-  shareEntry,
-  statsTrailers,
-} from "./log.ts";
+import { buildEntry, logChanges, logStats, parseMessage, statsTrailers } from "./log.ts";
 import type { CardEntry } from "./schema.ts";
 import type { StatCard } from "./stats.ts";
 import { appendLog, cubePaths, readLog } from "./store.ts";
@@ -227,31 +220,5 @@ describe("log file", () => {
     const text = await readFile(paths.logFile, "utf8");
     expect(text.split("\n")).toHaveLength(3);
     expect((await readLog(paths)).map((item) => item.id)).toEqual([entry.id, `${entry.id}-b`]);
-  });
-});
-
-describe("shareEntry", () => {
-  it("replaces card notes with their digest and keeps everything else", () => {
-    const entry = buildEntry({
-      before: { ...before, cards: [card("Shock", 1, { notes: "secret plan" })] },
-      after: { ...before, cards: [card("Shock", 1, { notes: "" }), card("Opt", 3)] },
-      statsBefore: {},
-      statsAfter: { draft: 2 },
-      message: { subject: "Why" },
-      source: "workbench",
-    });
-    if (!entry) {
-      throw new Error("expected an entry");
-    }
-    const shared = shareEntry(entry, (notes) => `#${String(notes.length)}`);
-    expect(JSON.stringify(shared)).not.toContain("secret plan");
-    expect(
-      shared.changes.cards.map((change) => [change.before?.notes, change.after?.notes]),
-    ).toEqual([
-      ["#11", ""],
-      [undefined, ""],
-    ]);
-    expect(shared.changes.cards[1]).not.toHaveProperty("before");
-    expect({ ...shared, changes: undefined }).toEqual({ ...entry, changes: undefined });
   });
 });

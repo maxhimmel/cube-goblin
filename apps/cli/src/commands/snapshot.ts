@@ -2,15 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotCard } from "@repo/cube";
-import {
-  loadFilters,
-  readCards,
-  readLog,
-  readTags,
-  shareEntry,
-  slugify,
-  snapshotSchema,
-} from "@repo/cube";
+import { loadFilters, readCards, readLog, readTags, slugify, snapshotSchema } from "@repo/cube";
 import { displayFields } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient, USER_AGENT } from "../client.ts";
@@ -69,9 +61,7 @@ export async function snapshot(): Promise<number> {
     cards: snapshotCards,
     vocabulary,
     filters: saved.filters,
-    log: log.map((entry) =>
-      shareEntry(entry, (notes) => createHash("sha256").update(notes).digest("hex").slice(0, 12)),
-    ),
+    log,
   });
   await mkdir(dirname(SNAPSHOT_FILE), { recursive: true });
   await writeFile(SNAPSHOT_FILE, JSON.stringify(result));

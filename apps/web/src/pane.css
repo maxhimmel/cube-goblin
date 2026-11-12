@@ -59,7 +59,6 @@
 
 .views a[data-status="active"]::before {
   background: var(--nav-active-bg);
-  box-shadow: 0 4px 14px -4px color-mix(in oklab, var(--accent) 80%, transparent);
   opacity: 1;
   transform: none;
 }

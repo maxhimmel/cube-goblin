@@ -9,15 +9,7 @@ import { cardEntrySchema } from "@repo/cube/browser";
 import { createServer } from "vite";
 
 const WEB_ROOT = fileURLToPath(new URL("..", import.meta.url));
-const REPO_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
-
-const TEST_VOCABULARY = [
-  { id: "removal", label: "Removal", kind: "group" },
-  { id: "tempo", label: "Tempo", kind: "archetype" },
-  { id: "card-draw", label: "Card draw", kind: "group" },
-  { id: "blue", label: "Blue", kind: "group" },
-  { id: "cantrip", label: "Cantrip", kind: "group" },
-];
+const FIXTURE = fileURLToPath(new URL("fixture", import.meta.url));
 
 interface Workbench {
   url: string;
@@ -29,20 +21,7 @@ const test = base.extend<object, { workbench: Workbench }>({
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
       const root = await mkdtemp(join(tmpdir(), "workbench-"));
-      await cp(join(REPO_ROOT, "cube"), join(root, "cube"), { recursive: true });
-      await cp(join(REPO_ROOT, "cube.config.json"), join(root, "cube.config.json"));
-      await writeFile(
-        join(root, "cube", "tags.json"),
-        `${JSON.stringify({ tags: TEST_VOCABULARY }, null, 2)}\n`,
-      );
-      await writeFile(join(root, "cube", "board.json"), `${JSON.stringify({ sections: [] })}\n`);
-      await writeFile(join(root, "cube", "filters.json"), `${JSON.stringify({ filters: [] })}\n`);
-      const cardsDir = join(root, "cube", "cards");
-      for (const file of await readdir(cardsDir)) {
-        const path = join(cardsDir, file);
-        const entry = cardEntrySchema.parse(JSON.parse(await readFile(path, "utf8")));
-        await writeFile(path, `${JSON.stringify({ ...entry, tags: [] }, null, 2)}\n`);
-      }
+      await cp(FIXTURE, root, { recursive: true });
       process.env["CUBE_REPO_ROOT"] = root;
       const server = await createServer({
         root: WEB_ROOT,

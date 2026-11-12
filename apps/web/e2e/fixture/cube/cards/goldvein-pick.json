@@ -1,0 +1,13 @@
+{
+  "name": "Goldvein Pick",
+  "oracleId": "c1624d10-8838-4af8-aea1-a96c0fe6fd6b",
+  "status": "draft",
+  "printing": "a241317d-2277-467e-a8f9-aa71c944e244",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 37,
+    "input": "[  ] Goldvein pick"
+  }
+}

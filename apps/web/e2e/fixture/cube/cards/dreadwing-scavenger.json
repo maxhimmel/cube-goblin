@@ -1,0 +1,13 @@
+{
+  "name": "Dreadwing Scavenger",
+  "oracleId": "bbfd0de0-3558-4833-bae4-8efae44b7fff",
+  "status": "draft",
+  "printing": "e24d838b-ab48-410a-9a50-dbfea5da089b",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 42,
+    "input": "[  ] Dreading scavenger"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Consuming Aberration",
+  "oracleId": "9b55fb72-237d-4935-b645-8ebc6eb4140e",
+  "status": "prospect",
+  "printing": "497fba45-201d-4688-b420-d093beb4e8f4",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 111,
+    "input": "[  ] Consuming aberration"
+  }
+}

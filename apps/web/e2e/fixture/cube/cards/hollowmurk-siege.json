@@ -1,0 +1,13 @@
+{
+  "name": "Hollowmurk Siege",
+  "oracleId": "31061e34-042e-40c3-99ab-752795ab4324",
+  "status": "draft",
+  "printing": "5ac0e136-8877-4bfc-a831-2bf7b7b5ad1e",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 81,
+    "input": "[  ] Hollowmurk siege"
+  }
+}

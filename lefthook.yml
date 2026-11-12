@@ -1,12 +1,60 @@
+glob_matcher: doublestar
+
 pre-commit:
   parallel: true
   jobs:
     - name: branch
       run: pnpm exec tsx scripts/src/guard-branch.ts
-    - name: check
-      run: pnpm check
+    - name: no shell scripts
+      glob: "**/*.{sh,bash,zsh}"
+      run: echo "Scripts are TypeScript run with zx, not shell" && exit 1
+    - name: format
+      run: pnpm exec prettier --check --ignore-unknown {staged_files}
+    - name: markdown
+      glob: "**/*.md"
+      run: pnpm exec markdownlint-cli2 --no-globs {staged_files}
+    - name: roadmap + tickets
+      glob:
+        - "docs/ROADMAP.md"
+        - "docs/tickets/**"
+      run: pnpm exec tsx scripts/src/check-roadmap.ts
+    - name: cube data
+      glob: "cube/**"
+      run: pnpm -s cube validate
+    - name: lint web
+      root: "apps/web/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: lint cli
+      root: "apps/cli/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: lint cube
+      root: "packages/cube/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: lint scryfall
+      root: "packages/scryfall/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: lint eslint-config
+      root: "packages/eslint-config/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: lint scripts
+      root: "scripts/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: typecheck + unit tests
+      glob: "**/*.{ts,tsx,js,mjs,json}"
+      run: pnpm exec turbo run typecheck test --output-logs=errors-only
 
 commit-msg:
   jobs:
     - name: commitlint
       run: pnpm exec commitlint --edit {1}
+
+pre-merge-commit:
+  jobs:
+    - name: check
+      run: pnpm check

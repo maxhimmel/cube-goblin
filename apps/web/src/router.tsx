@@ -78,6 +78,7 @@ const gridRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cards",
   beforeLoad: () => {
+    rememberState("labc.view", "images");
     redirect({ to: "/", search: (prev) => prev, replace: true, throw: true });
   },
 });

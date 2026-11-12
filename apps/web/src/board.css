@@ -123,7 +123,7 @@
 
 .pool-cards {
   overflow: auto;
-  padding: 0 var(--pad) 12px;
+  padding: var(--ring-room) var(--pad) 12px;
 }
 
 .board-sections {
@@ -133,7 +133,8 @@
   gap: 14px;
   min-height: 0;
   overflow: auto;
-  padding: 0 4px 16px 0;
+  margin: calc(-1 * var(--ring-room));
+  padding: var(--ring-room) var(--ring-room) 16px;
 }
 
 .board-section {

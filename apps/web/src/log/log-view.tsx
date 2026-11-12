@@ -3,6 +3,8 @@ import { parseMessage, slugify } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { CardLink } from "../card-pane.tsx";
+import type { LogRow } from "./fold.ts";
+import { foldCanceled, foldSummary, foldedIds, rowMatches } from "./fold.ts";
 import { Timeline } from "./timeline.tsx";
 
 export interface LogViewProps {
@@ -145,18 +147,35 @@ export function LogView({
       .getElementById(entryElementId(jump.id))
       ?.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [jump]);
+  const rows = useMemo(() => foldCanceled(entries), [entries]);
+  const plotted = useMemo(() => {
+    const folded = foldedIds(rows);
+    return entries.filter((entry) => !folded.has(entry.id));
+  }, [entries, rows]);
   const days = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const shown = [...entries]
-      .reverse()
-      .filter((entry) => needle === "" || entry.message.toLowerCase().includes(needle));
-    const groups = new Map<string, LogEntry[]>();
-    for (const entry of shown) {
-      const key = day(entry.at);
-      groups.set(key, [...(groups.get(key) ?? []), entry]);
+    const groups = new Map<string, LogRow[]>();
+    for (const row of [...rows].reverse().filter((item) => rowMatches(item, needle))) {
+      const last = row.kind === "fold" ? row.entries[row.entries.length - 1] : row.entry;
+      const key = day(last?.at ?? "");
+      groups.set(key, [...(groups.get(key) ?? []), row]);
     }
     return [...groups.entries()];
-  }, [entries, query]);
+  }, [rows, query]);
+  const renderEntry = (entry: LogEntry): ReactNode => (
+    <Entry
+      key={entry.id}
+      entry={entry}
+      selected={selected?.has(entry.id) ?? false}
+      onSelect={onSelect}
+      actions={entryActions?.(entry)}
+      active={active === entry.id}
+      onActive={setActive}
+      onInactive={(id) => {
+        setActive((current) => (current === id ? undefined : current));
+      }}
+    />
+  );
 
   return (
     <section className="log-page">
@@ -176,7 +195,7 @@ export function LogView({
       </header>
       {entries.length > 0 && (
         <Timeline
-          entries={entries}
+          entries={plotted}
           active={active}
           onPick={(id) => {
             const entry = entries.find((item) => item.id === id);
@@ -197,20 +216,23 @@ export function LogView({
           <section key={label} className="log-day">
             <h2>{label}</h2>
             <ol className="log-entries">
-              {items.map((entry) => (
-                <Entry
-                  key={entry.id}
-                  entry={entry}
-                  selected={selected?.has(entry.id) ?? false}
-                  onSelect={onSelect}
-                  actions={entryActions?.(entry)}
-                  active={active === entry.id}
-                  onActive={setActive}
-                  onInactive={(id) => {
-                    setActive((current) => (current === id ? undefined : current));
-                  }}
-                />
-              ))}
+              {items.map((row) =>
+                row.kind === "entry" ? (
+                  renderEntry(row.entry)
+                ) : (
+                  <li key={row.id} className="log-fold" data-testid="log-fold">
+                    <details>
+                      <summary>
+                        <time dateTime={row.entries[0]?.at} className="muted">
+                          {time(row.entries[0]?.at ?? "")}
+                        </time>
+                        <span>{foldSummary(row)}</span>
+                      </summary>
+                      <ol className="log-entries">{[...row.entries].reverse().map(renderEntry)}</ol>
+                    </details>
+                  </li>
+                ),
+              )}
             </ol>
           </section>
         ))

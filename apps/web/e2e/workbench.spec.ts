@@ -6,6 +6,7 @@ import type { Locator } from "@playwright/test";
 import { test as base, expect } from "@playwright/test";
 import type { CardEntry, LogEntry } from "@repo/cube/browser";
 import { cardEntrySchema, logEntrySchema, parseMessage, slugify } from "@repo/cube/browser";
+import { foldCanceled, foldedIds } from "../src/log/fold.ts";
 import { createServer } from "vite";
 
 const WEB_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -1847,6 +1848,12 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   workbench,
 }) => {
   const entries = page.getByTestId("log-entry");
+  const openFolds = async (): Promise<void> => {
+    const closed = page.locator('[data-testid="log-fold"] details:not([open]) > summary');
+    while ((await closed.count()) > 0) {
+      await closed.first().click();
+    }
+  };
   const entry = (subject: string): Locator =>
     entries.filter({
       has: page.locator(".log-subject", { hasText: new RegExp(`^${subject}$`, "u") }),
@@ -1865,14 +1872,18 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   await expect(entry("Trim the curve")).toContainText("Too many 3s.");
   await expect(entry("Trim the curve").locator('[data-trailer="Card"]')).toHaveCount(2);
   await page.reload();
+  await expect(page.getByTestId("log-fold").first()).toBeVisible();
+  await openFolds();
   await expect(entry("Undo Trim the curve")).toBeVisible();
 
   await entry("Undo Trim the curve")
     .getByRole("button", { name: /^Revert/u })
     .click();
   await expect.poll(status).toBe("draft");
+  await openFolds();
   await expect(entry('Revert "Undo Trim the curve"')).toHaveAttribute("data-source", "revert");
 
+  await openFolds();
   await entry("Undo Trim the curve")
     .getByRole("button", { name: /^Revert/u })
     .click();
@@ -1903,6 +1914,10 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   await page.getByRole("button", { name: "Revert 2 selected" }).click();
   await expect.poll(async () => (await readEntry(workbench.cardsDir, one)).status).toBe("draft");
   expect((await readEntry(workbench.cardsDir, two)).status).toBe("draft");
+  await expect(
+    page.getByTestId("log-fold").filter({ hasText: "3 edits that cancel out" }),
+  ).toBeVisible();
+  await openFolds();
   await expect(entry("Revert 2 entries")).toBeVisible();
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect.poll(async () => (await readEntry(workbench.cardsDir, one)).status).toBe("cut");
@@ -1937,8 +1952,8 @@ test("the stats timeline plots log entries and links both ways with them", async
   }
   for (const [slug, status, body] of [
     [drafted[0] ?? "", "prospect", "Timeline why"],
-    [drafted[0] ?? "", "draft", ""],
     [drafted[1] ?? "", "prospect", ""],
+    [drafted[2] ?? "", "prospect", ""],
   ] as const) {
     const response = await page.request.patch(`${workbench.url}api/cards/${slug}`, {
       data: { status },
@@ -1946,7 +1961,9 @@ test("the stats timeline plots log entries and links both ways with them", async
     });
     expect(response.ok()).toBe(true);
   }
-  const logged = await readLogFile(workbench.cardsDir);
+  const all = await readLogFile(workbench.cardsDir);
+  const folded = foldedIds(foldCanceled(all));
+  const logged = all.filter((item) => !folded.has(item.id));
   const whys = logged.filter((item) => parseMessage(item.message).body !== "").length;
 
   await page.goto(`${workbench.url}#/log`);
@@ -2003,7 +2020,7 @@ test("the stats timeline plots log entries and links both ways with them", async
   await timeline.getByRole("button", { name: "Values" }).click();
   await expect(plot).not.toContainText("±0");
 
-  const last = entries.last();
+  const last = page.locator(`#log-entry-${logged[0]?.id ?? ""}`);
   await last.hover();
   await expect(last).toHaveAttribute("data-active", "true");
   await expect(plot).toHaveAttribute("data-active-index", "0");
@@ -2025,4 +2042,43 @@ test("the stats timeline plots log entries and links both ways with them", async
   const index = await plot.getAttribute("data-active-index");
   const id = (await active.getAttribute("id"))?.replace(/^log-entry-/u, "");
   expect(logged.findIndex((item) => item.id === id)).toBe(Number(index));
+});
+
+test("edits that cancel out fold into one line and leave the timeline", async ({
+  page,
+  workbench,
+}) => {
+  const timeline = page.getByRole("region", { name: "Stats timeline" });
+  const dots = timeline.locator(".log-timeline-plot svg circle");
+  let slug = "";
+  for (const file of (await readdir(workbench.cardsDir)).sort()) {
+    const candidate = file.replace(/\.json$/u, "");
+    if ((await readEntry(workbench.cardsDir, candidate)).status === "draft") {
+      slug = candidate;
+      break;
+    }
+  }
+  await page.goto(`${workbench.url}#/log`);
+  await timeline.getByRole("button", { name: "None", exact: true }).click();
+  await timeline.getByRole("tab", { name: /^Counts/u }).click();
+  await timeline.getByRole("checkbox", { name: "draft" }).check();
+  const plottedBefore = await dots.count();
+
+  for (const status of ["cut", "draft"]) {
+    const response = await page.request.patch(`${workbench.url}api/cards/${slug}`, {
+      data: { status },
+      headers: { "X-Log-Subject": `Fold ${status}` },
+    });
+    expect(response.ok()).toBe(true);
+  }
+  const fold = page
+    .getByTestId("log-fold")
+    .filter({ hasText: "2 edits that cancel out" })
+    .filter({ hasText: "Fold cut" });
+  await expect(fold).toBeVisible();
+  await expect(fold.getByText("Fold cut")).toBeHidden();
+  await expect(dots).toHaveCount(plottedBefore);
+  await fold.locator("summary").click();
+  await expect(fold.getByText("Fold cut")).toBeVisible();
+  await expect(fold.getByTestId("log-entry")).toHaveCount(2);
 });

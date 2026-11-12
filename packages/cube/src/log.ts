@@ -123,6 +123,19 @@ export function isEmptyChange(changes: LogChanges): boolean {
 
 const MV_DIGITS = 2;
 
+export type StatFields = Omit<StatCard, "status" | "tags">;
+
+export function stateStats(
+  state: LogState,
+  fieldsOf: (oracleId: string) => StatFields | undefined,
+): LogStats {
+  const cards = state.cards.flatMap((entry) => {
+    const fields = fieldsOf(entry.oracleId);
+    return fields ? [{ ...fields, status: entry.status, tags: entry.tags }] : [];
+  });
+  return logStats(cards, state.tags);
+}
+
 export function logStats(cards: readonly StatCard[], vocabulary: readonly Tag[]): LogStats {
   const draft = cards.filter((card) => card.status === "draft");
   const all = cubeStats(cards, []);
@@ -356,7 +369,7 @@ export function parseMessage(message: string): ParsedMessage {
   return { subject, body, trailers };
 }
 
-function entryId(at: Date): string {
+export function entryId(at: Date): string {
   const stamp = at.toISOString().replace(/[-:.]/gu, "").toLowerCase();
   const random = Math.floor(Math.random() * 0x10000)
     .toString(16)

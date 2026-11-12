@@ -170,6 +170,7 @@ export {
   STAT_GROUPS,
   autoSubject,
   buildEntry,
+  entryId,
   entryMessage,
   isEmptyChange,
   logChanges,
@@ -180,6 +181,7 @@ export {
   mergeNotes,
   parseMessage,
   sameValue,
+  stateStats,
   statDeltas,
   statsTrailers,
 } from "./log.ts";
@@ -193,6 +195,7 @@ export type {
   LogStats,
   NewEntry,
   ParsedMessage,
+  StatFields,
 } from "./log.ts";
 export { describeConflicts, planRevert } from "./revert.ts";
 export type { Conflict, RevertPlan } from "./revert.ts";

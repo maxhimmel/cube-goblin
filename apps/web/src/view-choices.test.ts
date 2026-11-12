@@ -48,9 +48,9 @@ describe("view choices", () => {
 
   it("keeps each view apart and ignores keys a view does not remember", () => {
     const store = memory();
-    rememberSearch("/cards", { by: "tag", bucket: "curve:2" }, store);
+    rememberSearch("/tags", { tags: "removal", bucket: "curve:2" }, store);
     rememberSearch("/insights", { scope: "all", bucket: "curve:2" }, store);
-    expect(recallSearch("/cards", {}, store)).toEqual({ by: "tag" });
+    expect(recallSearch("/tags", {}, store)).toEqual({ tags: "removal" });
     expect(recallSearch("/insights", {}, store)).toEqual({ scope: "all" });
     expect(recallSearch("/board", {}, store)).toBeUndefined();
   });

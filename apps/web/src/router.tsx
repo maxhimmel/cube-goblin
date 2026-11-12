@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-router";
 import { InsightsPage } from "./insights/insights-page.tsx";
 import { ForgePage } from "./forge/forge-page.tsx";
-import { GridPage } from "./pages/grid-page.tsx";
 import { Shell } from "./shell.tsx";
 import type { RememberedPath } from "./view-choices.ts";
 import { isRemembered, recallSearch, rememberSearch, rememberState } from "./view-choices.ts";
@@ -33,10 +32,6 @@ function restoreChoices(path: RememberedPath) {
       redirect({ to: path, search: { ...search, ...saved }, replace: true, throw: true });
     }
   };
-}
-
-function byParam(search: Record<string, unknown>): { by?: string | undefined } {
-  return typeof search["by"] === "string" ? { by: search["by"] } : {};
 }
 
 const rootRoute = createRootRoute({
@@ -82,9 +77,9 @@ const forgeRoute = createRoute({
 const gridRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/cards",
-  beforeLoad: restoreChoices("/cards"),
-  validateSearch: byParam,
-  component: GridPage,
+  beforeLoad: () => {
+    redirect({ to: "/", search: (prev) => prev, replace: true, throw: true });
+  },
 });
 
 const cardRoute = createRoute({

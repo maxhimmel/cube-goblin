@@ -2,7 +2,6 @@ import { useState } from "react";
 import { z } from "zod";
 
 export const REMEMBERED = {
-  "/cards": [["by"]],
   "/insights": [["scope"]],
   "/tags": [["tags"]],
   "/board": [["sort"]],

@@ -2,7 +2,6 @@ import type { CardChange, CardPatch, Workbench, WorkbenchCard } from "@repo/cube
 import { CARD_STATUSES } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { ORGANIZE_ID } from "../grid/piles.ts";
 import { useCardEdit } from "./edits.ts";
 import { clearSelection, setSelected, useSelection } from "./selection.ts";
 import { showToast } from "./toast.tsx";
@@ -169,7 +168,7 @@ export function BulkBar({ cube }: { cube: Workbench | undefined }): ReactNode {
         type="button"
         onClick={() => {
           clearSelection();
-          document.getElementById(ORGANIZE_ID)?.focus();
+          document.querySelector<HTMLElement>(".lab-image-grid .select")?.focus();
         }}
       >
         Clear selection

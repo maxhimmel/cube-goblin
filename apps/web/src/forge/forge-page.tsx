@@ -4,7 +4,8 @@ import { z } from "zod";
 import { SortMenu } from "../sort-chain.tsx";
 import { Preview } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
-import { CardColumns, CardRows } from "./cards.tsx";
+import { mode } from "#mode";
+import { CardColumns, CardImages, CardRows } from "./cards.tsx";
 import type { Dock } from "./dock.tsx";
 import { BlocksMenu, DOCKS, DockBlocks, useDockState } from "./dock.tsx";
 import { LayoutsMenu } from "./layouts-menu.tsx";
@@ -13,7 +14,7 @@ import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx
 import type { Lab } from "./use-lab.ts";
 import { useLab } from "./use-lab.ts";
 
-type CardView = "columns" | "rows";
+type CardView = "columns" | "rows" | "images";
 
 const DOCK_ARROWS: Record<Dock, string> = { top: "↑", right: "→", bottom: "↓", left: "←" };
 
@@ -24,7 +25,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
   const [view, setView] = useRemembered<CardView>(
     "labc.view",
     "columns",
-    z.enum(["columns", "rows"]),
+    z.enum(["columns", "rows", "images"]),
   );
   const dock = useDockState();
   const [pendingOpen, setPendingOpen] = usePendingOpen();
@@ -33,8 +34,10 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
   const pile = (cards: typeof draft, compact: boolean): ReactNode =>
     view === "columns" ? (
       <CardColumns lab={lab} cards={cards} compact={compact} tags={tags} />
-    ) : (
+    ) : view === "rows" ? (
       <CardRows lab={lab} cards={cards} />
+    ) : (
+      <CardImages lab={lab} cards={cards} compact={compact} />
     );
   return (
     <div
@@ -123,6 +126,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
                 options={[
                   { id: "columns", label: "Columns" },
                   { id: "rows", label: "Rows" },
+                  { id: "images", label: "Images" },
                 ]}
                 value={view}
                 onChange={setView}
@@ -131,6 +135,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
               <SortMenu keys={lab.sort} onChange={lab.setSort} />
             </div>
           </header>
+          {view === "images" && <mode.BulkBar />}
           {pile(draft, false)}
         </section>
         <PendingGutter lab={lab} tags={tags} open={pendingOpen} setOpen={setPendingOpen} />

@@ -7,13 +7,12 @@ import type { ViewIconName } from "./icons.tsx";
 import { ViewIcon } from "./icons.tsx";
 
 const VIEWS: readonly {
-  to: "/" | "/cards" | "/board" | "/tags" | "/insights" | "/versions" | "/log";
+  to: "/" | "/board" | "/tags" | "/insights" | "/versions" | "/log";
   label: string;
   icon: ViewIconName;
   workbench: boolean;
 }[] = [
   { to: "/", label: "Forge", icon: "forge", workbench: false },
-  { to: "/cards", label: "Cards", icon: "cards", workbench: false },
   { to: "/board", label: "Board", icon: "board", workbench: true },
   { to: "/tags", label: "Tags", icon: "tags", workbench: false },
   { to: "/insights", label: "Insights", icon: "insights", workbench: false },

@@ -43,14 +43,6 @@ const VIEW_PATHS = {
       <path d="M7.5 19.5h9M9 19.5l1.3-4M15 19.5l-1.3-4" />
     </>
   ),
-  cards: (
-    <>
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.8" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.8" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.8" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.8" />
-    </>
-  ),
   board: (
     <>
       <rect x="3.5" y="3.5" width="17" height="17" rx="3" />

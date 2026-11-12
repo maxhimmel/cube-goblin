@@ -2175,3 +2175,86 @@ button.lab-stat[data-picked] {
     animation: none;
   }
 }
+
+.lab-images {
+  padding-top: 4px;
+}
+
+.lab-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 12px 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lab-images[data-compact] .lab-image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.lab-tile-cell {
+  position: relative;
+  transition:
+    opacity 0.18s ease,
+    filter 0.18s ease;
+}
+
+.lab-tile-cell[data-dim] {
+  opacity: 0.22;
+  filter: saturate(0.2);
+}
+
+.lab-image {
+  border-radius: 4.75% / 3.4%;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+}
+
+.lab-image img {
+  aspect-ratio: 488 / 680;
+  border-radius: 4.75% / 3.4%;
+}
+
+.lab-tile-cell[data-pending] .lab-image {
+  outline: 3px dashed var(--pending-mark);
+  outline-offset: 2px;
+}
+
+.lab-tile-cell[data-pending="add"] {
+  --pending-mark: var(--keep);
+}
+
+.lab-tile-cell[data-pending="cut"] {
+  --pending-mark: var(--cut);
+}
+
+.lab-tile-cell .select {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 60%));
+  transition: opacity 0.12s ease;
+}
+
+.lab-tile-cell:hover .select,
+.lab-tile-cell .select:focus-visible,
+.lab-tile-cell .select:checked,
+.lab-image-grid:has(.select:checked) .select {
+  opacity: 1;
+}
+
+.lab-pile > .bulk-bar {
+  margin: 0 0 8px;
+}
+
+.lab-pile > .bulk-bar button,
+.lab-pile > .bulk-bar select {
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}

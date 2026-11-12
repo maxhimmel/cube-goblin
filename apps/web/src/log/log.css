@@ -94,3 +94,22 @@
   padding: 2px 10px;
   font-size: 0.85rem;
 }
+
+.card-history h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.card-history ol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.card-history li p {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+}

@@ -30,6 +30,7 @@ import { BoardPage } from "../workbench/board-page.tsx";
 import { AddPage } from "../workbench/add-page.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor, CardPrinting } from "../workbench/card-editor.tsx";
+import { CardHistory } from "../workbench/card-history.tsx";
 import { editsPending, runCardEdit, useSaving } from "../workbench/edits.ts";
 import { useSelection } from "../workbench/selection.ts";
 import { TagsPage } from "../workbench/tags-page.tsx";
@@ -93,7 +94,12 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
   if (!data || !card) {
     return null;
   }
-  return <CardEditor key={slug} card={card} vocabulary={data.vocabulary} />;
+  return (
+    <>
+      <CardEditor key={slug} card={card} vocabulary={data.vocabulary} />
+      <CardHistory card={card} />
+    </>
+  );
 }
 
 export const mode: Mode = {

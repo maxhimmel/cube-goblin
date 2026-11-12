@@ -1,0 +1,13 @@
+{
+  "name": "Mammoth Bellow",
+  "oracleId": "6f2e4607-bece-42ba-a2a3-5dc50f246793",
+  "status": "prospect",
+  "printing": "468b17b4-79ce-4dfa-8873-a9cfc347e38f",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 9,
+    "input": "[  ] Mammoth bellow"
+  }
+}

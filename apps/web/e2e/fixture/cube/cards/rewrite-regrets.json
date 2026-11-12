@@ -1,0 +1,13 @@
+{
+  "name": "Rewrite Regrets",
+  "oracleId": "42565432-3a17-4274-87fc-016ab900e313",
+  "status": "draft",
+  "printing": "453cfde7-c460-4b55-9472-b714e16f24bb",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 59,
+    "input": "[  ] Rewrite regrets"
+  }
+}

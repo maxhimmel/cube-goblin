@@ -1,0 +1,13 @@
+{
+  "name": "Territory Forge",
+  "oracleId": "a14d89b6-23eb-4337-8dee-93c39b0efbf1",
+  "status": "prospect",
+  "printing": "71059bc8-f63a-4d9c-9d08-2e995e74cc59",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 3,
+    "input": "[  ] Territory forge"
+  }
+}

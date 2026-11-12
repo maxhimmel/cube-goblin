@@ -1,0 +1,13 @@
+{
+  "name": "Coerced to Kill",
+  "oracleId": "3a007dbd-18fd-44d1-a305-7cc8dd6231eb",
+  "status": "prospect",
+  "printing": "2dc9f352-5076-4b5f-9815-cf47abb63d5b",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 95,
+    "input": "[  ] Coerced to kill"
+  }
+}

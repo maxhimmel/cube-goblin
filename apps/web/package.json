@@ -8,7 +8,8 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e:workbench": "playwright test workbench.spec.ts",
+    "e2e:share": "playwright test share-doc.spec.ts"
   },
   "dependencies": {
     "@fontsource-variable/rubik": "5.3.0",

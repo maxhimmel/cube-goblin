@@ -1,0 +1,13 @@
+{
+  "name": "Vein Ripper",
+  "oracleId": "f83a768c-162d-46f0-8ebd-d9c6b2c69322",
+  "status": "draft",
+  "printing": "078933b3-6d82-45f2-94e8-addf54cf1704",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 7,
+    "input": "[  ] Vein ripper"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Wild Unraveling",
+  "oracleId": "dd1a4219-437b-494f-ae0e-1d3181ffcd63",
+  "status": "draft",
+  "printing": "01522fec-9136-4fa6-91a3-370a8bb08b42",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 101,
+    "input": "[  ] Wild unraveling"
+  }
+}

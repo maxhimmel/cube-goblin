@@ -1,0 +1,13 @@
+{
+  "name": "Chart a Course",
+  "oracleId": "05878e49-93ad-4144-9c50-a0bb86126c2e",
+  "status": "prospect",
+  "printing": "7599d459-fe71-48f4-8c65-0f519bb63a68",
+  "tags": [],
+  "notes": "Deck: Pirates",
+  "source": {
+    "batch": "batch-001",
+    "line": 118,
+    "input": "[  ] Chart a course"
+  }
+}

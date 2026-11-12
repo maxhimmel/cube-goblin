@@ -1,0 +1,13 @@
+{
+  "name": "Banishing Light",
+  "oracleId": "f28b21a6-f7ce-437a-8c5b-0423cb55cefb",
+  "status": "draft",
+  "printing": "e38dc3b3-1629-491b-8afd-0e7a9a857713",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 90,
+    "input": "[  ] Banishing light"
+  }
+}

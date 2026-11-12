@@ -1,0 +1,29 @@
+{
+  "tags": [
+    {
+      "id": "removal",
+      "label": "Removal",
+      "kind": "group"
+    },
+    {
+      "id": "tempo",
+      "label": "Tempo",
+      "kind": "archetype"
+    },
+    {
+      "id": "card-draw",
+      "label": "Card draw",
+      "kind": "group"
+    },
+    {
+      "id": "blue",
+      "label": "Blue",
+      "kind": "group"
+    },
+    {
+      "id": "cantrip",
+      "label": "Cantrip",
+      "kind": "group"
+    }
+  ]
+}

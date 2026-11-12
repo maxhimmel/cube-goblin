@@ -1,0 +1,13 @@
+{
+  "name": "Lasting Tarfire",
+  "oracleId": "ff5502d2-37f5-4ad5-bee2-3a03ec973268",
+  "status": "prospect",
+  "printing": "9c4a95ac-072f-4219-80a0-1ce71f1b8411",
+  "tags": [],
+  "notes": "",
+  "source": {
+    "batch": "batch-001",
+    "line": 85,
+    "input": "[  ] Lasting tarfire"
+  }
+}

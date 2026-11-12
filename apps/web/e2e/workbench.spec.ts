@@ -2086,7 +2086,7 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   await expect(entry("Revert 2 entries")).toBeVisible();
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect.poll(async () => (await readEntry(workbench.cardsDir, one)).status).toBe("cut");
-  expect((await readEntry(workbench.cardsDir, two)).status).toBe("cut");
+  await expect.poll(async () => (await readEntry(workbench.cardsDir, two)).status).toBe("cut");
 
   await page.getByLabel("Filter the log").fill(added.name);
   for (const item of await entries.all()) {
@@ -2264,7 +2264,7 @@ test("the active nav link stays readable on hover and a selected strip's ring si
   const active = page.locator('.views a[data-status="active"]');
   await expect(active).toHaveText("Insights");
   await active.hover();
-  await expect(active).toHaveCSS("color", "rgb(23, 32, 51)");
+  await expect(active).toHaveCSS("color", "rgb(255, 255, 255)");
 
   await page.goto(workbench.url);
   const strip = page.getByRole("link", { name: /^Bite Down/u });

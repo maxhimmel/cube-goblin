@@ -286,6 +286,9 @@ function StatPicker({
             <input
               type="checkbox"
               checked={checked}
+              onKeyDown={() => {
+                pressed.current = false;
+              }}
               onChange={() => {
                 if (pressed.current) {
                   return;

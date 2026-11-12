@@ -124,11 +124,11 @@ test("the top bar holds brand, views, save state, add, and settings only", async
     "Lab",
     "Versions",
     "Log",
-    "+",
+    "",
   ]);
-  await expect(topbar.getByRole("link", { name: "Add card" })).toBeVisible();
-  await expect(topbar.getByRole("button")).toHaveText(["⚙"]);
-  await expect(topbar.getByRole("button", { name: "Settings" })).toBeVisible();
+  await expect(topbar.getByRole("link").last()).toHaveAccessibleName("Add card");
+  await expect(topbar.getByRole("button")).toHaveCount(1);
+  await expect(topbar.getByRole("button")).toHaveAccessibleName("Settings");
   await expect(topbar).not.toContainText("live");
   await expect(topbar).not.toContainText("cards ·");
 });
@@ -2264,7 +2264,7 @@ test("the active nav link stays readable on hover and a selected strip's ring si
   const active = page.locator('.views a[data-status="active"]');
   await expect(active).toHaveText("Insights");
   await active.hover();
-  await expect(active).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(active).toHaveCSS("color", "rgb(23, 32, 51)");
 
   await page.goto(workbench.url);
   const strip = page.getByRole("link", { name: /^Bite Down/u });

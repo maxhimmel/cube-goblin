@@ -19,6 +19,8 @@
   --mana-m: #c9a23a;
   --mana-c: #a3abb8;
   --lift: cubic-bezier(0.3, 1.6, 0.5, 1);
+  --chevron: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' fill='none' stroke='%235a6680' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  --chevron-active: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' fill='none' stroke='%236b4fd8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   color-scheme: light dark;
   font-family: "Rubik Variable", system-ui, sans-serif;
   font-size: 15px;
@@ -45,6 +47,8 @@
     --mana-g: #48b070;
     --mana-m: #e0bc55;
     --mana-c: #8a94a8;
+    --chevron: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' fill='none' stroke='%2393a0b8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    --chevron-active: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' fill='none' stroke='%23a993ff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   }
 }
 
@@ -73,6 +77,25 @@ textarea {
 textarea {
   box-sizing: border-box;
   border-radius: 12px;
+}
+
+select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: var(--chevron);
+  background-position: right 14px center;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+select:hover {
+  border-color: var(--accent);
+}
+
+select:hover,
+select:focus-visible {
+  background-image: var(--chevron-active);
 }
 
 button {
@@ -124,9 +147,22 @@ h2 {
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  padding: 12px 0;
+  margin: 0 -16px;
+  padding: 12px 16px;
   background: var(--bg);
-  z-index: 1;
+  border-bottom: 1px solid transparent;
+  z-index: 15;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.topbar[data-stuck="true"] {
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: blur(12px) saturate(1.4);
+  border-bottom-color: var(--line);
+  box-shadow: 0 10px 24px -14px rgb(10 14 24 / 45%);
 }
 
 .brand {

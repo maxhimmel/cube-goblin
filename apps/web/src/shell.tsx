@@ -20,8 +20,14 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
       );
     });
     observer.observe(element);
+    const onScroll = (): void => {
+      element.dataset["stuck"] = String(window.scrollY > 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
     };
   }, []);
 

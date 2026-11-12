@@ -18,21 +18,30 @@ import { $, chalk } from "zx";
 import { createClient } from "../client.ts";
 import { CUBE_PATHS, REPO_ROOT } from "../paths.ts";
 
-const EMPTY_STATE: LogState = { cards: [], tags: [], board: EMPTY_BOARD, filters: [] };
+interface Checkout {
+  state: LogState;
+  logged: string[];
+}
+
+const EMPTY: Checkout = {
+  state: { cards: [], tags: [], board: EMPTY_BOARD, filters: [] },
+  logged: [],
+};
 
 const git = $({ cwd: REPO_ROOT, quiet: true });
 
-async function stateAt(sha: string): Promise<LogState> {
+async function checkout(sha: string): Promise<Checkout> {
   const hasCube = await git`git cat-file -e ${`${sha}:cube`}`.nothrow();
   if (hasCube.exitCode !== 0) {
-    return EMPTY_STATE;
+    return EMPTY;
   }
   const dir = await mkdtemp(join(tmpdir(), "cube-backfill-"));
   try {
     await git`git archive ${sha} cube | tar -x -C ${dir}`;
     const paths = cubePaths(dir);
     await migrateLegacyCube(paths);
-    return await readLogState(paths);
+    const [state, log] = await Promise.all([readLogState(paths), readLog(paths)]);
+    return { state, logged: log.map((entry) => entry.id) };
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -50,12 +59,12 @@ async function cubeCommits(): Promise<Commit[]> {
     .split("\x1e")
     .map((record) => record.trim())
     .filter((record) => record !== "");
-  const states = new Map<string, Promise<LogState>>();
-  const cached = (sha: string | undefined): Promise<LogState> => {
+  const states = new Map<string, Promise<Checkout>>();
+  const cached = (sha: string | undefined): Promise<Checkout> => {
     if (sha === undefined) {
-      return Promise.resolve(EMPTY_STATE);
+      return Promise.resolve(EMPTY);
     }
-    const known = states.get(sha) ?? stateAt(sha);
+    const known = states.get(sha) ?? checkout(sha);
     states.set(sha, known);
     return known;
   };
@@ -64,7 +73,14 @@ async function cubeCommits(): Promise<Commit[]> {
     const [sha = "", at = "", message = ""] = record.split("\x1f");
     process.stderr.write(`\rReading ${String(commits.length + 1)}/${String(records.length)}`);
     const [before, after] = await Promise.all([cached(await parentOf(sha)), cached(sha)]);
-    commits.push({ sha, at, message, before, after });
+    commits.push({
+      sha,
+      at,
+      message,
+      before: before.state,
+      after: after.state,
+      logged: after.logged,
+    });
   }
   process.stderr.write("\n");
   return commits;

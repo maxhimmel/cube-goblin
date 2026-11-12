@@ -15,6 +15,7 @@ export interface Commit {
   message: string;
   before: LogState;
   after: LogState;
+  logged: readonly string[];
 }
 
 export interface Backfill {
@@ -71,6 +72,31 @@ export function withoutLogged(changes: LogChanges, logged: readonly LogEntry[]):
   };
 }
 
+async function rebuild(
+  commit: Commit,
+  committed: readonly LogEntry[],
+  statsOf: StatsOf,
+): Promise<LogEntry | undefined> {
+  const changes = withoutLogged(logChanges(commit.before, commit.after), committed);
+  if (isEmptyChange(changes)) {
+    return undefined;
+  }
+  const [statsBefore, statsAfter] = await Promise.all([
+    statsOf(commit.before),
+    statsOf(commit.after),
+  ]);
+  const at = new Date(commit.at);
+  const message = entryMessage(commitMessage(commit.message), changes, statsBefore, statsAfter);
+  return {
+    id: entryId(at),
+    at: at.toISOString(),
+    source: "git",
+    message: `${message}\n${SOURCE_TRAILER}: git ${commit.sha}`,
+    changes,
+    stats: statsAfter,
+  };
+}
+
 export async function backfill(
   commits: readonly Commit[],
   log: readonly LogEntry[],
@@ -89,32 +115,23 @@ export async function backfill(
     return sha !== undefined && !walked.has(sha);
   });
   const added: LogEntry[] = [];
+  const emitted = new Set<string>();
+  const ordered: LogEntry[] = [...git];
   for (const commit of commits) {
+    const inCommit = new Set(commit.logged);
+    const fresh = live.filter((entry) => inCommit.has(entry.id) && !emitted.has(entry.id));
     const existing = rebuilt.get(commit.sha);
-    if (existing) {
-      git.push(existing);
-      continue;
+    const entry = existing ?? (await rebuild(commit, fresh, statsOf));
+    if (entry) {
+      ordered.push(entry);
+      if (!existing) {
+        added.push(entry);
+      }
     }
-    const changes = withoutLogged(logChanges(commit.before, commit.after), live);
-    if (isEmptyChange(changes)) {
-      continue;
+    for (const item of fresh) {
+      emitted.add(item.id);
+      ordered.push(item);
     }
-    const [statsBefore, statsAfter] = await Promise.all([
-      statsOf(commit.before),
-      statsOf(commit.after),
-    ]);
-    const at = new Date(commit.at);
-    const message = entryMessage(commitMessage(commit.message), changes, statsBefore, statsAfter);
-    const entry: LogEntry = {
-      id: entryId(at),
-      at: at.toISOString(),
-      source: "git",
-      message: `${message}\n${SOURCE_TRAILER}: git ${commit.sha}`,
-      changes,
-      stats: statsAfter,
-    };
-    added.push(entry);
-    git.push(entry);
   }
-  return { log: [...git, ...live], added };
+  return { log: [...ordered, ...live.filter((entry) => !emitted.has(entry.id))], added };
 }

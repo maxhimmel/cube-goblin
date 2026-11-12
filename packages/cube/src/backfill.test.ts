@@ -31,6 +31,8 @@ const imported = state([card("Shock", 1), card("Opt", 2)]);
 const cutOpt = state([card("Shock", 1), card("Opt", 2, { status: "cut" })]);
 const tagged = state([card("Shock", 1, { tags: ["burn"] }), card("Opt", 2, { status: "cut" })]);
 
+const LIVE_ID = "20261111t190000000z-live";
+
 const commits: Commit[] = [
   {
     sha: "aaa",
@@ -38,6 +40,7 @@ const commits: Commit[] = [
     message: "feat(cube): import the first batch\n\nTwo cards.\n\nCo-Authored-By: Someone <a@b.c>",
     before: empty,
     after: imported,
+    logged: [],
   },
   {
     sha: "bbb",
@@ -45,6 +48,7 @@ const commits: Commit[] = [
     message: "chore(cube): save workbench edits",
     before: imported,
     after: cutOpt,
+    logged: [],
   },
   {
     sha: "ccc",
@@ -52,6 +56,7 @@ const commits: Commit[] = [
     message: "refactor(cube)!: new format",
     before: cutOpt,
     after: cutOpt,
+    logged: [],
   },
   {
     sha: "ddd",
@@ -59,6 +64,7 @@ const commits: Commit[] = [
     message: "chore(cube): tag Shock",
     before: cutOpt,
     after: tagged,
+    logged: [LIVE_ID],
   },
 ];
 
@@ -75,7 +81,7 @@ function liveEntry(): LogEntry {
   if (!entry) {
     throw new Error("expected an entry");
   }
-  return entry;
+  return { ...entry, id: LIVE_ID };
 }
 
 describe("commitMessage", () => {
@@ -110,6 +116,33 @@ describe("backfill", () => {
     expect(added.some((entry) => gitSha(entry) === "ddd")).toBe(false);
     const { added: without } = await backfill(commits, [], statsOf);
     expect(without.map((entry) => gitSha(entry))).toEqual(["aaa", "bbb", "ddd"]);
+  });
+
+  it("keeps an old change that a later live entry repeats", async () => {
+    const readd = { ...liveEntry(), id: "20261112t000000000z-late" };
+    const { added } = await backfill(commits, [readd], statsOf);
+    expect(added.map((entry) => gitSha(entry))).toEqual(["aaa", "bbb", "ddd"]);
+  });
+
+  it("puts each live entry after the commit that saved it", async () => {
+    const later = { ...liveEntry(), id: "20261112t000000000z-late" };
+    const live = liveEntry();
+    const extra: Commit = {
+      sha: "eee",
+      at: "2026-11-12T12:00:00-08:00",
+      message: "chore(cube): untag Shock",
+      before: tagged,
+      after: cutOpt,
+      logged: [LIVE_ID],
+    };
+    const { log } = await backfill([...commits, extra], [live, later], statsOf);
+    expect(log.map((entry) => gitSha(entry) ?? entry.id)).toEqual([
+      "aaa",
+      "bbb",
+      LIVE_ID,
+      "eee",
+      later.id,
+    ]);
   });
 
   it("changes nothing on a second run", async () => {

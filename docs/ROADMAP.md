@@ -12,14 +12,15 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Now
 
 - [T-043: Polish pass](tickets/T-043-polish-pass.md)
+- [T-046: Merge the Wall and the Lab](tickets/T-046-wall-and-lab.md)
 
 ## Next
 
-- [T-046: Merge the Wall and the Lab](tickets/T-046-wall-and-lab.md)
 - [T-047: Tag workspace](tickets/T-047-tag-workspace.md)
 - [T-048: History](tickets/T-048-history.md)
 - [T-049: Insights trim](tickets/T-049-insights-trim.md)
 - [T-050: Visual system and favicon](tickets/T-050-visual-system.md)
+- [T-051: Suggestions from the share doc](tickets/T-051-share-doc-suggestions.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)
 
 ## Later

@@ -2086,7 +2086,7 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   await expect(entry("Revert 2 entries")).toBeVisible();
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect.poll(async () => (await readEntry(workbench.cardsDir, one)).status).toBe("cut");
-  expect((await readEntry(workbench.cardsDir, two)).status).toBe("cut");
+  await expect.poll(async () => (await readEntry(workbench.cardsDir, two)).status).toBe("cut");
 
   await page.getByLabel("Filter the log").fill(added.name);
   for (const item of await entries.all()) {

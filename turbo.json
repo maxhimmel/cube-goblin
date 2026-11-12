@@ -16,7 +16,10 @@
       "inputs": ["$TURBO_DEFAULT$", "src/generated/**"],
       "outputs": ["dist/**"]
     },
-    "e2e": {
+    "e2e:workbench": {
+      "dependsOn": ["^build"]
+    },
+    "e2e:share": {
       "dependsOn": ["build"],
       "inputs": [
         "$TURBO_DEFAULT$",

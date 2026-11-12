@@ -10,6 +10,6 @@ process.exitCode = await runSteps([
   { name: "share doc snapshot", run: () => $`pnpm -s cube snapshot` },
   {
     name: "lint + typecheck + test + build + e2e",
-    run: () => $`pnpm exec turbo run lint typecheck test build e2e`,
+    run: () => $`pnpm exec turbo run lint typecheck test build e2e:workbench e2e:share`,
   },
 ]);

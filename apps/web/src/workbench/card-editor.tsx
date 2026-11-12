@@ -110,6 +110,7 @@ export function CardPrinting({ card }: { card: WorkbenchCard }): ReactNode {
       save={(label, patch, undo) => {
         edit.mutate({
           label,
+          subject: "",
           changes: [{ slug: card.slug, patch }],
           undo: [{ slug: card.slug, patch: undo }],
         });
@@ -129,6 +130,7 @@ export function CardEditor({
   const save: Save = (label, patch, undo) => {
     edit.mutate({
       label,
+      subject: "",
       changes: [{ slug: card.slug, patch }],
       undo: [{ slug: card.slug, patch: undo }],
     });

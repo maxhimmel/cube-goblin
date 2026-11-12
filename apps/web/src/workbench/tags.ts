@@ -58,6 +58,7 @@ export function useCreateTag(): UseMutationResult<Tag, Error, NewTag> {
       if (addTo !== undefined) {
         runCardEdit({
           label: "tags",
+          subject: "",
           changes: [{ slug: addTo, patch: { addTags: [tag.id] } }],
           undo: [{ slug: addTo, patch: { removeTags: [tag.id] } }],
         });

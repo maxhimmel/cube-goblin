@@ -2276,7 +2276,7 @@ async function croppedRings(page: Page): Promise<string[]> {
         clip.scrollWidth - left - box.width,
         clip.scrollHeight - top - box.height,
       ];
-      if (gaps.some((gap) => gap > -0.5 && gap < room - 0.5)) {
+      if (gaps.some((gap) => gap < room - 0.5)) {
         found.add(`${clip.className} > ${target.tagName.toLowerCase()}.${target.className}`);
       }
     }
@@ -2297,10 +2297,12 @@ test("no view puts a ringed control flush against a clipping edge", async ({ pag
       "versions",
       "log",
       "add",
+      "insights?bucket=curve%3A2",
     ]) {
       await page.goto(`${workbench.url}#/${view}`);
       await expect(page.getByText("Loading cube")).toHaveCount(0);
       await expect(page.locator("main a[href], main button").first()).toBeVisible();
+      await page.waitForLoadState("networkidle");
       expect(await croppedRings(page), `#/${view} at ${String(width)}px`).toEqual([]);
     }
   }

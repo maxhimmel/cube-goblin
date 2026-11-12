@@ -1,7 +1,7 @@
 import type { CardChange, CardEntry, Workbench } from "@repo/cube/browser";
 import { applyCardPatch } from "@repo/cube/browser";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { MutationObserver, useIsMutating, useMutation } from "@tanstack/react-query";
+import { MutationObserver, useMutation } from "@tanstack/react-query";
 import { queryClient } from "../query-client.ts";
 import { CUBE_QUERY_KEY, sendChanges } from "./api.ts";
 import { showToast } from "./toast.tsx";
@@ -82,8 +82,4 @@ export function runCardEdit(edit: CardEdit): void {
 
 export function useCardEdit(): UseMutationResult<CardEntry[], Error, CardEdit> {
   return useMutation(cardEditOptions);
-}
-
-export function useSaving(): boolean {
-  return useIsMutating({ mutationKey: CARD_EDIT_KEY }) > 0;
 }

@@ -158,7 +158,11 @@ export function CardEditor({
         </div>
       </fieldset>
       {card.status !== "cut" && (
-        <Link to="/add" search={{ replaces: card.slug }}>
+        <Link
+          to="."
+          search={(prev) => ({ ...prev, add: true, replaces: card.slug })}
+          resetScroll={false}
+        >
           Swap for another card…
         </Link>
       )}

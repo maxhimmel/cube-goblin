@@ -16,7 +16,6 @@ import type { CubeView, Mode } from "./mode.ts";
 const view: CubeView = {
   cards: snapshot.cards,
   vocabulary: snapshot.vocabulary,
-  label: `snapshot ${snapshot.id}`,
 };
 
 const NO_SELECTION: ReadonlySet<string> = new Set();
@@ -28,6 +27,7 @@ function Toolbar(): ReactNode {
 
   return (
     <>
+      <span className="muted">snapshot {snapshot.id}</span>
       <label className="reviewer">
         Your name
         <input
@@ -125,5 +125,5 @@ export const mode: Mode = {
   SelectPile: () => null,
   BulkBar: () => null,
   useSelection: () => NO_SELECTION,
-  AddPage: () => <p className="muted">Cards are added in the workbench.</p>,
+  AddPanel: () => null,
 };

@@ -6,7 +6,6 @@ export type GridCard = SnapshotCard;
 export interface CubeView {
   cards: GridCard[];
   vocabulary: Tag[];
-  label: string;
   size?: { min: number; max: number } | undefined;
 }
 
@@ -25,7 +24,7 @@ export interface Mode {
   SelectPile: (props: { slugs: string[]; label: string }) => ReactNode;
   BulkBar: () => ReactNode;
   useSelection: () => ReadonlySet<string>;
-  AddPage: (props: { replaces: string | undefined }) => ReactNode;
+  AddPanel: (props: { replaces: string | undefined }) => ReactNode;
   moveCard?: (card: GridCard, status: CardStatus) => void;
   moveCards?: (
     moves: readonly { card: GridCard; status: CardStatus }[],

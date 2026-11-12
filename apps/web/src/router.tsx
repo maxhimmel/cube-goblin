@@ -41,8 +41,15 @@ function byParam(search: Record<string, unknown>): { by?: string | undefined } {
 }
 
 const rootRoute = createRootRoute({
-  validateSearch: (search: Record<string, unknown>): { card?: string | undefined } =>
-    typeof search["card"] === "string" ? { card: search["card"] } : {},
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { card?: string | undefined; add?: true | undefined; replaces?: string | undefined } => ({
+    ...(typeof search["card"] === "string" ? { card: search["card"] } : {}),
+    ...(search["add"] === true ? { add: true as const } : {}),
+    ...(search["add"] === true && typeof search["replaces"] === "string"
+      ? { replaces: search["replaces"] }
+      : {}),
+  }),
   component: () => (
     <Shell>
       <Outlet />
@@ -149,11 +156,14 @@ const labRoute = createRoute({
 const addRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/add",
-  validateSearch: (search: Record<string, unknown>): { replaces?: string } =>
-    typeof search["replaces"] === "string" ? { replaces: search["replaces"] } : {},
-  component: function AddRoute() {
-    const { replaces } = addRoute.useSearch();
-    return <mode.AddPage replaces={replaces} />;
+  beforeLoad: ({ search }) => {
+    const replaces = (search as Record<string, unknown>)["replaces"];
+    redirect({
+      to: "/",
+      search: { add: true, ...(typeof replaces === "string" ? { replaces } : {}) },
+      replace: true,
+      throw: true,
+    });
   },
 });
 

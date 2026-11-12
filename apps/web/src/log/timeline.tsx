@@ -218,9 +218,10 @@ function StatPicker({
     latest.current = next;
     onChange(next);
   };
-  const [paint, setPaint] = useState<boolean | undefined>(undefined);
+  const paint = useRef<boolean | undefined>(undefined);
   useEffect(() => {
     const release = () => {
+      paint.current = undefined;
       window.setTimeout(() => {
         pressed.current = false;
       });
@@ -232,20 +233,6 @@ function StatPicker({
       window.removeEventListener("pointercancel", release);
     };
   }, []);
-  useEffect(() => {
-    if (paint === undefined) {
-      return;
-    }
-    const stop = () => {
-      setPaint(undefined);
-    };
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", stop);
-    return () => {
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", stop);
-    };
-  }, [paint]);
   const press = (key: string, modifiers: { shiftKey: boolean; altKey: boolean }): boolean => {
     const current = latest.current;
     const on = !current.includes(key);
@@ -260,11 +247,7 @@ function StatPicker({
     return on;
   };
   return (
-    <div
-      className="log-timeline-stats"
-      aria-label={`${group} stats`}
-      data-painting={paint !== undefined}
-    >
+    <div className="log-timeline-stats" aria-label={`${group} stats`}>
       {options.map((option) => {
         const checked = keys.includes(option.key);
         return (
@@ -279,13 +262,14 @@ function StatPicker({
               pressed.current = true;
               const on = press(option.key, event);
               if (!event.shiftKey && !event.altKey) {
-                setPaint(on);
+                paint.current = on;
               }
             }}
             onPointerEnter={() => {
-              if (paint !== undefined) {
+              const painting = paint.current;
+              if (painting !== undefined) {
                 const from = anchor.current ?? option.key;
-                change(setStats(latest.current, statRange(options, from, option.key), paint));
+                change(setStats(latest.current, statRange(options, from, option.key), painting));
                 anchor.current = option.key;
               }
             }}

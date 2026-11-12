@@ -9,6 +9,17 @@ export type RoadmapSection = (typeof ROADMAP_SECTIONS)[number];
 
 export const HANDOFF_FIELDS = ["Updated", "State", "Next step"] as const;
 
+export const HANDOFF_MAX_WORDS = 200;
+
+export const DATA_PATHS = ["cube/"] as const;
+
+export function isDataOnly(files: readonly string[]): boolean {
+  const changed = files.filter((file) => file !== "");
+  return (
+    changed.length > 0 && changed.every((file) => DATA_PATHS.some((path) => file.startsWith(path)))
+  );
+}
+
 export interface Ticket {
   file: string;
   id: string;
@@ -72,6 +83,12 @@ export function validateRoadmap(roadmap: string, tickets: readonly Ticket[]): st
       if (!new RegExp(`^- \\*\\*${field}\\*\\*: \\S`, "mu").test(handoff)) {
         problems.push(`ROADMAP.md: Handoff is missing a filled '- **${field}**:' line`);
       }
+    }
+    const words = handoff.split(/\s+/u).filter((word) => word !== "").length;
+    if (words > HANDOFF_MAX_WORDS) {
+      problems.push(
+        `ROADMAP.md: Handoff is ${String(words)} words (max ${String(HANDOFF_MAX_WORDS)}); point to tickets and docs instead of restating them`,
+      );
     }
   }
 

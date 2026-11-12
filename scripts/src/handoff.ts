@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { $, cd, chalk } from "zx";
 import { REPO_ROOT } from "./repo.ts";
-import { loadRoadmap, validateRoadmap } from "./roadmap.ts";
+import { isDataOnly, loadRoadmap, validateRoadmap } from "./roadmap.ts";
 
 cd(REPO_ROOT);
 const git = async (...args: string[]): Promise<string> =>
@@ -32,12 +32,22 @@ if (stashes) {
 const { roadmap, tickets } = await loadRoadmap(join(REPO_ROOT, "docs"));
 problems.push(...validateRoadmap(roadmap, tickets));
 
-const lastChange = await git("log", "-1", "--first-parent", "--format=%h %s", "main");
-const touched = await git("log", "-1", "--first-parent", "-m", "--name-only", "--format=", "main");
-if (!touched.split("\n").includes("docs/ROADMAP.md")) {
-  problems.push(
-    `Last change on main (${lastChange}) didn't update docs/ROADMAP.md; refresh the Handoff section`,
-  );
+const merges = (await git("log", "--first-parent", "--format=%H", "-50", "main")).split("\n");
+let lastChange = "";
+for (const hash of merges) {
+  const touched = (
+    await git("show", "--first-parent", "-m", "--name-only", "--format=", hash)
+  ).split("\n");
+  if (isDataOnly(touched)) {
+    continue;
+  }
+  lastChange = await git("log", "-1", "--format=%h %s", hash);
+  if (!touched.includes("docs/ROADMAP.md")) {
+    problems.push(
+      `Last non-data change on main (${lastChange}) didn't update docs/ROADMAP.md; refresh the Handoff section`,
+    );
+  }
+  break;
 }
 
 if (problems.length === 0) {

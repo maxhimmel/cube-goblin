@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Ticket } from "./roadmap.ts";
-import { parseTicket, validateRoadmap } from "./roadmap.ts";
+import { HANDOFF_MAX_WORDS, isDataOnly, parseTicket, validateRoadmap } from "./roadmap.ts";
 
 const roadmap = (body: { now?: string; next?: string; done?: string; handoff?: string }) =>
   [
@@ -65,6 +65,15 @@ describe("validateRoadmap", () => {
     expect(problems).toEqual(["ROADMAP.md: Handoff is missing a filled '- **State**:' line"]);
   });
 
+  it("flags a handoff over the word limit", () => {
+    const long = Array.from({ length: HANDOFF_MAX_WORDS }, () => "word").join(" ");
+    const problems = validateRoadmap(
+      roadmap({ handoff: `- **Updated**: 2026-11-08\n- **State**: ${long}\n- **Next step**: x` }),
+      tickets,
+    );
+    expect(problems).toEqual([expect.stringMatching(/^ROADMAP\.md: Handoff is \d+ words/u)]);
+  });
+
   it("flags bad ids and statuses", () => {
     const problems = validateRoadmap(roadmap({}), [
       { file: "T-001-a.md", id: "T-002", title: "A", status: "doing" },
@@ -74,5 +83,13 @@ describe("validateRoadmap", () => {
     expect(problems).toContain(
       "T-002-b.md: status 'wip' must be one of todo, doing, blocked, done",
     );
+  });
+});
+
+describe("isDataOnly", () => {
+  it("is true only when every changed file is cube data", () => {
+    expect(isDataOnly(["cube/log.jsonl", "cube/cards/shock.json"])).toBe(true);
+    expect(isDataOnly(["cube/log.jsonl", "docs/ROADMAP.md"])).toBe(false);
+    expect(isDataOnly([])).toBe(false);
   });
 });

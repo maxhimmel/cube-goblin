@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotCard } from "@repo/cube";
@@ -59,7 +59,6 @@ export async function snapshot(): Promise<number> {
   }
   process.stderr.write("\n");
 
-  const salt = randomBytes(16);
   const id = createHash("sha256")
     .update(JSON.stringify(snapshotCards.map((card) => ({ ...card, image: "" }))))
     .digest("hex")
@@ -71,9 +70,7 @@ export async function snapshot(): Promise<number> {
     vocabulary,
     filters: saved.filters,
     log: log.map((entry) =>
-      shareEntry(entry, (notes) =>
-        createHash("sha256").update(salt).update(notes).digest("hex").slice(0, 12),
-      ),
+      shareEntry(entry, (notes) => createHash("sha256").update(notes).digest("hex").slice(0, 12)),
     ),
   });
   await mkdir(dirname(SNAPSHOT_FILE), { recursive: true });

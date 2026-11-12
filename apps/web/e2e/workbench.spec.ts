@@ -147,7 +147,9 @@ test("editing status, tags and notes auto-saves to disk", async ({ page, workben
     "true",
   );
   await expect(page.getByLabel("Notes")).toHaveValue("Clean answer, keep.");
-  await expect(page.getByRole("listitem").filter({ hasText: "removal" })).toBeVisible();
+  await expect(
+    page.locator(".chips").getByRole("listitem").filter({ hasText: "removal" }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Remove tag Removal" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual(entry.tags);
@@ -1910,4 +1912,10 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   for (const item of await entries.all()) {
     await expect(item).toContainText(added.name);
   }
+
+  await page.goto(`${workbench.url}#/log?card=${slug}`);
+  const history = page.getByRole("region", { name: "History" });
+  await expect(
+    history.getByTestId("card-history-entry").filter({ hasText: "Too many 3s." }),
+  ).toContainText("Trim the curve");
 });

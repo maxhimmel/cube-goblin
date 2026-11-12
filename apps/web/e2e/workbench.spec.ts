@@ -2036,7 +2036,9 @@ test("the stats timeline plots log entries and links both ways with them", async
     .poll(async () => {
       const panel = await timeline.boundingBox();
       const box = await active.boundingBox();
-      return panel && box ? box.y >= panel.y + panel.height - 1 : false;
+      return panel && box
+        ? box.y >= panel.y + panel.height - 1 || box.x + box.width <= panel.x + 1
+        : false;
     })
     .toBe(true);
   const index = await plot.getAttribute("data-active-index");

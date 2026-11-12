@@ -8,7 +8,15 @@ import { noComments } from "./no-comments.ts";
 
 export function createConfig(tsconfigRootDir: string): Linter.Config[] {
   return defineConfig(
-    { ignores: ["**/node_modules/**", "**/dist/**", "**/.turbo/**"] },
+    {
+      ignores: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.turbo/**",
+        "**/test-results/**",
+        "**/playwright-report/**",
+      ],
+    },
     {
       files: ["**/*.{ts,tsx}"],
       extends: [

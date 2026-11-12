@@ -5,7 +5,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Handoff
 
 - **Updated**: 2026-11-12
-- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: the change log `#/log` with a stats timeline and folded canceling runs ([T-038](tickets/T-038-change-log.md), [T-039](tickets/T-039-stats-timeline.md)). Commits run fast staged-file checks and merges run the full `pnpm check`; e2e tests are independent and parallel ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Project skills in `.claude/skills/` (workbench testing, shipping, React pointer input) hold repeated lessons, each with an eval.
+- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: the change log `#/log` with a stats timeline and folded canceling runs ([T-038](tickets/T-038-change-log.md), [T-039](tickets/T-039-stats-timeline.md)). Commits run fast staged-file checks and merges run the full `pnpm check`; e2e tests are independent and parallel ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
 - **Next step**: Ask the user how the stats timeline reads once their log has a few entries (their server on 5173 needs a restart to load it). Then T-041, T-040, T-034, and T-026. Still waiting on feedback for `#/tags` and `#/versions`.
 
 ## Now

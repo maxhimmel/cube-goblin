@@ -1,0 +1,8 @@
+{
+  "name": "@repo/skills",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "claude plugin validate . --strict"
+  }
+}

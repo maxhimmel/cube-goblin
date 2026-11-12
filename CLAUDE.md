@@ -19,6 +19,7 @@ Speak concisely; sacrifice grammar.
 - `pnpm check`: every guard (format, markdown, cube data, lint, typecheck, test, build, Chromium e2e, no shell scripts). Must pass before claiming done.
 - `pnpm fix`: auto-fix what can be fixed, then re-run `pnpm check`.
 - `pnpm cube --help`: card data CLI (Scryfall). Use it for every card lookup and review import.
+- `pnpm skills:setup`: once per machine, registers the repo's plugin marketplace so the `cube:` skills load.
 - `pnpm export`: build the single-file share doc into `exports/`. `pnpm dev`: run the web app locally.
 - Add cards with the workbench `#/add` page, one at a time.
 
@@ -34,7 +35,7 @@ Speak concisely; sacrifice grammar.
 - **Verify by running.** Prove a change works by running the app or the test and looking at the result.
 - **Prototype first.** Build something real (a spike, a screenshot, a benchmark) early, so plans meet reality.
 - **Start local.** Run work locally and watch it before scaling out to many agents.
-- **Lessons become skills.** When a fix or correction repeats, capture it as a skill, with an eval to test it.
+- **Lessons become skills.** When a fix or correction repeats, capture it as a skill in the `cube` plugin (`packages/skills`, invoked as `cube:<skill>`), with an eval case in its `evals/`; run them with `pnpm skills:eval`.
 - **Build the lever.** Turn repeated manual work into a script or tool the agent can call.
 - **Lean context.** This file holds only what nearly every task needs; everything else sits in `docs/` behind a pointer.
 

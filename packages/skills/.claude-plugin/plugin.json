@@ -1,0 +1,6 @@
+{
+  "name": "cube",
+  "description": "Skills for working in Max's Cube: testing the workbench, shipping changes, and React pointer input.",
+  "version": "0.1.0",
+  "author": { "name": "Max Himmel" }
+}

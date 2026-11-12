@@ -180,6 +180,7 @@ export {
   mergeNotes,
   parseMessage,
   sameValue,
+  shareEntry,
   statDeltas,
   statsTrailers,
 } from "./log.ts";

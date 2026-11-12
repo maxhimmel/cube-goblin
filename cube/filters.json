@@ -1,28 +1,10 @@
 {
   "filters": [
     {
-      "id": "filter-bkko2n",
-      "label": "Multicolored",
-      "query": "is:spell c:m",
-      "view": "color"
-    },
-    {
-      "id": "filter-tj1fqi",
-      "label": "Instants",
-      "query": "t:instant",
-      "view": "color"
-    },
-    {
-      "id": "filter-2mtppc",
-      "label": "Evasion",
-      "query": "tag:evasion",
-      "view": "color"
-    },
-    {
-      "id": "filter-okfccw",
-      "label": "Removal",
-      "query": "tag:removal is:draft",
-      "view": "color"
+      "id": "filter-swuwly",
+      "label": "Moon-Letter Payoffs",
+      "query": "mv>=3 -t:creature",
+      "view": "cards"
     }
   ]
 }

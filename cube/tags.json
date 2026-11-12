@@ -144,6 +144,21 @@
       "id": "control",
       "label": "control",
       "kind": "group"
+    },
+    {
+      "id": "beatdown",
+      "label": "beatdown",
+      "kind": "group"
+    },
+    {
+      "id": "nullify",
+      "label": "nullify",
+      "kind": "group"
+    },
+    {
+      "id": "breaking",
+      "label": "breaking",
+      "kind": "group"
     }
   ]
 }

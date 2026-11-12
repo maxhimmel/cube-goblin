@@ -3,7 +3,9 @@
   "oracleId": "91c380f6-2c41-48b7-9f07-104e8659e397",
   "status": "draft",
   "printing": "21c950d7-b4f6-4902-8c9a-98f2933f9fa5",
-  "tags": [],
+  "tags": [
+    "beatdown"
+  ],
   "notes": "Deck: Vampires",
   "source": {
     "batch": "batch-001",

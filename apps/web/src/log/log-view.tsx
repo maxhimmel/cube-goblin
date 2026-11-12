@@ -1,8 +1,9 @@
 import type { LogEntry } from "@repo/cube/browser";
 import { parseMessage, slugify } from "@repo/cube/browser";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CardLink } from "../card-pane.tsx";
+import { Timeline } from "./timeline.tsx";
 
 export interface LogViewProps {
   entries: readonly LogEntry[];
@@ -18,6 +19,10 @@ function day(at: string): string {
 
 function time(at: string): string {
   return new Date(at).toLocaleTimeString(undefined, { timeStyle: "short" });
+}
+
+export function entryElementId(id: string): string {
+  return `log-entry-${id}`;
 }
 
 function cardNames(entry: LogEntry): string[] {
@@ -49,16 +54,40 @@ function Entry({
   selected,
   onSelect,
   actions,
+  active,
+  onActive,
+  onInactive,
 }: {
   entry: LogEntry;
   selected: boolean;
   onSelect: ((id: string, on: boolean) => void) | undefined;
   actions: ReactNode;
+  active: boolean;
+  onActive: (id: string) => void;
+  onInactive: (id: string) => void;
 }): ReactNode {
   const message = parseMessage(entry.message);
   const names = cardNames(entry);
   return (
-    <li className="log-entry" data-testid="log-entry" data-source={entry.source}>
+    <li
+      id={entryElementId(entry.id)}
+      className="log-entry"
+      data-testid="log-entry"
+      data-source={entry.source}
+      data-active={active}
+      onMouseEnter={() => {
+        onActive(entry.id);
+      }}
+      onFocus={() => {
+        onActive(entry.id);
+      }}
+      onMouseLeave={() => {
+        onInactive(entry.id);
+      }}
+      onBlur={() => {
+        onInactive(entry.id);
+      }}
+    >
       <div className="log-entry-head">
         {onSelect && (
           <input
@@ -106,6 +135,16 @@ export function LogView({
   entryActions,
 }: LogViewProps): ReactNode {
   const [query, setQuery] = useState("");
+  const [active, setActive] = useState<string | undefined>(undefined);
+  const [jump, setJump] = useState<{ id: string } | undefined>(undefined);
+  useEffect(() => {
+    if (jump === undefined) {
+      return;
+    }
+    document
+      .getElementById(entryElementId(jump.id))
+      ?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [jump]);
   const days = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const shown = [...entries]
@@ -135,6 +174,20 @@ export function LogView({
         />
         {actions}
       </header>
+      {entries.length > 0 && (
+        <Timeline
+          entries={entries}
+          active={active}
+          onPick={(id) => {
+            const entry = entries.find((item) => item.id === id);
+            if (entry && !entry.message.toLowerCase().includes(query.trim().toLowerCase())) {
+              setQuery("");
+            }
+            setActive(id);
+            setJump({ id });
+          }}
+        />
+      )}
       {entries.length === 0 ? (
         <p className="muted">No edits logged yet. Every saved edit lands here.</p>
       ) : days.length === 0 ? (
@@ -151,6 +204,11 @@ export function LogView({
                   selected={selected?.has(entry.id) ?? false}
                   onSelect={onSelect}
                   actions={entryActions?.(entry)}
+                  active={active === entry.id}
+                  onActive={setActive}
+                  onInactive={(id) => {
+                    setActive((current) => (current === id ? undefined : current));
+                  }}
                 />
               ))}
             </ol>

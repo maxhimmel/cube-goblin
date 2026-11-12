@@ -5,7 +5,9 @@ import {
   statColor,
   statGroupOf,
   statLabel,
+  setStats,
   statOptions,
+  statRange,
   timelinePoints,
   toggleStat,
 } from "./timeline-model.ts";
@@ -84,5 +86,41 @@ describe("statColor", () => {
     expect(statColor("color.R", keys)).toBe("var(--mana-r)");
     expect(statColor("draft", keys)).toBe("var(--chart-curve)");
     expect(statColor("mv.avg", keys)).toBe("var(--chart-functions)");
+  });
+});
+
+describe("timelinePoints in change mode", () => {
+  it("plots each stat as its change since the first entry and keeps the raw value", () => {
+    const points = timelinePoints(entries, ["draft", "color.R"], "change");
+    expect(points.map((point) => [point.key, point.value, point.raw])).toEqual([
+      ["draft", 0, 10],
+      ["color.R", 0, 0],
+      ["draft", 1, 11],
+      ["color.R", 4, 4],
+    ]);
+  });
+});
+
+describe("setStats", () => {
+  it("turns a set of stats on at the end or off, keeping the rest in order", () => {
+    expect(setStats(["draft", "mv.1"], ["mv.1", "mv.2", "mv.3"], true)).toEqual([
+      "draft",
+      "mv.1",
+      "mv.2",
+      "mv.3",
+    ]);
+    expect(setStats(["draft", "mv.1", "mv.2"], ["mv.1", "mv.2", "mv.3"], false)).toEqual(["draft"]);
+  });
+});
+
+describe("statRange", () => {
+  const options = ["mv.1", "mv.2", "mv.3", "mv.4"].map((key) => ({ key, label: key }));
+  it("spans the options between two keys in either direction", () => {
+    expect(statRange(options, "mv.2", "mv.4")).toEqual(["mv.2", "mv.3", "mv.4"]);
+    expect(statRange(options, "mv.4", "mv.2")).toEqual(["mv.2", "mv.3", "mv.4"]);
+  });
+
+  it("falls back to the clicked key when the anchor is in another group", () => {
+    expect(statRange(options, "draft", "mv.3")).toEqual(["mv.3"]);
   });
 });

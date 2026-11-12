@@ -193,3 +193,5 @@ export type {
   NewEntry,
   ParsedMessage,
 } from "./log.ts";
+export { describeConflicts, planRevert } from "./revert.ts";
+export type { Conflict, RevertPlan } from "./revert.ts";

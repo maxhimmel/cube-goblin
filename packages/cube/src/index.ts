@@ -17,6 +17,7 @@ export {
   WORKBENCH_BATCH,
   appendLog,
   cubePaths,
+  deleteCard,
   readBoard,
   readCards,
   readConfig,
@@ -53,5 +54,5 @@ export {
   summarize,
 } from "./versions.ts";
 export type { CompareResult, VersionResult } from "./versions.ts";
-export { readLogState, recordEdit } from "./save-log.ts";
-export type { RecordOptions, StatsOf } from "./save-log.ts";
+export { readLogState, recordEdit, revertEntries, revertRequestSchema } from "./save-log.ts";
+export type { RecordOptions, RevertResult, StatsOf } from "./save-log.ts";

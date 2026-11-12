@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { appendFile, mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
 import { EMPTY_BOARD } from "./board.ts";
@@ -135,6 +135,10 @@ export async function readCards(paths: CubePaths): Promise<CardEntry[]> {
       .map((file) => readJson(join(paths.cardsDir, file), cardEntrySchema)),
   );
   return cards;
+}
+
+export async function deleteCard(paths: CubePaths, card: CardEntry): Promise<void> {
+  await rm(join(paths.cardsDir, `${slugify(card.name)}.json`), { force: true });
 }
 
 export async function writeCard(paths: CubePaths, card: CardEntry): Promise<string> {

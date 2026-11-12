@@ -16,6 +16,7 @@ import type {
   TagResult,
   UpdateResult,
   VersionResult,
+  RevertResult,
   Workbench,
   WorkbenchCard,
 } from "@repo/cube";
@@ -42,6 +43,7 @@ import {
   readLog,
   readLogState,
   recordEdit,
+  revertEntries,
   readConfig,
   readTags,
   saveBoard,
@@ -149,7 +151,8 @@ type WriteResult =
   | BoardResult
   | FiltersResult
   | LayoutsResult
-  | VersionResult;
+  | VersionResult
+  | RevertResult;
 type Write = (body: unknown) => Promise<WriteResult>;
 
 interface Route {
@@ -204,6 +207,9 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   }
   if ("version" in result) {
     return result.version;
+  }
+  if ("entry" in result) {
+    return result.entry;
   }
   return "cards" in result ? result.cards : result.tag;
 }
@@ -307,7 +313,12 @@ function warmImages(cards: readonly Card[], images: ImageCache): void {
   }
 }
 
-function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: OracleTagStore) {
+function writeRoute(
+  paths: CubePaths,
+  client: ScryfallClient,
+  oracleTags: OracleTagStore,
+  stats: (state: LogState) => Promise<LogStats>,
+) {
   const lookup = async (oracleId: string): Promise<FoundCard | undefined> => {
     const [{ cards }, tags] = await Promise.all([
       client.byOracleIds([oracleId]),
@@ -324,7 +335,10 @@ function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: Oracle
         }
       : undefined;
   };
-  return (url: string, method: string | undefined): Route | undefined => {
+  return (url: string, method: string | undefined, message: LogMessage): Route | undefined => {
+    if (url === "/api/log/revert" && method === "POST") {
+      return { write: (body) => revertEntries(paths, body, stats, message), logged: false };
+    }
     if (url === "/api/cards" && method === "POST") {
       return { write: (body) => addCard(paths, body, lookup), logged: true };
     }
@@ -373,8 +387,8 @@ export function workbench(options: WorkbenchOptions): Plugin {
         file: join(options.cacheDir, "oracle-tags.json"),
       });
       const images = new ImageCache(options.imageCacheDir, USER_AGENT);
-      const route = writeRoute(paths, client, oracleTags);
       const stats = statsOf(client);
+      const route = writeRoute(paths, client, oracleTags, stats);
       const remembered = new Map<string, Card[]>();
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
@@ -530,7 +544,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
           );
           return;
         }
-        const matched = route(url, req.method);
+        const matched = route(url, req.method, logMessage(req));
         if (matched !== undefined) {
           const run = writes.then(async () => {
             const body = parseJson(await readBody(req));

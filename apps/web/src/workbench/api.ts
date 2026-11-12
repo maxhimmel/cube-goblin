@@ -196,3 +196,7 @@ export async function fetchLog(): Promise<LogEntry[]> {
   }
   return logEntrySchema.array().parse(await response.json());
 }
+
+export async function revertRequest(ids: readonly string[], note: LogNote = {}): Promise<LogEntry> {
+  return logEntrySchema.parse(await sendJson("POST", "/api/log/revert", { ids }, false, note));
+}

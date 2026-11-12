@@ -9,6 +9,7 @@ export interface LogViewProps {
   selected?: ReadonlySet<string>;
   onSelect?: (id: string, on: boolean) => void;
   actions?: ReactNode;
+  entryActions?: (entry: LogEntry) => ReactNode;
 }
 
 function day(at: string): string {
@@ -47,10 +48,12 @@ function Entry({
   entry,
   selected,
   onSelect,
+  actions,
 }: {
   entry: LogEntry;
   selected: boolean;
   onSelect: ((id: string, on: boolean) => void) | undefined;
+  actions: ReactNode;
 }): ReactNode {
   const message = parseMessage(entry.message);
   const names = cardNames(entry);
@@ -72,6 +75,7 @@ function Entry({
         </time>
         <strong className="log-subject">{message.subject}</strong>
         {entry.source !== "workbench" && <span className="log-source">{entry.source}</span>}
+        {actions !== undefined && <span className="log-entry-actions">{actions}</span>}
       </div>
       {message.body !== "" && <p className="log-body">{message.body}</p>}
       {message.trailers.length > 0 && (
@@ -94,7 +98,13 @@ function Entry({
   );
 }
 
-export function LogView({ entries, selected, onSelect, actions }: LogViewProps): ReactNode {
+export function LogView({
+  entries,
+  selected,
+  onSelect,
+  actions,
+  entryActions,
+}: LogViewProps): ReactNode {
   const [query, setQuery] = useState("");
   const days = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -140,6 +150,7 @@ export function LogView({ entries, selected, onSelect, actions }: LogViewProps):
                   entry={entry}
                   selected={selected?.has(entry.id) ?? false}
                   onSelect={onSelect}
+                  actions={entryActions?.(entry)}
                 />
               ))}
             </ol>

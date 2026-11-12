@@ -18,7 +18,9 @@
     "format:check": "prettier --check .",
     "export": "tsx scripts/src/export.ts",
     "dev": "turbo run dev --filter=@repo/web",
-    "handoff": "tsx scripts/src/handoff.ts"
+    "handoff": "tsx scripts/src/handoff.ts",
+    "skills:setup": "claude plugin marketplace add ./ --scope local",
+    "skills:eval": "claude plugin eval packages/skills"
   },
   "prettier": "@repo/prettier-config",
   "devDependencies": {

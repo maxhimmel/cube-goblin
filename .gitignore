@@ -9,3 +9,4 @@ apps/web/src/generated
 apps/web/test-results
 apps/web/playwright-report
 exports
+.claude/settings.local.json

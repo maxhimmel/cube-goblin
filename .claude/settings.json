@@ -1,4 +1,15 @@
 {
   "enableArtifact": false,
+  "enabledPlugins": {
+    "cube@maxs-cube": true
+  },
+  "extraKnownMarketplaces": {
+    "maxs-cube": {
+      "source": {
+        "source": "directory",
+        "path": "./"
+      }
+    }
+  },
   "autoMemoryEnabled": false
 }

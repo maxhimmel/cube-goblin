@@ -1,0 +1,12 @@
+{
+  "name": "maxs-cube",
+  "description": "Claude Code plugins that live in this repo.",
+  "owner": { "name": "Max Himmel" },
+  "plugins": [
+    {
+      "name": "cube",
+      "source": "./packages/skills",
+      "description": "Skills for working in Max's Cube."
+    }
+  ]
+}

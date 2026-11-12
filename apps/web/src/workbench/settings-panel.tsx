@@ -36,7 +36,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }): ReactNode {
           {config.error.message}
         </p>
       )}
-      {config.data && <CubeSettings saved={config.data} />}
+      {config.data && <CubeSettings key={JSON.stringify(config.data)} saved={config.data} />}
     </dialog>
   );
 }

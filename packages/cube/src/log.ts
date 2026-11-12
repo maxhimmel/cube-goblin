@@ -76,6 +76,7 @@ function changesBy<T>(
   before: readonly T[],
   after: readonly T[],
   key: (item: T) => string,
+  compared: (item: T) => unknown = (item) => item,
 ): Change<T>[] {
   const old = new Map(before.map((item) => [key(item), item]));
   const next = new Map(after.map((item) => [key(item), item]));
@@ -83,7 +84,7 @@ function changesBy<T>(
   return keys.flatMap((id) => {
     const was = old.get(id);
     const is = next.get(id);
-    if (sameValue(was, is)) {
+    if (sameValue(was && compared(was), is && compared(is))) {
       return [];
     }
     return [
@@ -101,7 +102,12 @@ export function logChanges(before: LogState, after: LogState): LogChanges {
       after.board.sections,
       (section) => section.id,
     ),
-    filters: changesBy(before.filters, after.filters, (filter) => filter.id),
+    filters: changesBy(
+      before.filters,
+      after.filters,
+      (filter) => filter.id,
+      (filter) => ({ ...filter, view: undefined }),
+    ),
   };
 }
 

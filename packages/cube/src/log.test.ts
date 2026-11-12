@@ -62,6 +62,19 @@ describe("logChanges", () => {
     };
     expect(logChanges(before, shuffled).cards).toEqual([]);
   });
+
+  it("does not log a filter whose only change is how its block shows it", () => {
+    const viewed: LogState = {
+      ...after,
+      filters: after.filters.map((filter) => ({ ...filter, view: "curve" })),
+    };
+    expect(logChanges(after, viewed).filters).toEqual([]);
+    const renamed: LogState = {
+      ...viewed,
+      filters: viewed.filters.map((filter) => ({ ...filter, label: "Cheaper" })),
+    };
+    expect(logChanges(after, renamed).filters).toHaveLength(1);
+  });
 });
 
 describe("logStats", () => {

@@ -15,12 +15,17 @@ export interface TimelinePoint {
   key: string;
   label: string;
   value: number;
+  raw: number;
   subject: string;
   why: boolean;
   at: string;
 }
 
 export const DEFAULT_STATS: readonly string[] = ["draft"];
+
+export const TIMELINE_MODES = ["change", "values"] as const;
+
+export type TimelineMode = (typeof TIMELINE_MODES)[number];
 
 export function statGroupOf(key: string): StatGroupName {
   return (
@@ -61,21 +66,46 @@ export function hasWhy(entry: LogEntry): boolean {
 export function timelinePoints(
   entries: readonly LogEntry[],
   keys: readonly string[],
+  mode: TimelineMode = "values",
 ): TimelinePoint[] {
+  const first = entries[0]?.stats ?? {};
   return entries.flatMap((entry, index) => {
     const message = parseMessage(entry.message);
-    return keys.map((key) => ({
-      id: `${entry.id}:${key}`,
-      entry: entry.id,
-      index,
-      key,
-      label: statLabel(key),
-      value: entry.stats[key] ?? 0,
-      subject: message.subject,
-      why: message.body !== "",
-      at: entry.at,
-    }));
+    return keys.map((key) => {
+      const raw = entry.stats[key] ?? 0;
+      return {
+        id: `${entry.id}:${key}`,
+        entry: entry.id,
+        index,
+        key,
+        label: statLabel(key),
+        value: mode === "change" ? raw - (first[key] ?? 0) : raw,
+        raw,
+        subject: message.subject,
+        why: message.body !== "",
+        at: entry.at,
+      };
+    });
   });
+}
+
+export function setStats(
+  keys: readonly string[],
+  targets: readonly string[],
+  on: boolean,
+): string[] {
+  const kept = keys.filter((key) => !targets.includes(key));
+  return on ? [...kept, ...targets.filter((key) => !kept.includes(key))] : kept;
+}
+
+export function statRange(options: readonly StatOption[], from: string, to: string): string[] {
+  const order = options.map((option) => option.key);
+  const start = order.indexOf(from);
+  const end = order.indexOf(to);
+  if (start === -1 || end === -1) {
+    return [to];
+  }
+  return order.slice(Math.min(start, end), Math.max(start, end) + 1);
 }
 
 export function toggleStat(keys: readonly string[], key: string): string[] {

@@ -1966,6 +1966,43 @@ test("the stats timeline plots log entries and links both ways with them", async
   await expect(dots).toHaveCount(logged.length * 2);
   await expect(timeline.getByRole("tab", { name: /^Colors/u })).toContainText("1");
 
+  await timeline.getByRole("tab", { name: "Curve" }).click();
+  const curve = timeline.getByLabel("Curve stats").getByRole("checkbox");
+  const curveChecked = async (): Promise<boolean[]> =>
+    Promise.all((await curve.all()).map((box) => box.isChecked()));
+  await timeline.getByRole("button", { name: "All", exact: true }).click();
+  expect(await curveChecked()).not.toContain(false);
+  await timeline.getByRole("button", { name: "None", exact: true }).click();
+  expect(await curveChecked()).not.toContain(true);
+  await curve.nth(1).click();
+  await curve.nth(3).click({ modifiers: ["Shift"] });
+  expect(await curveChecked()).toEqual((await curveChecked()).map((_, i) => i >= 1 && i <= 3));
+  await curve.nth(2).click({ modifiers: ["Alt"] });
+  await expect(timeline.getByRole("tab", { name: /^Colors/u })).not.toContainText("1");
+  expect(await curveChecked()).toEqual((await curveChecked()).map((_, i) => i === 2));
+  const first = await curve.nth(0).boundingBox();
+  const fourth = await curve.nth(4).boundingBox();
+  if (!first || !fourth) {
+    throw new Error("expected the curve checkboxes on screen");
+  }
+  await page.mouse.move(first.x + 4, first.y + 4);
+  await page.mouse.down();
+  await page.mouse.move(fourth.x + 4, fourth.y + 4, { steps: 2 });
+  await page.mouse.up();
+  expect(await curveChecked()).toEqual((await curveChecked()).map((_, i) => i <= 4));
+  await curve.nth(0).focus();
+  await page.keyboard.press("Space");
+  await expect(curve.nth(0)).not.toBeChecked();
+  await expect(dots).toHaveCount(logged.length * 4);
+
+  await expect(timeline.getByRole("button", { name: "Change" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(plot).toContainText("±0");
+  await timeline.getByRole("button", { name: "Values" }).click();
+  await expect(plot).not.toContainText("±0");
+
   const last = entries.last();
   await last.hover();
   await expect(last).toHaveAttribute("data-active", "true");

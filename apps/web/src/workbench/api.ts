@@ -2,6 +2,7 @@ import type {
   Board,
   FiltersFile,
   LayoutsFile,
+  LogEntry,
   CubeDiff,
   VersionSummary,
   CardChange,
@@ -17,6 +18,7 @@ import {
   boardSchema,
   filtersFileSchema,
   layoutsFileSchema,
+  logEntrySchema,
   cardEntrySchema,
   cubeDiffSchema,
   versionSummarySchema,
@@ -31,6 +33,7 @@ export const BOARD_QUERY_KEY = ["board"] as const;
 export const FILTERS_QUERY_KEY = ["filters"] as const;
 export const LAYOUTS_QUERY_KEY = ["layouts"] as const;
 export const VERSIONS_QUERY_KEY = ["versions"] as const;
+export const LOG_QUERY_KEY = ["log"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
 function errorMessage(text: string): string {
@@ -55,16 +58,29 @@ export async function fetchCube(): Promise<Workbench> {
   return workbenchSchema.parse(await response.json());
 }
 
+export interface LogNote {
+  subject?: string | undefined;
+  body?: string | undefined;
+}
+
+function logHeaders(note: LogNote): Record<string, string> {
+  return {
+    ...(note.subject === undefined ? {} : { "X-Log-Subject": encodeURIComponent(note.subject) }),
+    ...(note.body === undefined ? {} : { "X-Log-Body": encodeURIComponent(note.body) }),
+  };
+}
+
 async function sendJson(
   method: string,
   url: string,
   body: unknown,
   keepalive = false,
+  note: LogNote = {},
 ): Promise<unknown> {
   const response = await fetch(url, {
     method,
     keepalive,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...logHeaders(note) },
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -73,10 +89,14 @@ async function sendJson(
   return response.json();
 }
 
-export async function sendChanges(changes: CardChange[], keepalive = false): Promise<CardEntry[]> {
+export async function sendChanges(
+  changes: CardChange[],
+  keepalive = false,
+  note: LogNote = {},
+): Promise<CardEntry[]> {
   return cardEntrySchema
     .array()
-    .parse(await sendJson("PATCH", "/api/cards", { changes }, keepalive));
+    .parse(await sendJson("PATCH", "/api/cards", { changes }, keepalive, note));
 }
 
 export async function searchCards(query: string, signal: AbortSignal): Promise<SearchResult[]> {
@@ -167,4 +187,16 @@ export async function compareRequest(from: string, to: string): Promise<CubeDiff
 
 export async function saveVersionRequest(label: string): Promise<VersionSummary> {
   return versionSummarySchema.parse(await sendJson("POST", "/api/versions", { label }));
+}
+
+export async function fetchLog(): Promise<LogEntry[]> {
+  const response = await fetch("/api/log");
+  if (!response.ok) {
+    throw await failure("GET", "/api/log", response);
+  }
+  return logEntrySchema.array().parse(await response.json());
+}
+
+export async function revertRequest(ids: readonly string[], note: LogNote = {}): Promise<LogEntry> {
+  return logEntrySchema.parse(await sendJson("POST", "/api/log/revert", { ids }, false, note));
 }

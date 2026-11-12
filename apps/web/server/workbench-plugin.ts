@@ -6,6 +6,9 @@ import type {
   BoardResult,
   FiltersResult,
   LayoutsResult,
+  LogMessage,
+  LogState,
+  LogStats,
   CubePaths,
   FoundCard,
   Printing,
@@ -13,6 +16,7 @@ import type {
   TagResult,
   UpdateResult,
   VersionResult,
+  RevertResult,
   Workbench,
   WorkbenchCard,
 } from "@repo/cube";
@@ -34,7 +38,12 @@ import {
   loadBoard,
   loadFilters,
   loadLayouts,
+  logStats,
   readCards,
+  readLog,
+  readLogState,
+  recordEdit,
+  revertEntries,
   readConfig,
   readTags,
   saveBoard,
@@ -142,8 +151,46 @@ type WriteResult =
   | BoardResult
   | FiltersResult
   | LayoutsResult
-  | VersionResult;
+  | VersionResult
+  | RevertResult;
 type Write = (body: unknown) => Promise<WriteResult>;
+
+interface Route {
+  write: Write;
+  logged: boolean;
+}
+
+const SUBJECT_HEADER = "x-log-subject";
+const BODY_HEADER = "x-log-body";
+
+function header(req: IncomingMessage, name: string): string | undefined {
+  const value = req.headers[name];
+  if (typeof value !== "string" || value === "") {
+    return undefined;
+  }
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function logMessage(req: IncomingMessage): LogMessage {
+  return { subject: header(req, SUBJECT_HEADER), body: header(req, BODY_HEADER) };
+}
+
+function statsOf(client: ScryfallClient) {
+  return async (state: LogState): Promise<LogStats> => {
+    const { cards } = await client.byOracleIds(state.cards.map((card) => card.oracleId));
+    const byOracle = new Map(cards.map((card) => [card.oracle_id, card]));
+    const stats = state.cards.flatMap((entry) => {
+      const card = byOracle.get(entry.oracleId);
+      const fields = card ? displayFields(card) : undefined;
+      return fields ? [{ ...fields, status: entry.status, tags: entry.tags }] : [];
+    });
+    return logStats(stats, state.tags);
+  };
+}
 
 function written(result: Extract<WriteResult, { ok: true }>): unknown {
   if ("card" in result) {
@@ -160,6 +207,9 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   }
   if ("version" in result) {
     return result.version;
+  }
+  if ("entry" in result) {
+    return result.entry;
   }
   return "cards" in result ? result.cards : result.tag;
 }
@@ -263,7 +313,12 @@ function warmImages(cards: readonly Card[], images: ImageCache): void {
   }
 }
 
-function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: OracleTagStore) {
+function writeRoute(
+  paths: CubePaths,
+  client: ScryfallClient,
+  oracleTags: OracleTagStore,
+  stats: (state: LogState) => Promise<LogStats>,
+) {
   const lookup = async (oracleId: string): Promise<FoundCard | undefined> => {
     const [{ cards }, tags] = await Promise.all([
       client.byOracleIds([oracleId]),
@@ -280,35 +335,38 @@ function writeRoute(paths: CubePaths, client: ScryfallClient, oracleTags: Oracle
         }
       : undefined;
   };
-  return (url: string, method: string | undefined): Write | undefined => {
+  return (url: string, method: string | undefined, message: LogMessage): Route | undefined => {
+    if (url === "/api/log/revert" && method === "POST") {
+      return { write: (body) => revertEntries(paths, body, stats, message), logged: false };
+    }
     if (url === "/api/cards" && method === "POST") {
-      return (body) => addCard(paths, body, lookup);
+      return { write: (body) => addCard(paths, body, lookup), logged: true };
     }
     if (url === "/api/cards" && method === "PATCH") {
-      return (body) => patchCards(paths, body);
+      return { write: (body) => patchCards(paths, body), logged: true };
     }
     const card = CARD_ROUTE.exec(url)?.[1];
     if (card !== undefined && method === "PATCH") {
-      return (body) => patchCard(paths, card, body);
+      return { write: (body) => patchCard(paths, card, body), logged: true };
     }
     const tag = TAG_ROUTE.exec(url)?.[1];
     if (tag !== undefined && method === "PATCH") {
-      return (body) => changeTag(paths, tag, body);
+      return { write: (body) => changeTag(paths, tag, body), logged: true };
     }
     if (url === "/api/board" && method === "PUT") {
-      return (body) => saveBoard(paths, body);
+      return { write: (body) => saveBoard(paths, body), logged: true };
     }
     if (url === "/api/filters" && method === "PUT") {
-      return (body) => saveFilters(paths, body);
+      return { write: (body) => saveFilters(paths, body), logged: true };
     }
     if (url === "/api/layouts" && method === "PUT") {
-      return (body) => saveLayouts(paths, body);
+      return { write: (body) => saveLayouts(paths, body), logged: false };
     }
     if (url === "/api/tags" && method === "POST") {
-      return (body) => createTag(paths, body);
+      return { write: (body) => createTag(paths, body), logged: true };
     }
     if (url === "/api/versions" && method === "POST") {
-      return (body) => saveVersion(paths, body);
+      return { write: (body) => saveVersion(paths, body), logged: false };
     }
     return undefined;
   };
@@ -329,7 +387,8 @@ export function workbench(options: WorkbenchOptions): Plugin {
         file: join(options.cacheDir, "oracle-tags.json"),
       });
       const images = new ImageCache(options.imageCacheDir, USER_AGENT);
-      const route = writeRoute(paths, client, oracleTags);
+      const stats = statsOf(client);
+      const route = writeRoute(paths, client, oracleTags, stats);
       const remembered = new Map<string, Card[]>();
       const cubeRoot = resolve(paths.root) + sep;
       const configFile = resolve(paths.configFile);
@@ -474,15 +533,34 @@ export function workbench(options: WorkbenchOptions): Plugin {
           );
           return;
         }
-        const write = route(url, req.method);
-        if (write !== undefined) {
+        if (url === "/api/log" && req.method === "GET") {
+          readLog(paths).then(
+            (entries) => {
+              send(res, 200, entries);
+            },
+            (error: unknown) => {
+              send(res, 500, { error: String(error) });
+            },
+          );
+          return;
+        }
+        const matched = route(url, req.method, logMessage(req));
+        if (matched !== undefined) {
           const run = writes.then(async () => {
             const body = parseJson(await readBody(req));
             if (!body.ok) {
               send(res, 400, { error: "Body is not valid JSON" });
               return;
             }
-            const result = await write(body.value);
+            const before = matched.logged ? await readLogState(paths) : undefined;
+            const result = await matched.write(body.value);
+            if (result.ok && before !== undefined) {
+              await recordEdit(paths, before, stats, { message: logMessage(req) }).catch(
+                (error: unknown) => {
+                  console.warn(`Could not log the edit: ${String(error)}`);
+                },
+              );
+            }
             if (result.ok) {
               const kept = await keepPrintings(
                 chosenPrintings(body.value),

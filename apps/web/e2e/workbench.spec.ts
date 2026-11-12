@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Locator } from "@playwright/test";
 import { test as base, expect } from "@playwright/test";
-import type { CardEntry } from "@repo/cube/browser";
-import { cardEntrySchema } from "@repo/cube/browser";
+import type { CardEntry, LogEntry } from "@repo/cube/browser";
+import { cardEntrySchema, logEntrySchema, slugify } from "@repo/cube/browser";
 import { createServer } from "vite";
 
 const WEB_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -46,6 +46,18 @@ test.describe.configure({ mode: "serial" });
 
 async function readEntry(cardsDir: string, slug: string): Promise<CardEntry> {
   return cardEntrySchema.parse(JSON.parse(await readFile(join(cardsDir, `${slug}.json`), "utf8")));
+}
+
+async function readLogFile(cardsDir: string): Promise<LogEntry[]> {
+  const text = await readFile(join(cardsDir, "..", "log.jsonl"), "utf8").catch(() => "");
+  return text
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => logEntrySchema.parse(JSON.parse(line)));
+}
+
+async function lastSubject(cardsDir: string): Promise<string> {
+  return (await readLogFile(cardsDir)).at(-1)?.message.split("\n")[0] ?? "";
 }
 
 test("workbench shows live data from cube/cards", async ({ page, workbench }) => {
@@ -135,7 +147,9 @@ test("editing status, tags and notes auto-saves to disk", async ({ page, workben
     "true",
   );
   await expect(page.getByLabel("Notes")).toHaveValue("Clean answer, keep.");
-  await expect(page.getByRole("listitem").filter({ hasText: "removal" })).toBeVisible();
+  await expect(
+    page.locator(".chips").getByRole("listitem").filter({ hasText: "removal" }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Remove tag Removal" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual(entry.tags);
@@ -861,6 +875,7 @@ test("the board pool filters by status and the board lists its controls", async 
   await expect(page.getByRole("list", { name: "Board controls" })).toContainText("Alt copies");
   await pool.getByRole("button", { name: "Both", exact: true }).click();
 
+  await page.mouse.move(0, 0);
   for (const width of [1440, 1000]) {
     await page.setViewportSize({ width, height: 800 });
     const burn = page.getByRole("region", { name: "Section Burn" });
@@ -1798,10 +1813,18 @@ test("Lab Pending queues adds and cuts, previews them together, and applies as o
   await expect(pending.locator(".pending-tally")).toHaveText("+1−1");
   await expect(ghost).toHaveText(`→ ${String(count)}`);
 
+  await expect(pending.getByLabel("Apply message")).toHaveAttribute("placeholder", "Lab: +1 −1");
+  await pending.getByLabel("Apply message").fill("Trim the curve");
+  await pending.getByLabel("Why").fill("Too many 3s.");
   await pending.getByRole("button", { name: "Apply" }).click();
   await expect
     .poll(async () => (await readEntry(workbench.cardsDir, addSlug)).status)
     .toBe("draft");
+  await expect.poll(() => lastSubject(workbench.cardsDir)).toBe("Trim the curve");
+  const applied = (await readLogFile(workbench.cardsDir)).at(-1)?.message ?? "";
+  expect(applied).toContain("Trim the curve\n\nToo many 3s.\n\nCard: ");
+  expect(applied).toContain(`Card: ${addName} prospect→draft`);
+  expect(applied).toMatch(/^(?:Counts|Curve|Colors|Types|Tags): /mu);
   await expect
     .poll(async () => (await readEntry(workbench.cardsDir, cutASlug)).status)
     .toBe("prospect");
@@ -1816,4 +1839,83 @@ test("Lab Pending queues adds and cuts, previews them together, and applies as o
   await expect
     .poll(async () => (await readEntry(workbench.cardsDir, cutASlug)).status)
     .toBe("draft");
+  await expect.poll(() => lastSubject(workbench.cardsDir)).toBe("Undo Trim the curve");
+});
+
+test("the change log survives a reload and reverts entries singly and in bulk", async ({
+  page,
+  workbench,
+}) => {
+  const entries = page.getByTestId("log-entry");
+  const entry = (subject: string): Locator =>
+    entries.filter({
+      has: page.locator(".log-subject", { hasText: new RegExp(`^${subject}$`, "u") }),
+    });
+  const trim = (await readLogFile(workbench.cardsDir)).find((item) =>
+    item.message.startsWith("Trim the curve"),
+  );
+  const added = trim?.changes.cards.find((change) => change.after?.status === "draft")?.after;
+  if (!added) {
+    throw new Error("expected the Pending test's entry");
+  }
+  const slug = slugify(added.name);
+  const status = async (): Promise<string> => (await readEntry(workbench.cardsDir, slug)).status;
+
+  await page.goto(`${workbench.url}#/log`);
+  await expect(entry("Trim the curve")).toContainText("Too many 3s.");
+  await expect(entry("Trim the curve").locator('[data-trailer="Card"]')).toHaveCount(2);
+  await page.reload();
+  await expect(entry("Undo Trim the curve")).toBeVisible();
+
+  await entry("Undo Trim the curve")
+    .getByRole("button", { name: /^Revert/u })
+    .click();
+  await expect.poll(status).toBe("draft");
+  await expect(entry('Revert "Undo Trim the curve"')).toHaveAttribute("data-source", "revert");
+
+  await entry("Undo Trim the curve")
+    .getByRole("button", { name: /^Revert/u })
+    .click();
+  await expect(page.getByRole("alert")).toContainText("Changed since");
+  expect(await status()).toBe("draft");
+
+  const drafted: string[] = [];
+  for (const file of (await readdir(workbench.cardsDir)).sort()) {
+    const other = file.replace(/\.json$/u, "");
+    if (other !== slug && (await readEntry(workbench.cardsDir, other)).status === "draft") {
+      drafted.push(other);
+    }
+  }
+  const [one = "", two = ""] = drafted;
+  for (const [other, subject] of [
+    [one, "Move one"],
+    [two, "Move two"],
+  ] as const) {
+    const response = await page.request.patch(`${workbench.url}api/cards/${other}`, {
+      data: { status: "cut" },
+      headers: { "X-Log-Subject": subject },
+    });
+    expect(response.ok()).toBe(true);
+  }
+  await expect(entry("Move two")).toBeVisible();
+  await entry("Move one").getByRole("checkbox").check();
+  await entry("Move two").getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Revert 2 selected" }).click();
+  await expect.poll(async () => (await readEntry(workbench.cardsDir, one)).status).toBe("draft");
+  expect((await readEntry(workbench.cardsDir, two)).status).toBe("draft");
+  await expect(entry("Revert 2 entries")).toBeVisible();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect.poll(async () => (await readEntry(workbench.cardsDir, one)).status).toBe("cut");
+  expect((await readEntry(workbench.cardsDir, two)).status).toBe("cut");
+
+  await page.getByLabel("Filter the log").fill(added.name);
+  for (const item of await entries.all()) {
+    await expect(item).toContainText(added.name);
+  }
+
+  await page.goto(`${workbench.url}#/log?card=${slug}`);
+  const history = page.getByRole("region", { name: "History" });
+  await expect(
+    history.getByTestId("card-history-entry").filter({ hasText: "Too many 3s." }),
+  ).toContainText("Trim the curve");
 });

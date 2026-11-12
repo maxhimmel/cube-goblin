@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
 import { EMPTY_BOARD } from "./board.ts";
 import type { FiltersFile } from "./filters.ts";
 import { EMPTY_FILTERS, filtersFileSchema } from "./filters.ts";
 import type { LayoutsFile } from "./layouts.ts";
+import type { LogEntry } from "./log.ts";
+import { logEntrySchema } from "./log.ts";
 import { EMPTY_LAYOUTS, layoutsFileSchema } from "./layouts.ts";
 import type { Board, CardEntry, CubeConfig, Tag, Version } from "./schema.ts";
 import { slugify } from "./slug.ts";
@@ -27,6 +29,7 @@ export interface CubePaths {
   filtersFile: string;
   layoutsFile: string;
   versionsDir: string;
+  logFile: string;
   configFile: string;
   workbenchBatch: string;
 }
@@ -40,6 +43,7 @@ export function cubePaths(repoRoot: string): CubePaths {
     filtersFile: join(repoRoot, "cube", "filters.json"),
     layoutsFile: join(repoRoot, "cube", "layouts.json"),
     versionsDir: join(repoRoot, "cube", "versions"),
+    logFile: join(repoRoot, "cube", "log.jsonl"),
     configFile: join(repoRoot, "cube.config.json"),
     workbenchBatch: join(repoRoot, "cube", "inbox", `${WORKBENCH_BATCH}.txt`),
   };
@@ -133,6 +137,10 @@ export async function readCards(paths: CubePaths): Promise<CardEntry[]> {
   return cards;
 }
 
+export async function deleteCard(paths: CubePaths, card: CardEntry): Promise<void> {
+  await rm(join(paths.cardsDir, `${slugify(card.name)}.json`), { force: true });
+}
+
 export async function writeCard(paths: CubePaths, card: CardEntry): Promise<string> {
   await mkdir(paths.cardsDir, { recursive: true });
   const path = join(paths.cardsDir, `${slugify(card.name)}.json`);
@@ -184,4 +192,52 @@ export async function writeVersion(paths: CubePaths, version: Version): Promise<
   const path = join(paths.versionsDir, `${version.id}.json`);
   await writeJsonAtomic(path, versionSchema.parse(version));
   return path;
+}
+
+export async function readLog(paths: CubePaths): Promise<LogEntry[]> {
+  let text: string;
+  try {
+    text = await readFile(paths.logFile, "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+  return text
+    .split("\n")
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => line.trim() !== "")
+    .map(({ line, index }) => {
+      let value: unknown;
+      try {
+        value = JSON.parse(line);
+      } catch (error) {
+        throw new Error(`${paths.logFile}:${String(index + 1)}: ${String(error)}`, {
+          cause: error,
+        });
+      }
+      const result = logEntrySchema.safeParse(value);
+      if (!result.success) {
+        throw new Error(`${paths.logFile}:${String(index + 1)}: ${result.error.message}`);
+      }
+      return result.data;
+    });
+}
+
+export async function replaceLastLog(paths: CubePaths, entry: LogEntry | undefined): Promise<void> {
+  const lines = (await readFile(paths.logFile, "utf8"))
+    .split("\n")
+    .filter((line) => line.trim() !== "");
+  const kept = [
+    ...lines.slice(0, -1),
+    ...(entry ? [JSON.stringify(logEntrySchema.parse(entry))] : []),
+  ];
+  const temp = `${paths.logFile}.${randomUUID()}.tmp`;
+  await writeFile(temp, kept.map((line) => `${line}\n`).join(""));
+  await rename(temp, paths.logFile);
+}
+
+export async function appendLog(paths: CubePaths, entry: LogEntry): Promise<void> {
+  await appendFile(paths.logFile, `${JSON.stringify(logEntrySchema.parse(entry))}\n`);
 }

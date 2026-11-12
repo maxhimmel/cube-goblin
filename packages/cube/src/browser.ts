@@ -165,3 +165,34 @@ export type {
   QueryPart,
   QueryResult,
 } from "./query.ts";
+export {
+  LOG_SOURCES,
+  STAT_GROUPS,
+  autoSubject,
+  buildEntry,
+  entryMessage,
+  isEmptyChange,
+  logChanges,
+  logChangesSchema,
+  logEntrySchema,
+  logStats,
+  logStatsSchema,
+  mergeNotes,
+  parseMessage,
+  sameValue,
+  statDeltas,
+  statsTrailers,
+} from "./log.ts";
+export type {
+  Change,
+  LogChanges,
+  LogEntry,
+  LogMessage,
+  LogSource,
+  LogState,
+  LogStats,
+  NewEntry,
+  ParsedMessage,
+} from "./log.ts";
+export { describeConflicts, planRevert } from "./revert.ts";
+export type { Conflict, RevertPlan } from "./revert.ts";

@@ -2043,6 +2043,24 @@ button.lab-stat[data-picked] {
 }
 
 .pending-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pending-actions input,
+.pending-actions textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.pending-actions textarea {
+  resize: vertical;
+}
+
+.pending-buttons {
   display: inline-flex;
   gap: 6px;
   align-items: center;

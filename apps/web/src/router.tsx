@@ -134,6 +134,12 @@ const versionsRoute = createRoute({
   component: () => <mode.VersionsPage />,
 });
 
+const logRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/log",
+  component: () => <mode.LogPage />,
+});
+
 const labRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/lab",
@@ -160,6 +166,7 @@ export const router = createRouter({
     tagsRoute,
     boardRoute,
     versionsRoute,
+    logRoute,
     labRoute,
     addRoute,
   ]),

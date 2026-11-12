@@ -97,6 +97,10 @@ A project-defined term with no outside source: the [Lab](#lab)'s queue of card m
 
 A project-defined term with no outside source: a named, dated snapshot of the whole cube (every card with its status, tags, notes, and printing, plus the tag list and Board [sections](#section)), saved to `cube/versions/<date>-<label>.json` from the workbench's Versions view. Comparing two versions, or one with the current cube, lists what changed ([T-014](tickets/T-014-versions-and-compare.md)). Not a git commit, though version files are committed like other cube data.
 
+## Change log
+
+"A file which contains a curated, chronologically ordered list of notable changes for each version of a project" (Keep a Changelog). Here: `cube/log.jsonl`, one entry per saved edit (time, what changed before and after, the stats it moved, and a message saying why), written by the workbench server and committed like other cube data. A message reads like a git commit message: a subject line, an optional body, then `Key: value` trailers. Shown in `#/log` ([T-038](tickets/T-038-change-log.md)). Not a [version](#version), which is a whole-cube snapshot saved by hand. ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [git trailers](https://git-scm.com/docs/git-interpret-trailers))
+
 ## Printing
 
 One release of a card in a particular set, with its own collector number, art, frame, and border. A card that appears again in a later set is a reprint, so one card can have many printings: alternate art, borderless, showcase, Special Guests, and so on. Scryfall gives each printing its own ID and lists them with `unique=prints`. Each cube card stores the printing it shows in `printing`. ([mtg.wiki](https://mtg.wiki/page/Reprint), [Scryfall](https://scryfall.com/docs/api/cards/search)) Notes: [research/scryfall-api.md](research/scryfall-api.md#printings).

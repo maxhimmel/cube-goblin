@@ -3,7 +3,10 @@
   "oracleId": "ebf6ef9f-97b2-48cf-855e-d68dc7b11de4",
   "status": "prospect",
   "printing": "7d46c4db-e12e-4c79-a17f-2166ed78e9bc",
-  "tags": [],
+  "tags": [
+    "counters",
+    "token-maker"
+  ],
   "notes": "Deck: Merfolk",
   "source": {
     "batch": "batch-001",

@@ -2,6 +2,6 @@
   "format": "winston",
   "size": {
     "min": 90,
-    "max": 90
+    "max": 100
   }
 }

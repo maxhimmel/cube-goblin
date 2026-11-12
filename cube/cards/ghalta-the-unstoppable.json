@@ -3,7 +3,10 @@
   "oracleId": "8e5ea773-a60b-4502-9db5-ce93fa61cc89",
   "status": "draft",
   "printing": "1d535b5f-c916-4f16-89a7-9477578826d2",
-  "tags": [],
+  "tags": [
+    "breaking",
+    "big-ass-foo"
+  ],
   "notes": "",
   "source": {
     "batch": "batch-001",

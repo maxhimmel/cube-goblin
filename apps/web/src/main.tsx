@@ -9,14 +9,14 @@ import "mana-font/css/mana.css";
 import "./mana.css";
 import "./fonts.css";
 import "./styles.css";
-import "./wall.css";
+import "./strip.css";
 import "./pane.css";
 import "./board.css";
 import "./insights/insights.css";
 import "./overlaps/overlap.css";
 import "./versions.css";
 import "./log/log.css";
-import "./lab/lab.css";
+import "./forge/lab.css";
 import "./query/query.css";
 
 const root = document.getElementById("root");

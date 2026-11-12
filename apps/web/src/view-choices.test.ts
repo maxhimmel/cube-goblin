@@ -22,16 +22,15 @@ function memory() {
 describe("view choices", () => {
   it("brings back a view's remembered search when it opens bare", () => {
     const store = memory();
-    rememberSearch("/", { by: "color", with: "removal", card: "x" }, store);
-    expect(recallSearch("/", {}, store)).toEqual({ by: "color", with: "removal" });
-    expect(recallSearch("/", { card: "y" }, store)).toEqual({ by: "color", with: "removal" });
+    rememberSearch("/tags", { tags: "removal", card: "x" }, store);
+    expect(recallSearch("/tags", {}, store)).toEqual({ tags: "removal" });
+    expect(recallSearch("/tags", { card: "y" }, store)).toEqual({ tags: "removal" });
   });
 
-  it("lets a link with its own choices win and keeps the rest", () => {
+  it("lets a link with its own choices win", () => {
     const store = memory();
-    rememberSearch("/", { by: "color", with: "removal", without: "ramp" }, store);
-    expect(recallSearch("/", { with: "ramp" }, store)).toEqual({ by: "color" });
-    expect(recallSearch("/", { by: "type", without: "x" }, store)).toBeUndefined();
+    rememberSearch("/tags", { tags: "removal" }, store);
+    expect(recallSearch("/tags", { tags: "ramp" }, store)).toBeUndefined();
   });
 
   it("does not bring back a selection scope", () => {
@@ -53,14 +52,14 @@ describe("view choices", () => {
     rememberSearch("/insights", { scope: "all", bucket: "curve:2" }, store);
     expect(recallSearch("/cards", {}, store)).toEqual({ by: "tag" });
     expect(recallSearch("/insights", {}, store)).toEqual({ scope: "all" });
-    expect(recallSearch("/", {}, store)).toBeUndefined();
+    expect(recallSearch("/board", {}, store)).toBeUndefined();
   });
 
   it("survives junk in storage", () => {
     const store = memory();
     store.setItem("maxs-cube:view-search:v1", "{not json");
     store.setItem("maxs-cube:view-state:v1", JSON.stringify({ "wall.trayOpen": "yes" }));
-    expect(recallSearch("/", {}, store)).toBeUndefined();
+    expect(recallSearch("/board", {}, store)).toBeUndefined();
     expect(recallState("wall.trayOpen", z.boolean(), store)).toBeUndefined();
   });
 

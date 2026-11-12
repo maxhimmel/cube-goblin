@@ -45,7 +45,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
       {...lab.dragRoot}
     >
       <header className="lab-top">
-        <h1>Lab</h1>
+        <h1>Forge</h1>
         <DraftCount lab={lab} />
         <QueryBar lab={lab} />
         <div className="lab-controls">
@@ -161,7 +161,7 @@ function LabRoot({ onApply }: { onApply: () => void }): ReactNode {
   return <LabView lab={lab} onApply={onApply} />;
 }
 
-export function LabPage(): ReactNode {
+export function ForgePage(): ReactNode {
   const [round, setRound] = useState(0);
   return (
     <LabRoot

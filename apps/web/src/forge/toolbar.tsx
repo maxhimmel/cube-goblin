@@ -183,7 +183,7 @@ export function QueryBar({ lab }: { lab: Lab }): ReactNode {
           lab.setTyping(valid ? query.trim() : lab.typing);
         }}
         vocabulary={lab.vocabulary}
-        label="Filter the Lab"
+        label="Filter the Forge"
         slashFocus
         status={
           count === undefined

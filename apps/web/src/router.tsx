@@ -1,5 +1,5 @@
 import { mode } from "#mode";
-import { parseTagList } from "@repo/cube/browser";
+import { compileQuery, parseTagList } from "@repo/cube/browser";
 import {
   Outlet,
   createHashHistory,
@@ -9,12 +9,11 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { InsightsPage } from "./insights/insights-page.tsx";
-import { LabPage } from "./lab/lab-page.tsx";
+import { ForgePage } from "./forge/forge-page.tsx";
 import { GridPage } from "./pages/grid-page.tsx";
-import { WallPage } from "./pages/wall-page.tsx";
 import { Shell } from "./shell.tsx";
 import type { RememberedPath } from "./view-choices.ts";
-import { isRemembered, recallSearch, rememberSearch } from "./view-choices.ts";
+import { isRemembered, recallSearch, rememberSearch, rememberState } from "./view-choices.ts";
 
 function restoreChoices(path: RememberedPath) {
   return ({
@@ -57,26 +56,27 @@ const rootRoute = createRootRoute({
   ),
 });
 
-function tagListParam(
-  search: Record<string, unknown>,
-  key: "with" | "without",
-): Partial<Record<"with" | "without", string>> {
-  const tags = parseTagList(search[key]);
-  return tags.length > 0 ? { [key]: tags.join(",") } : {};
-}
-
-const wallRoute = createRoute({
+const forgeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  beforeLoad: restoreChoices("/"),
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { by?: string | undefined; with?: string | undefined; without?: string | undefined } => ({
-    ...byParam(search),
-    ...tagListParam(search, "with"),
-    ...tagListParam(search, "without"),
-  }),
-  component: WallPage,
+  validateSearch: (search: Record<string, unknown>): { q?: string | undefined } =>
+    typeof search["q"] === "string" ? { q: search["q"] } : {},
+  beforeLoad: ({ search }) => {
+    const query = search.q?.trim();
+    if (query === undefined) {
+      return;
+    }
+    if (query !== "" && compileQuery(query).ok) {
+      rememberState("lab.pills", [`x:${query}`]);
+    }
+    redirect({
+      to: "/",
+      search: (prev) => ({ ...prev, q: undefined }),
+      replace: true,
+      throw: true,
+    });
+  },
+  component: ForgePage,
 });
 
 const gridRoute = createRoute({
@@ -150,7 +150,9 @@ const logRoute = createRoute({
 const labRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/lab",
-  component: LabPage,
+  beforeLoad: () => {
+    redirect({ to: "/", replace: true, throw: true });
+  },
 });
 
 const addRoute = createRoute({
@@ -170,7 +172,7 @@ const addRoute = createRoute({
 
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
-    wallRoute,
+    forgeRoute,
     gridRoute,
     insightsRoute,
     cardRoute,

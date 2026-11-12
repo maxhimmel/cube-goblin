@@ -7,17 +7,16 @@ import type { ViewIconName } from "./icons.tsx";
 import { ViewIcon } from "./icons.tsx";
 
 const VIEWS: readonly {
-  to: "/" | "/cards" | "/board" | "/tags" | "/insights" | "/lab" | "/versions" | "/log";
+  to: "/" | "/cards" | "/board" | "/tags" | "/insights" | "/versions" | "/log";
   label: string;
   icon: ViewIconName;
   workbench: boolean;
 }[] = [
-  { to: "/", label: "Wall", icon: "wall", workbench: false },
+  { to: "/", label: "Forge", icon: "forge", workbench: false },
   { to: "/cards", label: "Cards", icon: "cards", workbench: false },
   { to: "/board", label: "Board", icon: "board", workbench: true },
   { to: "/tags", label: "Tags", icon: "tags", workbench: false },
   { to: "/insights", label: "Insights", icon: "insights", workbench: false },
-  { to: "/lab", label: "Lab", icon: "lab", workbench: true },
   { to: "/versions", label: "Versions", icon: "versions", workbench: true },
   { to: "/log", label: "Log", icon: "log", workbench: false },
 ];

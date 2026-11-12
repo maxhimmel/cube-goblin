@@ -1,97 +1,8 @@
-.wall {
-  display: flex;
-  flex-direction: column;
-  height: calc(100dvh - 64px);
-  min-height: 480px;
-}
-
-.wall-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-  align-items: center;
-  padding: 10px 0 14px;
-}
-
-.wall-title {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 800;
-}
-
-.tag-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  background: color-mix(in oklab, var(--accent) 10%, var(--panel));
-  border: 1px solid color-mix(in oklab, var(--accent) 35%, var(--line));
-  border-radius: 12px;
-}
-
-.tag-filter button {
-  margin-left: auto;
-}
-
-.wall-body {
-  flex: 1;
-  overflow: auto;
-  min-height: 0;
-  padding: 10px 6px 24px;
-  background: color-mix(in oklab, var(--panel) 75%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 16px 16px 0 0;
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: repeat(var(--columns), minmax(150px, 1fr));
-  gap: 10px;
-  align-items: start;
-}
-
-.column {
-  min-width: 0;
-}
-
-.column-head {
-  position: sticky;
-  top: -10px;
-  z-index: 3;
-  background: color-mix(in oklab, var(--panel) 92%, var(--bg));
-  border-radius: 10px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 4px 8px 10px;
-}
-
-.column-symbol {
-  font-size: 1.5rem;
-  line-height: 1;
-}
-
-.column-label {
-  font-weight: 700;
-}
-
 .column-count {
   font-size: 1.15rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
-}
-
-.column-head-small {
-  padding-bottom: 6px;
-  font-size: 0.85rem;
-}
-
-.column-head-small .column-count {
-  font-size: 0.85rem;
 }
 
 .stack {
@@ -153,31 +64,6 @@
 .strip .mana-cost {
   flex: none;
   font-size: 0.7rem;
-}
-
-.tray {
-  flex: none;
-  max-height: 38vh;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--accent);
-  border-radius: 0 0 16px 16px;
-  background: var(--panel);
-}
-
-.tray-toggle {
-  align-self: start;
-  margin: 8px 10px;
-  border: 0;
-  background: none;
-  font-weight: 700;
-}
-
-.tray-body {
-  overflow: auto;
-  --panel: var(--bg);
-  padding: 0 6px 12px;
 }
 
 .preview {
@@ -264,12 +150,6 @@
 
 .gauge[data-verdict="ok"] strong {
   color: var(--keep);
-}
-
-.wall-body[data-drop="over"],
-.tray[data-drop="over"] {
-  outline: 3px dashed var(--accent);
-  outline-offset: -3px;
 }
 
 .strip[draggable="true"] {

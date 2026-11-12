@@ -29,11 +29,13 @@ function describe(
   return describeFilter(overlapFilter(picked, tags), vocabulary);
 }
 
-function wallSearch(picked: readonly string[], tags: readonly string[]) {
+function forgeSearch(picked: readonly string[], tags: readonly string[]): { q: string } {
   const filter = overlapFilter(picked, tags);
   return {
-    ...(filter.with.length > 0 ? { with: filter.with.join(",") } : {}),
-    ...(filter.without.length > 0 ? { without: filter.without.join(",") } : {}),
+    q: [
+      ...filter.with.map((tag) => `tag:${tag}`),
+      ...filter.without.map((tag) => `-tag:${tag}`),
+    ].join(" "),
   };
 }
 
@@ -175,7 +177,7 @@ function Venn({
           const point = svgPoint(event);
           const key = point && regionAt(layout, point.x, point.y);
           if (key !== undefined) {
-            void navigate({ to: "/", search: wallSearch(picked, tagsOf(key)) });
+            void navigate({ to: "/", search: forgeSearch(picked, tagsOf(key)) });
           }
         }}
       >
@@ -281,7 +283,7 @@ function OverlapTable({
               <td className="overlap-count">
                 <Link
                   to="/"
-                  search={wallSearch(picked, overlap.tags)}
+                  search={forgeSearch(picked, overlap.tags)}
                   aria-label={`${describe(overlap.tags, picked, vocabulary)}: ${cardCount(count)}`}
                 >
                   <span

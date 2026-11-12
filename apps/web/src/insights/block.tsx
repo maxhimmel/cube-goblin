@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { z } from "zod";
+import { useRemembered } from "../view-choices.ts";
 
 export function Block({
   title,
@@ -22,7 +23,7 @@ export function Block({
   actions?: ReactNode;
   children: ReactNode;
 }): ReactNode {
-  const [asTable, setAsTable] = useState(false);
+  const [asTable, setAsTable] = useRemembered(`table.insights.${title}`, false, z.boolean());
   return (
     <section className="block" data-collapsed={collapsed} aria-label={title}>
       <header className="block-head" title="Drag to move">

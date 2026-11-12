@@ -3,7 +3,7 @@ Speak concisely; sacrifice grammar.
 ## Sessions
 
 - **Start**: read `docs/ROADMAP.md`. Its Handoff section says where things stand and what comes next.
-- **While working**: move tickets between sections and set their `status` as work changes. Every merge to main updates the Handoff section.
+- **While working**: move tickets between sections and set their `status` as work changes. Every merge to main updates the Handoff section, except merges of `cube/` data alone. Keep the Handoff to current state and the next step (`pnpm check` caps it at 200 words); details live in tickets.
 - **End**: run `pnpm handoff` until it prints SAFE TO CLOSE, then tell the user.
 
 ## Docs

@@ -8,6 +8,9 @@ import type { Lab } from "./use-lab.ts";
 
 const MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/u.test(navigator.userAgent);
 
+const SUBJECT_MAX = 200;
+const WHY_MAX = 1000;
+
 export const QUEUE_KEY = MAC ? "⌥" : "Alt";
 
 function count(lab: Lab, to: "draft" | "prospect"): number {
@@ -110,6 +113,7 @@ function ApplyForm({ lab }: { lab: Lab }): ReactNode {
       <input
         aria-label="Apply message"
         placeholder={lab.pendingLabel}
+        maxLength={SUBJECT_MAX}
         value={subject}
         disabled={!apply}
         onChange={(event) => {
@@ -120,6 +124,7 @@ function ApplyForm({ lab }: { lab: Lab }): ReactNode {
         aria-label="Why"
         placeholder="Why? (optional)"
         rows={2}
+        maxLength={WHY_MAX}
         value={body}
         disabled={!apply}
         onChange={(event) => {

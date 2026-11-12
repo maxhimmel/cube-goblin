@@ -33,7 +33,7 @@ export function CardHistory({ card }: { card: WorkbenchCard }): ReactNode {
           {entries.map((entry) => {
             const message = parseMessage(entry.message);
             const own = message.trailers.find(
-              ([key, value]) => key === "Card" && value.startsWith(card.name),
+              ([key, value]) => key === "Card" && value.startsWith(`${card.name} `),
             );
             return (
               <li key={entry.id} data-testid="card-history-entry">

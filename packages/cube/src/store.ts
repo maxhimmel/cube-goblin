@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { z } from "zod";
 import { EMPTY_BOARD } from "./board.ts";
 import type { FiltersFile } from "./filters.ts";
 import { EMPTY_FILTERS, filtersFileSchema } from "./filters.ts";
 import type { LayoutsFile } from "./layouts.ts";
+import type { LogEntry } from "./log.ts";
+import { logEntrySchema } from "./log.ts";
 import { EMPTY_LAYOUTS, layoutsFileSchema } from "./layouts.ts";
 import type { Board, CardEntry, CubeConfig, Tag, Version } from "./schema.ts";
 import { slugify } from "./slug.ts";
@@ -27,6 +29,7 @@ export interface CubePaths {
   filtersFile: string;
   layoutsFile: string;
   versionsDir: string;
+  logFile: string;
   configFile: string;
   workbenchBatch: string;
 }
@@ -40,6 +43,7 @@ export function cubePaths(repoRoot: string): CubePaths {
     filtersFile: join(repoRoot, "cube", "filters.json"),
     layoutsFile: join(repoRoot, "cube", "layouts.json"),
     versionsDir: join(repoRoot, "cube", "versions"),
+    logFile: join(repoRoot, "cube", "log.jsonl"),
     configFile: join(repoRoot, "cube.config.json"),
     workbenchBatch: join(repoRoot, "cube", "inbox", `${WORKBENCH_BATCH}.txt`),
   };
@@ -184,4 +188,31 @@ export async function writeVersion(paths: CubePaths, version: Version): Promise<
   const path = join(paths.versionsDir, `${version.id}.json`);
   await writeJsonAtomic(path, versionSchema.parse(version));
   return path;
+}
+
+export async function readLog(paths: CubePaths): Promise<LogEntry[]> {
+  let text: string;
+  try {
+    text = await readFile(paths.logFile, "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+  return text
+    .split("\n")
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => line.trim() !== "")
+    .map(({ line, index }) => {
+      const result = logEntrySchema.safeParse(JSON.parse(line));
+      if (!result.success) {
+        throw new Error(`${paths.logFile}:${String(index + 1)}: ${result.error.message}`);
+      }
+      return result.data;
+    });
+}
+
+export async function appendLog(paths: CubePaths, entry: LogEntry): Promise<void> {
+  await appendFile(paths.logFile, `${JSON.stringify(logEntrySchema.parse(entry))}\n`);
 }

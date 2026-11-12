@@ -15,12 +15,14 @@ export { cardStatusSchema, cubeConfigSchema } from "./schema.ts";
 export type { CubeConfig } from "./schema.ts";
 export {
   WORKBENCH_BATCH,
+  appendLog,
   cubePaths,
   readBoard,
   readCards,
   readConfig,
   readFilters,
   readLayouts,
+  readLog,
   readTags,
   readVersionFiles,
   readVersions,
@@ -51,3 +53,5 @@ export {
   summarize,
 } from "./versions.ts";
 export type { CompareResult, VersionResult } from "./versions.ts";
+export { readLogState, recordEdit } from "./save-log.ts";
+export type { RecordOptions, StatsOf } from "./save-log.ts";

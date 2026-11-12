@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, test } from "@playwright/test";
-import { extractReview, reviewSchema, tagCounts } from "@repo/cube/browser";
+import { extractReview, parseMessage, reviewSchema, tagCounts } from "@repo/cube/browser";
 import lzString from "lz-string";
 import snapshot from "../src/generated/snapshot.json" with { type: "json" };
 
@@ -128,4 +128,31 @@ test("share doc keeps view choices across views and reloads", async ({ page }) =
   await expect(page.getByLabel("Count cards in")).toHaveValue("all");
   await views.getByRole("link", { name: "Wall", exact: true }).click();
   await expect(page).toHaveURL(/by=type/u);
+});
+
+test("share doc shows the change log read-only with its timeline", async ({ page }) => {
+  const [latest] = [...snapshot.log].reverse();
+  if (!latest) {
+    throw new Error("the snapshot needs a log entry");
+  }
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(DOC_URL);
+  await page
+    .getByRole("navigation", { name: "Views" })
+    .getByRole("link", { name: "Log", exact: true })
+    .click();
+  await expect(page.getByRole("heading", { name: "Change log" })).toBeVisible();
+  const entries = page.getByTestId("log-entry");
+  await expect(entries).toHaveCount(snapshot.log.length);
+  const { subject, body } = parseMessage(latest.message);
+  const entry = page.locator(`#log-entry-${latest.id}`);
+  await expect(entry.locator(".log-subject")).toHaveText(subject);
+  if (body !== "") {
+    await expect(entry.locator(".log-body")).toHaveText(body);
+  }
+  await expect(page.getByRole("button", { name: /^Revert/u })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: /^Select /u })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Stats timeline" })).toBeVisible();
+  expect(errors).toEqual([]);
 });

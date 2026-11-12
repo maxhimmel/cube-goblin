@@ -1,7 +1,7 @@
 ---
 id: T-045
 title: Top bar and settings
-status: todo
+status: done
 ---
 
 Part of [T-043](T-043-polish-pass.md). The top bar carries three bits of status text ("143 cards • live from cube/cards", "workbench • live", "all changes saved") plus "loading…"; it has bugged the user (2026-11-12).
@@ -13,3 +13,10 @@ Part of [T-043](T-043-polish-pass.md). The top bar carries three bits of status 
 ## Done when
 
 - The top bar shows brand, views, save state, "+", and settings, and nothing else; covered by e2e.
+
+## Built (2026-11-12)
+
+- The top bar is brand, views, a save state ("Saved" / "Saving…", over every pending write; a load error takes its place), "+", and a settings button. The card count, "live from cube/cards", and the "workbench · live" badge are gone; the share doc shows its snapshot id beside its review controls.
+- "+" opens the add panel, a modal over the current view (`?add=true`; a swap adds `replaces`). The card pane's swap link opens it too; after an add the card's pane opens on the same view. `#/add` redirects to it.
+- Settings is a modal with a Cube section: format and target size, saved through `PUT /api/config` (`saveConfig`, `packages/cube/src/save-config.ts`) to `cube.config.json`, which stays the one source. View settings (Lab toggles, Board help, hide empty) move in as [T-046](T-046-wall-and-lab.md) and [T-047](T-047-tag-workspace.md) reshape those views.
+- E2E: the top bar's contents, the add panel over Insights and from `#/add`, and settings writing the file and moving the Wall's target.

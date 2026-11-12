@@ -21,7 +21,7 @@ Speak concisely; sacrifice grammar.
 - `pnpm cube --help`: card data CLI (Scryfall). Use it for every card lookup and review import.
 - `pnpm skills:setup`: once per machine, registers the repo's plugin marketplace so the `cube:` skills load.
 - `pnpm export`: build the single-file share doc into `exports/`. `pnpm dev`: run the web app locally.
-- Add cards with the workbench `#/add` page, one at a time.
+- Add cards with the workbench top bar's "+" panel, one at a time.
 
 ## Rules
 

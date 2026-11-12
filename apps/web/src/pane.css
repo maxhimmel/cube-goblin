@@ -1,9 +1,10 @@
 .views {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+  margin-left: 12px;
   padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 11px;
+  background: color-mix(in oklab, var(--fg) 7%, transparent);
 }
 
 .toolbar-link {
@@ -12,21 +13,31 @@
   text-decoration: none;
 }
 
-.topbar a:not(.brand, [data-status="active"]):hover {
+.topbar a:not(.brand, .views a, [data-status="active"]):hover {
   color: var(--accent);
 }
 
-.views a {
-  padding: 3px 12px;
-  border-radius: 999px;
+.views a:not([data-status="active"]):hover {
   color: var(--fg);
+}
+
+.views a {
+  padding: 5px 14px;
+  border-radius: 8px;
+  color: var(--muted);
   text-decoration: none;
   font-weight: 600;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
 }
 
 .views a[data-status="active"] {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--strip);
+  color: var(--fg);
+  box-shadow:
+    0 1px 3px rgb(10 14 24 / 18%),
+    0 0 0 1px rgb(10 14 24 / 4%);
 }
 
 .pane {
@@ -320,16 +331,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: transparent;
+  background: var(--field);
   color: var(--fg);
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1;
   text-decoration: none;
 }
 

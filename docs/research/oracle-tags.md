@@ -13,5 +13,5 @@ Researched 2026-11-09 for removal and fixing counts in Insights ([T-004](../tick
 ## How the app uses it
 
 - `OracleTagStore` downloads the bulk file at most once a day and keeps only the tracked tags (and their descendants) in `.cache/scryfall/oracle-tags.json`. Offline, it serves the last file, however old. The tracked tags live in `packages/cube/src/functions.ts`.
-- Since [T-022](../tickets/T-022-functions-as-tags.md) the oracle tags only seed ordinary group tags: once for every card (`pnpm cube tag-functions`) and on each `#/add`. Insights and the share doc read the card's tags, not the oracle tags.
+- Since [T-022](../tickets/T-022-functions-as-tags.md) the oracle tags only seed ordinary group tags: once for every card (`pnpm cube tag-functions`) and on each card added in the workbench. Insights and the share doc read the card's tags, not the oracle tags.
 - Slugs checked against the bulk file on 2026-11-10: `burn`, `bounce`, `discard`, `loot`, `tutor`, `recursion`, `reanimate`, `repeatable-token-generator`, `lifegain`, `sacrifice-outlet`, `mill`, `evasion`, `combat-trick`, and `protection` exist. `token-generator`, `pump`, `lifelink`, `graveyard-hate`, `self-mill`, and `looting` do not (`loot` and `hate-graveyard` do). `card-advantage` covers about 6,700 cards and overlaps `draw`, so it is left out.

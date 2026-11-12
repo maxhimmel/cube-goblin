@@ -11,8 +11,7 @@ export {
 } from "./functions.ts";
 export { parseBatch } from "./parse.ts";
 export type { BatchLine } from "./parse.ts";
-export { cardStatusSchema, cubeConfigSchema } from "./schema.ts";
-export type { CubeConfig } from "./schema.ts";
+export { cardStatusSchema } from "./schema.ts";
 export {
   WORKBENCH_BATCH,
   appendLog,
@@ -31,6 +30,7 @@ export {
   versionProblems,
   writeBoard,
   writeCard,
+  writeConfig,
   writeFilters,
   writeTags,
   writeVersion,
@@ -46,6 +46,8 @@ export type { BoardResult } from "./save-board.ts";
 export { loadFilters, saveFilters } from "./save-filters.ts";
 export { loadLayouts, saveLayouts } from "./save-layouts.ts";
 export type { LayoutsResult } from "./save-layouts.ts";
+export { saveConfig } from "./save-config.ts";
+export type { ConfigResult } from "./save-config.ts";
 export type { FiltersResult } from "./save-filters.ts";
 export {
   compareVersions,

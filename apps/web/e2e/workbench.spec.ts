@@ -21,6 +21,7 @@ interface Workbench {
 async function resetCube(root: string): Promise<void> {
   await rm(join(root, "cube"), { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   await cp(join(FIXTURE, "cube"), join(root, "cube"), { recursive: true });
+  await cp(join(FIXTURE, "cube.config.json"), join(root, "cube.config.json"));
 }
 
 const test = base.extend<{ freshCube: undefined }, { workbench: Workbench }>({
@@ -102,9 +103,80 @@ async function lastSubject(cardsDir: string): Promise<string> {
 test("workbench shows live data from cube/cards", async ({ page, workbench }) => {
   const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
   await page.goto(`${workbench.url}#/cards`);
-  await expect(page.getByTestId("cube-label")).toContainText("live");
   await expect(page.locator(".grid img")).toHaveCount(files.length);
   await expect(page.getByLabel("Your name")).toHaveCount(0);
+});
+
+test("the top bar holds brand, views, save state, add, and settings only", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(`${workbench.url}#/`);
+  const topbar = page.locator(".topbar");
+  await expect(page.getByTestId("save-state")).toHaveText("Saved");
+  await expect(topbar.getByRole("link")).toHaveText([
+    "Max's Cube",
+    "Wall",
+    "Cards",
+    "Board",
+    "Tags",
+    "Insights",
+    "Lab",
+    "Versions",
+    "Log",
+    "+",
+  ]);
+  await expect(topbar.getByRole("link", { name: "Add card" })).toBeVisible();
+  await expect(topbar.getByRole("button")).toHaveText(["⚙"]);
+  await expect(topbar.getByRole("button", { name: "Settings" })).toBeVisible();
+  await expect(topbar).not.toContainText("live");
+  await expect(topbar).not.toContainText("cards ·");
+});
+
+test("the add panel opens over any view and the old /add link opens it too", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(`${workbench.url}#/insights`);
+  await page.getByRole("link", { name: "Add card" }).click();
+  const panel = page.getByRole("dialog", { name: "Add a card" });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByLabel("Search Scryfall")).toBeFocused();
+  await expect(page).toHaveURL(/#\/insights\?add=true/u);
+  await panel.getByRole("button", { name: "Close" }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/insights$/u);
+
+  await page.goto(`${workbench.url}#/add`);
+  await expect(page.getByRole("dialog", { name: "Add a card" })).toBeVisible();
+});
+
+test("settings save the cube's format and target size to cube.config.json", async ({
+  page,
+  workbench,
+}) => {
+  const configFile = join(workbench.root, "cube.config.json");
+  await page.goto(`${workbench.url}#/`);
+  await expect(page.getByText("target 90–90")).toBeVisible();
+  await page.getByRole("button", { name: "Settings" }).click();
+  const panel = page.getByRole("dialog", { name: "Settings" });
+  await expect(panel.getByLabel("Format")).toHaveValue("winston");
+  const save = panel.getByRole("button", { name: "Save" });
+  await expect(save).toBeDisabled();
+
+  await panel.getByLabel("Min").fill("40");
+  await panel.getByLabel("Max").fill("30");
+  await expect(panel.getByRole("alert")).toBeVisible();
+  await expect(save).toBeDisabled();
+
+  await panel.getByLabel("Max").fill("45");
+  await save.click();
+  await expect(page.getByRole("status")).toContainText("Saved cube settings");
+  await expect
+    .poll(async () => JSON.parse(await readFile(configFile, "utf8")) as unknown)
+    .toEqual({ format: "winston", size: { min: 40, max: 45 } });
+  await panel.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByText("target 40–45")).toBeVisible();
 });
 
 test("an edit on disk shows up without a reload", async ({ page, workbench }) => {
@@ -178,7 +250,7 @@ test("editing status, tags and notes auto-saves to disk", async ({ page, workben
 
   await page.getByLabel("Notes").fill("Clean answer, keep.");
   await expect.poll(async () => (await disk()).notes).toBe("Clean answer, keep.");
-  await expect(page.getByTestId("save-state")).toHaveText("all changes saved");
+  await expect(page.getByTestId("save-state")).toHaveText("Saved");
 
   await page.reload();
   await expect(page.getByRole("button", { name: "prospect", exact: true })).toHaveAttribute(
@@ -234,7 +306,7 @@ test("rapid edits all land and the page settles on them", async ({ page, workben
 
   await expect.poll(async () => (await disk()).tags).toEqual(["tempo", "card-draw", "blue"]);
   await expect.poll(async () => (await disk()).status).toBe("prospect");
-  await expect(page.getByTestId("save-state")).toHaveText("all changes saved");
+  await expect(page.getByTestId("save-state")).toHaveText("Saved");
   await page.waitForTimeout(500);
   await expect(page.getByRole("button", { name: "prospect", exact: true })).toHaveAttribute(
     "aria-pressed",
@@ -516,13 +588,14 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
 
   await page.goto(`${workbench.url}#/card/${slug}`);
   await page.getByRole("link", { name: "Swap for another card…" }).click();
-  await expect(page.getByRole("heading", { name: "Swap out Daring Saboteur" })).toBeVisible();
-  await expect(page.getByRole("button", { name: before.status, exact: true })).toHaveAttribute(
+  const panel = page.getByRole("dialog", { name: "Swap out Daring Saboteur" });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("button", { name: before.status, exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  await page.getByLabel("Search Scryfall").fill('!"Counterspell"');
-  await page.getByRole("button", { name: "Swap in Counterspell", exact: true }).click();
+  await panel.getByLabel("Search Scryfall").fill('!"Counterspell"');
+  await panel.getByRole("button", { name: "Swap in Counterspell", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "Counterspell" })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Daring Saboteur is now cut");

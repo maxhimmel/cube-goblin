@@ -105,6 +105,10 @@ async function writeJsonAtomic(path: string, value: unknown): Promise<void> {
   await rename(temp, path);
 }
 
+export async function writeConfig(paths: CubePaths, config: CubeConfig): Promise<void> {
+  await writeJsonAtomic(paths.configFile, cubeConfigSchema.parse(config));
+}
+
 export async function writeTags(paths: CubePaths, tags: readonly Tag[]): Promise<void> {
   await writeJsonAtomic(paths.tagsFile, tagsFileSchema.parse({ tags }));
 }

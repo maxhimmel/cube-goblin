@@ -1,9 +1,9 @@
 import type { CardStatus, SearchResult, Workbench, WorkbenchCard } from "@repo/cube/browser";
 import { CARD_STATUSES, slugify } from "@repo/cube/browser";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CardImage } from "../card-image.tsx";
 import { ManaCost } from "../mana.tsx";
 import { queryClient } from "../query-client.ts";
@@ -54,25 +54,56 @@ function ResultTile({
   );
 }
 
-export function AddPage({
+export function useCloseAdd(): () => void {
+  const navigate = useNavigate();
+  return () => {
+    void navigate({
+      to: ".",
+      search: (prev) => ({ ...prev, add: undefined, replaces: undefined }),
+      resetScroll: false,
+    });
+  };
+}
+
+export function AddPanel({
   cube,
   replaces,
 }: {
   cube: Workbench | undefined;
   replaces: string | undefined;
 }): ReactNode {
-  if (!cube) {
-    return <p className="muted">Loading cube…</p>;
-  }
-  const outgoing = cube.cards.find((card) => card.slug === replaces);
-  if (replaces !== undefined && !outgoing) {
-    return (
-      <p>
-        Unknown card to swap. <Link to="/">Back</Link>
-      </p>
-    );
-  }
-  return <AddForm outgoing={outgoing} />;
+  const dialog = useRef<HTMLDialogElement>(null);
+  const close = useCloseAdd();
+  const outgoing = cube?.cards.find((card) => card.slug === replaces);
+  const title = outgoing ? `Swap out ${outgoing.name}` : "Add a card";
+
+  useEffect(() => {
+    dialog.current?.showModal();
+  }, []);
+
+  return (
+    <dialog ref={dialog} className="sheet add-panel" aria-label={title} onClose={close}>
+      <header className="sheet-head">
+        <h2>{title}</h2>
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={() => {
+            dialog.current?.close();
+          }}
+        >
+          ×
+        </button>
+      </header>
+      {!cube ? (
+        <p className="muted">Loading cube…</p>
+      ) : replaces !== undefined && !outgoing ? (
+        <p>Unknown card to swap.</p>
+      ) : (
+        <AddForm outgoing={outgoing} />
+      )}
+    </dialog>
+  );
 }
 
 function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNode {
@@ -102,7 +133,16 @@ function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNo
       if (!editsPending()) {
         await queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
       }
-      await navigate({ to: "/", search: { card: slugify(card.name) } });
+      await navigate({
+        to: ".",
+        search: (prev) => ({
+          ...prev,
+          add: undefined,
+          replaces: undefined,
+          card: slugify(card.name),
+        }),
+        resetScroll: false,
+      });
     },
     onError: (error: Error) => {
       showToast({ message: error.message, tone: "error" });
@@ -110,9 +150,7 @@ function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNo
   });
 
   return (
-    <div className="add-page">
-      <Link to="/">← back to the Wall</Link>
-      <h1>{outgoing ? `Swap out ${outgoing.name}` : "Add a card"}</h1>
+    <div className="add-form">
       {outgoing && (
         <p className="muted">
           {outgoing.name} becomes cut and keeps its notes. The new card takes the status below.

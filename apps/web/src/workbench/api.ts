@@ -7,6 +7,7 @@ import type {
   VersionSummary,
   CardChange,
   CardEntry,
+  CubeConfig,
   NewCard,
   Printing,
   SearchResult,
@@ -20,6 +21,7 @@ import {
   layoutsFileSchema,
   logEntrySchema,
   cardEntrySchema,
+  cubeConfigSchema,
   cubeDiffSchema,
   versionSummarySchema,
   printingSchema,
@@ -34,6 +36,7 @@ export const FILTERS_QUERY_KEY = ["filters"] as const;
 export const LAYOUTS_QUERY_KEY = ["layouts"] as const;
 export const VERSIONS_QUERY_KEY = ["versions"] as const;
 export const LOG_QUERY_KEY = ["log"] as const;
+export const CONFIG_QUERY_KEY = ["config"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
 function errorMessage(text: string): string {
@@ -157,6 +160,18 @@ export async function fetchLayouts(): Promise<LayoutsFile> {
 
 export async function saveLayoutsRequest(file: LayoutsFile): Promise<LayoutsFile> {
   return layoutsFileSchema.parse(await sendJson("PUT", "/api/layouts", file));
+}
+
+export async function fetchConfig(): Promise<CubeConfig> {
+  const response = await fetch("/api/config");
+  if (!response.ok) {
+    throw await failure("GET", "/api/config", response);
+  }
+  return cubeConfigSchema.parse(await response.json());
+}
+
+export async function saveConfigRequest(config: CubeConfig): Promise<CubeConfig> {
+  return cubeConfigSchema.parse(await sendJson("PUT", "/api/config", config));
 }
 
 export async function fetchPrintings(slug: string): Promise<Printing[]> {

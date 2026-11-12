@@ -235,13 +235,6 @@ textarea {
   opacity: 0.5;
 }
 
-.badge {
-  padding: 2px 8px;
-  border: 1px solid var(--muted);
-  border-radius: 999px;
-  font-size: 0.85em;
-}
-
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -439,13 +432,6 @@ textarea {
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.add-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 12px;
 }
 
 .add-options {

@@ -9,7 +9,7 @@ Each view should keep the filter and sort choices the user made, both when they 
 ## Scope
 
 - Remembered: Wall `by`, `with`, `without`; Cards `by`; Insights `scope`; Tags `tags`; Board `sort` and the pool's name filter and Both / Draft / Prospects switch.
-- Not remembered, because they are about one moment: `card` (detail pane), `bucket` (drill-down panel), Versions `from` / `to`, and `#/add?replaces=`.
+- Not remembered, because they are about one moment: `card` (detail pane), `bucket` (drill-down panel), Versions `from` / `to`, and `add` / `replaces` (the add panel).
 - Stored per browser in localStorage, like the Insights layout ([T-015](T-015-insights-dashboard-layout.md)). A link that carries its own params (for example a Tags overlap region opening the Wall with `?with=&without=`) wins over what was remembered.
 
 ## Done when

@@ -11,14 +11,16 @@ import {
   putLayout,
   useWorkbenchLayouts,
 } from "../workbench/layouts.ts";
-import { useQuery } from "@tanstack/react-query";
+import { useIsMutating, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { queryClient } from "../query-client.ts";
 import {
   BOARD_QUERY_KEY,
   VERSIONS_QUERY_KEY,
   LOG_QUERY_KEY,
+  CONFIG_QUERY_KEY,
   CUBE_CHANGED_EVENT,
   FILTERS_QUERY_KEY,
   LAYOUTS_QUERY_KEY,
@@ -27,12 +29,13 @@ import {
 } from "../workbench/api.ts";
 import { boardSavesPending } from "../workbench/board.ts";
 import { BoardPage } from "../workbench/board-page.tsx";
-import { AddPage } from "../workbench/add-page.tsx";
+import { AddPanel } from "../workbench/add-panel.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor, CardPrinting } from "../workbench/card-editor.tsx";
 import { CardHistory } from "../workbench/card-history.tsx";
-import { editsPending, runCardEdit, useSaving } from "../workbench/edits.ts";
+import { editsPending, runCardEdit } from "../workbench/edits.ts";
 import { useSelection } from "../workbench/selection.ts";
+import { SettingsPanel } from "../workbench/settings-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { VersionsPage } from "../workbench/versions-page.tsx";
 import { WorkbenchLogPage } from "../workbench/log-page.tsx";
@@ -55,6 +58,7 @@ if (import.meta.hot) {
     void refetch(LAYOUTS_QUERY_KEY, layoutSavesPending);
     void queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
     void queryClient.invalidateQueries({ queryKey: LOG_QUERY_KEY });
+    void queryClient.invalidateQueries({ queryKey: CONFIG_QUERY_KEY });
   });
 }
 
@@ -68,23 +72,50 @@ function useWorkbenchCard(slug: string): WorkbenchCard | undefined {
 
 function Toolbar(): ReactNode {
   const { error } = useQuery({ queryKey: CUBE_QUERY_KEY, queryFn: fetchCube });
-  const saving = useSaving();
+  const saving = useIsMutating() > 0;
+  const [settings, setSettings] = useState(false);
   return (
-    <>
-      <span className="badge">workbench · live</span>
-      <Link to="/add" className="toolbar-link">
-        Add card
-      </Link>
-      <span className="muted" data-testid="save-state">
-        {saving ? "saving…" : "all changes saved"}
-      </span>
-      {error && (
-        <span role="alert" className="error">
+    <div className="topbar-actions">
+      {error ? (
+        <span role="alert" className="error save-state" data-testid="save-state">
           {error.message}
         </span>
+      ) : (
+        <span className="muted save-state" data-testid="save-state" data-saving={saving}>
+          {saving ? "Saving…" : "Saved"}
+        </span>
+      )}
+      <Link
+        to="."
+        search={(prev) => ({ ...prev, add: true, replaces: undefined })}
+        resetScroll={false}
+        className="icon-button"
+        aria-label="Add card"
+        title="Add card"
+      >
+        +
+      </Link>
+      <button
+        type="button"
+        className="icon-button"
+        aria-label="Settings"
+        title="Settings"
+        aria-expanded={settings}
+        onClick={() => {
+          setSettings(true);
+        }}
+      >
+        ⚙
+      </button>
+      {settings && (
+        <SettingsPanel
+          onClose={() => {
+            setSettings(false);
+          }}
+        />
       )}
       <Toaster />
-    </>
+    </div>
   );
 }
 
@@ -138,7 +169,6 @@ export const mode: Mode = {
       data && {
         cards: data.cards,
         vocabulary: data.vocabulary,
-        label: "live from cube/cards",
         size: data.size,
       }
     );
@@ -161,7 +191,5 @@ export const mode: Mode = {
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,
   useSelection,
-  AddPage: ({ replaces }) => (
-    <AddPage key={replaces ?? ""} cube={useWorkbench()} replaces={replaces} />
-  ),
+  AddPanel: ({ replaces }) => <AddPanel cube={useWorkbench()} replaces={replaces} />,
 };

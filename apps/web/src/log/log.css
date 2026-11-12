@@ -219,3 +219,24 @@
   border-color: var(--accent);
   color: var(--on-accent);
 }
+
+.log-fold summary {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 14px;
+  color: var(--muted);
+  cursor: pointer;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+
+.log-fold details[open] summary {
+  margin-bottom: 10px;
+}
+
+.log-fold .log-entries {
+  padding-left: 16px;
+  border-left: 2px dashed var(--line);
+  margin-left: 14px;
+}

@@ -1216,6 +1216,40 @@ test("each view keeps its choices across views and reloads", async ({ page, work
   await expect(page).not.toHaveURL(/scope=/u);
 });
 
+test("table toggles, filter views, and the log's filter and stat group survive a reload", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1300, height: 1000 });
+  const filters = await page.request.put(`${workbench.url}api/filters`, {
+    data: { filters: [{ id: "filter-red", label: "Red", query: "c=r", view: "curve" }] },
+  });
+  expect(filters.ok()).toBe(true);
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug: "shock", patch: { status: "prospect" } }] },
+  });
+  expect(patched.ok()).toBe(true);
+
+  await page.goto(`${workbench.url}#/insights`);
+  const curve = page.getByRole("region", { name: "Mana curve", exact: true });
+  const red = page.getByRole("region", { name: "Red", exact: true });
+  await curve.getByRole("button", { name: "Table" }).click();
+  await red.getByRole("button", { name: "Table" }).click();
+  await page.goto(`${workbench.url}#/log`);
+  await page.getByLabel("Filter the log").fill("shock");
+  await page.getByRole("tab", { name: "Curve" }).click();
+
+  await page.reload();
+  await expect(page.getByLabel("Filter the log")).toHaveValue("shock");
+  await expect(page.getByRole("tab", { name: "Curve" })).toHaveAttribute("aria-selected", "true");
+  await page.goto(`${workbench.url}#/insights`);
+  await expect(curve.getByRole("button", { name: "Table" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(red.getByRole("button", { name: "Table" })).toHaveAttribute("aria-pressed", "true");
+});
+
 async function readFilters(cardsDir: string): Promise<{
   filters: {
     id: string;

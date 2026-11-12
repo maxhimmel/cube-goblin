@@ -55,16 +55,29 @@ export async function fetchCube(): Promise<Workbench> {
   return workbenchSchema.parse(await response.json());
 }
 
+export interface LogNote {
+  subject?: string | undefined;
+  body?: string | undefined;
+}
+
+function logHeaders(note: LogNote): Record<string, string> {
+  return {
+    ...(note.subject === undefined ? {} : { "X-Log-Subject": encodeURIComponent(note.subject) }),
+    ...(note.body === undefined ? {} : { "X-Log-Body": encodeURIComponent(note.body) }),
+  };
+}
+
 async function sendJson(
   method: string,
   url: string,
   body: unknown,
   keepalive = false,
+  note: LogNote = {},
 ): Promise<unknown> {
   const response = await fetch(url, {
     method,
     keepalive,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...logHeaders(note) },
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -73,10 +86,14 @@ async function sendJson(
   return response.json();
 }
 
-export async function sendChanges(changes: CardChange[], keepalive = false): Promise<CardEntry[]> {
+export async function sendChanges(
+  changes: CardChange[],
+  keepalive = false,
+  note: LogNote = {},
+): Promise<CardEntry[]> {
   return cardEntrySchema
     .array()
-    .parse(await sendJson("PATCH", "/api/cards", { changes }, keepalive));
+    .parse(await sendJson("PATCH", "/api/cards", { changes }, keepalive, note));
 }
 
 export async function searchCards(query: string, signal: AbortSignal): Promise<SearchResult[]> {

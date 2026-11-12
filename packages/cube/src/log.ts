@@ -263,10 +263,20 @@ function plural(count: number, word: string): string {
   return `${String(count)} ${word}${count === 1 ? "" : "s"}`;
 }
 
+function changeTrailers(changes: LogChanges): string[] {
+  return [
+    ...changes.cards.map(cardTrailer),
+    ...changes.tags.map(tagTrailer),
+    ...changes.sections.map(sectionTrailer),
+    ...changes.filters.map(filterTrailer),
+  ];
+}
+
 export function autoSubject(changes: LogChanges): string {
-  const [only] = changes.cards;
-  if (changes.cards.length === 1 && only) {
-    return cardTrailer(only).slice("Card: ".length);
+  const trailers = changeTrailers(changes);
+  const [only] = trailers;
+  if (trailers.length === 1 && only !== undefined) {
+    return only.slice(only.indexOf(": ") + 2);
   }
   const parts = [
     changes.cards.length > 0 ? plural(changes.cards.length, "card") : "",
@@ -288,10 +298,7 @@ export function entryMessage(
   const subject = written === "" ? autoSubject(changes) : written;
   const body = message.body?.trim() ?? "";
   const trailers = [
-    ...changes.cards.map(cardTrailer),
-    ...changes.tags.map(tagTrailer),
-    ...changes.sections.map(sectionTrailer),
-    ...changes.filters.map(filterTrailer),
+    ...changeTrailers(changes),
     statsTrailer(before, after),
     reverts.length > 0 ? `Reverts: ${list(reverts)}` : undefined,
   ].filter((line) => line !== undefined);

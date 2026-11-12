@@ -8,6 +8,7 @@ import { showToast } from "./toast.tsx";
 
 export interface CardEdit {
   label: string;
+  body?: string;
   changes: CardChange[];
   undo?: CardChange[];
 }
@@ -36,7 +37,11 @@ export function editsPending(): boolean {
 const cardEditOptions = {
   mutationKey: CARD_EDIT_KEY,
   scope: { id: "card-edit" },
-  mutationFn: ({ changes }: CardEdit): Promise<CardEntry[]> => sendChanges(changes),
+  mutationFn: (edit: CardEdit): Promise<CardEntry[]> =>
+    sendChanges(edit.changes, false, {
+      subject: edit.undo === undefined ? `Undo ${edit.label}` : edit.label,
+      body: edit.body,
+    }),
   onMutate: async ({ changes }: CardEdit): Promise<void> => {
     await queryClient.cancelQueries({ queryKey: CUBE_QUERY_KEY });
     patchCached(changes);

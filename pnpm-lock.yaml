@@ -248,6 +248,15 @@ importers:
         specifier: 8.8.5
         version: 8.8.5
     devDependencies:
+      '@commitlint/parse':
+        specifier: 21.2.3
+        version: 21.2.3
+      '@commitlint/rules':
+        specifier: 21.2.4
+        version: 21.2.4
+      '@commitlint/types':
+        specifier: 21.2.3
+        version: 21.2.3
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../packages/eslint-config

@@ -1,11 +1,13 @@
 import type { Bucket, CubeStats, Filter, Tag } from "@repo/cube/browser";
 import { compileQuery, filterCards, namesStatus, queryParts } from "@repo/cube/browser";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import type { GridCard } from "../modes/mode.ts";
 import type { Hover } from "../strip.tsx";
 import { QueryInput } from "../query/query-input.tsx";
 import { Preview, Strip } from "../strip.tsx";
+import { useRemembered } from "../view-choices.ts";
 import { Block } from "./block.tsx";
 import type { BlockId, Dashboard } from "./layout.ts";
 import { BLOCKS } from "./layout.ts";
@@ -20,8 +22,16 @@ export interface CardSet {
 
 export type FrameComponent = (props: Parameters<typeof Block>[0]) => ReactNode;
 
-export function BlockBody({ caption, table, children }: Parameters<typeof Block>[0]): ReactNode {
-  const [asTable, setAsTable] = useState(false);
+const FilterScope = createContext("");
+
+export function BlockBody({
+  title,
+  caption,
+  table,
+  children,
+}: Parameters<typeof Block>[0]): ReactNode {
+  const scope = useContext(FilterScope);
+  const [asTable, setAsTable] = useRemembered(`table.filter.${scope}.${title}`, false, z.boolean());
   return (
     <>
       {(caption !== undefined || table !== undefined) && (
@@ -99,7 +109,11 @@ export function FilterBlock({
   renderChart: (id: BlockId, set: CardSet) => ReactNode;
 }): ReactNode {
   const [hover, setHover] = useState<Hover | undefined>(undefined);
-  const [localView, setLocalView] = useState(filter.view);
+  const [localView, setLocalView] = useRemembered(
+    `filter.view.${filter.id}`,
+    filter.view,
+    z.string(),
+  );
   const view = onView ? filter.view : localView;
   const chart = isBlockId(view) ? view : undefined;
   return (
@@ -146,7 +160,9 @@ export function FilterBlock({
       <div className="filter-block">
         <QueryPills query={filter.query} />
         {chart ? (
-          <div className="filter-chart">{renderChart(chart, set)}</div>
+          <div className="filter-chart">
+            <FilterScope.Provider value={filter.id}>{renderChart(chart, set)}</FilterScope.Provider>
+          </div>
         ) : set.cards.length === 0 ? (
           <p className="muted">No cards match.</p>
         ) : (

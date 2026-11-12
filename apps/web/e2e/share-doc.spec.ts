@@ -156,3 +156,21 @@ test("share doc shows the change log read-only with its timeline", async ({ page
   await expect(page.getByRole("region", { name: "Stats timeline" })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("share doc keeps a filter block's view and table toggle across reloads", async ({ page }) => {
+  const [filter] = snapshot.filters;
+  if (!filter) {
+    throw new Error("the snapshot needs a saved filter");
+  }
+  const next = filter.view === "curve" ? "color" : "curve";
+  await page.goto(`${DOC_URL}#/insights`);
+  const block = page.getByRole("region", { name: filter.label, exact: true });
+  await block.getByLabel(`Show ${filter.label} as`).selectOption(next);
+  await block.getByRole("button", { name: "Table" }).click();
+  await page.reload();
+  await expect(block.getByLabel(`Show ${filter.label} as`)).toHaveValue(next);
+  await expect(block.getByRole("button", { name: "Table" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});

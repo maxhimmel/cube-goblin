@@ -478,7 +478,7 @@ function Tile({
   actions,
   children,
 }: Parameters<typeof Block>[0]): ReactNode {
-  const [asTable, setAsTable] = useState(false);
+  const [asTable, setAsTable] = useRemembered(`table.lab.${title}`, false, z.boolean());
   const extras = useContext(TileExtras);
   const short = typeof caption === "string" && caption.length <= SHORT_CAPTION;
   return (

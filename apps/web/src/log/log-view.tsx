@@ -2,10 +2,12 @@ import type { LogEntry } from "@repo/cube/browser";
 import { parseMessage, slugify } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { CardLink } from "../card-pane.tsx";
 import type { LogRow } from "./fold.ts";
 import { foldCanceled, foldSummary, foldedIds, rowMatches } from "./fold.ts";
 import { Timeline } from "./timeline.tsx";
+import { useRemembered } from "../view-choices.ts";
 
 export interface LogViewProps {
   entries: readonly LogEntry[];
@@ -136,7 +138,7 @@ export function LogView({
   actions,
   entryActions,
 }: LogViewProps): ReactNode {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useRemembered("log.query", "", z.string());
   const [active, setActive] = useState<string | undefined>(undefined);
   const [jump, setJump] = useState<{ id: string } | undefined>(undefined);
   useEffect(() => {

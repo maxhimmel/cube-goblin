@@ -3,6 +3,24 @@ import { Link, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { CardPane } from "./card-pane.tsx";
+import type { ViewIconName } from "./icons.tsx";
+import { ViewIcon } from "./icons.tsx";
+
+const VIEWS: readonly {
+  to: "/" | "/cards" | "/board" | "/tags" | "/insights" | "/lab" | "/versions" | "/log";
+  label: string;
+  icon: ViewIconName;
+  workbench: boolean;
+}[] = [
+  { to: "/", label: "Wall", icon: "wall", workbench: false },
+  { to: "/cards", label: "Cards", icon: "cards", workbench: false },
+  { to: "/board", label: "Board", icon: "board", workbench: true },
+  { to: "/tags", label: "Tags", icon: "tags", workbench: false },
+  { to: "/insights", label: "Insights", icon: "insights", workbench: false },
+  { to: "/lab", label: "Lab", icon: "lab", workbench: true },
+  { to: "/versions", label: "Versions", icon: "versions", workbench: true },
+  { to: "/log", label: "Log", icon: "log", workbench: false },
+];
 
 export function Shell({ children }: { children: ReactNode }): ReactNode {
   const { card, add, replaces } = useSearch({ strict: false });
@@ -38,36 +56,16 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
           Max&apos;s Cube
         </Link>
         <nav className="views" aria-label="Views">
-          <Link to="/" activeOptions={{ exact: true, includeSearch: false }}>
-            Wall
-          </Link>
-          <Link to="/cards" activeOptions={{ includeSearch: false }}>
-            Cards
-          </Link>
-          {mode.name === "workbench" && (
-            <Link to="/board" activeOptions={{ includeSearch: false }}>
-              Board
+          {VIEWS.filter((view) => !view.workbench || mode.name === "workbench").map((view) => (
+            <Link
+              key={view.to}
+              to={view.to}
+              activeOptions={{ exact: view.to === "/", includeSearch: false }}
+            >
+              <ViewIcon name={view.icon} />
+              <span className="view-name">{view.label}</span>
             </Link>
-          )}
-          <Link to="/tags" activeOptions={{ includeSearch: false }}>
-            Tags
-          </Link>
-          <Link to="/insights" activeOptions={{ includeSearch: false }}>
-            Insights
-          </Link>
-          {mode.name === "workbench" && (
-            <Link to="/lab" activeOptions={{ includeSearch: false }}>
-              Lab
-            </Link>
-          )}
-          {mode.name === "workbench" && (
-            <Link to="/versions" activeOptions={{ includeSearch: false }}>
-              Versions
-            </Link>
-          )}
-          <Link to="/log" activeOptions={{ includeSearch: false }}>
-            Log
-          </Link>
+          ))}
         </nav>
         <mode.Toolbar />
       </header>

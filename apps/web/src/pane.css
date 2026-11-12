@@ -1,10 +1,13 @@
 .views {
+  --nav-active-fg: var(--on-accent);
+  --nav-active-bg: var(--accent);
   display: flex;
   gap: 2px;
   margin-left: 12px;
-  padding: 3px;
-  border-radius: 11px;
-  background: color-mix(in oklab, var(--fg) 7%, transparent);
+}
+
+.topbar a:not(.brand, .views a, [data-status="active"]):hover {
+  color: var(--accent);
 }
 
 .toolbar-link {
@@ -13,31 +16,86 @@
   text-decoration: none;
 }
 
-.topbar a:not(.brand, .views a, [data-status="active"]):hover {
-  color: var(--accent);
+.views a {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 120ms ease;
 }
 
-.views a:not([data-status="active"]):hover {
+.views a::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--fg) 7%, transparent);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    transform 380ms var(--lift),
+    opacity 140ms ease;
+}
+
+.views a:hover {
   color: var(--fg);
 }
 
-.views a {
-  padding: 5px 14px;
-  border-radius: 8px;
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  transition:
-    color 120ms ease,
-    background-color 120ms ease;
+.views a:hover::before {
+  opacity: 1;
+  transform: none;
 }
 
 .views a[data-status="active"] {
-  background: var(--strip);
-  color: var(--fg);
-  box-shadow:
-    0 1px 3px rgb(10 14 24 / 18%),
-    0 0 0 1px rgb(10 14 24 / 4%);
+  color: var(--nav-active-fg);
+}
+
+.views a[data-status="active"]::before {
+  background: var(--nav-active-bg);
+  box-shadow: 0 4px 14px -4px color-mix(in oklab, var(--accent) 80%, transparent);
+  opacity: 1;
+  transform: none;
+}
+
+.views svg {
+  display: block;
+  flex: none;
+}
+
+.views a:hover svg {
+  animation: nav-hop 480ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+@media (max-width: 1100px) {
+  .views a:not([data-status="active"]) .view-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@keyframes nav-hop {
+  35% {
+    transform: translateY(-5px) rotate(-8deg);
+  }
+
+  65% {
+    transform: scale(1.08, 0.92);
+  }
+
+  85% {
+    transform: translateY(-1px);
+  }
 }
 
 .pane {

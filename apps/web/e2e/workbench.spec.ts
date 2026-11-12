@@ -2264,7 +2264,7 @@ test("the active nav link stays readable on hover and a selected strip's ring si
   const active = page.locator('.views a[data-status="active"]');
   await expect(active).toHaveText("Insights");
   await active.hover();
-  await expect(active).toHaveCSS("color", "rgb(23, 32, 51)");
+  await expect(active).toHaveCSS("color", "rgb(255, 255, 255)");
 
   await page.goto(workbench.url);
   const strip = page.getByRole("link", { name: /^Bite Down/u });

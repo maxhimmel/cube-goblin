@@ -1,8 +1,16 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotCard } from "@repo/cube";
-import { loadFilters, readCards, readTags, slugify, snapshotSchema } from "@repo/cube";
+import {
+  loadFilters,
+  readCards,
+  readLog,
+  readTags,
+  shareEntry,
+  slugify,
+  snapshotSchema,
+} from "@repo/cube";
 import { displayFields } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient, USER_AGENT } from "../client.ts";
@@ -10,10 +18,11 @@ import { imageDataUri } from "../images.ts";
 import { CUBE_PATHS, SNAPSHOT_FILE } from "../paths.ts";
 
 export async function snapshot(): Promise<number> {
-  const [entries, vocabulary, saved] = await Promise.all([
+  const [entries, vocabulary, saved, log] = await Promise.all([
     readCards(CUBE_PATHS),
     readTags(CUBE_PATHS),
     loadFilters(CUBE_PATHS),
+    readLog(CUBE_PATHS),
   ]);
   const client = createClient();
   const { cards: byOracle, missing: notFound, unresolved } = await client.forEntries(entries);
@@ -50,6 +59,7 @@ export async function snapshot(): Promise<number> {
   }
   process.stderr.write("\n");
 
+  const salt = randomBytes(16);
   const id = createHash("sha256")
     .update(JSON.stringify(snapshotCards.map((card) => ({ ...card, image: "" }))))
     .digest("hex")
@@ -60,11 +70,18 @@ export async function snapshot(): Promise<number> {
     cards: snapshotCards,
     vocabulary,
     filters: saved.filters,
+    log: log.map((entry) =>
+      shareEntry(entry, (notes) =>
+        createHash("sha256").update(salt).update(notes).digest("hex").slice(0, 12),
+      ),
+    ),
   });
   await mkdir(dirname(SNAPSHOT_FILE), { recursive: true });
   await writeFile(SNAPSHOT_FILE, JSON.stringify(result));
   console.log(
-    chalk.green(`Snapshot ${id}: ${String(snapshotCards.length)} cards -> ${SNAPSHOT_FILE}`),
+    chalk.green(
+      `Snapshot ${id}: ${String(snapshotCards.length)} cards, ${String(log.length)} log entries -> ${SNAPSHOT_FILE}`,
+    ),
   );
   return 0;
 }

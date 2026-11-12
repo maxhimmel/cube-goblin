@@ -438,3 +438,22 @@ export function mergeNotes(previous: LogEntry | undefined, next: LogEntry): Merg
   };
   return { merge: true, entry: { ...next, id: previous.id, at: previous.at, changes } };
 }
+
+function hideNotes(card: CardEntry | undefined, digest: (notes: string) => string) {
+  return card === undefined
+    ? undefined
+    : { ...card, notes: card.notes === "" ? "" : digest(card.notes) };
+}
+
+export function shareEntry(entry: LogEntry, digest: (notes: string) => string): LogEntry {
+  return {
+    ...entry,
+    changes: {
+      ...entry.changes,
+      cards: entry.changes.cards.map(({ before, after }) => ({
+        ...(before === undefined ? {} : { before: hideNotes(before, digest) }),
+        ...(after === undefined ? {} : { after: hideNotes(after, digest) }),
+      })),
+    },
+  };
+}

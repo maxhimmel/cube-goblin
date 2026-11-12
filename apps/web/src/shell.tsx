@@ -63,11 +63,9 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
               Versions
             </Link>
           )}
-          {mode.name === "workbench" && (
-            <Link to="/log" activeOptions={{ includeSearch: false }}>
-              Log
-            </Link>
-          )}
+          <Link to="/log" activeOptions={{ includeSearch: false }}>
+            Log
+          </Link>
         </nav>
         <mode.Toolbar />
       </header>

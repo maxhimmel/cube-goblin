@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { snapshot } from "../data.ts";
+import { LogView } from "../log/log-view.tsx";
 import { TagOverlap } from "../overlaps/overlap.tsx";
 import {
   downloadSavedDocument,
@@ -119,7 +120,7 @@ export const mode: Mode = {
   TagsPage: TagOverlap,
   BoardPage: () => <p className="muted">The board lives in the workbench.</p>,
   VersionsPage: () => <p className="muted">Versions live in the workbench.</p>,
-  LogPage: () => <p className="muted">The change log lives in the workbench.</p>,
+  LogPage: () => <LogView entries={snapshot.log} />,
   SelectCard: () => null,
   SelectPile: () => null,
   BulkBar: () => null,

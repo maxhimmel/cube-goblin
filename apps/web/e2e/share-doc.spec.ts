@@ -174,3 +174,16 @@ test("share doc keeps a filter block's view and table toggle across reloads", as
     "true",
   );
 });
+
+test("share doc carries its favicon inline and it renders", async ({ page }) => {
+  await page.goto(`${DOC_URL}#/cards`);
+  const icon = page.locator('link[rel="icon"]');
+  await expect(icon).toHaveAttribute("href", /^data:image\/svg\+xml,/u);
+  const size = await icon.evaluate(async (link) => {
+    const image = new Image();
+    image.src = (link as HTMLLinkElement).href;
+    await image.decode();
+    return image.naturalWidth;
+  });
+  expect(size).toBeGreaterThan(0);
+});

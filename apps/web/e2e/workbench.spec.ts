@@ -2235,3 +2235,73 @@ test("moving between Lab chart marks goes from one peek to the next without a re
   await page.locator(".lab-top h1").hover();
   await expect(dim).toHaveCount(0);
 });
+
+async function croppedRings(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const room = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--ring-room"),
+    );
+    if (!(room > 0)) {
+      return ["--ring-room is not set on :root"];
+    }
+    const targets =
+      "a[href], button, input, select, textarea, summary, [tabindex], .lab-bar-fill, .lab-hbar-fill, .tile";
+    const inset = ".strip, .lab-strip, .lab-row";
+    const found = new Set<string>();
+    for (const target of document.querySelectorAll(targets)) {
+      if (target instanceof SVGElement || target.closest("svg") || target.matches(inset)) {
+        continue;
+      }
+      const box = target.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) {
+        continue;
+      }
+      let clip = target.parentElement;
+      while (
+        clip &&
+        getComputedStyle(clip).overflowX === "visible" &&
+        getComputedStyle(clip).overflowY === "visible"
+      ) {
+        clip = clip.parentElement;
+      }
+      if (!clip) {
+        continue;
+      }
+      const frame = clip.getBoundingClientRect();
+      const left = box.left - frame.left - clip.clientLeft + clip.scrollLeft;
+      const top = box.top - frame.top - clip.clientTop + clip.scrollTop;
+      const gaps = [
+        left,
+        top,
+        clip.scrollWidth - left - box.width,
+        clip.scrollHeight - top - box.height,
+      ];
+      if (gaps.some((gap) => gap > -0.5 && gap < room - 0.5)) {
+        found.add(`${clip.className} > ${target.tagName.toLowerCase()}.${target.className}`);
+      }
+    }
+    return [...found];
+  });
+}
+
+test("no view puts a ringed control flush against a clipping edge", async ({ page, workbench }) => {
+  for (const width of [1440, 900]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const view of [
+      "",
+      "cards",
+      "board",
+      "tags",
+      "insights",
+      "lab",
+      "versions",
+      "log",
+      "add",
+    ]) {
+      await page.goto(`${workbench.url}#/${view}`);
+      await expect(page.getByText("Loading cube")).toHaveCount(0);
+      await expect(page.locator("main a[href], main button").first()).toBeVisible();
+      expect(await croppedRings(page), `#/${view} at ${String(width)}px`).toEqual([]);
+    }
+  }
+});

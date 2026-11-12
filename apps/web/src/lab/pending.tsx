@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { useRemembered } from "../view-choices.ts";
 import { PendingStrips } from "./cards.tsx";
@@ -83,21 +84,61 @@ export function PendingGutter({
               </>
             )}
           </div>
-          <span className="pending-actions">
-            <button type="button" disabled={!lab.applyPending} onClick={lab.applyPending}>
-              Apply
-            </button>
-            <button
-              type="button"
-              className="lab-link"
-              disabled={lab.pending.length === 0}
-              onClick={lab.clearPending}
-            >
-              Clear
-            </button>
-          </span>
+          <ApplyForm lab={lab} />
         </>
       )}
     </section>
+  );
+}
+
+function ApplyForm({ lab }: { lab: Lab }): ReactNode {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const apply = lab.applyPending;
+  return (
+    <form
+      className="pending-actions"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (apply) {
+          apply({ subject, body });
+          setSubject("");
+          setBody("");
+        }
+      }}
+    >
+      <input
+        aria-label="Apply message"
+        placeholder={lab.pendingLabel}
+        value={subject}
+        disabled={!apply}
+        onChange={(event) => {
+          setSubject(event.target.value);
+        }}
+      />
+      <textarea
+        aria-label="Why"
+        placeholder="Why? (optional)"
+        rows={2}
+        value={body}
+        disabled={!apply}
+        onChange={(event) => {
+          setBody(event.target.value);
+        }}
+      />
+      <span className="pending-buttons">
+        <button type="submit" disabled={!apply}>
+          Apply
+        </button>
+        <button
+          type="button"
+          className="lab-link"
+          disabled={lab.pending.length === 0}
+          onClick={lab.clearPending}
+        >
+          Clear
+        </button>
+      </span>
+    </form>
   );
 }

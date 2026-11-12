@@ -114,13 +114,14 @@ export const mode: Mode = {
       undo: [{ slug: card.slug, patch: { status: card.status } }],
     });
   },
-  moveCards: (moves, label) => {
+  moveCards: (moves, label, body) => {
     const real = moves.filter((move) => move.card.status !== move.status);
     if (real.length === 0) {
       return;
     }
     runCardEdit({
       label,
+      ...(body === undefined ? {} : { body }),
       changes: real.map((move) => ({ slug: move.card.slug, patch: { status: move.status } })),
       undo: real.map((move) => ({ slug: move.card.slug, patch: { status: move.card.status } })),
     });

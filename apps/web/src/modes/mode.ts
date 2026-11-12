@@ -27,7 +27,11 @@ export interface Mode {
   useSelection: () => ReadonlySet<string>;
   AddPage: (props: { replaces: string | undefined }) => ReactNode;
   moveCard?: (card: GridCard, status: CardStatus) => void;
-  moveCards?: (moves: readonly { card: GridCard; status: CardStatus }[], label: string) => void;
+  moveCards?: (
+    moves: readonly { card: GridCard; status: CardStatus }[],
+    label: string,
+    body?: string,
+  ) => void;
   useFilters: () => Filter[] | undefined;
   putFilter?: (filter: Filter) => Promise<boolean>;
   deleteFilter?: (id: string) => void;

@@ -126,7 +126,8 @@ export interface Lab {
   queue: (card: GridCard) => void;
   unqueue: (slug: string) => void;
   clearPending: () => void;
-  applyPending: (() => void) | undefined;
+  applyPending: ((message?: PendingMessage) => void) | undefined;
+  pendingLabel: string;
   pendingZone: {
     "data-over": string | undefined;
     "data-target": string | undefined;
@@ -139,6 +140,11 @@ export interface Lab {
     onDragStart: (event: DragEvent) => void;
     onDragEnd: () => void;
   };
+}
+
+export interface PendingMessage {
+  subject?: string;
+  body?: string;
 }
 
 export function useLab(): Lab | undefined {
@@ -253,6 +259,8 @@ export function useLab(): Lab | undefined {
     });
   };
   const move = mode.moveCard;
+  const adds = pending.filter((entry) => entry.to === "draft").length;
+  const pendingLabel = `Lab: +${String(adds)} −${String(pending.length - adds)}`;
   return {
     cards,
     vocabulary: cube.vocabulary,
@@ -370,14 +378,16 @@ export function useLab(): Lab | undefined {
     clearPending: () => {
       setPending([]);
     },
+    pendingLabel,
     applyPending:
       mode.moveCards && pending.length > 0
-        ? () => {
-            const adds = pending.filter((entry) => entry.to === "draft").length;
-            const cuts = pending.length - adds;
+        ? (message = {}) => {
+            const subject = message.subject?.trim() ?? "";
+            const body = message.body?.trim() ?? "";
             mode.moveCards?.(
               pending.map((entry) => ({ card: entry.card, status: entry.to })),
-              `pending: +${String(adds)} −${String(cuts)}`,
+              subject === "" ? pendingLabel : subject,
+              body === "" ? undefined : body,
             );
             setPending([]);
           }

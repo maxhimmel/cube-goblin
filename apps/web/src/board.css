@@ -123,6 +123,7 @@
 
 .pool-cards {
   overflow: auto;
+  margin-top: calc(-1 * var(--ring-room));
   padding: var(--ring-room) var(--pad) 12px;
 }
 

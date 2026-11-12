@@ -24,6 +24,7 @@ export {
   readFilters,
   readLayouts,
   readLog,
+  writeLog,
   readTags,
   readVersionFiles,
   readVersions,
@@ -55,4 +56,7 @@ export {
 } from "./versions.ts";
 export type { CompareResult, VersionResult } from "./versions.ts";
 export { readLogState, recordEdit, revertEntries, revertRequestSchema } from "./save-log.ts";
+export { backfill, commitMessage, gitSha, withoutLogged } from "./backfill.ts";
+export type { Backfill, Commit } from "./backfill.ts";
+export { migrateLegacyCube } from "./legacy.ts";
 export type { RecordOptions, RevertResult, StatsOf } from "./save-log.ts";

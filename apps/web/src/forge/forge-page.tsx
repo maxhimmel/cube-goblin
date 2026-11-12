@@ -6,21 +6,19 @@ import { Preview } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { mode } from "#mode";
 import { CardColumns, CardImages, CardRows } from "./cards.tsx";
-import type { Dock } from "./dock.tsx";
-import { BlocksMenu, DOCKS, DockBlocks, useDockState } from "./dock.tsx";
+import { BlocksMenu, DockBlocks, useDockState } from "./dock.tsx";
 import { LayoutsMenu } from "./layouts-menu.tsx";
 import { PendingGutter, usePendingOpen } from "./pending.tsx";
 import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx";
 import type { Lab } from "./use-lab.ts";
 import { useLab } from "./use-lab.ts";
+import { usePlacedDock, useStripTags } from "./view-settings.tsx";
 
 type CardView = "columns" | "rows" | "images";
 
-const DOCK_ARROWS: Record<Dock, string> = { top: "↑", right: "→", bottom: "↓", left: "←" };
-
 function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode {
-  const [dockAt, setDockAt] = useRemembered<Dock>("labc.dockAt", "top", z.enum(DOCKS));
-  const [tags, setTags] = useRemembered("labc.stripTags", false, z.boolean());
+  const dockAt = usePlacedDock();
+  const [tags] = useStripTags();
   const [open, setOpen] = useRemembered("labc.dockOpen", true, z.boolean());
   const [view, setView] = useRemembered<CardView>(
     "labc.view",
@@ -52,70 +50,20 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
         <DraftCount lab={lab} />
         <QueryBar lab={lab} />
         <div className="lab-controls">
-          <Segmented
-            label="Cards that don't match"
-            caption="Non-matches"
-            options={[
-              { id: false, label: "Dim" },
-              { id: true, label: "Hide" },
-            ]}
-            value={lab.hide}
-            onChange={lab.setHide}
-          />
-          <div className="lab-dock-controls">
-            <Segmented
-              label="Charts dock"
-              caption="Charts"
-              options={DOCKS.map((id) => ({
-                id,
-                label: DOCK_ARROWS[id],
-                title: `Charts on the ${id}`,
-              }))}
-              value={dockAt}
-              onChange={setDockAt}
-            />
-            <button
-              type="button"
-              className="lab-dock-toggle"
-              aria-pressed={!open}
-              aria-label="Collapse charts"
-              title={open ? "Collapse charts" : "Show charts"}
-              onClick={() => {
-                setOpen(!open);
-              }}
-            >
-              {open ? "⊟" : "⊞"}
-            </button>
-          </div>
           <BlocksMenu dock={dock} />
           <LayoutsMenu onApply={onApply} />
           <div className="lab-switches">
+            <Toggle label="Charts" checked={open} onChange={setOpen} />
             <Toggle label="Baseline" checked={lab.baseline} onChange={lab.setBaseline} />
-            <Toggle
-              label="Tags on cards"
-              checked={tags}
-              onChange={setTags}
-              hidden={view === "rows"}
-            />
             <Toggle label="Show cut" checked={lab.showCut} onChange={lab.setShowCut} />
           </div>
         </div>
       </header>
-      <div className="lab-dock">
-        {open ? (
+      {open && (
+        <div className="lab-dock">
           <DockBlocks lab={lab} dock={dock} />
-        ) : (
-          <button
-            type="button"
-            className="lab-dock-bar"
-            onClick={() => {
-              setOpen(true);
-            }}
-          >
-            Charts · {dock.order.length - dock.hidden.size} blocks · show
-          </button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="lab-floor">
         <section className="lab-pile" aria-label="Draft" {...lab.zone("draft")}>
           <header className="lab-pile-head">

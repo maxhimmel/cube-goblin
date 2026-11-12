@@ -3,6 +3,7 @@ import { cubeConfigSchema } from "@repo/cube/browser";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { ForgeSettings } from "../forge/view-settings.tsx";
 import { queryClient } from "../query-client.ts";
 import { CONFIG_QUERY_KEY, CUBE_QUERY_KEY, fetchConfig, saveConfigRequest } from "./api.ts";
 import { showToast } from "./toast.tsx";
@@ -37,6 +38,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }): ReactNode {
         </p>
       )}
       {config.data && <CubeSettings key={JSON.stringify(config.data)} saved={config.data} />}
+      <ForgeSettings />
     </dialog>
   );
 }

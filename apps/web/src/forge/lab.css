@@ -37,6 +37,12 @@
   grid-template-columns: var(--dock-col) minmax(0, 1fr);
 }
 
+.lab[data-dock]:not([data-dock-open]) {
+  grid-template-areas: "head" "floor";
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .lab-top {
   grid-area: head;
   display: flex;
@@ -552,8 +558,7 @@
   border-radius: 9px;
 }
 
-.lab-seg button,
-.lab-dock-toggle {
+.lab-seg button {
   padding: 2px 11px;
   color: var(--muted);
   font-size: 0.82rem;
@@ -566,8 +571,7 @@
     color 0.15s;
 }
 
-.lab-seg button.on,
-.lab-dock-toggle[aria-pressed="true"] {
+.lab-seg button.on {
   color: var(--fg);
   background: var(--panel);
   box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
@@ -580,22 +584,6 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-.lab-dock-controls {
-  display: inline-flex;
-  align-items: center;
-  background: var(--field);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-}
-
-.lab-dock-controls .lab-seg {
-  border: 0;
-}
-
-.lab-dock-toggle {
-  margin-right: 3px;
 }
 
 .lab-menu {
@@ -644,22 +632,6 @@
 .lab[data-dock="left"] .lab-dock {
   flex-direction: column;
   padding-right: 4px;
-}
-
-.lab-dock-bar {
-  flex: 1;
-  padding: 6px 14px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  text-align: left;
-  background: var(--panel);
-  border-radius: 12px;
-}
-
-.lab[data-dock="right"] .lab-dock-bar,
-.lab[data-dock="left"] .lab-dock-bar {
-  text-align: center;
-  writing-mode: vertical-rl;
 }
 
 .lab-block {

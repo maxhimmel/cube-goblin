@@ -93,6 +93,7 @@ export interface Lab {
   clearPills: () => void;
   saveStack: ((label: string) => void) | undefined;
   setPeek: (key: string | undefined) => void;
+  clearPeek: () => void;
   lens: Test | undefined;
   dimmed: (card: GridCard) => boolean;
   hidden: (card: GridCard) => boolean;
@@ -294,6 +295,7 @@ export function useLab(): Lab | undefined {
         }
       : undefined,
     setPeek,
+    clearPeek,
     lens,
     dimmed: (card) =>
       peeking

@@ -10,11 +10,15 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-038: Change log](tickets/T-038-change-log.md)
+
 ## Next
 
-- [T-038: Change log](tickets/T-038-change-log.md)
 - [T-034: Persistence audit](tickets/T-034-persistence-audit.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)
+- [T-039: Stats timeline](tickets/T-039-stats-timeline.md)
+- [T-041: Change log in the share doc](tickets/T-041-change-log-in-share-doc.md)
+- [T-040: Change log from git history](tickets/T-040-change-log-from-git.md)
 
 ## Later
 

@@ -811,6 +811,8 @@
 .lab-tile-body {
   flex: 1;
   min-height: 0;
+  margin: calc(-1 * var(--ring-room));
+  padding: var(--ring-room);
   overflow: auto;
 }
 

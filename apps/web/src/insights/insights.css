@@ -326,11 +326,11 @@
 }
 
 .bucket-list {
-  margin: 0;
-  padding: 0;
   list-style: none;
   display: grid;
   gap: 4px;
+  margin: calc(-1 * var(--ring-room));
+  padding: var(--ring-room);
   overflow-y: auto;
 }
 

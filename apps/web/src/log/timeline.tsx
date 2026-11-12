@@ -6,7 +6,7 @@ import { Chart as RendererChart } from "@tanstack/charts/react/core";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
 import { tooltip } from "@tanstack/charts/tooltip";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { CHART_MOTION, usePlotHeight } from "../insights/charts.tsx";
 import { useRemembered } from "../view-choices.ts";
@@ -30,6 +30,10 @@ const MODE_KEY = "log.timeline.mode";
 const statsSchema = z.array(z.string());
 
 const modeSchema = z.enum(TIMELINE_MODES);
+const GROUP_KEY = "log.timeline.group";
+const groupSchema = z.enum(
+  STAT_GROUPS.map((group) => group.trailer) as [StatGroupName, ...StatGroupName[]],
+);
 
 const MODE_LABELS: Record<TimelineMode, string> = { change: "Change", values: "Values" };
 
@@ -306,7 +310,11 @@ export function Timeline({ entries, active, onPick }: TimelineProps): ReactNode 
   const section = useHeightVar("--log-timeline-height");
   const [keys, setKeys] = useRemembered<string[]>(STATS_KEY, [...DEFAULT_STATS], statsSchema);
   const options = useMemo(() => statOptions(entries), [entries]);
-  const [group, setGroup] = useState<StatGroupName>(() => statGroupOf(keys[0] ?? "draft"));
+  const [group, setGroup] = useRemembered<StatGroupName>(
+    GROUP_KEY,
+    statGroupOf(keys[0] ?? "draft"),
+    groupSchema,
+  );
   const shown = useMemo(() => {
     const known = new Set([...options.values()].flat().map((option) => option.key));
     return keys.filter((key) => known.has(key));

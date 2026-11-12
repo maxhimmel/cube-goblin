@@ -409,7 +409,7 @@ export type Merge = { merge: false } | { merge: true; entry: LogEntry | undefine
 export function mergeNotes(previous: LogEntry | undefined, next: LogEntry): Merge {
   const was = previous && notesOnly(previous);
   const is = notesOnly(next);
-  if (!previous || !was || !is || was.after?.oracleId !== is.before?.oracleId) {
+  if (!previous || !was || !is || !sameValue(was.after, is.before)) {
     return { merge: false };
   }
   const old = parseMessage(previous.message);
@@ -430,5 +430,5 @@ export function mergeNotes(previous: LogEntry | undefined, next: LogEntry): Merg
     sections: [],
     filters: [],
   };
-  return { merge: true, entry: { ...next, changes } };
+  return { merge: true, entry: { ...next, id: previous.id, at: previous.at, changes } };
 }

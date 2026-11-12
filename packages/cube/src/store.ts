@@ -209,7 +209,15 @@ export async function readLog(paths: CubePaths): Promise<LogEntry[]> {
     .map((line, index) => ({ line, index }))
     .filter(({ line }) => line.trim() !== "")
     .map(({ line, index }) => {
-      const result = logEntrySchema.safeParse(JSON.parse(line));
+      let value: unknown;
+      try {
+        value = JSON.parse(line);
+      } catch (error) {
+        throw new Error(`${paths.logFile}:${String(index + 1)}: ${String(error)}`, {
+          cause: error,
+        });
+      }
+      const result = logEntrySchema.safeParse(value);
       if (!result.success) {
         throw new Error(`${paths.logFile}:${String(index + 1)}: ${result.error.message}`);
       }

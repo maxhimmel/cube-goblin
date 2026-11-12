@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -179,5 +179,29 @@ describe("revertEntries", () => {
     await writeCard(paths, shock);
     expect(await recordEdit(paths, before, noStats)).toBeUndefined();
     expect(await readLog(paths)).toEqual([]);
+  });
+
+  it("keeps notes saves apart when an unlogged change lands between them", async () => {
+    const shock = base.cards[0] ?? card("", 0);
+    await edit(() => writeCard(paths, { ...shock, notes: "a" }));
+    await writeCard(paths, { ...shock, notes: "a", tags: ["burn"] });
+    await edit(() => writeCard(paths, { ...shock, notes: "ab", tags: ["burn"] }));
+    expect(await readLog(paths)).toHaveLength(2);
+  });
+
+  it("still logs after a broken line, and names that line", async () => {
+    await writeFile(paths.logFile, "{oops\n");
+    await expect(readLog(paths)).rejects.toThrow(/log\.jsonl:1:/u);
+    await edit(() => writeCard(paths, card("Shock", 1)));
+    expect((await readFile(paths.logFile, "utf8")).split("\n")).toHaveLength(3);
+  });
+
+  it("writes nothing when the revert cannot be logged", async () => {
+    const promote = await edit(() => writeCard(paths, card("Shock", 1)));
+    const failing = (): Promise<Record<string, number>> => Promise.reject(new Error("offline"));
+    await expect(revertEntries(paths, { ids: [promote.id] }, failing)).rejects.toThrow("offline");
+    expect((await readLogState(paths)).cards.find((item) => item.name === "Shock")?.status).toBe(
+      "draft",
+    );
   });
 });

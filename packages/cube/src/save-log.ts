@@ -59,7 +59,11 @@ export async function recordEdit(
   if (!entry) {
     return undefined;
   }
-  const merged = mergeNotes((await readLog(paths)).at(-1), entry);
+  const previous = await readLog(paths).then(
+    (log) => log.at(-1),
+    () => undefined,
+  );
+  const merged = mergeNotes(previous, entry);
   if (merged.merge) {
     await replaceLastLog(paths, merged.entry);
     return merged.entry;
@@ -133,8 +137,12 @@ export async function revertEntries(
       ? { ok: false, status: 409, error, conflicts: plan.conflicts }
       : { ok: false, status: 400, error };
   }
-  await writeState(paths, current, plan.state);
-  const entry = await recordEdit(paths, current, statsOf, {
+  const [statsBefore, statsAfter] = await Promise.all([statsOf(current), statsOf(plan.state)]);
+  const entry = buildEntry({
+    before: current,
+    after: plan.state,
+    statsBefore,
+    statsAfter,
     message: { subject: message.subject ?? revertSubject(found), body: message.body },
     source: "revert",
     reverts: found.map((item) => item.id),
@@ -142,5 +150,7 @@ export async function revertEntries(
   if (!entry) {
     return { ok: false, status: 400, error: "Nothing to revert" };
   }
+  await writeState(paths, current, plan.state);
+  await appendLog(paths, entry);
   return { ok: true, entry };
 }

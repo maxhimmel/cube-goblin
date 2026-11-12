@@ -13,7 +13,7 @@
   text-decoration: none;
 }
 
-.topbar a:not(.brand):hover {
+.topbar a:not(.brand, [data-status="active"]):hover {
   color: var(--accent);
 }
 

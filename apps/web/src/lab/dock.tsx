@@ -139,7 +139,7 @@ function FilterList({ lab }: { lab: Lab }): ReactNode {
               }}
               onClick={() => {
                 lab.togglePill(key);
-                lab.setPeek(undefined);
+                lab.clearPeek();
               }}
             >
               <span className="lab-filter-name">{filter.label}</span>

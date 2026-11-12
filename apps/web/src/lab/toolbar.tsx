@@ -149,7 +149,7 @@ function PillBar({ lab }: { lab: Lab }): ReactNode {
               lab.togglePill(pill.key);
             }}
             onPointerEnter={() => {
-              lab.setPeek(undefined);
+              lab.clearPeek();
             }}
             aria-label={`Remove ${pill.label}`}
           >

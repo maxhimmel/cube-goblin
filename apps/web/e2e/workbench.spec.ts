@@ -2181,3 +2181,57 @@ test("edits that cancel out fold into one line and leave the timeline", async ({
   await expect(fold.getByText("Fold cut")).toBeVisible();
   await expect(fold.getByTestId("log-entry")).toHaveCount(2);
 });
+
+test("the active nav link stays readable on hover and a selected strip's ring sits inside it", async ({
+  page,
+  workbench,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto(`${workbench.url}#/insights`);
+  const active = page.locator('.views a[data-status="active"]');
+  await expect(active).toHaveText("Insights");
+  await active.hover();
+  await expect(active).toHaveCSS("color", "rgb(255, 255, 255)");
+
+  await page.goto(workbench.url);
+  const strip = page.getByRole("link", { name: /^Bite Down/u });
+  await strip.click();
+  await expect(strip).toHaveAttribute("aria-current", "page");
+  await expect(strip).toHaveCSS("outline-offset", "-2px");
+});
+
+test("moving between Lab chart marks goes from one peek to the next without a reset", async ({
+  page,
+  workbench,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1100 });
+  await page.goto(`${workbench.url}#/lab`);
+  const color = page.getByRole("region", { name: "Color", exact: true });
+  const red = color.getByRole("listitem", { name: /^Red:/u });
+  const green = color.getByRole("listitem", { name: /^Green:/u });
+  const dim = page.locator(".lab-cell[data-dim]");
+  await red.hover();
+  await expect.poll(async () => dim.count()).toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    const flags = window as unknown as { resets: number };
+    flags.resets = 0;
+    new MutationObserver(() => {
+      if (document.querySelector(".lab-cell[data-dim]") === null) {
+        flags.resets += 1;
+      }
+    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ["data-dim"] });
+  });
+  const from = await red.boundingBox();
+  const to = await green.boundingBox();
+  if (!from || !to) {
+    throw new Error("Color bars have no box");
+  }
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  const resets = await page.evaluate(() => (window as unknown as { resets: number }).resets);
+  expect(resets).toBe(0);
+
+  await page.locator(".lab-top h1").hover();
+  await expect(dim).toHaveCount(0);
+});

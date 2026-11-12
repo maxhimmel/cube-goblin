@@ -88,6 +88,12 @@ button:hover {
   outline-offset: 2px;
 }
 
+.strip:focus-visible,
+.lab-strip:focus-visible,
+.lab-row:focus-visible {
+  outline-offset: -2px;
+}
+
 input[type="checkbox"] {
   accent-color: var(--accent);
 }

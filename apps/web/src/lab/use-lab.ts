@@ -21,6 +21,7 @@ import {
   stackQuery,
   usedIn,
 } from "./model.ts";
+import { usePeek } from "./use-peek.ts";
 
 export type Axis = ColumnAxis | "none";
 
@@ -92,6 +93,7 @@ export interface Lab {
   clearPills: () => void;
   saveStack: ((label: string) => void) | undefined;
   setPeek: (key: string | undefined) => void;
+  clearPeek: () => void;
   lens: Test | undefined;
   dimmed: (card: GridCard) => boolean;
   hidden: (card: GridCard) => boolean;
@@ -173,7 +175,7 @@ export function useLab(): Lab | undefined {
   };
   const [storedPending, setStoredPending] = useRemembered("pending.lab", [], pendingSchema);
   const [overPending, setOverPending] = useState(false);
-  const [peek, setPeek] = useState<string | undefined>(undefined);
+  const { peek, setPeek, clearPeek } = usePeek();
   const [typing, setTyping] = useState("");
   const [drag, setDrag] = useState<Drag | undefined>(undefined);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
@@ -240,7 +242,7 @@ export function useLab(): Lab | undefined {
   const next = projected.filter(PIN_INCLUDES.draft);
   const pick = (key: string): void => {
     setPillKeys(pickKeys(pillKeys, key));
-    setPeek(undefined);
+    clearPeek();
   };
   const togglePill = (key: string): void => {
     setPillKeys(
@@ -293,6 +295,7 @@ export function useLab(): Lab | undefined {
         }
       : undefined,
     setPeek,
+    clearPeek,
     lens,
     dimmed: (card) =>
       peeking

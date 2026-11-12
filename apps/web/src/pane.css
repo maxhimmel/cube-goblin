@@ -13,7 +13,7 @@
   text-decoration: none;
 }
 
-.topbar a:not(.brand):hover {
+.topbar a:not(.brand, [data-status="active"]):hover {
   color: var(--accent);
 }
 
@@ -101,7 +101,7 @@
 .strip[aria-current="page"],
 .tile[aria-current="page"] {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
   z-index: 1;
 }
 

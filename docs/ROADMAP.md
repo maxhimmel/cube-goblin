@@ -6,12 +6,11 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 - **Updated**: 2026-11-12
 - **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: the change log `#/log` with a stats timeline ([T-038](tickets/T-038-change-log.md), [T-039](tickets/T-039-stats-timeline.md)), read-only in the share doc ([T-041](tickets/T-041-change-log-in-share-doc.md)), and backfilled from git history back to the first import (`pnpm cube backfill-log`, [T-040](tickets/T-040-change-log-from-git.md)). Every view setting persists, inventoried in [T-034](tickets/T-034-persistence-audit.md). Commits run fast staged-file checks and merges run the full `pnpm check`; e2e tests are independent and parallel ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
-- **Next step**: Polish pass [T-043](tickets/T-043-polish-pass.md): papercuts ([T-044](tickets/T-044-papercuts.md)) first, then the top bar and the view merges in the order the ticket gives. Show the user favicon options ([T-050](tickets/T-050-visual-system.md)) and names for the merged Wall and Lab ([T-046](tickets/T-046-wall-and-lab.md)).
+- **Next step**: Polish pass [T-043](tickets/T-043-polish-pass.md); papercuts ([T-044](tickets/T-044-papercuts.md)) are done. Next the top bar ([T-045](tickets/T-045-top-bar-and-settings.md)), then the view merges in the order the ticket gives. Show the user favicon options ([T-050](tickets/T-050-visual-system.md)) and names for the merged Wall and Lab ([T-046](tickets/T-046-wall-and-lab.md)).
 
 ## Now
 
 - [T-043: Polish pass](tickets/T-043-polish-pass.md)
-- [T-044: Papercuts](tickets/T-044-papercuts.md)
 
 ## Next
 
@@ -34,6 +33,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-044: Papercuts](tickets/T-044-papercuts.md)
 - [T-034: Persistence audit](tickets/T-034-persistence-audit.md)
 - [T-040: Change log from git history](tickets/T-040-change-log-from-git.md)
 - [T-041: Change log in the share doc](tickets/T-041-change-log-in-share-doc.md)

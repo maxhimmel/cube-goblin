@@ -177,6 +177,7 @@ export {
   logEntrySchema,
   logStats,
   logStatsSchema,
+  mergeNotes,
   parseMessage,
   sameValue,
   statDeltas,

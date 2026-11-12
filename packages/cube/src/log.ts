@@ -386,3 +386,49 @@ export function buildEntry(input: NewEntry): LogEntry | undefined {
     stats: input.statsAfter,
   };
 }
+
+export const NOTES_MERGE_MS = 10 * 60 * 1000;
+
+function notesOnly(entry: LogEntry): Change<CardEntry> | undefined {
+  const { cards, tags, sections, filters } = entry.changes;
+  const [only] = cards;
+  if (
+    entry.source !== "workbench" ||
+    cards.length !== 1 ||
+    tags.length + sections.length + filters.length > 0 ||
+    only?.before === undefined ||
+    only.after === undefined
+  ) {
+    return undefined;
+  }
+  return sameValue({ ...only.before, notes: "" }, { ...only.after, notes: "" }) ? only : undefined;
+}
+
+export type Merge = { merge: false } | { merge: true; entry: LogEntry | undefined };
+
+export function mergeNotes(previous: LogEntry | undefined, next: LogEntry): Merge {
+  const was = previous && notesOnly(previous);
+  const is = notesOnly(next);
+  if (!previous || !was || !is || was.after?.oracleId !== is.before?.oracleId) {
+    return { merge: false };
+  }
+  const old = parseMessage(previous.message);
+  const now = parseMessage(next.message);
+  if (
+    old.subject !== now.subject ||
+    old.body !== now.body ||
+    Date.parse(next.at) - Date.parse(previous.at) > NOTES_MERGE_MS
+  ) {
+    return { merge: false };
+  }
+  if (sameValue(was.before, is.after)) {
+    return { merge: true, entry: undefined };
+  }
+  const changes: LogChanges = {
+    cards: [{ before: was.before, after: is.after }],
+    tags: [],
+    sections: [],
+    filters: [],
+  };
+  return { merge: true, entry: { ...next, changes } };
+}

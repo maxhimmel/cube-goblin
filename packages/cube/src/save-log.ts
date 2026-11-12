@@ -1,5 +1,5 @@
 import type { LogEntry, LogMessage, LogSource, LogState, LogStats } from "./log.ts";
-import { buildEntry, logChanges, parseMessage } from "./log.ts";
+import { buildEntry, logChanges, mergeNotes, parseMessage } from "./log.ts";
 import type { Conflict } from "./revert.ts";
 import { describeConflicts, planRevert } from "./revert.ts";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import {
   readFilters,
   readLog,
   readTags,
+  replaceLastLog,
   writeBoard,
   writeCard,
   writeFilters,
@@ -55,9 +56,15 @@ export async function recordEdit(
     ...(options.reverts === undefined ? {} : { reverts: options.reverts }),
     ...(options.at === undefined ? {} : { at: options.at }),
   });
-  if (entry) {
-    await appendLog(paths, entry);
+  if (!entry) {
+    return undefined;
   }
+  const merged = mergeNotes((await readLog(paths)).at(-1), entry);
+  if (merged.merge) {
+    await replaceLastLog(paths, merged.entry);
+    return merged.entry;
+  }
+  await appendLog(paths, entry);
   return entry;
 }
 

@@ -157,4 +157,27 @@ describe("revertEntries", () => {
     });
     expect(await readLog(paths)).toHaveLength(2);
   });
+
+  it("folds back-to-back notes saves on one card into one entry", async () => {
+    const shock = base.cards[0] ?? card("", 0);
+    await edit(() => writeCard(paths, { ...shock, notes: "f" }));
+    await edit(() => writeCard(paths, { ...shock, notes: "fine" }));
+    const log = await readLog(paths);
+    expect(log).toHaveLength(1);
+    expect(log[0]?.changes.cards[0]?.before?.notes).toBe("");
+    expect(log[0]?.changes.cards[0]?.after?.notes).toBe("fine");
+    expect(log[0]?.message.split("\n")[0]).toBe("Shock notes");
+
+    await edit(() => writeCard(paths, { ...shock, status: "draft", notes: "fine" }));
+    expect(await readLog(paths)).toHaveLength(2);
+  });
+
+  it("drops the entry when notes end up as they started", async () => {
+    const shock = base.cards[0] ?? card("", 0);
+    await edit(() => writeCard(paths, { ...shock, notes: "x" }));
+    const before = await readLogState(paths);
+    await writeCard(paths, shock);
+    expect(await recordEdit(paths, before, noStats)).toBeUndefined();
+    expect(await readLog(paths)).toEqual([]);
+  });
 });

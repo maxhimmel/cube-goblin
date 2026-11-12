@@ -217,6 +217,19 @@ export async function readLog(paths: CubePaths): Promise<LogEntry[]> {
     });
 }
 
+export async function replaceLastLog(paths: CubePaths, entry: LogEntry | undefined): Promise<void> {
+  const lines = (await readFile(paths.logFile, "utf8"))
+    .split("\n")
+    .filter((line) => line.trim() !== "");
+  const kept = [
+    ...lines.slice(0, -1),
+    ...(entry ? [JSON.stringify(logEntrySchema.parse(entry))] : []),
+  ];
+  const temp = `${paths.logFile}.${randomUUID()}.tmp`;
+  await writeFile(temp, kept.map((line) => `${line}\n`).join(""));
+  await rename(temp, paths.logFile);
+}
+
 export async function appendLog(paths: CubePaths, entry: LogEntry): Promise<void> {
   await appendFile(paths.logFile, `${JSON.stringify(logEntrySchema.parse(entry))}\n`);
 }

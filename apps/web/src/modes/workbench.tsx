@@ -18,6 +18,7 @@ import { queryClient } from "../query-client.ts";
 import {
   BOARD_QUERY_KEY,
   VERSIONS_QUERY_KEY,
+  LOG_QUERY_KEY,
   CUBE_CHANGED_EVENT,
   FILTERS_QUERY_KEY,
   LAYOUTS_QUERY_KEY,
@@ -33,6 +34,7 @@ import { editsPending, runCardEdit, useSaving } from "../workbench/edits.ts";
 import { useSelection } from "../workbench/selection.ts";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { VersionsPage } from "../workbench/versions-page.tsx";
+import { WorkbenchLogPage } from "../workbench/log-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
 
@@ -51,6 +53,7 @@ if (import.meta.hot) {
     void refetch(FILTERS_QUERY_KEY, filterSavesPending);
     void refetch(LAYOUTS_QUERY_KEY, layoutSavesPending);
     void queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
+    void queryClient.invalidateQueries({ queryKey: LOG_QUERY_KEY });
   });
 }
 
@@ -146,6 +149,7 @@ export const mode: Mode = {
   TagsPage: () => <TagsPage cube={useWorkbench()} />,
   BoardPage: () => <BoardPage cube={useWorkbench()} />,
   VersionsPage: () => <VersionsPage cube={useWorkbench()} />,
+  LogPage: WorkbenchLogPage,
   SelectCard,
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,

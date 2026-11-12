@@ -119,6 +119,7 @@ export const mode: Mode = {
   TagsPage: TagOverlap,
   BoardPage: () => <p className="muted">The board lives in the workbench.</p>,
   VersionsPage: () => <p className="muted">Versions live in the workbench.</p>,
+  LogPage: () => <p className="muted">The change log lives in the workbench.</p>,
   SelectCard: () => null,
   SelectPile: () => null,
   BulkBar: () => null,

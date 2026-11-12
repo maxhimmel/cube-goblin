@@ -15,6 +15,7 @@ import "./board.css";
 import "./insights/insights.css";
 import "./overlaps/overlap.css";
 import "./versions.css";
+import "./log/log.css";
 import "./lab/lab.css";
 import "./query/query.css";
 

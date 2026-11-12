@@ -2,6 +2,7 @@ import type {
   Board,
   FiltersFile,
   LayoutsFile,
+  LogEntry,
   CubeDiff,
   VersionSummary,
   CardChange,
@@ -17,6 +18,7 @@ import {
   boardSchema,
   filtersFileSchema,
   layoutsFileSchema,
+  logEntrySchema,
   cardEntrySchema,
   cubeDiffSchema,
   versionSummarySchema,
@@ -31,6 +33,7 @@ export const BOARD_QUERY_KEY = ["board"] as const;
 export const FILTERS_QUERY_KEY = ["filters"] as const;
 export const LAYOUTS_QUERY_KEY = ["layouts"] as const;
 export const VERSIONS_QUERY_KEY = ["versions"] as const;
+export const LOG_QUERY_KEY = ["log"] as const;
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
 function errorMessage(text: string): string {
@@ -184,4 +187,12 @@ export async function compareRequest(from: string, to: string): Promise<CubeDiff
 
 export async function saveVersionRequest(label: string): Promise<VersionSummary> {
   return versionSummarySchema.parse(await sendJson("POST", "/api/versions", { label }));
+}
+
+export async function fetchLog(): Promise<LogEntry[]> {
+  const response = await fetch("/api/log");
+  if (!response.ok) {
+    throw await failure("GET", "/api/log", response);
+  }
+  return logEntrySchema.array().parse(await response.json());
 }

@@ -861,6 +861,7 @@ test("the board pool filters by status and the board lists its controls", async 
   await expect(page.getByRole("list", { name: "Board controls" })).toContainText("Alt copies");
   await pool.getByRole("button", { name: "Both", exact: true }).click();
 
+  await page.mouse.move(0, 0);
   for (const width of [1440, 1000]) {
     await page.setViewportSize({ width, height: 800 });
     const burn = page.getByRole("region", { name: "Section Burn" });

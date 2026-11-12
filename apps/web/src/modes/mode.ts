@@ -20,6 +20,7 @@ export interface Mode {
   TagsPage: () => ReactNode;
   BoardPage: () => ReactNode;
   VersionsPage: () => ReactNode;
+  LogPage: () => ReactNode;
   SelectCard: (props: { slug: string; name: string }) => ReactNode;
   SelectPile: (props: { slugs: string[]; label: string }) => ReactNode;
   BulkBar: () => ReactNode;

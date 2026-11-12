@@ -21,11 +21,6 @@
     "handoff": "tsx scripts/src/handoff.ts"
   },
   "prettier": "@repo/prettier-config",
-  "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ]
-  },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",

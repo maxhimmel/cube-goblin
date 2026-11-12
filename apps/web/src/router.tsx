@@ -156,11 +156,12 @@ const labRoute = createRoute({
 const addRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/add",
-  beforeLoad: ({ search }) => {
-    const replaces = (search as Record<string, unknown>)["replaces"];
+  validateSearch: (search: Record<string, unknown>): { replaces?: string | undefined } =>
+    typeof search["replaces"] === "string" ? { replaces: search["replaces"] } : {},
+  beforeLoad: ({ search: { replaces } }) => {
     redirect({
       to: "/",
-      search: { add: true, ...(typeof replaces === "string" ? { replaces } : {}) },
+      search: { add: true, ...(replaces === undefined ? {} : { replaces }) },
       replace: true,
       throw: true,
     });

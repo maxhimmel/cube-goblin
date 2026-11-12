@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { Locator } from "@playwright/test";
 import { test as base, expect } from "@playwright/test";
 import type { CardEntry, LogEntry } from "@repo/cube/browser";
-import { cardEntrySchema, logEntrySchema, slugify } from "@repo/cube/browser";
+import { cardEntrySchema, logEntrySchema, parseMessage, slugify } from "@repo/cube/browser";
 import { createServer } from "vite";
 
 const WEB_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -1918,4 +1918,74 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   await expect(
     history.getByTestId("card-history-entry").filter({ hasText: "Too many 3s." }),
   ).toContainText("Trim the curve");
+});
+
+test("the stats timeline plots log entries and links both ways with them", async ({
+  page,
+  workbench,
+}) => {
+  const entries = page.getByTestId("log-entry");
+  const timeline = page.getByRole("region", { name: "Stats timeline" });
+  const plot = timeline.locator(".log-timeline-plot");
+  const dots = plot.locator("svg circle");
+  const drafted: string[] = [];
+  for (const file of (await readdir(workbench.cardsDir)).sort()) {
+    const slug = file.replace(/\.json$/u, "");
+    if ((await readEntry(workbench.cardsDir, slug)).status === "draft") {
+      drafted.push(slug);
+    }
+  }
+  for (const [slug, status, body] of [
+    [drafted[0] ?? "", "prospect", "Timeline why"],
+    [drafted[0] ?? "", "draft", ""],
+    [drafted[1] ?? "", "prospect", ""],
+  ] as const) {
+    const response = await page.request.patch(`${workbench.url}api/cards/${slug}`, {
+      data: { status },
+      headers: { "X-Log-Subject": `Timeline ${status}`, "X-Log-Body": encodeURIComponent(body) },
+    });
+    expect(response.ok()).toBe(true);
+  }
+  const logged = await readLogFile(workbench.cardsDir);
+  const whys = logged.filter((item) => parseMessage(item.message).body !== "").length;
+
+  await page.goto(`${workbench.url}#/log`);
+  await expect(timeline.getByRole("tab", { name: /^Counts/u })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(timeline.getByRole("checkbox", { name: "draft" })).toBeChecked();
+  expect(whys).toBeGreaterThan(0);
+  await expect(dots).toHaveCount(logged.length);
+  await expect(plot.locator('svg circle[r="5.5"]')).toHaveCount(whys);
+
+  await timeline.getByRole("tab", { name: "Colors" }).click();
+  await timeline.getByRole("checkbox", { name: "R", exact: true }).check();
+  await expect(dots).toHaveCount(logged.length * 2);
+  await page.reload();
+  await expect(dots).toHaveCount(logged.length * 2);
+  await expect(timeline.getByRole("tab", { name: /^Colors/u })).toContainText("1");
+
+  const last = entries.last();
+  await last.hover();
+  await expect(last).toHaveAttribute("data-active", "true");
+  await expect(plot).toHaveAttribute("data-active-index", "0");
+
+  await page.getByLabel("Filter the log").fill("no entry says this");
+  await expect(entries).toHaveCount(0);
+  await dots.first().click({ force: true });
+  await expect(page.getByLabel("Filter the log")).toHaveValue("");
+  const active = page.locator('[data-testid="log-entry"][data-active="true"]');
+  await expect(active).toHaveCount(1);
+  await expect(active).toBeInViewport();
+  await expect
+    .poll(async () => {
+      const panel = await timeline.boundingBox();
+      const box = await active.boundingBox();
+      return panel && box ? box.y >= panel.y + panel.height - 1 : false;
+    })
+    .toBe(true);
+  const index = await plot.getAttribute("data-active-index");
+  const id = (await active.getAttribute("id"))?.replace(/^log-entry-/u, "");
+  expect(logged.findIndex((item) => item.id === id)).toBe(Number(index));
 });

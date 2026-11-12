@@ -13,7 +13,7 @@ export type TickLabel = (id: string) => ReactNode;
 
 export type BarFill = string | ((row: Count) => string);
 
-const CHART_MOTION = motion({
+export const CHART_MOTION = motion({
   initial: false,
   transition: { type: "spring", stiffness: 260, damping: 24, mass: 0.8 },
 });
@@ -44,7 +44,7 @@ function paint(fill: BarFill, row: Count): string {
   return typeof fill === "string" ? fill : fill(row);
 }
 
-function usePlotHeight(): [RefObject<HTMLDivElement | null>, number | undefined] {
+export function usePlotHeight(): [RefObject<HTMLDivElement | null>, number | undefined] {
   const ref = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | undefined>(undefined);
   useEffect(() => {

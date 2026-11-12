@@ -129,6 +129,7 @@
 }
 
 .log-timeline-groups,
+.log-timeline-tools,
 .log-timeline-stats,
 .log-timeline-legend {
   display: flex;
@@ -164,8 +165,12 @@
   border-radius: 50%;
 }
 
-.log-timeline-swatch[hidden] {
-  display: none;
+.log-timeline-stat .log-timeline-swatch {
+  margin: 0 0 0 2px;
+}
+
+.log-timeline-swatch[data-off="true"] {
+  visibility: hidden;
 }
 
 .log-timeline-plot {
@@ -178,7 +183,7 @@
 }
 
 .log-timeline-stats {
-  max-height: 4.6em;
+  max-height: 6em;
   overflow-y: auto;
 }
 
@@ -192,4 +197,25 @@
   .log-entry {
     scroll-margin-top: calc(var(--topbar-height, 0px) + var(--log-timeline-height, 0px) + 12px);
   }
+}
+
+.log-timeline-stat {
+  user-select: none;
+  cursor: pointer;
+}
+
+.log-timeline-hint {
+  font-size: 0.85em;
+}
+
+.log-timeline-modes {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.log-timeline-modes button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }

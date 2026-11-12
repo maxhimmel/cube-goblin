@@ -2,10 +2,10 @@ import { cp, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { test as base, expect } from "@playwright/test";
 import type { CardEntry, LogEntry } from "@repo/cube/browser";
-import { cardEntrySchema, logEntrySchema, parseMessage, slugify } from "@repo/cube/browser";
+import { cardEntrySchema, logEntrySchema, parseMessage } from "@repo/cube/browser";
 import { foldCanceled, foldedIds } from "../src/log/fold.ts";
 import { createServer } from "vite";
 
@@ -14,19 +14,26 @@ const FIXTURE = fileURLToPath(new URL("fixture", import.meta.url));
 
 interface Workbench {
   url: string;
+  root: string;
   cardsDir: string;
 }
 
-const test = base.extend<object, { workbench: Workbench }>({
+async function resetCube(root: string): Promise<void> {
+  await rm(join(root, "cube"), { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  await cp(join(FIXTURE, "cube"), join(root, "cube"), { recursive: true });
+}
+
+const test = base.extend<{ freshCube: undefined }, { workbench: Workbench }>({
   workbench: [
     // eslint-disable-next-line no-empty-pattern
-    async ({}, use) => {
+    async ({}, use, workerInfo) => {
       const root = await mkdtemp(join(tmpdir(), "workbench-"));
       await cp(FIXTURE, root, { recursive: true });
       process.env["CUBE_REPO_ROOT"] = root;
       const server = await createServer({
         root: WEB_ROOT,
         configLoader: "runner",
+        cacheDir: join(WEB_ROOT, "node_modules", ".vite-e2e", String(workerInfo.parallelIndex)),
         logLevel: "warn",
         server: { port: 0, host: "127.0.0.1" },
       });
@@ -35,15 +42,46 @@ const test = base.extend<object, { workbench: Workbench }>({
       if (url === undefined) {
         throw new Error("workbench server has no URL");
       }
-      await use({ url, cardsDir: join(root, "cube", "cards") });
+      await use({ url, root, cardsDir: join(root, "cube", "cards") });
       await server.close();
       await rm(root, { recursive: true, force: true });
     },
     { scope: "worker" },
   ],
+  freshCube: [
+    async ({ workbench }, use) => {
+      await resetCube(workbench.root);
+      await use(undefined);
+    },
+    { auto: true },
+  ],
 });
 
-test.describe.configure({ mode: "serial" });
+async function draftSlugs(cardsDir: string): Promise<string[]> {
+  const slugs: string[] = [];
+  for (const file of (await readdir(cardsDir)).sort()) {
+    const slug = file.replace(/\.json$/u, "");
+    if ((await readEntry(cardsDir, slug)).status === "draft") {
+      slugs.push(slug);
+    }
+  }
+  return slugs;
+}
+
+async function seedBurn(page: Page, workbench: Workbench): Promise<void> {
+  const patched = await page.request.patch(`${workbench.url}api/cards`, {
+    data: {
+      changes: ["shock", "lasting-tarfire"].map((slug) => ({ slug, patch: { status: "draft" } })),
+    },
+  });
+  expect(patched.ok()).toBe(true);
+  const board = await page.request.put(`${workbench.url}api/board`, {
+    data: {
+      sections: [{ id: "burn", label: "Burn", cards: ["lasting-tarfire", "shock"], tags: [] }],
+    },
+  });
+  expect(board.ok()).toBe(true);
+}
 
 async function readEntry(cardsDir: string, slug: string): Promise<CardEntry> {
   return cardEntrySchema.parse(JSON.parse(await readFile(join(cardsDir, `${slug}.json`), "utf8")));
@@ -864,6 +902,7 @@ test("the board pool filters by status and the board lists its controls", async 
   page,
   workbench,
 }) => {
+  await seedBurn(page, workbench);
   await page.goto(`${workbench.url}#/board`);
   const pool = page.getByRole("complementary", { name: "Card pool" });
   const total = Number((await pool.getByTestId("pool-count").textContent())?.split(" ")[0]);
@@ -897,6 +936,7 @@ test("a section links several tags and applies them as one undoable edit", async
   page,
   workbench,
 }) => {
+  await seedBurn(page, workbench);
   await page.goto(`${workbench.url}#/board`);
   const burn = page.getByRole("region", { name: "Section Burn" });
   await expect(strip(burn, "Shock")).toBeVisible();
@@ -943,6 +983,7 @@ test("board cards sort by a key and a tie-breaker, kept in the URL", async ({
   page,
   workbench,
 }) => {
+  await seedBurn(page, workbench);
   await page.goto(`${workbench.url}#/board`);
   const burn = page.getByRole("region", { name: "Section Burn" });
   const names = (scope: Locator) => scope.locator(".strip-name").allTextContents();
@@ -1858,14 +1899,31 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
     entries.filter({
       has: page.locator(".log-subject", { hasText: new RegExp(`^${subject}$`, "u") }),
     });
-  const trim = (await readLogFile(workbench.cardsDir)).find((item) =>
-    item.message.startsWith("Trim the curve"),
-  );
-  const added = trim?.changes.cards.find((change) => change.after?.status === "draft")?.after;
-  if (!added) {
-    throw new Error("expected the Pending test's entry");
-  }
-  const slug = slugify(added.name);
+  const [kept = "", other = ""] = await draftSlugs(workbench.cardsDir);
+  const prospect =
+    (await readdir(workbench.cardsDir))
+      .map((file) => file.replace(/\.json$/u, ""))
+      .sort()
+      .find((candidate) => candidate !== kept && candidate !== other) ?? "";
+  await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug: prospect, patch: { status: "prospect" } }] },
+  });
+  const swap = async (subject: string, body: string, toDraft: string, toProspect: string) => {
+    const response = await page.request.patch(`${workbench.url}api/cards`, {
+      data: {
+        changes: [
+          { slug: toDraft, patch: { status: "draft" } },
+          { slug: toProspect, patch: { status: "prospect" } },
+        ],
+      },
+      headers: { "X-Log-Subject": subject, "X-Log-Body": encodeURIComponent(body) },
+    });
+    expect(response.ok()).toBe(true);
+  };
+  await swap("Trim the curve", "Too many 3s.", prospect, kept);
+  await swap("Undo Trim the curve", "", kept, prospect);
+  const added = await readEntry(workbench.cardsDir, prospect);
+  const slug = prospect;
   const status = async (): Promise<string> => (await readEntry(workbench.cardsDir, slug)).status;
 
   await page.goto(`${workbench.url}#/log`);
@@ -2060,6 +2118,11 @@ test("edits that cancel out fold into one line and leave the timeline", async ({
       break;
     }
   }
+  const [, first = ""] = await draftSlugs(workbench.cardsDir);
+  const seeded = await page.request.patch(`${workbench.url}api/cards/${first}`, {
+    data: { status: "prospect" },
+  });
+  expect(seeded.ok()).toBe(true);
   await page.goto(`${workbench.url}#/log`);
   await timeline.getByRole("button", { name: "None", exact: true }).click();
   await timeline.getByRole("tab", { name: /^Counts/u }).click();

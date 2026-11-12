@@ -4,6 +4,7 @@ import type {
   AddResult,
   BatchResult,
   BoardResult,
+  ConfigResult,
   FiltersResult,
   LayoutsResult,
   LogMessage,
@@ -47,6 +48,7 @@ import {
   readConfig,
   readTags,
   saveBoard,
+  saveConfig,
   saveFilters,
   saveLayouts,
   slugify,
@@ -151,6 +153,7 @@ type WriteResult =
   | BoardResult
   | FiltersResult
   | LayoutsResult
+  | ConfigResult
   | VersionResult
   | RevertResult;
 type Write = (body: unknown) => Promise<WriteResult>;
@@ -202,6 +205,9 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   }
   if ("layouts" in result) {
     return result.layouts;
+  }
+  if ("config" in result) {
+    return result.config;
   }
   if ("version" in result) {
     return result.version;
@@ -360,6 +366,9 @@ function writeRoute(
     if (url === "/api/layouts" && method === "PUT") {
       return { write: (body) => saveLayouts(paths, body), logged: false };
     }
+    if (url === "/api/config" && method === "PUT") {
+      return { write: (body) => saveConfig(paths, body), logged: false };
+    }
     if (url === "/api/tags" && method === "POST") {
       return { write: (body) => createTag(paths, body), logged: true };
     }
@@ -463,6 +472,17 @@ export function workbench(options: WorkbenchOptions): Plugin {
               } else {
                 send(res, result.status, { error: result.error });
               }
+            },
+            (error: unknown) => {
+              send(res, 500, { error: String(error) });
+            },
+          );
+          return;
+        }
+        if (url === "/api/config" && req.method === "GET") {
+          readConfig(paths).then(
+            (config) => {
+              send(res, 200, config);
             },
             (error: unknown) => {
               send(res, 500, { error: String(error) });

@@ -1537,7 +1537,7 @@ button.lab-stat[data-picked] {
 .lab-row-cell[data-selected] .lab-row {
   background: color-mix(in oklab, var(--accent) 14%, var(--strip, var(--panel)));
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 35%, transparent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .lab-cell[data-selected][data-dim],
@@ -1817,7 +1817,7 @@ button.lab-stat[data-picked] {
 .lab-combat-dot[data-picked] {
   z-index: 1;
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: 0;
 }
 
 .lab-combat-dot[data-state="faint"] {

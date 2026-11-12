@@ -310,7 +310,7 @@ export function Timeline({ entries, active, onPick }: TimelineProps): ReactNode 
   const section = useHeightVar("--log-timeline-height");
   const [keys, setKeys] = useRemembered<string[]>(STATS_KEY, [...DEFAULT_STATS], statsSchema);
   const options = useMemo(() => statOptions(entries), [entries]);
-  const [group, setGroup] = useRemembered<StatGroupName>(
+  const [chosen, setGroup] = useRemembered<StatGroupName>(
     GROUP_KEY,
     statGroupOf(keys[0] ?? "draft"),
     groupSchema,
@@ -321,6 +321,7 @@ export function Timeline({ entries, active, onPick }: TimelineProps): ReactNode 
   }, [keys, options]);
   const [mode, setMode] = useRemembered<TimelineMode>(MODE_KEY, "change", modeSchema);
   const points = useMemo(() => timelinePoints(entries, shown, mode), [entries, shown, mode]);
+  const group = (options.get(chosen)?.length ?? 0) > 0 ? chosen : statGroupOf(shown[0] ?? "draft");
   const groupOptions = options.get(group) ?? [];
   const groupKeys = groupOptions.map((option) => option.key);
   const index = entries.findIndex((entry) => entry.id === active);

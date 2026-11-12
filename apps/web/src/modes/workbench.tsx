@@ -15,7 +15,7 @@ import { useIsMutating, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { AddCardIcon, SettingsIcon } from "../icons.tsx";
+import { PlusIcon, SettingsIcon } from "../icons.tsx";
 import { queryClient } from "../query-client.ts";
 import {
   BOARD_QUERY_KEY,
@@ -94,7 +94,7 @@ function Toolbar(): ReactNode {
         aria-label="Add card"
         title="Add card"
       >
-        <AddCardIcon />
+        <PlusIcon />
       </Link>
       <button
         type="button"

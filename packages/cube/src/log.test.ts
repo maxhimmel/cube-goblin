@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LogState, LogStats } from "./log.ts";
-import { buildEntry, logChanges, logStats, parseMessage, statsTrailer } from "./log.ts";
+import { buildEntry, logChanges, logStats, parseMessage, statsTrailers } from "./log.ts";
 import type { CardEntry } from "./schema.ts";
 import type { StatCard } from "./stats.ts";
 import { appendLog, cubePaths, readLog } from "./store.ts";
@@ -106,10 +106,12 @@ describe("message", () => {
   const statsAfter: LogStats = { draft: 2, "mv.avg": 2, "tag.burn": 1 };
 
   it("lists only stats that moved", () => {
-    expect(statsTrailer(statsBefore, statsAfter)).toBe(
-      "Stats: draft 1→2, mv.avg 2.50→2, tag.burn 0→1",
-    );
-    expect(statsTrailer(statsAfter, statsAfter)).toBeUndefined();
+    expect(statsTrailers(statsBefore, statsAfter)).toEqual([
+      "Counts: draft 1→2",
+      "Curve: avg 2.50→2",
+      "Tags: burn 0→1",
+    ]);
+    expect(statsTrailers(statsAfter, statsAfter)).toEqual([]);
   });
 
   it("writes subject, body, and trailers that parse back", () => {
@@ -133,7 +135,9 @@ describe("message", () => {
         "Tag: burn added (group)",
         "Section: Removal +shock",
         "Filter: Cheap added",
-        "Stats: draft 1→2, mv.avg 2.50→2, tag.burn 0→1",
+        "Counts: draft 1→2",
+        "Curve: avg 2.50→2",
+        "Tags: burn 0→1",
       ].join("\n"),
     );
     const parsed = parseMessage(entry?.message ?? "");

@@ -167,6 +167,7 @@ export type {
 } from "./query.ts";
 export {
   LOG_SOURCES,
+  STAT_GROUPS,
   autoSubject,
   buildEntry,
   entryMessage,
@@ -179,7 +180,7 @@ export {
   parseMessage,
   sameValue,
   statDeltas,
-  statsTrailer,
+  statsTrailers,
 } from "./log.ts";
 export type {
   Change,

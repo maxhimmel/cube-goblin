@@ -25,7 +25,7 @@ A running list of every edit next to the workbench, to see what changed, when, a
 - The log is committed cube data and keeps everything: `cube/log.jsonl`, append-only, one entry per line.
 - Its purpose: see the reasoning behind edits and how they moved the cube's stats over time, toward balance.
 - Each entry carries the stats it moved. The auto message lists those deltas, so a bare Apply still reads as more than a move list.
-- Messages use one syntax that a person reads first and a machine parses easily: git-commit style (subject line, optional body, then `Key: value` trailers as in [`git interpret-trailers`](https://git-scm.com/docs/git-interpret-trailers)). Show the user a real entry before settling the keys.
+- Messages use one syntax that a person reads first and a machine parses easily: git-commit style (subject line, optional body, then `Key: value` trailers as in [`git interpret-trailers`](https://git-scm.com/docs/git-interpret-trailers)). Shown a real entry, the user picked one stats trailer per group (2026-11-12): `Counts:`, `Curve:`, `Colors:`, `Types:`, `Tags:`, after one `Card:`, `Tag:`, `Section:`, or `Filter:` line per change.
 - Its own nav view, `#/log` (the share doc has no Versions view and must carry the log, [T-041](T-041-change-log-in-share-doc.md)). The card pane shows that card's entries.
 - Split out: a stats timeline next to the entries ([T-039](T-039-stats-timeline.md)), rebuilding entries from git history ([T-040](T-040-change-log-from-git.md)), the log in the share doc ([T-041](T-041-change-log-in-share-doc.md)).
 

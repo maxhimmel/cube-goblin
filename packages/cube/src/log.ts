@@ -251,12 +251,33 @@ function formatStat(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(MV_DIGITS);
 }
 
-export function statsTrailer(before: LogStats, after: LogStats): string | undefined {
+export const STAT_GROUPS = [
+  { prefix: "", trailer: "Counts" },
+  { prefix: "mv.", trailer: "Curve" },
+  { prefix: "color.", trailer: "Colors" },
+  { prefix: "type.", trailer: "Types" },
+  { prefix: "tag.", trailer: "Tags" },
+] as const;
+
+function statGroup(key: string): (typeof STAT_GROUPS)[number] {
+  return (
+    STAT_GROUPS.find((group) => group.prefix !== "" && key.startsWith(group.prefix)) ??
+    STAT_GROUPS[0]
+  );
+}
+
+export function statsTrailers(before: LogStats, after: LogStats): string[] {
   const deltas = statDeltas(before, after);
-  if (deltas.length === 0) {
-    return undefined;
-  }
-  return `Stats: ${list(deltas.map(([key, was, is]) => `${key} ${formatStat(was)}→${formatStat(is)}`))}`;
+  return STAT_GROUPS.flatMap((group) => {
+    const moved = deltas.filter(([key]) => statGroup(key) === group);
+    if (moved.length === 0) {
+      return [];
+    }
+    const parts = moved.map(
+      ([key, was, is]) => `${key.slice(group.prefix.length)} ${formatStat(was)}→${formatStat(is)}`,
+    );
+    return [`${group.trailer}: ${list(parts)}`];
+  });
 }
 
 function plural(count: number, word: string): string {
@@ -299,7 +320,7 @@ export function entryMessage(
   const body = message.body?.trim() ?? "";
   const trailers = [
     ...changeTrailers(changes),
-    statsTrailer(before, after),
+    ...statsTrailers(before, after),
     reverts.length > 0 ? `Reverts: ${list(reverts)}` : undefined,
   ].filter((line) => line !== undefined);
   return [subject, body, trailers.join("\n")].filter((part) => part !== "").join("\n\n");

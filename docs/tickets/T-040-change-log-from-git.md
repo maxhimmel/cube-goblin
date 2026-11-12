@@ -20,9 +20,9 @@ Rebuild [change log](T-038-change-log.md) entries for the edits made before the 
 ## Built (2026-11-12)
 
 - `pnpm cube backfill-log [--dry-run]` (`apps/cli/src/commands/backfill-log.ts`) diffs each commit against its first parent, reading both from `git archive`. `migrateLegacyCube` (`packages/cube/src/legacy.ts`) brings checkouts from before 2026-11-10 up to today's format first: a card's `section` becomes a `Deck: <label>` note as in `6d89850`, board `bins` become `sections`, and a missing `tags.json` means no tags. Format-only commits come out empty and are skipped.
-- `backfill` (`packages/cube/src/backfill.ts`) drops any change a live entry already records (same before and after), writes entries with source `git`, the commit's author time, its subject without the conventional prefix, its body without trailers, and a `Source: git <sha>` trailer, then rewrites the log with git entries first. A second run finds every sha and writes nothing. Stats use today's Scryfall data and stat rules (`stateStats`, shared with the dev server).
+- `backfill` (`packages/cube/src/backfill.ts`) ties each live entry to the commit that first saved its line in `cube/log.jsonl`. It writes one entry per commit, with source `git`, the commit's author time, its subject without the conventional prefix, its body without trailers, and a `Source: git <sha>` trailer. Changes recorded by the live entries saved in the same commit are left out. The log is then rewritten in commit order, each commit's live entries right after it and unsaved live entries last. A second run finds every sha and writes nothing. Stats use today's Scryfall data and stat rules (`stateStats`, shared with the dev server).
 - First run: 15 entries, from the first import (the timeline's baseline) to the balancing pass.
-- Known gaps: a commit's time is when it was committed, so a rebuilt entry can read as later than a live one listed above it; a commit that mixes a logged edit with other changes to the same card keeps that card's change.
+- Known gaps: an entry's time is its commit's, so the balancing pass (committed 8:43) lists before the live 8:42 entry its commit came before; a commit that mixes a logged edit with other changes to the same card keeps that card's change.
 
 ## Done when
 

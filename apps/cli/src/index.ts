@@ -4,6 +4,7 @@ import { ScryfallError } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient } from "./client.ts";
 import { addBatch } from "./commands/add.ts";
+import { backfillLog } from "./commands/backfill-log.ts";
 import { pinPrintings } from "./commands/pin-printings.ts";
 import { importReview } from "./commands/review.ts";
 import { snapshot } from "./commands/snapshot.ts";
@@ -21,6 +22,7 @@ Commands:
   validate             Check cube files: schema, singleton, tags, board, size
   pin-printings        Save each card's current printing so Scryfall can't change it
   tag-functions        Add Scryfall function tags (removal, ramp, …) to every card, once
+  backfill-log         Rebuild change log entries from git history, before the live ones
   snapshot             Bake cube + Scryfall data + images for the share doc build
   review import <src>  Import a friend's review (saved .html, code, or .json)
 
@@ -28,7 +30,7 @@ Options:
   --fuzzy              Fuzzy name match (card)
   --limit <n>          Max results (search, default 20)
   --json               Print raw JSON
-  --dry-run            Resolve without writing (add, pin-printings, tag-functions)
+  --dry-run            Resolve without writing (add, pin-printings, tag-functions, backfill-log)
   -h, --help           Show this help`;
 
 const { positionals, values } = parseArgs({
@@ -70,6 +72,9 @@ async function run(): Promise<number> {
     }
     case "tag-functions": {
       return tagFunctions(values["dry-run"]);
+    }
+    case "backfill-log": {
+      return backfillLog(values["dry-run"]);
     }
     case "snapshot": {
       return snapshot();

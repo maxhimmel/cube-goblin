@@ -38,7 +38,7 @@ import {
   loadBoard,
   loadFilters,
   loadLayouts,
-  logStats,
+  stateStats,
   readCards,
   readLog,
   readLogState,
@@ -183,12 +183,10 @@ function statsOf(client: ScryfallClient) {
   return async (state: LogState): Promise<LogStats> => {
     const { cards } = await client.byOracleIds(state.cards.map((card) => card.oracleId));
     const byOracle = new Map(cards.map((card) => [card.oracle_id, card]));
-    const stats = state.cards.flatMap((entry) => {
-      const card = byOracle.get(entry.oracleId);
-      const fields = card ? displayFields(card) : undefined;
-      return fields ? [{ ...fields, status: entry.status, tags: entry.tags }] : [];
+    return stateStats(state, (oracleId) => {
+      const card = byOracle.get(oracleId);
+      return card ? displayFields(card) : undefined;
     });
-    return logStats(stats, state.tags);
   };
 }
 

@@ -5,8 +5,8 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Handoff
 
 - **Updated**: 2026-11-12
-- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: the change log `#/log` with a stats timeline ([T-038](tickets/T-038-change-log.md), [T-039](tickets/T-039-stats-timeline.md)), now also read-only in the share doc ([T-041](tickets/T-041-change-log-in-share-doc.md)). Commits run fast staged-file checks and merges run the full `pnpm check`; e2e tests are independent and parallel ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
-- **Next step**: Ask the user how the stats timeline reads once their log has a few entries (their server on 5173 needs a restart to load it). Then T-040, T-034, and T-026. Still waiting on feedback for `#/tags` and `#/versions`.
+- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: the change log `#/log` with a stats timeline ([T-038](tickets/T-038-change-log.md), [T-039](tickets/T-039-stats-timeline.md)), read-only in the share doc ([T-041](tickets/T-041-change-log-in-share-doc.md)), and backfilled from git history back to the first import (`pnpm cube backfill-log`, [T-040](tickets/T-040-change-log-from-git.md)). Commits run fast staged-file checks and merges run the full `pnpm check`; e2e tests are independent and parallel ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
+- **Next step**: Ask the user how the stats timeline reads now that the log reaches back to the first import (their server on 5173 needs a restart to load it). Then T-034 and T-026. Still waiting on feedback for `#/tags` and `#/versions`.
 
 ## Now
 
@@ -14,7 +14,6 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 - [T-034: Persistence audit](tickets/T-034-persistence-audit.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)
-- [T-040: Change log from git history](tickets/T-040-change-log-from-git.md)
 
 ## Later
 
@@ -27,6 +26,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-040: Change log from git history](tickets/T-040-change-log-from-git.md)
 - [T-041: Change log in the share doc](tickets/T-041-change-log-in-share-doc.md)
 - [T-039: Stats timeline](tickets/T-039-stats-timeline.md)
 - [T-038: Change log](tickets/T-038-change-log.md)

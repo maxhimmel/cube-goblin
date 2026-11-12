@@ -207,36 +207,40 @@ export function LogView({
           }}
         />
       )}
-      {entries.length === 0 ? (
-        <p className="muted">No edits logged yet. Every saved edit lands here.</p>
-      ) : days.length === 0 ? (
-        <p className="muted">No entries match.</p>
-      ) : (
-        days.map(([label, items]) => (
-          <section key={label} className="log-day">
-            <h2>{label}</h2>
-            <ol className="log-entries">
-              {items.map((row) =>
-                row.kind === "entry" ? (
-                  renderEntry(row.entry)
-                ) : (
-                  <li key={row.id} className="log-fold" data-testid="log-fold">
-                    <details>
-                      <summary>
-                        <time dateTime={row.entries[0]?.at} className="muted">
-                          {time(row.entries[0]?.at ?? "")}
-                        </time>
-                        <span>{foldSummary(row)}</span>
-                      </summary>
-                      <ol className="log-entries">{[...row.entries].reverse().map(renderEntry)}</ol>
-                    </details>
-                  </li>
-                ),
-              )}
-            </ol>
-          </section>
-        ))
-      )}
+      <div className="log-list">
+        {entries.length === 0 ? (
+          <p className="muted">No edits logged yet. Every saved edit lands here.</p>
+        ) : days.length === 0 ? (
+          <p className="muted">No entries match.</p>
+        ) : (
+          days.map(([label, items]) => (
+            <section key={label} className="log-day">
+              <h2>{label}</h2>
+              <ol className="log-entries">
+                {items.map((row) =>
+                  row.kind === "entry" ? (
+                    renderEntry(row.entry)
+                  ) : (
+                    <li key={row.id} className="log-fold" data-testid="log-fold">
+                      <details>
+                        <summary>
+                          <time dateTime={row.entries[0]?.at} className="muted">
+                            {time(row.entries[0]?.at ?? "")}
+                          </time>
+                          <span>{foldSummary(row)}</span>
+                        </summary>
+                        <ol className="log-entries">
+                          {[...row.entries].reverse().map(renderEntry)}
+                        </ol>
+                      </details>
+                    </li>
+                  ),
+                )}
+              </ol>
+            </section>
+          ))
+        )}
+      </div>
     </section>
   );
 }

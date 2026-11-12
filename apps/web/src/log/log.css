@@ -5,6 +5,13 @@
   max-width: 1000px;
 }
 
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .log-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -191,7 +198,7 @@
   .log-timeline {
     position: sticky;
     top: var(--topbar-height, 0px);
-    z-index: 1;
+    z-index: 0;
   }
 
   .log-entry {
@@ -239,4 +246,49 @@
   padding-left: 16px;
   border-left: 2px dashed var(--line);
   margin-left: 14px;
+}
+
+@media (min-width: 1200px) {
+  .log-page {
+    display: grid;
+    grid-template-areas:
+      "head chart"
+      "list chart";
+    grid-template-rows: auto 1fr;
+    grid-template-columns: minmax(460px, 1fr) minmax(520px, 1.25fr);
+    align-items: start;
+    max-width: none;
+  }
+
+  .log-toolbar {
+    grid-area: head;
+  }
+
+  .log-list {
+    grid-area: list;
+  }
+
+  .log-timeline {
+    grid-area: chart;
+    position: sticky;
+    top: calc(var(--topbar-height, 0px) + 8px);
+    z-index: 0;
+    box-sizing: border-box;
+    height: calc(100vh - var(--topbar-height, 0px) - 56px);
+    min-height: 360px;
+  }
+
+  .log-timeline .log-timeline-plot {
+    flex: 1;
+    height: auto;
+    min-height: 200px;
+  }
+
+  .log-timeline-stats {
+    max-height: 10em;
+  }
+
+  .log-entry {
+    scroll-margin-top: calc(var(--topbar-height, 0px) + 12px);
+  }
 }

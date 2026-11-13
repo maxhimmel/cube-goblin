@@ -396,13 +396,13 @@ test("a tag outside the vocabulary needs an explicit create", async ({ page, wor
   await expect(create).toContainText("is not a tag yet");
   expect((await disk()).tags).toEqual(before);
 
-  await expect(create.getByRole("button", { name: "Create as archetype" })).toBeFocused();
-  await create.getByRole("button", { name: "Create as group" }).click();
+  await expect(create.getByRole("button", { name: "Create tag" })).toBeFocused();
+  await create.getByRole("button", { name: "Create tag" }).click();
   await expect.poll(async () => (await disk()).tags).toEqual([...before, "artifact-hate"]);
   await expect(page.getByLabel("Tag name")).toBeFocused();
   await expect(page.locator(".chip").filter({ hasText: "Artifact hate" })).toBeVisible();
   expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
-    tags: expect.arrayContaining([{ id: "artifact-hate", label: "Artifact hate", kind: "group" }]),
+    tags: expect.arrayContaining([{ id: "artifact-hate", label: "Artifact hate" }]),
   });
   await page.getByLabel("Tag name").fill("can");
   await page
@@ -465,13 +465,7 @@ test("the tags page renames a tag without touching card files", async ({ page, w
   await expect
     .poll(async () => readVocabulary(workbench.cardsDir))
     .toMatchObject({
-      tags: expect.arrayContaining([{ id: "tempo", label: "Tempo aggro", kind: "archetype" }]),
-    });
-  await page.getByLabel("Kind for tempo").selectOption("group");
-  await expect
-    .poll(async () => readVocabulary(workbench.cardsDir))
-    .toMatchObject({
-      tags: expect.arrayContaining([{ id: "tempo", label: "Tempo aggro", kind: "group" }]),
+      tags: expect.arrayContaining([{ id: "tempo", label: "Tempo aggro" }]),
     });
 
   expect(await readFile(join(workbench.cardsDir, `${slug}.json`), "utf8")).toBe(cardFile);
@@ -480,7 +474,7 @@ test("the tags page renames a tag without touching card files", async ({ page, w
 
   for (const label of ["tempo", "TEMPO aggro"]) {
     const duplicate = await page.request.post(`${workbench.url}api/tags`, {
-      data: { label, kind: "group" },
+      data: { label },
     });
     expect(duplicate.status()).toBe(409);
   }
@@ -1005,7 +999,7 @@ test("a section links several tags and applies them as one undoable edit", async
   const input = editor.getByRole("combobox", { name: "Tag for Burn" });
   await input.fill("Burn");
   await editor.getByRole("button", { name: "Add tag" }).click();
-  await editor.getByRole("button", { name: "Create as archetype" }).click();
+  await editor.getByRole("button", { name: "Create tag" }).click();
   await expect(editor.getByRole("button", { name: "Remove tag Burn" })).toBeVisible();
   await input.fill("removal");
   await input.press("ArrowDown");
@@ -1018,7 +1012,7 @@ test("a section links several tags and applies them as one undoable edit", async
     .poll(async () => (await readBoard(workbench.cardsDir)).sections[0]?.tags)
     .toEqual(["burn", "removal"]);
   expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
-    tags: expect.arrayContaining([{ id: "burn", label: "Burn", kind: "archetype" }]),
+    tags: expect.arrayContaining([{ id: "burn", label: "Burn" }]),
   });
 
   await burn.getByRole("button", { name: "Apply to 2" }).click();
@@ -1138,7 +1132,7 @@ test("a chosen printing that can't be found falls back and says so", async ({
 test("the tags view counts overlaps and filters forge to one", async ({ page, workbench }) => {
   for (const label of ["Overlap A", "Overlap B"]) {
     const created = await page.request.post(`${workbench.url}api/tags`, {
-      data: { label, kind: "group" },
+      data: { label },
     });
     expect(created.status()).toBe(200);
   }
@@ -1885,10 +1879,10 @@ test("clicks in one Forge chart or together, and tag charts switch to chips", as
   await pt.locator(".lab-pt-cell[data-empty]").first().click({ force: true });
   await expect(pill).toHaveCount(0);
 
-  const groups = page.getByRole("region", { name: "Groups" });
+  const groups = page.getByRole("region", { name: "Tags", exact: true });
   await groups.scrollIntoViewIfNeeded();
   await groups.hover();
-  const toggle = groups.getByLabel("Show Groups as chips");
+  const toggle = groups.getByLabel("Show Tags as chips");
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   await page.reload();

@@ -5,8 +5,8 @@
   --chart-curve: #2a78d6;
   --chart-types: #1baf7a;
   --chart-functions: #eb6834;
-  --chart-archetype: #008300;
-  --chart-group: #eda100;
+  --chart-green: #008300;
+  --chart-tag: #eda100;
   --chart-status: #6250d6;
   --chart-heat: #2a78d6;
   --chart-dot: var(--chart-curve);
@@ -35,8 +35,8 @@
     --chart-curve: #3987e5;
     --chart-types: #199e70;
     --chart-functions: #d95926;
-    --chart-archetype: #008300;
-    --chart-group: #c98500;
+    --chart-green: #008300;
+    --chart-tag: #c98500;
     --chart-status: #9085e9;
     --chart-heat: #3987e5;
     --chart-above: #2fc48b;

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -55,5 +55,43 @@ describe("migrateLegacyCube", () => {
       sections: [{ id: "removal", label: "Removal", cards: ["shock"], tags: [] }],
     });
     expect(await readTags(paths)).toEqual([]);
+  });
+
+  it("drops the tag kind from tags, the change log, and versions", async () => {
+    root = await mkdtemp(join(tmpdir(), "cube-legacy-"));
+    const paths = cubePaths(root);
+    await mkdir(paths.versionsDir, { recursive: true });
+    await writeFile(
+      paths.tagsFile,
+      JSON.stringify({ tags: [{ id: "burn", label: "Burn", kind: "archetype" }] }),
+    );
+    const entry = (tags: unknown[]) => ({
+      id: "20261110t000000000z-0000",
+      changes: { cards: [{ after: { name: "Shock", tags: ["burn"] } }], tags },
+    });
+    await writeFile(
+      paths.logFile,
+      `${JSON.stringify(
+        entry([
+          { after: { id: "burn", label: "Burn", kind: "archetype" } },
+          {
+            before: { id: "burn", label: "Burn", kind: "archetype" },
+            after: { id: "burn", label: "Burn", kind: "group" },
+          },
+        ]),
+      )}\n`,
+    );
+    await writeFile(
+      join(paths.versionsDir, "v1.json"),
+      JSON.stringify({ vocabulary: [{ id: "burn", label: "Burn", kind: "group" }] }),
+    );
+    await migrateLegacyCube(paths);
+    expect(await readTags(paths)).toEqual([{ id: "burn", label: "Burn" }]);
+    expect(JSON.parse(await readFile(paths.logFile, "utf8"))).toEqual(
+      entry([{ after: { id: "burn", label: "Burn" } }]),
+    );
+    expect(JSON.parse(await readFile(join(paths.versionsDir, "v1.json"), "utf8"))).toEqual({
+      vocabulary: [{ id: "burn", label: "Burn" }],
+    });
   });
 });

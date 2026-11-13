@@ -26,7 +26,7 @@ function card(name: string, n: number, overrides: Partial<CardEntry> = {}): Card
 
 const base: LogState = {
   cards: [card("Shock", 1, { status: "prospect" }), card("Ponder", 2)],
-  tags: [{ id: "burn", label: "Burn", kind: "group" }],
+  tags: [{ id: "burn", label: "Burn" }],
   board: { sections: [] },
   filters: [],
 };

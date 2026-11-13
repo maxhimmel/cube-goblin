@@ -18,7 +18,7 @@ const cards: StatCard[] = [
 ];
 
 describe("cubeStats", () => {
-  const stats = cubeStats(cards, [{ id: "burn", label: "Burn", kind: "group" }]);
+  const stats = cubeStats(cards, [{ id: "burn", label: "Burn" }]);
 
   it("counts every card type a card has, read from the front face", () => {
     const types = Object.fromEntries(stats.types.map((row) => [row.id, row.count]));
@@ -95,7 +95,7 @@ describe("cubeStats", () => {
   });
 
   it("counts tags from the vocabulary", () => {
-    expect(stats.tags).toEqual([{ id: "burn", label: "Burn", kind: "group", count: 2 }]);
+    expect(stats.tags).toEqual([{ id: "burn", label: "Burn", count: 2 }]);
   });
 });
 
@@ -146,7 +146,7 @@ describe("isLand", () => {
 });
 
 describe("inBucket", () => {
-  const vocabulary = [{ id: "burn", label: "Burn", kind: "group" as const }];
+  const vocabulary = [{ id: "burn", label: "Burn" }];
   const stats = cubeStats(cards, vocabulary);
   const counted: [BucketKind, Count[]][] = [
     ["curve", stats.curve],

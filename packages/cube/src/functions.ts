@@ -47,11 +47,7 @@ export const FUNCTION_ORACLE_TAG_IDS: readonly string[] = CARD_FUNCTIONS.map(
   (entry) => entry.oracleTagId,
 );
 
-export const FUNCTION_TAGS: readonly Tag[] = CARD_FUNCTIONS.map(({ id, label }) => ({
-  id,
-  label,
-  kind: "group",
-}));
+export const FUNCTION_TAGS: readonly Tag[] = CARD_FUNCTIONS.map(({ id, label }) => ({ id, label }));
 
 const FIXING_COLORS = new Set(["W", "U", "B", "R", "G"]);
 

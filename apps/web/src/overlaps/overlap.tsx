@@ -1,8 +1,6 @@
 import { mode } from "#mode";
 import type { Overlap, Tag } from "@repo/cube/browser";
 import {
-  TAG_KINDS,
-  TAG_KIND_LABELS,
   cardCount,
   describeFilter,
   overlapFilter,
@@ -55,39 +53,23 @@ function TagPicker({
   onChange: (next: string[]) => void;
 }): ReactNode {
   return (
-    <div className="overlap-picker">
-      {TAG_KINDS.map((kind) => {
-        const tags = vocabulary.filter((tag) => tag.kind === kind);
-        if (tags.length === 0) {
-          return null;
-        }
+    <div className="overlap-picker" role="group" aria-label="Tags">
+      {vocabulary.map((tag) => {
+        const on = picked.includes(tag.id);
+        const count = counts.get(tag.id) ?? 0;
         return (
-          <div
-            key={kind}
-            className="overlap-picker-kind"
-            role="group"
-            aria-label={TAG_KIND_LABELS[kind]}
+          <button
+            key={tag.id}
+            type="button"
+            className="overlap-tag"
+            aria-pressed={on}
+            disabled={!on && count === 0}
+            onClick={() => {
+              onChange(on ? picked.filter((id) => id !== tag.id) : [...picked, tag.id]);
+            }}
           >
-            <span className="muted">{TAG_KIND_LABELS[kind]}</span>
-            {tags.map((tag) => {
-              const on = picked.includes(tag.id);
-              const count = counts.get(tag.id) ?? 0;
-              return (
-                <button
-                  key={tag.id}
-                  type="button"
-                  className="overlap-tag"
-                  aria-pressed={on}
-                  disabled={!on && count === 0}
-                  onClick={() => {
-                    onChange(on ? picked.filter((id) => id !== tag.id) : [...picked, tag.id]);
-                  }}
-                >
-                  {tag.label} <span className="muted">{count}</span>
-                </button>
-              );
-            })}
-          </div>
+            {tag.label} <span className="muted">{count}</span>
+          </button>
         );
       })}
     </div>

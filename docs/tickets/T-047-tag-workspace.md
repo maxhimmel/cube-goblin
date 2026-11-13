@@ -1,7 +1,7 @@
 ---
 id: T-047
 title: Tag workspace
-status: todo
+status: doing
 ---
 
 Part of [T-043](T-043-polish-pass.md). Board sections end up as tags anyway, so Board and Tags merge into one view with two modes: sketch (sections, drag cards) and overlaps (Venn diagram and matrix). Tag management (31 rows of field, dropdown, and id today) becomes an inline list edited in place, with empty tags flagged.

@@ -30,7 +30,7 @@ beforeEach(async () => {
   await writeFile(
     paths.tagsFile,
     JSON.stringify({
-      tags: ["removal", "burn", "a", "b"].map((id) => ({ id, label: id, kind: "group" })),
+      tags: ["removal", "burn", "a", "b"].map((id) => ({ id, label: id })),
     }),
   );
   await writeCard(paths, shock);

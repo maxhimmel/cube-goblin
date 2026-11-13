@@ -61,12 +61,93 @@ async function migrateBoard(paths: CubePaths): Promise<void> {
   });
 }
 
+function isLegacyTag(value: object): boolean {
+  const keys = Object.keys(value).toSorted();
+  return keys.length === 3 && keys.join(",") === "id,kind,label";
+}
+
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function isNoOpChange(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const { before, after } = value as { before?: unknown; after?: unknown };
+  return before !== undefined && sameJson(before, after);
+}
+
+export function dropTagKinds(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(dropTagKinds);
+  }
+  if (typeof value !== "object" || value === null) {
+    return value;
+  }
+  if (isLegacyTag(value)) {
+    return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "kind"));
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, inner]) => {
+      const next = dropTagKinds(inner);
+      return [
+        key,
+        key === "tags" && Array.isArray(next)
+          ? next.filter((change) => !isNoOpChange(change))
+          : next,
+      ];
+    }),
+  );
+}
+
 async function migrateTags(paths: CubePaths): Promise<void> {
   if (!(await exists(paths.tagsFile))) {
     await writeRaw(paths.tagsFile, { tags: [] });
+    return;
+  }
+  const raw = await readRaw(paths.tagsFile);
+  const next = dropTagKinds(raw);
+  if (!sameJson(raw, next)) {
+    await writeRaw(paths.tagsFile, next);
   }
 }
 
+async function migrateLog(paths: CubePaths): Promise<void> {
+  if (!(await exists(paths.logFile))) {
+    return;
+  }
+  const text = await readFile(paths.logFile, "utf8");
+  const lines = text.split("\n").filter((line) => line.trim() !== "");
+  const next = lines.map((line) => JSON.stringify(dropTagKinds(JSON.parse(line))));
+  if (next.join("\n") !== lines.join("\n")) {
+    await writeFile(paths.logFile, `${next.join("\n")}\n`);
+  }
+}
+
+async function migrateVersions(paths: CubePaths): Promise<void> {
+  if (!(await exists(paths.versionsDir))) {
+    return;
+  }
+  const files = (await readdir(paths.versionsDir)).filter((file) => file.endsWith(".json"));
+  await Promise.all(
+    files.map(async (file) => {
+      const path = join(paths.versionsDir, file);
+      const raw = await readRaw(path);
+      const next = dropTagKinds(raw);
+      if (!sameJson(raw, next)) {
+        await writeRaw(path, next);
+      }
+    }),
+  );
+}
+
 export async function migrateLegacyCube(paths: CubePaths): Promise<void> {
-  await Promise.all([migrateCards(paths), migrateBoard(paths), migrateTags(paths)]);
+  await Promise.all([
+    migrateCards(paths),
+    migrateBoard(paths),
+    migrateTags(paths),
+    migrateLog(paths),
+    migrateVersions(paths),
+  ]);
 }

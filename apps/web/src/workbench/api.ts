@@ -12,7 +12,6 @@ import type {
   Printing,
   SearchResult,
   Tag,
-  TagKind,
   Workbench,
 } from "@repo/cube/browser";
 import {
@@ -115,14 +114,11 @@ export async function addCardRequest(card: NewCard): Promise<CardEntry> {
   return cardEntrySchema.parse(await sendJson("POST", "/api/cards", card));
 }
 
-export async function createTagRequest(label: string, kind: TagKind): Promise<Tag> {
-  return tagSchema.parse(await sendJson("POST", "/api/tags", { label, kind }));
+export async function createTagRequest(label: string): Promise<Tag> {
+  return tagSchema.parse(await sendJson("POST", "/api/tags", { label }));
 }
 
-export async function changeTagRequest(
-  id: string,
-  change: { label?: string; kind?: TagKind },
-): Promise<Tag> {
+export async function changeTagRequest(id: string, change: { label?: string }): Promise<Tag> {
   return tagSchema.parse(await sendJson("PATCH", `/api/tags/${id}`, change));
 }
 

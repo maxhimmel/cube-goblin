@@ -20,8 +20,7 @@ export const BLOCKS = [
   { id: "creature-balance", title: "Creature balance", span: 12, h: 26, minH: 8 },
   { id: "combat", title: "Combat matchups", span: 12, h: 20, minH: 10 },
   { id: "status", title: "Status", span: 4, h: 8, minH: 5 },
-  { id: "archetypes", title: "Archetypes", span: 4, h: 10, minH: 4 },
-  { id: "groups", title: "Groups", span: 8, h: 26, minH: 8 },
+  { id: "tags", title: "Tags", span: 8, h: 26, minH: 8 },
 ] as const satisfies readonly BlockSpec[];
 
 export type BlockId = (typeof BLOCKS)[number]["id"];

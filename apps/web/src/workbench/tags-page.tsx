@@ -1,5 +1,5 @@
-import type { Tag, TagKind, Workbench } from "@repo/cube/browser";
-import { TAG_KINDS, TAG_KIND_LABELS, tagCounts } from "@repo/cube/browser";
+import type { Tag, Workbench } from "@repo/cube/browser";
+import { tagCounts } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { TagOverlap } from "../overlaps/overlap.tsx";
@@ -42,21 +42,6 @@ function TagRow({ tag, count }: { tag: Tag; count: number }): ReactNode {
           }}
         />
       </td>
-      <td>
-        <select
-          aria-label={`Kind for ${tag.id}`}
-          value={tag.kind}
-          onChange={(event) => {
-            changeTag.mutate({ id: tag.id, kind: event.target.value as TagKind });
-          }}
-        >
-          {TAG_KINDS.map((kind) => (
-            <option key={kind} value={kind}>
-              {kind}
-            </option>
-          ))}
-        </select>
-      </td>
       <td className="muted">{tag.id}</td>
       <td>{count}</td>
     </tr>
@@ -66,7 +51,6 @@ function TagRow({ tag, count }: { tag: Tag; count: number }): ReactNode {
 function NewTagForm(): ReactNode {
   const createTag = useCreateTag();
   const [label, setLabel] = useState("");
-  const [kind, setKind] = useState<TagKind>("group");
   return (
     <form
       className="inline"
@@ -74,7 +58,7 @@ function NewTagForm(): ReactNode {
         event.preventDefault();
         if (label.trim()) {
           createTag.mutate(
-            { label: label.trim(), kind },
+            { label: label.trim() },
             {
               onSuccess: () => {
                 setLabel("");
@@ -92,19 +76,6 @@ function NewTagForm(): ReactNode {
         }}
         placeholder="new tag"
       />
-      <select
-        aria-label="New tag kind"
-        value={kind}
-        onChange={(event) => {
-          setKind(event.target.value as TagKind);
-        }}
-      >
-        {TAG_KINDS.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
       <button type="submit" disabled={createTag.isPending}>
         Create tag
       </button>
@@ -125,35 +96,20 @@ export function TagsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
         Renaming changes the label only. Cards keep the tag id, so no card files change.
       </p>
       <NewTagForm />
-      {TAG_KINDS.map((kind) => {
-        const tags = cube.vocabulary.filter((tag) => tag.kind === kind);
-        return (
-          <section key={kind} data-kind={kind}>
-            <h3>
-              {TAG_KIND_LABELS[kind]} <span className="muted">({tags.length})</span>
-            </h3>
-            {tags.length === 0 ? (
-              <p className="muted">None yet.</p>
-            ) : (
-              <table className="tag-table">
-                <thead>
-                  <tr>
-                    <th>Label</th>
-                    <th>Kind</th>
-                    <th>Id</th>
-                    <th>All cards</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tags.map((tag) => (
-                    <TagRow key={tag.id} tag={tag} count={counts.get(tag.id) ?? 0} />
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
-        );
-      })}
+      <table className="tag-table">
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Id</th>
+            <th>All cards</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cube.vocabulary.map((tag) => (
+            <TagRow key={tag.id} tag={tag} count={counts.get(tag.id) ?? 0} />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

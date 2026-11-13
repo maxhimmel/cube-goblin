@@ -143,7 +143,7 @@ function SectionTags({ section, cube }: { section: Section; cube: Workbench }): 
         {section.tags.map((id) => {
           const tag = byId.get(id);
           return (
-            <li key={id} className="chip" data-kind={tag?.kind}>
+            <li key={id} className="chip">
               {tag?.label ?? id}
             </li>
           );
@@ -192,7 +192,7 @@ function SectionTags({ section, cube }: { section: Section; cube: Workbench }): 
             onRemove={(id) => {
               unlinkSectionTag(section.id, id);
             }}
-            onCreate={(label, kind) => createSectionTag(section.id, label, kind)}
+            onCreate={(label) => createSectionTag(section.id, label)}
           />
           <p className="muted">Removing a tag here unlinks it; cards keep it.</p>
           <button

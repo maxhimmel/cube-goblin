@@ -25,8 +25,6 @@ export type {
 export {
   CARD_STATUSES,
   CARD_STATUS_LABELS,
-  TAG_KINDS,
-  TAG_KIND_LABELS,
   applyCardPatch,
   applyTagChanges,
   sectionSchema,
@@ -53,7 +51,6 @@ export type {
   CardStatus,
   NewCard,
   Tag,
-  TagKind,
   StatusCounts,
   Version,
   VersionSummary,

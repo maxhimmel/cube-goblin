@@ -37,10 +37,7 @@ async function card(slug: string): Promise<unknown> {
 beforeEach(async () => {
   paths = cubePaths(await mkdtemp(join(tmpdir(), "cube-add-")));
   await mkdir(paths.root, { recursive: true });
-  await writeFile(
-    paths.tagsFile,
-    JSON.stringify({ tags: [{ id: "burn", label: "Burn", kind: "group" }] }),
-  );
+  await writeFile(paths.tagsFile, JSON.stringify({ tags: [{ id: "burn", label: "Burn" }] }));
   await writeCard(paths, shock);
 });
 

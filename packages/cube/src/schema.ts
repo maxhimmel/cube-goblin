@@ -77,28 +77,18 @@ export const newCardSchema = z.strictObject({
   copyTags: z.boolean().optional(),
 });
 
-export const TAG_KINDS = ["archetype", "group"] as const;
-
-export const TAG_KIND_LABELS: Record<(typeof TAG_KINDS)[number], string> = {
-  archetype: "Archetypes",
-  group: "Groups",
-};
-
-export const tagKindSchema = z.enum(TAG_KINDS);
-
 export const tagSchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9-]+$/u),
   label: z.string().trim().min(1),
-  kind: tagKindSchema,
 });
 
 export const tagsFileSchema = z.strictObject({
   tags: z.array(tagSchema),
 });
 
-export const newTagSchema = tagSchema.pick({ label: true, kind: true });
+export const newTagSchema = tagSchema.pick({ label: true });
 
-export const tagChangeSchema = tagSchema.pick({ label: true, kind: true }).partial();
+export const tagChangeSchema = tagSchema.pick({ label: true }).partial();
 
 function linkedTags(value: unknown): unknown {
   if (typeof value !== "object" || value === null || !("tag" in value)) {
@@ -157,7 +147,6 @@ export type CardEntry = z.infer<typeof cardEntrySchema>;
 export type CardPatch = z.infer<typeof cardPatchSchema>;
 export type NewCard = z.infer<typeof newCardSchema>;
 export type CardChange = z.infer<typeof cardChangeSchema>;
-export type TagKind = z.infer<typeof tagKindSchema>;
 export type Tag = z.infer<typeof tagSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type Board = z.infer<typeof boardSchema>;

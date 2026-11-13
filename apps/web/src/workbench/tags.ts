@@ -1,4 +1,4 @@
-import type { Tag, TagKind, Workbench } from "@repo/cube/browser";
+import type { Tag, Workbench } from "@repo/cube/browser";
 import { slugify } from "@repo/cube/browser";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
@@ -9,14 +9,12 @@ import { showToast } from "./toast.tsx";
 
 export interface NewTag {
   label: string;
-  kind: TagKind;
   addTo?: string;
 }
 
 export interface TagChange {
   id: string;
   label?: string;
-  kind?: TagKind;
 }
 
 function reportError(error: Error): void {
@@ -52,7 +50,7 @@ export function findTag(vocabulary: readonly Tag[], text: string): Tag | undefin
 
 export function useCreateTag(): UseMutationResult<Tag, Error, NewTag> {
   return useMutation({
-    mutationFn: ({ label, kind }: NewTag) => createTagRequest(label, kind),
+    mutationFn: ({ label }: NewTag) => createTagRequest(label),
     onSuccess: (tag: Tag, { addTo }: NewTag) => {
       cacheTag(tag);
       if (addTo !== undefined) {

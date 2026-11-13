@@ -66,7 +66,7 @@ export interface CubeStats {
   lands: number;
   creatures: number;
   types: Count[];
-  tags: (Count & { kind: Tag["kind"] })[];
+  tags: Count[];
 }
 
 export function frontType(card: Pick<StatCard, "typeLine">): string {
@@ -229,7 +229,6 @@ export function cubeStats(cards: readonly StatCard[], vocabulary: readonly Tag[]
     tags: vocabulary.map((tag) => ({
       id: tag.id,
       label: tag.label,
-      kind: tag.kind,
       count: count(cards, (card) => card.tags?.includes(tag.id) ?? false),
     })),
   };

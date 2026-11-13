@@ -45,11 +45,7 @@ export async function changeTag(paths: CubePaths, id: string, input: unknown): P
   if (clash) {
     return { ok: false, status: 409, error: `Tag "${clash.label}" already has that label` };
   }
-  const tag: Tag = {
-    id,
-    label,
-    kind: parsed.data.kind ?? current.kind,
-  };
+  const tag: Tag = { id, label };
   await writeTags(
     paths,
     tags.map((other) => (other.id === id ? tag : other)),

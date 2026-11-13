@@ -39,13 +39,10 @@ describe("functionTags", () => {
 });
 
 describe("withFunctionTags", () => {
-  it("adds every missing function as a group tag and keeps the designer's tags", () => {
-    const mine = { id: "removal", label: "Kill spells", kind: "archetype" } as const;
+  it("adds every missing function as a tag and keeps the designer's tags", () => {
+    const mine = { id: "removal", label: "Kill spells" } as const;
     const vocabulary = withFunctionTags([mine]);
     expect(vocabulary[0]).toEqual(mine);
     expect(vocabulary).toHaveLength(FUNCTION_TAGS.length);
-    expect(
-      vocabulary.filter((tag) => tag.id !== "removal").every((tag) => tag.kind === "group"),
-    ).toBe(true);
   });
 });

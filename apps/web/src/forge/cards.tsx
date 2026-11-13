@@ -58,11 +58,8 @@ function GroupTitle({ axis, column }: { axis: Axis; column: Column<GridCard> }):
   const color = axis === "color" ? COLOR_COLUMN[column.id] : undefined;
   if (color !== undefined) {
     return (
-      <span className="lab-title-symbol" title={column.label}>
+      <span className="lab-title-symbol" role="img" aria-label={column.label} title={column.label}>
         {colorIcon(color)}
-        {(color === "multicolored" || color === "colorless") && (
-          <span className="lab-title-text">{column.label}</span>
-        )}
       </span>
     );
   }

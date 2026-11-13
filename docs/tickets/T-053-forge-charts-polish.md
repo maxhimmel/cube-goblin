@@ -29,3 +29,4 @@ Feedback on [Forge](../GLOSSARY.md#forge) charts after [T-052](T-052-forge-polis
 - Hide mode keeps applied-filter non-matches hidden while peeking or typing; the peek dims within them.
 - Combat matchups: both axis labels center on the plot.
 - Multicolor symbol (user, 2026-11-13, after about 40 mocked options): a pip the size of the other mana symbols, a star in the colorless outline on a wheel of the other four colors. The user liked two equally, so Forge settings switches between a black star with the outline (default) and a white star without (`MulticolorSymbol` in `apps/web/src/mana.tsx`).
+- Color group heads show only the symbol, Multicolored and Colorless included (user, 2026-11-13); the name moves to the tooltip and accessible label.

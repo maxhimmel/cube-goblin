@@ -23,14 +23,20 @@ export function Seam({
   open: boolean;
   setOpen: (open: boolean) => void;
 }): ReactNode {
-  const [side, setSide] = useDockSide();
+  const [, setSide] = useDockSide();
+  const target = TURN[placed] + (open ? 0 : 180);
+  const [angle, setAngle] = useState(target);
+  const turn = ((((target - angle) % 360) + 540) % 360) - 180;
+  if (turn !== 0) {
+    setAngle(angle + turn);
+  }
   const wide = useWide();
   const [aim, setAim] = useState<Dock | undefined>(undefined);
   const toggleTip = open ? "Hide charts" : "Show charts";
   const tip =
     aim === undefined
       ? toggleTip
-      : aim === side && open
+      : aim === placed && open
         ? `Charts are on the ${aim}`
         : `Move charts to the ${aim}`;
   return (
@@ -41,7 +47,7 @@ export function Seam({
           className="lab-seam-toggle"
           aria-label={toggleTip}
           aria-expanded={open}
-          style={{ rotate: `${String(TURN[placed] + (open ? 0 : 180))}deg` }}
+          style={{ rotate: `${String(angle)}deg` }}
           onClick={() => {
             setOpen(!open);
           }}
@@ -58,9 +64,8 @@ export function Seam({
               type="button"
               data-side={option}
               aria-label={`Charts on the ${option}`}
-              aria-pressed={option === side}
+              aria-pressed={option === placed}
               disabled={!wide && isSideDock(option)}
-              title={!wide && isSideDock(option) ? "Side panels need a wide screen" : undefined}
               style={{ rotate: `${String(TURN[option])}deg` }}
               onPointerEnter={() => {
                 setAim(option);

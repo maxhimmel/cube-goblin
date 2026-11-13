@@ -85,22 +85,25 @@ export function SettingsPanel({ onClose }: { onClose: () => void }): ReactNode {
         <div
           className="settings-page"
           role="tabpanel"
-          id={`settings-page-${tab}`}
-          aria-labelledby={`settings-tab-${tab}`}
+          id="settings-page-cube"
+          aria-labelledby="settings-tab-cube"
+          hidden={tab !== "cube"}
         >
-          {tab === "cube" && (
-            <>
-              {config.error && (
-                <p role="alert" className="error">
-                  {config.error.message}
-                </p>
-              )}
-              {config.data && (
-                <CubeSettings key={JSON.stringify(config.data)} saved={config.data} />
-              )}
-            </>
+          {config.error && (
+            <p role="alert" className="error">
+              {config.error.message}
+            </p>
           )}
-          {tab === "forge" && <ForgeSettings />}
+          {config.data && <CubeSettings key={JSON.stringify(config.data)} saved={config.data} />}
+        </div>
+        <div
+          className="settings-page"
+          role="tabpanel"
+          id="settings-page-forge"
+          aria-labelledby="settings-tab-forge"
+          hidden={tab !== "forge"}
+        >
+          <ForgeSettings />
         </div>
       </div>
     </dialog>

@@ -14,6 +14,7 @@ export function Menu({
   const [align, setAlign] = useState<"start" | "end">("start");
   const root = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -50,12 +51,14 @@ export function Menu({
         }
       }}
       onKeyDown={(event) => {
-        if (event.key === "Escape") {
+        if (event.key === "Escape" && open) {
           setOpen(false);
+          trigger.current?.focus();
         }
       }}
     >
       <button
+        ref={trigger}
         type="button"
         aria-expanded={open}
         onClick={() => {

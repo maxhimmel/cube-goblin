@@ -148,11 +148,6 @@
     border-color 0.15s;
 }
 
-.lab[data-dock="right"] .lab-seam-toggle,
-.lab[data-dock="left"] .lab-seam-toggle {
-  width: 30px;
-}
-
 .lab-seam-toggle svg,
 .lab-seam-sides svg {
   width: 14px;
@@ -2646,4 +2641,25 @@ button.lab-stat[data-picked] {
 .query-nonmatch button[aria-pressed="true"] {
   color: var(--on-accent);
   background: var(--accent);
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle {
+  translate: -36px 0;
+}
+
+.lab[data-dock="left"]:not([data-dock-open]) .lab-seam-handle {
+  translate: 36px 0;
+}
+
+.lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-handle {
+  translate: 0 -36px;
+}
+
+.lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-tip {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.lab-pile:has(.lab-bulk-slot .bulk-bar) {
+  padding-bottom: 72px;
 }

@@ -2022,9 +2022,9 @@ button.lab-stat[data-picked] {
 .lab-combat {
   display: grid;
   grid-template:
-    "axis wall wins" auto
+    ". wall wins" auto
     "axis field field" minmax(120px, 1fr)
-    "axis chump cannon" auto
+    ". chump cannon" auto
     ". xaxis xaxis" auto
     / 12px minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 4px;
@@ -2180,12 +2180,13 @@ button.lab-stat[data-picked] {
 
 .lab-combat-axis[data-axis="x"] {
   grid-area: xaxis;
-  text-align: right;
+  text-align: center;
 }
 
 .lab-combat-axis[data-axis="y"] {
   grid-area: axis;
   align-self: center;
+  justify-self: center;
   white-space: nowrap;
   writing-mode: vertical-rl;
   transform: rotate(180deg);

@@ -7,6 +7,7 @@ import { addBatch } from "./commands/add.ts";
 import { backfillLog } from "./commands/backfill-log.ts";
 import { pinPrintings } from "./commands/pin-printings.ts";
 import { importReview } from "./commands/review.ts";
+import { shareVersion } from "./commands/share-version.ts";
 import { snapshot } from "./commands/snapshot.ts";
 import { tagFunctions } from "./commands/tag-functions.ts";
 import { validate } from "./commands/validate.ts";
@@ -24,6 +25,7 @@ Commands:
   tag-functions        Add Scryfall function tags (removal, ramp, …) to every card, once
   backfill-log         Rebuild change log entries from git history, before the live ones
   snapshot             Bake cube + Scryfall data + images for the share doc build
+  share-version        Save a version of the cube the current snapshot ships, once per snapshot
   review import <src>  Import a friend's review (saved .html, code, or .json)
 
 Options:
@@ -78,6 +80,9 @@ async function run(): Promise<number> {
     }
     case "snapshot": {
       return snapshot();
+    }
+    case "share-version": {
+      return shareVersion();
     }
     case "review": {
       const [action, source] = rest;

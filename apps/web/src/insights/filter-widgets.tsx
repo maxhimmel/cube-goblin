@@ -62,8 +62,6 @@ export function isBlockId(id: string): id is BlockId {
   return BLOCKS.some((block) => block.id === id);
 }
 
-const CHARTS = BLOCKS.filter((block) => block.id !== "summary");
-
 function QueryPills({ query }: { query: string }): ReactNode {
   const parts = queryParts(query);
   if (parts.length === 0) {
@@ -143,7 +141,7 @@ export function FilterBlock({
             }}
           >
             <option value="cards">Cards</option>
-            {CHARTS.map((block) => (
+            {BLOCKS.map((block) => (
               <option key={block.id} value={block.id}>
                 {block.title}
               </option>

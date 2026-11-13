@@ -1,5 +1,4 @@
 :root {
-  --chart-bar: var(--accent);
   --chart-surface: var(--strip);
   --chart-empty: color-mix(in oklab, var(--line) 35%, var(--strip));
   --chart-curve: #2a78d6;
@@ -195,7 +194,7 @@
 
 .stat-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 12px;
   margin-top: 4px;
 }

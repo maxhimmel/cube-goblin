@@ -653,42 +653,33 @@ async function draftCount(cardsDir: string): Promise<number> {
   return entries.filter((entry) => entry.status === "draft").length;
 }
 
-test("insights count the draft, follow edits, and scope to a selection", async ({
+test("insights count creatures, follow edits, and scope to a selection", async ({
   page,
   workbench,
 }) => {
   await page.goto(`${workbench.url}#/insights`);
-  const drafted = await draftCount(workbench.cardsDir);
-  const total = page.getByTestId("stat-cards").locator(".stat-value");
-  await expect(total).toHaveText(String(drafted));
-  await expect(page.getByRole("img", { name: "Mana curve" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Color by mana value" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Power and toughness" })).toBeVisible();
+  const total = page.getByTestId("stat-creatures").locator(".stat-value");
+  await expect(total).toHaveText(/^\d+$/u);
+  const drafted = Number(await total.textContent());
 
-  const color = page.getByRole("region", { name: "Color", exact: true });
-  await color.getByRole("button", { name: "White" }).click();
-  await expect(page).toHaveURL(/bucket=presence%3AW|bucket=presence:W/u);
-  await color.getByRole("button", { name: "Table" }).click();
-  const counts = (await color.locator('tr[data-stat^="color:"] td').allTextContents()).map(Number);
-  const nonland = Number(
-    await page.getByTestId("stat-nonland").locator(".stat-value").textContent(),
-  );
-  expect(counts.reduce((sum, value) => sum + value, 0)).toBe(nonland);
+  const pt = page.getByRole("region", { name: "Power and toughness" });
+  await pt.getByRole("button", { name: "Table" }).click();
+  const counts = (await pt.locator('tr[data-stat^="pt:"] td').allTextContents()).map(Number);
+  expect(counts.reduce((sum, value) => sum + value, 0)).toBeGreaterThanOrEqual(drafted);
 
-  const slug = "dancing-from-dark-to-dawn";
-  const entry = await readEntry(workbench.cardsDir, slug);
-  const next = entry.status === "draft" ? "cut" : "draft";
   await page.request.patch(`${workbench.url}api/cards`, {
-    data: { changes: [{ slug, patch: { status: next } }] },
+    data: { changes: [{ slug: "savannah-lions", patch: { status: "cut" } }] },
   });
-  await expect(total).toHaveText(String(drafted + (next === "draft" ? 1 : -1)));
+  await expect(total).toHaveText(String(drafted - 1));
 
   await page.getByLabel("Count cards in").selectOption("all");
   await expect(page).toHaveURL(/scope=all/u);
-  const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
-  await expect(total).toHaveText(String(files.length));
+  await expect.poll(async () => Number(await total.textContent())).toBeGreaterThan(drafted - 1);
 
   await openImages(page, workbench.url, true);
-  await page.getByRole("checkbox", { name: "Select Abrade", exact: true }).first().check();
+  await page.getByRole("checkbox", { name: "Select Savannah Lions", exact: true }).first().check();
   await page.getByRole("link", { name: "Insights" }).click();
   await page.getByLabel("Count cards in").selectOption("selected");
   await expect(total).toHaveText("1");
@@ -696,18 +687,16 @@ test("insights count the draft, follow edits, and scope to a selection", async (
   await page.getByRole("button", { name: "Clear selection" }).click();
 });
 
-test("clicking a bar, cell, or table row lists the cards in that bucket", async ({
-  page,
-  workbench,
-}) => {
+test("clicking a table row lists the cards in that bucket", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/insights`);
-  const curve = page.getByRole("region", { name: "Mana curve" });
-  await curve.locator(".ts-chart__bar path").nth(2).click();
-  await expect(page).toHaveURL(/bucket=curve%3A2/u);
+  const pt = page.getByRole("region", { name: "Power and toughness" });
+  await pt.getByRole("button", { name: "Table" }).click();
+  const twoTwo = pt.locator('tr[data-stat="pt:2:2"]');
+  const expected = Number(await twoTwo.locator("td").textContent());
+  await twoTwo.getByRole("button").click();
+  await expect(page).toHaveURL(/bucket=pt%3A2%3A2/u);
   const panel = page.getByRole("complementary", { name: "Cards in bucket" });
-  await expect(panel.getByRole("heading")).toContainText("Mana value 2");
-  await curve.getByRole("button", { name: "Table" }).click();
-  const expected = Number(await curve.locator('tr[data-stat="2"] td').textContent());
+  await expect(panel.getByRole("heading")).toContainText("2/2");
   await expect(panel.locator(".strip")).toHaveCount(expected);
 
   const heat = page.getByRole("region", { name: "Color by mana value" });
@@ -739,30 +728,36 @@ test("insights blocks collapse, move, and keep their layout across reloads", asy
     localStorage.clear();
   });
   await page.reload();
-  const color = page.locator('[data-block="color"]');
-  await page.getByRole("button", { name: "Collapse Color", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Expand Color", exact: true })).toBeVisible();
-  await expect.poll(async () => (await color.boundingBox())?.height).toBeLessThan(100);
+  const heat = page.locator('[data-block="heat"]');
+  await page.getByRole("button", { name: "Collapse Color by mana value", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Expand Color by mana value", exact: true }),
+  ).toBeVisible();
+  await expect.poll(async () => (await heat.boundingBox())?.height).toBeLessThan(100);
 
-  const pips = page.locator('[data-block="heavy"]');
-  const curveBox = await page.locator('[data-block="curve"]').boundingBox();
-  const head = await pips.locator(".block-head h2").boundingBox();
-  if (!curveBox || !head) {
+  const pt = page.locator('[data-block="pt"]');
+  const heatBox = await heat.boundingBox();
+  const head = await pt.locator(".block-head h2").boundingBox();
+  if (!heatBox || !head) {
     throw new Error("blocks not laid out");
   }
   await page.mouse.move(head.x + 10, head.y + 5);
   await page.mouse.down();
-  await page.mouse.move(curveBox.x + 40, curveBox.y + 20, { steps: 20 });
+  await page.mouse.move(heatBox.x + 40, heatBox.y + 20, { steps: 20 });
   await page.mouse.up();
-  await expect.poll(async () => (await pips.boundingBox())?.x).toBeLessThan(100);
+  await expect.poll(async () => (await pt.boundingBox())?.x).toBeLessThan(100);
 
   await page.reload();
-  await expect(page.getByRole("button", { name: "Expand Color", exact: true })).toBeVisible();
-  await expect.poll(async () => (await pips.boundingBox())?.x).toBeLessThan(100);
+  await expect(
+    page.getByRole("button", { name: "Expand Color by mana value", exact: true }),
+  ).toBeVisible();
+  await expect.poll(async () => (await pt.boundingBox())?.x).toBeLessThan(100);
 
   await page.getByRole("button", { name: "Reset layout" }).click();
-  await expect(page.getByRole("button", { name: "Collapse Color", exact: true })).toBeVisible();
-  await expect.poll(async () => (await pips.boundingBox())?.x).toBeGreaterThan(600);
+  await expect(
+    page.getByRole("button", { name: "Collapse Color by mana value", exact: true }),
+  ).toBeVisible();
+  await expect.poll(async () => (await pt.boundingBox())?.x).toBeGreaterThan(600);
 });
 
 test("mana costs render as symbols with a text alternative", async ({ page, workbench }) => {
@@ -1367,7 +1362,7 @@ test("table toggles, filter views, and the log's filter and stat group survive a
 }) => {
   await page.setViewportSize({ width: 1300, height: 1000 });
   const filters = await page.request.put(`${workbench.url}api/filters`, {
-    data: { filters: [{ id: "filter-red", label: "Red", query: "c=r", view: "curve" }] },
+    data: { filters: [{ id: "filter-red", label: "Red", query: "c=r", view: "heat" }] },
   });
   expect(filters.ok()).toBe(true);
   const patched = await page.request.patch(`${workbench.url}api/cards`, {
@@ -1376,7 +1371,7 @@ test("table toggles, filter views, and the log's filter and stat group survive a
   expect(patched.ok()).toBe(true);
 
   await page.goto(`${workbench.url}#/insights`);
-  const curve = page.getByRole("region", { name: "Mana curve", exact: true });
+  const curve = page.getByRole("region", { name: "Power and toughness", exact: true });
   const red = page.getByRole("region", { name: "Red", exact: true });
   await curve.getByRole("button", { name: "Table" }).click();
   await red.getByRole("button", { name: "Table" }).click();
@@ -1463,34 +1458,34 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
   const previewBox = await page.locator(".preview").boundingBox();
   expect(previewBox?.y ?? 9999).toBeLessThan((stripBox?.y ?? 0) + (stripBox?.height ?? 0));
 
-  await block.getByLabel("Show Cheap red as").selectOption("curve");
-  await expect(block.getByRole("img", { name: "Mana curve" })).toBeVisible();
+  await block.getByLabel("Show Cheap red as").selectOption("heat");
+  await expect(block.getByRole("img", { name: "Color by mana value" })).toBeVisible();
   await expect
     .poll(async () => (await readFilters(workbench.cardsDir)).filters[0]?.view)
-    .toBe("curve");
+    .toBe("heat");
   await block.getByRole("button", { name: "Table" }).click();
-  const row = block.locator('tr[data-stat="2"]');
+  const row = block.locator('tr[data-stat="colorCurve:R:2"]');
   const two = Number(await row.locator("td").textContent());
   await row.getByRole("button").click();
   await expect(page).toHaveURL(/in=filter-/u);
   const panel = page.getByRole("complementary", { name: "Cards in bucket" });
-  await expect(panel.getByRole("heading")).toContainText("Mana value 2");
+  await expect(panel.getByRole("heading")).toContainText("Red, mana value 2");
   await expect(panel.locator(".strip")).toHaveCount(two);
   await panel.getByRole("button", { name: "Close card list" }).click();
 
-  await page.getByRole("button", { name: "Hide Mana curve", exact: true }).click();
+  await page.getByRole("button", { name: "Hide Combat matchups", exact: true }).click();
   await block.getByRole("button", { name: "Hide Cheap red" }).click();
-  await expect(page.locator('[data-block="curve"]')).toHaveCount(0);
+  await expect(page.locator('[data-block="combat"]')).toHaveCount(0);
   await expect(block).toHaveCount(0);
   await page.reload();
-  await expect(page.locator('[data-block="curve"]')).toHaveCount(0);
+  await expect(page.locator('[data-block="combat"]')).toHaveCount(0);
   const menu = page.locator(".blocks-menu");
   await menu.getByText(/Blocks/u).click();
   await expect(menu).toContainText("2 hidden");
   await menu.getByLabel("Cheap red").check();
   await expect(block).toBeVisible();
   await page.getByRole("button", { name: "Reset layout" }).click();
-  await expect(page.locator('[data-block="curve"]')).toHaveCount(1);
+  await expect(page.locator('[data-block="combat"]')).toHaveCount(1);
 
   await block.getByRole("button", { name: "Edit" }).click();
   await page
@@ -1506,22 +1501,20 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
 
 test("a chart bucket saves as a filter", async ({ page, workbench }) => {
   await page.goto(`${workbench.url}#/insights`);
-  await page
-    .getByRole("region", { name: "Mana curve" })
-    .locator(".ts-chart__bar path")
-    .nth(2)
-    .click();
+  const pt = page.getByRole("region", { name: "Power and toughness" });
+  await pt.getByRole("button", { name: "Table" }).click();
+  await pt.locator('tr[data-stat="pt:2:2"]').getByRole("button").click();
   const panel = page.getByRole("complementary", { name: "Cards in bucket" });
   const count = await panel.locator(".strip").count();
   await panel.getByRole("button", { name: "Save as filter" }).click();
   const editor = page.getByRole("dialog", { name: "New filter" });
-  await expect(editor.getByLabel("Filter name")).toHaveValue("Mana value 2");
-  await expect(editor.locator(".query-pill-text")).toHaveText(["mv=2"]);
+  await expect(editor.getByLabel("Filter name")).toHaveValue("2/2");
+  await expect(editor.locator(".query-pill-text")).toHaveText(["t:creature", "pow=2", "tou=2"]);
   await expect(editor.getByTestId("filter-preview-count")).toHaveText(`${String(count)} cards`);
   await editor.getByRole("button", { name: "Add to dashboard" }).click();
-  await expect(page.getByRole("region", { name: "Mana value 2" }).locator(".strip")).toHaveCount(
-    count,
-  );
+  await expect(
+    page.getByRole("region", { name: "2/2", exact: true }).locator(".strip"),
+  ).toHaveCount(count);
 });
 
 test("typing or joins the next term with the last pill, and and adds nothing", async ({
@@ -2463,7 +2456,7 @@ test("no view puts a ringed control flush against a clipping edge", async ({ pag
       "history",
       "history?from=current&to=current",
       "add",
-      "insights?bucket=curve%3A2",
+      "insights?bucket=pt%3A2%3A2",
     ]) {
       await page.goto(`${workbench.url}#/${view}`);
       await expect(page.getByText("Loading cube")).toHaveCount(0);

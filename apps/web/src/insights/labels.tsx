@@ -4,21 +4,7 @@ import type { ReactNode } from "react";
 import { ManaSymbol, MulticolorSymbol } from "../mana.tsx";
 import type { TickLabel } from "./charts.tsx";
 
-export const COLOR_SYMBOLS: Record<string, string> = { multicolored: "multicolor", colorless: "C" };
-
-export const MANA_FILLS: Record<string, string> = {
-  W: "var(--mana-w)",
-  U: "var(--mana-u)",
-  B: "var(--mana-b)",
-  R: "var(--mana-r)",
-  G: "var(--mana-g)",
-  multicolored: "var(--mana-m)",
-  colorless: "var(--mana-c)",
-};
-
-export function manaFill(row: Count): string {
-  return MANA_FILLS[row.id] ?? "var(--chart-bar)";
-}
+const COLOR_SYMBOLS: Record<string, string> = { multicolored: "multicolor", colorless: "C" };
 
 export function colorIcon(id: string): ReactNode {
   const symbol = COLOR_SYMBOLS[id] ?? id;

@@ -7,6 +7,7 @@ import type { GridCard } from "../modes/mode.ts";
 import type { Hover } from "../strip.tsx";
 import { QueryInput } from "../query/query-input.tsx";
 import { Preview, Strip } from "../strip.tsx";
+import { Menu } from "../menu.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { Block } from "./block.tsx";
 import type { BlockId, Dashboard } from "./layout.ts";
@@ -179,26 +180,23 @@ export function FilterBlock({
 export function BlocksMenu({ dashboard }: { dashboard: Dashboard }): ReactNode {
   const hiddenCount = dashboard.specs.filter((block) => dashboard.hidden.has(block.id)).length;
   return (
-    <details className="blocks-menu">
-      <summary className="toolbar-link">
-        Blocks{hiddenCount > 0 && <span className="muted"> ({hiddenCount} hidden)</span>}
-      </summary>
-      <fieldset className="blocks-menu-list">
-        <legend className="visually-hidden">Shown blocks</legend>
-        {dashboard.specs.map((block) => (
-          <label key={block.id}>
-            <input
-              type="checkbox"
-              checked={!dashboard.hidden.has(block.id)}
-              onChange={(event) => {
-                dashboard.setHidden(block.id, !event.target.checked);
-              }}
-            />
-            {block.title}
-          </label>
-        ))}
-      </fieldset>
-    </details>
+    <Menu
+      label={`Blocks${hiddenCount > 0 ? ` · ${String(hiddenCount)} hidden` : ""}`}
+      listLabel="Shown blocks"
+    >
+      {dashboard.specs.map((block) => (
+        <label key={block.id}>
+          <input
+            type="checkbox"
+            checked={!dashboard.hidden.has(block.id)}
+            onChange={(event) => {
+              dashboard.setHidden(block.id, !event.target.checked);
+            }}
+          />
+          {block.title}
+        </label>
+      ))}
+    </Menu>
   );
 }
 

@@ -1,5 +1,5 @@
 .column-count {
-  font-size: 1.15rem;
+  font-size: var(--fs-lg);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
@@ -29,7 +29,7 @@
   box-shadow: 0 -1px 3px rgb(0 0 0 / 12%);
   color: var(--fg);
   text-decoration: none;
-  font-size: 0.84rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
   letter-spacing: -0.01em;
   transition:
@@ -63,7 +63,7 @@
 
 .strip .mana-cost {
   flex: none;
-  font-size: 0.7rem;
+  font-size: var(--fs-xs);
 }
 
 .preview {
@@ -86,7 +86,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   color: var(--muted);
 }
 

@@ -25,7 +25,7 @@
 
 .log-day h2 {
   margin: 0 0 8px;
-  font-size: 1rem;
+  font-size: var(--fs-base);
   color: var(--muted);
 }
 
@@ -144,7 +144,7 @@ button.log-subject[aria-expanded="true"]::before {
 
 .history-compare-head h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--fs-base);
 }
 
 .log-entry-head time,
@@ -157,7 +157,7 @@ button.log-subject[aria-expanded="true"]::before {
 
 .log-source {
   padding: 0 6px;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -173,7 +173,7 @@ button.log-subject[aria-expanded="true"]::before {
   grid-template-columns: max-content 1fr;
   gap: 2px 10px;
   margin: 8px 0 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
 }
 
 .log-trailers > div {
@@ -192,12 +192,12 @@ button.log-subject[aria-expanded="true"]::before {
 .log-revert,
 .log-point {
   padding: 2px 10px;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .card-history h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--fs-base);
 }
 
 .card-history ol {
@@ -222,13 +222,12 @@ button.log-subject[aria-expanded="true"]::before {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 14px;
-  background: var(--strip);
+  padding: 10px 14px 12px;
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
-.log-timeline-groups,
 .log-timeline-tools,
 .log-timeline-stats,
 .log-timeline-legend {
@@ -237,12 +236,6 @@ button.log-subject[aria-expanded="true"]::before {
   gap: 6px 12px;
   align-items: center;
   margin: 0;
-}
-
-.log-timeline-groups button[aria-selected="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
 }
 
 .log-timeline-count {
@@ -309,15 +302,11 @@ button.log-subject[aria-expanded="true"]::before {
 }
 
 .log-timeline-modes {
-  display: inline-flex;
-  gap: 4px;
   margin-left: auto;
 }
 
-.log-timeline-modes button[aria-pressed="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+.log-timeline-groups {
+  align-self: flex-start;
 }
 
 .log-fold summary {

@@ -1,0 +1,128 @@
+.panel {
+  box-sizing: border-box;
+  padding: 10px 14px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.segmented button {
+  padding: 2px 11px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.segmented button:hover {
+  color: var(--fg);
+}
+
+.segmented button[aria-pressed="true"],
+.segmented button[aria-selected="true"] {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--accent) 18%, var(--panel));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 55%, transparent);
+}
+
+.link-btn {
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font-size: var(--fs-md);
+}
+
+.toggle-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.toggle-chip {
+  padding: 1px 8px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  background: var(--field);
+}
+
+.toggle-chip span {
+  opacity: 0.7;
+}
+
+.toggle-chip:hover,
+.toggle-chip[aria-pressed="true"] {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+.toggle-chip[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--accent) 16%, var(--field));
+}
+
+.menu {
+  position: relative;
+}
+
+.menu > button {
+  padding: 3px 12px;
+  font-size: var(--fs-sm);
+}
+
+.menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  gap: 4px;
+  min-width: 220px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  font-size: var(--fs-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+}
+
+.menu-list[data-align="end"] {
+  right: 0;
+  left: auto;
+}
+
+.menu-list label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.field .segmented {
+  align-self: flex-start;
+}

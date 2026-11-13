@@ -52,7 +52,7 @@
   align-items: center;
   gap: 6px;
   height: var(--row-tools);
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
 }
 
 .board-section-chips {
@@ -94,7 +94,7 @@
 
 .board-section-tags-editor p {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
 }
 
 .pool-filters button,
@@ -250,7 +250,7 @@
   flex-wrap: wrap;
   gap: 2px 6px;
   align-items: center;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .sort-chain label {
@@ -312,7 +312,7 @@
   list-style: none;
   border: 1px dashed var(--line);
   border-radius: 10px;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -356,7 +356,7 @@
 .sort-menu-button {
   padding: 3px 10px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
   white-space: nowrap;
   background: var(--field);

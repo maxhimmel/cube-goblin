@@ -40,12 +40,12 @@
 
 .tags-view-head h1 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: var(--fs-xl);
 }
 
 .tags-view-head p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .tags-overlaps {
@@ -86,7 +86,7 @@
 .tag-rail-head h2 {
   margin: 0;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -95,7 +95,7 @@
 .tag-rail-empty {
   margin-left: auto;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
 }
 
 .tag-rows {
@@ -166,7 +166,7 @@
 .tag-row-count {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .tag-row-flag {
@@ -174,7 +174,7 @@
   border: 1px dashed var(--muted);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
 }
 
 .tag-rail-new {
@@ -196,7 +196,7 @@
   align-items: center;
   margin-bottom: 12px;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .overlap-hint {
@@ -266,7 +266,7 @@
   margin-top: 8px;
   min-height: 1.45em;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
 }
 
 .overlap-table {
@@ -276,7 +276,7 @@
 
 .overlap-table th {
   padding: 4px 10px;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   font-weight: 600;
   text-align: center;
   vertical-align: bottom;
@@ -357,5 +357,5 @@
 
 .overlap-none {
   text-align: center;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }

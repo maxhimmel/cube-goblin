@@ -1,7 +1,7 @@
 ---
 id: T-043
 title: Polish pass
-status: doing
+status: done
 ---
 
 A major polish across the whole app: cut, combine, and refine every view, chart, popup, and panel against the job it serves ([views.md](../design/views.md)). Agreed with the user on 2026-11-12, after a screenshot audit of every view at 1440px and 900px.

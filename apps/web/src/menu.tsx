@@ -43,7 +43,7 @@ export function Menu({
   return (
     <div
       ref={root}
-      className="lab-menu"
+      className="menu"
       onBlur={(event) => {
         const next = event.relatedTarget;
         if (next !== null && !event.currentTarget.contains(next)) {
@@ -70,7 +70,7 @@ export function Menu({
       {open && (
         <div
           ref={list}
-          className="lab-menu-list"
+          className="menu-list"
           role="group"
           aria-label={listLabel}
           data-align={align}

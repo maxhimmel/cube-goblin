@@ -3,7 +3,7 @@ import { newLayoutId } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { recallStates, replaceStates } from "../view-choices.ts";
-import { Menu } from "./menu.tsx";
+import { Menu } from "../menu.tsx";
 
 export function isLabSetting(key: string): boolean {
   return key.startsWith("lab.") || key.startsWith("labc.");

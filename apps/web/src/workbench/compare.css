@@ -30,7 +30,7 @@
 
 .diff-group h3 {
   margin: 0 0 8px;
-  font-size: 1rem;
+  font-size: var(--fs-base);
 }
 
 .diff-cards {
@@ -51,7 +51,7 @@
   margin-left: 6px;
   padding: 0 8px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   background: var(--panel);
   border: 1px solid var(--line);
 }

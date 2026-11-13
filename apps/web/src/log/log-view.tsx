@@ -286,7 +286,7 @@ export function LogView({
   return (
     <section className="log-page">
       <header className="log-toolbar">
-        <h1>History</h1>
+        <h1 className="sr-only">History</h1>
         <input
           type="search"
           aria-label="Filter the log"

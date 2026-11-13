@@ -470,13 +470,13 @@ export function TagChips({
     return <p className="lab-empty">None in this scope</p>;
   }
   return (
-    <div className="lab-chips" role="list" aria-label={name}>
+    <div className="toggle-chips" role="list" aria-label={name}>
       {rows.map((row) => (
         <button
           key={row.id}
           type="button"
           role="listitem"
-          className="lab-chip"
+          className="toggle-chip"
           data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
           aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}`}
           data-filtered={events.filtered ? "" : undefined}

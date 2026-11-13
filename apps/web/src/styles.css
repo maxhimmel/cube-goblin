@@ -1,5 +1,14 @@
 :root {
   --ring-room: 4px;
+  --fs-root: 15px;
+  --fs-2xs: 0.62rem;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.8rem;
+  --fs-md: 0.86rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.12rem;
+  --fs-xl: 1.4rem;
+  --fs-2xl: 1.65rem;
   --bg: #e3e8f0;
   --fg: #172033;
   --muted: #5a6680;
@@ -23,7 +32,7 @@
   --chevron-active: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' fill='none' stroke='%236b4fd8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   color-scheme: light dark;
   font-family: "Rubik Variable", system-ui, sans-serif;
-  font-size: 15px;
+  font-size: var(--fs-root);
   line-height: 1.45;
 }
 
@@ -67,6 +76,7 @@ select,
 input:not([type="checkbox"]),
 textarea {
   font: inherit;
+  font-size: var(--fs-md);
   color: var(--fg);
   background: var(--field);
   border: 1px solid var(--line);
@@ -100,6 +110,8 @@ select:focus-visible {
 
 button {
   cursor: pointer;
+  padding: 3px 12px;
+  font-size: var(--fs-sm);
   font-weight: 550;
 }
 
@@ -170,7 +182,7 @@ h2 {
 }
 
 .brand {
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   font-weight: 800;
   color: var(--fg);
   text-decoration: none;
@@ -307,16 +319,9 @@ textarea {
   margin-bottom: 6px;
 }
 
-.segmented,
 .inline {
   display: flex;
   gap: 6px;
-}
-
-.segmented button[aria-pressed="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
 }
 
 .chips {

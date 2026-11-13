@@ -541,7 +541,7 @@ export function InsightsPage(): ReactNode {
   return (
     <div className="insights" data-panel={bucket !== undefined}>
       <div className="insights-filters">
-        <h1>Insights</h1>
+        <h1 className="sr-only">Insights</h1>
         <label>
           Count cards in{" "}
           <select

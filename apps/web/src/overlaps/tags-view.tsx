@@ -107,7 +107,9 @@ export function TagsView({
   return (
     <section className="tags-view" data-mode={current} aria-labelledby="tags-title">
       <header className="tags-view-head">
-        <h1 id="tags-title">Tags</h1>
+        <h1 id="tags-title" className="sr-only">
+          Tags
+        </h1>
         {sketch !== undefined && (
           <div className="segmented" role="group" aria-label="Tags mode">
             {TAG_MODES.map((option) => (

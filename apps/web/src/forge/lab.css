@@ -189,7 +189,7 @@
   z-index: 3;
   padding: 3px 8px;
   color: var(--on-accent);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
@@ -348,13 +348,13 @@
 
 .lab-count-label {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .lab-count-value {
-  font-size: 1.5rem;
+  font-size: var(--fs-xl);
   font-variant-numeric: tabular-nums;
 }
 
@@ -376,15 +376,15 @@
 .topbar-view .lab-count {
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .topbar-view .lab-count-label {
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
 }
 
 .topbar-view .lab-count-value {
-  font-size: 1.1rem;
+  font-size: var(--fs-lg);
 }
 
 .topbar-view .gauge-track {
@@ -397,7 +397,7 @@
   }
 
   .topbar-view .gauge-label strong {
-    font-size: 0.8rem;
+    font-size: var(--fs-sm);
   }
 
   .topbar-view .gauge-track {
@@ -437,29 +437,22 @@
 
 .lab-pills-empty {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .lab-pill {
   padding: 2px 10px;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   background: color-mix(in oklab, var(--accent) 16%, var(--field));
   border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
   animation: lab-pop 0.2s var(--lift);
-}
-
-.lab-link {
-  background: none;
-  border: 0;
-  color: var(--accent);
-  font-size: 0.85rem;
 }
 
 .lab-switches {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -494,7 +487,7 @@
 }
 
 .lab-bar-value {
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -561,7 +554,7 @@
 
 .lab-bar-label {
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   text-align: center;
 }
 
@@ -569,7 +562,7 @@
   display: grid;
   grid-template-columns: 16px repeat(var(--heat-columns), 1fr);
   gap: 3px;
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
 }
 
 .lab-heat-row {
@@ -652,7 +645,7 @@
 .lab-pt {
   display: grid;
   gap: 2px;
-  font-size: 0.68rem;
+  font-size: var(--fs-xs);
 }
 
 .lab-pt-row {
@@ -669,7 +662,7 @@
 }
 
 .lab-pt-foot .lab-pt-axis:first-child {
-  font-size: 0.6rem;
+  font-size: var(--fs-2xs);
 }
 
 .lab-pt-cell {
@@ -743,7 +736,7 @@
   margin: 0 -2px;
   padding: 8px 8px 6px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   font-weight: 600;
   background: var(--panel);
   border-radius: 0 0 8px 8px;
@@ -810,13 +803,13 @@
   top: -1.1em;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
 }
 
 .lab-heat-cell .lab-ghost-label {
   top: 0;
   right: 2px;
-  font-size: 0.6rem;
+  font-size: var(--fs-2xs);
   line-height: 1;
 }
 
@@ -860,7 +853,7 @@
 
 .lab-pill-wrap[data-adhoc] .lab-pill {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   border-style: dashed;
   border-radius: 999px 0 0 999px;
 }
@@ -868,7 +861,7 @@
 .lab-pill-save {
   padding: 2px 10px;
   color: var(--accent);
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   background: var(--field);
   border-color: color-mix(in oklab, var(--accent) 45%, var(--line));
   border-left: 0;
@@ -879,7 +872,7 @@
 .lab-pill-name input {
   width: 130px;
   padding: 2px 10px;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   border-color: var(--accent);
   border-left: 0;
   border-radius: 0 999px 999px 0;
@@ -890,71 +883,6 @@
   flex-wrap: wrap;
   gap: 8px 14px;
   align-items: center;
-}
-
-.lab-seg {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--field);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-}
-
-.lab-seg button {
-  padding: 2px 11px;
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 500;
-  background: none;
-  border: 0;
-  border-radius: 6px;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-
-.lab-seg button.on {
-  color: var(--fg);
-  background: var(--panel);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
-}
-
-.lab-menu {
-  position: relative;
-}
-
-.lab-menu > button {
-  padding: 3px 12px;
-  font-size: 0.82rem;
-}
-
-.lab-menu-list {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 40;
-  display: grid;
-  gap: 4px;
-  min-width: 220px;
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
-}
-
-.lab-menu-list[data-align="end"] {
-  right: 0;
-  left: auto;
-}
-
-.lab-menu-list label {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  cursor: pointer;
 }
 
 .lab-dock {
@@ -1070,7 +998,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   white-space: nowrap;
@@ -1081,7 +1009,7 @@
 .lab-tile-caption {
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   white-space: nowrap;
   text-overflow: ellipsis;
   opacity: 0.75;
@@ -1114,7 +1042,7 @@
   height: 20px;
   padding: 0 6px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   line-height: 1;
   background: none;
   border-color: transparent;
@@ -1168,7 +1096,7 @@
 
 .lab-filter-count {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1195,7 +1123,7 @@
   height: 20px;
   padding: 0;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   line-height: 1;
   background: var(--panel);
   opacity: 0;
@@ -1212,7 +1140,7 @@
   margin-top: 6px;
   padding: 4px 10px;
   color: var(--accent);
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   background: none;
   border-style: dashed;
 }
@@ -1228,35 +1156,7 @@
   gap: 8px;
   align-items: center;
   justify-content: flex-end;
-  font-size: 0.78rem;
-}
-
-.lab-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.lab-chip {
-  padding: 1px 8px;
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 500;
-  background: var(--field);
-}
-
-.lab-chip span {
-  opacity: 0.7;
-}
-
-.lab-chip:hover,
-.lab-chip.on {
-  color: var(--fg);
-  border-color: var(--accent);
-}
-
-.lab-chip.on {
-  background: color-mix(in oklab, var(--accent) 16%, var(--field));
+  font-size: var(--fs-sm);
 }
 
 .lab-floor {
@@ -1301,7 +1201,7 @@
 .lab-pile-head h2 {
   margin: 0;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1320,7 +1220,7 @@
 }
 
 .lab-title-symbol .ms {
-  font-size: 1rem;
+  font-size: var(--fs-base);
 }
 
 .lab-stack {
@@ -1384,7 +1284,7 @@
 
 .lab-strip-name {
   overflow: hidden;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   font-weight: 550;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1392,7 +1292,7 @@
 
 .lab-strip-top .mana-cost {
   flex: none;
-  font-size: 0.68rem;
+  font-size: var(--fs-xs);
   white-space: nowrap;
 }
 
@@ -1405,7 +1305,7 @@
 .lab-tag {
   padding: 0 6px;
   color: color-mix(in oklab, var(--accent) 70%, var(--fg));
-  font-size: 0.7rem;
+  font-size: var(--fs-xs);
   white-space: nowrap;
   background: color-mix(in oklab, var(--accent) 12%, transparent);
   border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
@@ -1413,7 +1313,7 @@
 }
 
 .lab-strip-tags .lab-tag {
-  font-size: 0.64rem;
+  font-size: var(--fs-2xs);
   line-height: 1.35;
 }
 
@@ -1431,7 +1331,7 @@
   margin: 0 -10px;
   padding: 8px 20px 6px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   font-weight: 600;
   background: var(--panel);
   box-shadow: 0 6px 8px -6px rgb(0 0 0 / 35%);
@@ -1480,7 +1380,7 @@
 }
 
 .lab-row-cost .mana-cost {
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
 }
 
 .lab-row-name {
@@ -1494,7 +1394,7 @@
 .lab-row-pt {
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   white-space: nowrap;
   text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
@@ -1616,7 +1516,7 @@
 .lab-stack-name input {
   width: 150px;
   padding: 2px 10px;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   border-color: var(--accent);
   border-radius: 999px;
 }
@@ -1632,7 +1532,7 @@
   gap: 8px;
   align-items: center;
   padding: 2px 4px;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
   text-align: left;
   background: none;
@@ -1716,13 +1616,13 @@
 .lab-hbar-value .lab-ghost-label {
   position: static;
   margin-left: 4px;
-  font-size: 0.7rem;
+  font-size: var(--fs-xs);
 }
 
 .lab-empty {
   margin: 0;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
 }
 
 .lab-tiles {
@@ -1749,26 +1649,26 @@ button.lab-stat:hover {
 
 .lab-stat-label {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .lab-stat-value {
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   font-variant-numeric: tabular-nums;
 }
 
 .lab-stat-base {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   font-weight: 500;
 }
 
 .lab-stat .lab-ghost-label {
   top: 6px;
   right: 10px;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
 }
 
 .lab-hbar-base-ghost {
@@ -1784,17 +1684,17 @@ button.lab-stat:hover {
   outline-color: color-mix(in oklab, var(--lab-loss) 60%, transparent);
 }
 
-.lab-chip .lab-ghost-label {
+.toggle-chip .lab-ghost-label {
   position: static;
   margin-left: 3px;
-  font-size: 0.68rem;
+  font-size: var(--fs-xs);
 }
 
-.lab-chip[data-ghost="up"] {
+.toggle-chip[data-ghost="up"] {
   border-color: var(--lab-ghost);
 }
 
-.lab-chip[data-ghost="down"] {
+.toggle-chip[data-ghost="down"] {
   border-color: var(--lab-loss);
 }
 
@@ -1812,7 +1712,7 @@ button.lab-stat[data-picked] {
   outline-offset: -2px;
 }
 
-.lab-chip[data-picked] {
+.toggle-chip[data-picked] {
   color: var(--fg);
   background: color-mix(in oklab, var(--accent) 16%, var(--field));
   border-color: var(--accent);
@@ -1823,12 +1723,12 @@ button.lab-stat[data-picked] {
   font-weight: 650;
 }
 
-.lab-chips .lab-chip {
+.toggle-chips .toggle-chip {
   position: relative;
   overflow: hidden;
 }
 
-.lab-chips .lab-chip[data-filtered] {
+.toggle-chips .toggle-chip[data-filtered] {
   background: linear-gradient(
     90deg,
     color-mix(in oklab, var(--accent) 28%, var(--field)) calc(var(--share) * 100%),
@@ -1836,12 +1736,12 @@ button.lab-stat[data-picked] {
   );
 }
 
-.lab-chips .lab-chip .lab-ghost-label {
+.toggle-chips .toggle-chip .lab-ghost-label {
   position: absolute;
   top: 0;
   right: 3px;
   margin: 0;
-  font-size: 0.6rem;
+  font-size: var(--fs-2xs);
   line-height: 1;
 }
 
@@ -1872,7 +1772,7 @@ button.lab-stat[data-picked] {
 
 .lab-balance-row {
   padding: 1px 4px;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   text-align: left;
   background: none;
   border: 0;
@@ -1989,13 +1889,13 @@ button.lab-stat[data-picked] {
 .lab-balance-value .lab-ghost-label {
   position: static;
   margin-left: 3px;
-  font-size: 0.68rem;
+  font-size: var(--fs-xs);
 }
 
 .lab-balance-foot {
   padding: 0 4px;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: var(--fs-2xs);
 }
 
 .lab-balance-foot > span:first-child {
@@ -2063,7 +1963,7 @@ button.lab-stat[data-picked] {
   min-width: 0;
   overflow: hidden;
   color: color-mix(in oklab, var(--tint) 70%, var(--fg));
-  font-size: 0.58rem;
+  font-size: var(--fs-2xs);
   font-weight: 650;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -2073,7 +1973,7 @@ button.lab-stat[data-picked] {
 
 .lab-combat-count {
   flex-shrink: 0;
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
   font-weight: 650;
   white-space: nowrap;
@@ -2082,7 +1982,7 @@ button.lab-stat[data-picked] {
 .lab-combat-count .lab-ghost-label {
   position: static;
   margin-left: 3px;
-  font-size: 0.66rem;
+  font-size: var(--fs-2xs);
 }
 
 .lab-combat-field {
@@ -2158,13 +2058,13 @@ button.lab-stat[data-picked] {
 .lab-combat-dot .lab-ghost-label {
   bottom: 100%;
   left: 50%;
-  font-size: 0.66rem;
+  font-size: var(--fs-2xs);
   transform: translateX(-50%);
 }
 
 .lab-combat-axis {
   color: var(--muted);
-  font-size: 0.6rem;
+  font-size: var(--fs-2xs);
 }
 
 .lab-combat-axis[data-axis="x"] {
@@ -2211,7 +2111,7 @@ button.lab-stat[data-picked] {
   top: 1px;
   right: 3px;
   color: var(--pending-mark);
-  font-size: 0.7rem;
+  font-size: var(--fs-xs);
   font-weight: 800;
   line-height: 1;
 }
@@ -2279,7 +2179,7 @@ button.lab-stat[data-picked] {
 .pending-head h2 {
   margin: 0;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2293,7 +2193,7 @@ button.lab-stat[data-picked] {
   height: 20px;
   padding: 0 6px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
   line-height: 1;
   background: none;
   border-color: transparent;
@@ -2389,7 +2289,7 @@ button.lab-stat[data-picked] {
 .pending-side h3 {
   margin: 0;
   color: var(--pending-mark);
-  font-size: 0.65rem;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2405,7 +2305,7 @@ button.lab-stat[data-picked] {
 
 .pending-hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
 }
 
 .pending-hint kbd {
@@ -2451,7 +2351,7 @@ button.lab-stat[data-picked] {
   margin: 0 auto -22px;
   padding: 0 10px;
   color: #fff;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   line-height: 22px;
   background: var(--accent);
@@ -2593,7 +2493,7 @@ button.lab-stat[data-picked] {
 .lab-bulk-slot .bulk-bar button,
 .lab-bulk-slot .bulk-bar select {
   padding: 4px 10px;
-  font-size: 0.82rem;
+  font-size: var(--fs-sm);
 }
 
 .query-nonmatch {
@@ -2619,7 +2519,7 @@ button.lab-stat[data-picked] {
 .query-nonmatch button {
   padding: 1px 9px;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: var(--fs-xs);
   background: none;
   border: 0;
   border-radius: 999px;

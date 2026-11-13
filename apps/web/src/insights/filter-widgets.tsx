@@ -41,7 +41,7 @@ export function BlockBody({
           {table !== undefined && (
             <button
               type="button"
-              className="chart-toggle"
+              className="ghost-btn"
               aria-pressed={asTable}
               onClick={() => {
                 setAsTable(!asTable);
@@ -149,7 +149,7 @@ export function FilterBlock({
             ))}
           </select>
           {onEdit && (
-            <button type="button" className="chart-toggle" onClick={onEdit}>
+            <button type="button" className="ghost-btn" onClick={onEdit}>
               Edit
             </button>
           )}

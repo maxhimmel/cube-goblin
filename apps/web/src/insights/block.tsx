@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { z } from "zod";
+import { CollapseButton } from "../collapse-button.tsx";
 import { useRemembered } from "../view-choices.ts";
 
 export function Block({
@@ -27,33 +28,26 @@ export function Block({
   return (
     <section className="block" data-collapsed={collapsed} aria-label={title}>
       <header className="block-head" title="Drag to move">
-        <span className="block-grip" aria-hidden="true" />
         <h2>{heading ?? title}</h2>
-        <div className="block-actions">
+        <div className="block-actions tile-actions">
           {!collapsed && actions}
           {table !== undefined && !collapsed && (
             <button
               type="button"
-              className="chart-toggle"
               aria-pressed={asTable}
+              aria-label="Table"
+              title="Table"
               onClick={() => {
                 setAsTable(!asTable);
               }}
             >
-              Table
+              ▤
             </button>
           )}
-          <button
-            type="button"
-            className="block-collapse"
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
-            onClick={onToggle}
-          />
+          <CollapseButton title={title} collapsed={collapsed} onToggle={onToggle} />
           {onHide && (
             <button
               type="button"
-              className="block-hide"
               aria-label={`Hide ${title}`}
               title="Hide (bring it back from Blocks)"
               onClick={onHide}

@@ -2491,3 +2491,37 @@ test("no view puts a ringed control flush against a clipping edge", async ({ pag
     }
   }
 });
+
+test("every drag surface stipples like forge and every block collapses with forge's button", async ({
+  page,
+  workbench,
+}) => {
+  for (const view of ["", "tags?mode=sketch", "insights", "insights?bucket=pt%3A2%3A2"]) {
+    await page.goto(`${workbench.url}#/${view}`);
+    await expect(page.getByText("Loading cube")).toHaveCount(0);
+    await expect(page.locator('[draggable="true"], .block-head').first()).toBeVisible();
+    const found = await page.evaluate(() => {
+      const surfaces = Array.from(
+        document.querySelectorAll<HTMLElement>('[draggable="true"]:not(.lab-image), .block-head'),
+      );
+      return {
+        surfaces: surfaces.length,
+        bare: surfaces
+          .filter(
+            (element) =>
+              !getComputedStyle(element, "::after").backgroundImage.includes("radial-gradient"),
+          )
+          .map((element) => element.className),
+        collapse: Array.from(
+          document.querySelectorAll<HTMLElement>('button[aria-label^="Collapse "]'),
+        ).map((button) => button.textContent),
+      };
+    });
+    expect(found.surfaces, `#/${view}`).toBeGreaterThan(0);
+    expect(found.bare, `#/${view}`).toEqual([]);
+    expect(
+      found.collapse.filter((text) => text !== "–"),
+      `#/${view}`,
+    ).toEqual([]);
+  }
+});

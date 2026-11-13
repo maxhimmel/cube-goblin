@@ -1287,6 +1287,12 @@ test("history saves a version and compares any two points", async ({ page, workb
   await expect(page.getByRole("complementary")).toHaveCount(0);
   await expect(page).toHaveURL(/#\/history$/u);
 
+  await version.getByRole("button", { name: "Compare to version Before the cut" }).click();
+  await expect(page).toHaveURL(/from=current&to=\d{4}-\d{2}-\d{2}-before-the-cut/u);
+  await page.getByRole("button", { name: "Close" }).click();
+  await page.goto(`${workbench.url}#/versions?from=current&to=current`);
+  await expect(page).toHaveURL(/#\/history\?from=current&to=current$/u);
+
   await page.getByLabel("Version name").fill("before the CUT");
   await page.getByRole("button", { name: "Save version" }).click();
   await expect(page.getByText(/already exists/u)).toBeVisible();

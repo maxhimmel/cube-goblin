@@ -95,6 +95,7 @@ async function openImages(page: Page, url: string, showCut = false): Promise<voi
 async function forgeSetting(page: Page, label: string, value: string): Promise<void> {
   await page.getByRole("button", { name: "Settings" }).click();
   const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByRole("tab", { name: "Forge" }).click();
   await dialog.getByLabel(label).selectOption(value);
   await dialog.getByRole("button", { name: "Close" }).click();
 }

@@ -174,3 +174,7 @@
   min-width: 0;
   padding: 0;
 }
+
+.field .segmented {
+  align-self: flex-start;
+}

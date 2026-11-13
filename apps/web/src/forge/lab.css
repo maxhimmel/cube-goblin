@@ -687,6 +687,7 @@
 
 .lab-pt-cell[data-empty] {
   background: color-mix(in oklab, var(--fg) 2%, transparent);
+  pointer-events: none;
 }
 
 .lab-pt-cell:hover {

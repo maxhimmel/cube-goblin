@@ -50,6 +50,10 @@ function peekProps(key: string, events: ChartEvents) {
   };
 }
 
+function inertUnless(live: boolean, key: string, events: ChartEvents) {
+  return live ? peekProps(key, events) : { tabIndex: -1, "aria-disabled": true };
+}
+
 function curveId(tally: Tally): string {
   return tally.id.split(":").at(-1) ?? "";
 }
@@ -183,12 +187,15 @@ export function Heat({
             }
             const share = cell.base === 0 ? 0 : cell.hit / cell.base;
             const shown = events.filtered ? cell.hit : cell.base;
+            const blank =
+              cell.ghost === 0 &&
+              (events.baseline ? cell.base === 0 && cell.baseGhost === 0 : shown === 0);
             return (
               <button
                 key={cell.id}
                 type="button"
                 className="lab-heat-cell"
-                data-empty={cell.base === 0 && cell.baseGhost === 0 ? "" : undefined}
+                data-empty={blank ? "" : undefined}
                 data-ghost={cell.ghost === 0 ? undefined : cell.ghost > 0 ? "up" : "down"}
                 data-base-ghost={
                   cell.ghost === 0 && cell.baseGhost !== 0 && events.baseline ? "" : undefined
@@ -201,7 +208,7 @@ export function Heat({
                     "--swatch": MANA_VAR[row.id],
                   } as CSSProperties
                 }
-                {...peekProps(cell.id, events)}
+                {...inertUnless(!blank, cell.id, events)}
               >
                 {events.baseline && events.filtered && cell.base > 0 && (
                   <span className="lab-heat-base" />
@@ -261,27 +268,29 @@ export function PtDots({
               (card) => ptCell(card.power) === power && ptCell(card.toughness) === tough,
             );
             const key = `pt:${power}:${tough}`;
+            const dots = here
+              .map((card) => ({
+                card,
+                state:
+                  now.has(card.slug) && !later.has(card.slug)
+                    ? "leaving"
+                    : !now.has(card.slug)
+                      ? "arriving"
+                      : lens && !lens(card)
+                        ? "faint"
+                        : "hit",
+              }))
+              .filter(({ state }) => state !== "faint" || events.baseline);
             return (
               <button
                 key={tough}
                 type="button"
                 className="lab-pt-cell"
                 aria-label={`${ptLabel(power)}/${ptLabel(tough)}: ${String(here.length)}`}
-                data-empty={here.length === 0 ? "" : undefined}
-                {...peekProps(key, events)}
+                data-empty={dots.length === 0 ? "" : undefined}
+                {...inertUnless(dots.length > 0, key, events)}
               >
-                {here.map((card) => {
-                  const state =
-                    now.has(card.slug) && !later.has(card.slug)
-                      ? "leaving"
-                      : !now.has(card.slug)
-                        ? "arriving"
-                        : lens && !lens(card)
-                          ? "faint"
-                          : "hit";
-                  if (state === "faint" && !events.baseline) {
-                    return null;
-                  }
+                {dots.map(({ card, state }) => {
                   return (
                     <i
                       key={card.slug}

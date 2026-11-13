@@ -9,9 +9,14 @@ import {
   setReviewer,
   toggleVote,
   updateCard,
+  useMoves,
   useReview,
 } from "../review-store.ts";
+import { scopeStorage } from "../storage-scope.ts";
 import type { CubeView, Mode } from "./mode.ts";
+import { ShareSettings } from "./share-settings.tsx";
+
+scopeStorage(snapshot.id);
 
 const view: CubeView = {
   cards: snapshot.cards,
@@ -24,6 +29,7 @@ function Toolbar(): ReactNode {
   const review = useReview();
   const [code, setCode] = useState<string | undefined>(undefined);
   const reviewed = Object.keys(review.cards).length;
+  const moves = review.moves.length;
 
   return (
     <>
@@ -41,6 +47,9 @@ function Toolbar(): ReactNode {
       </label>
       <span className="muted" data-testid="reviewed-count">
         {reviewed} reviewed
+      </span>
+      <span className="muted" data-testid="moves-count">
+        {moves} {moves === 1 ? "move" : "moves"}
       </span>
       <button type="button" onClick={downloadSavedDocument}>
         Save copy to send back
@@ -70,6 +79,7 @@ function Toolbar(): ReactNode {
           </button>
         </div>
       )}
+      <ShareSettings />
     </>
   );
 }
@@ -109,6 +119,7 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
 }
 
 export const mode: Mode = {
+  usePending: useMoves,
   useFilters: () => snapshot.filters,
   useLayouts: () => undefined,
   name: "share",

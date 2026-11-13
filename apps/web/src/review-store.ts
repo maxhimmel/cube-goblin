@@ -1,4 +1,4 @@
-import type { CardReview, Review, Vote } from "@repo/cube/browser";
+import type { CardReview, PendingMoveEntry, Review, Vote } from "@repo/cube/browser";
 import { REVIEW_SCRIPT_ID, embedReview, reviewSchema } from "@repo/cube/browser";
 import lzString from "lz-string";
 import { useSyncExternalStore } from "react";
@@ -15,6 +15,7 @@ function emptyReview(): Review {
     reviewer: "",
     updatedAt: new Date(0).toISOString(),
     cards: {},
+    moves: [],
   };
 }
 
@@ -85,6 +86,17 @@ export function updateCard(
     updatedAt: now,
     cards: { ...current.cards, [slug]: { ...previous, ...patch, updatedAt: now } },
   });
+}
+
+export function setMoves(moves: readonly PendingMoveEntry[]): void {
+  commit({ ...current, moves: [...moves], updatedAt: new Date().toISOString() });
+}
+
+export function useMoves(): [
+  readonly PendingMoveEntry[],
+  (next: readonly PendingMoveEntry[]) => void,
+] {
+  return [useReview().moves, setMoves];
 }
 
 export function toggleVote(slug: string, vote: Vote): void {

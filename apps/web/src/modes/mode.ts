@@ -1,4 +1,11 @@
-import type { CardStatus, Filter, Layout, SnapshotCard, Tag } from "@repo/cube/browser";
+import type {
+  CardStatus,
+  Filter,
+  Layout,
+  PendingMoveEntry,
+  SnapshotCard,
+  Tag,
+} from "@repo/cube/browser";
 import type { ReactNode } from "react";
 
 export type GridCard = SnapshotCard;
@@ -30,6 +37,7 @@ export interface Mode {
     label: string,
     body?: string,
   ) => void;
+  usePending: () => [readonly PendingMoveEntry[], (next: readonly PendingMoveEntry[]) => void];
   useFilters: () => Filter[] | undefined;
   putFilter?: (filter: Filter) => Promise<boolean>;
   deleteFilter?: (id: string) => void;

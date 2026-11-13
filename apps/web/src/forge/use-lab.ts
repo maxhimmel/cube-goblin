@@ -64,8 +64,6 @@ export interface PendingMove {
 
 export type PendingMark = "add" | "cut";
 
-const pendingSchema = z.array(z.object({ slug: z.string(), to: z.enum(["draft", "prospect"]) }));
-
 function markOf(to: CardStatus): PendingMark {
   return to === "draft" ? "add" : "cut";
 }
@@ -174,7 +172,7 @@ export function useLab(): Lab | undefined {
   const setSort = (keys: CardSort[]): void => {
     setSorts({ ...sorts, [axis]: keys });
   };
-  const [storedPending, setStoredPending] = useRemembered("pending.lab", [], pendingSchema);
+  const [storedPending, setStoredPending] = mode.usePending();
   const [overPending, setOverPending] = useState(false);
   const { peek, setPeek, clearPeek } = usePeek();
   const [typing, setTyping] = useState("");

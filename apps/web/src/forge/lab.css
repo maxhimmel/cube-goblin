@@ -936,6 +936,14 @@
   padding-right: 4px;
 }
 
+.lab[data-dock="top"] .lab-dock {
+  margin-bottom: -4px;
+}
+
+.lab[data-dock="left"] .lab-dock {
+  margin-right: -4px;
+}
+
 .lab-block {
   flex: 0 0 auto;
   min-width: 0;

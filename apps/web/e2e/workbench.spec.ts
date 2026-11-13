@@ -101,7 +101,7 @@ async function forgeSetting(page: Page, label: string, value: string): Promise<v
 }
 
 async function chartsOn(page: Page, side: string): Promise<void> {
-  await page.locator(".lab-seam-handle").hover();
+  await page.locator(".lab-seam-toggle").hover();
   await page.getByRole("button", { name: `Charts on the ${side}` }).click();
   await page.mouse.move(0, 0);
 }

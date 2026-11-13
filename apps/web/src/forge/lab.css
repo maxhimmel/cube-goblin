@@ -98,6 +98,7 @@
   width: 92px;
   height: 92px;
   margin: -35px;
+  pointer-events: none;
 }
 
 .lab-seam-handle::before {
@@ -114,19 +115,22 @@
   opacity: 0;
   scale: 0.4;
   transition:
-    opacity 0.15s,
-    scale 0.35s var(--lift);
+    opacity 0.15s 0.15s,
+    scale 0.35s 0.15s var(--lift);
 }
 
 .lab-seam-handle:hover::before,
 .lab-seam-handle:has(:focus-visible)::before {
+  pointer-events: auto;
   opacity: 1;
   scale: 1;
+  transition-delay: 0.35s;
 }
 
 .lab-seam-toggle {
   position: relative;
   z-index: 2;
+  pointer-events: auto;
   display: grid;
   place-items: center;
   width: 30px;
@@ -251,9 +255,9 @@
   opacity: 0;
   scale: 0.3;
   transition:
-    opacity 0.15s,
-    translate 0.35s var(--lift),
-    scale 0.35s var(--lift),
+    opacity 0.15s var(--lift) 0.15s,
+    translate 0.35s var(--lift) 0.15s,
+    scale 0.35s var(--lift) 0.15s,
     color 0.15s,
     background 0.15s;
 }
@@ -267,24 +271,40 @@
   scale: 1;
 }
 
+.lab-seam-handle:hover .lab-seam-sides [data-side="top"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="top"] {
+  transition-delay: calc(0.35s + 0s), calc(0.35s + 0s), calc(0.35s + 0s), 0s, 0s;
+}
+
 .lab-seam-sides [data-side="top"] {
   translate: 0 calc(-1 * var(--out));
-  transition-delay: 0s;
+}
+
+.lab-seam-handle:hover .lab-seam-sides [data-side="right"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="right"] {
+  transition-delay: calc(0.35s + 0.03s), calc(0.35s + 0.03s), calc(0.35s + 0.03s), 0s, 0s;
 }
 
 .lab-seam-sides [data-side="right"] {
   translate: var(--out) 0;
-  transition-delay: 0.03s;
+}
+
+.lab-seam-handle:hover .lab-seam-sides [data-side="bottom"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="bottom"] {
+  transition-delay: calc(0.35s + 0.06s), calc(0.35s + 0.06s), calc(0.35s + 0.06s), 0s, 0s;
 }
 
 .lab-seam-sides [data-side="bottom"] {
   translate: 0 var(--out);
-  transition-delay: 0.06s;
+}
+
+.lab-seam-handle:hover .lab-seam-sides [data-side="left"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="left"] {
+  transition-delay: calc(0.35s + 0.09s), calc(0.35s + 0.09s), calc(0.35s + 0.09s), 0s, 0s;
 }
 
 .lab-seam-sides [data-side="left"] {
   translate: calc(-1 * var(--out)) 0;
-  transition-delay: 0.09s;
 }
 
 .lab-seam-sides button[aria-pressed="true"] {

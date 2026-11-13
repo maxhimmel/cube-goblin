@@ -5,6 +5,12 @@
       "label": "Moon-Letter Payoffs",
       "query": "mv>=3 -t:creature",
       "view": "cards"
+    },
+    {
+      "id": "filter-yd58a5",
+      "label": "Balance: Multicolored",
+      "query": "-c:w -c:u c:m",
+      "view": "cards"
     }
   ]
 }

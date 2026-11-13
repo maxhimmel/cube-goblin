@@ -157,7 +157,7 @@
 
 .pane h1 {
   margin: 0;
-  font-size: 1.7rem;
+  font-size: var(--fs-2xl);
   font-weight: 800;
 }
 
@@ -198,7 +198,7 @@
 
 .printing-caption {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
@@ -241,7 +241,7 @@
 
 .printings-head h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--fs-base);
 }
 
 .printings-head input {
@@ -275,7 +275,7 @@
   background: none;
   color: inherit;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--fs-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -320,7 +320,7 @@
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: var(--fs-xs);
 }
 
 @keyframes thumb-pulse {
@@ -350,7 +350,7 @@
 
 .printing-labels .chip {
   padding: 0 6px;
-  font-size: 0.7rem;
+  font-size: var(--fs-xs);
 }
 
 .printing-default {
@@ -393,7 +393,7 @@
 }
 
 .save-state {
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
 }
 
 .save-state[data-saving="true"] {
@@ -450,7 +450,7 @@
 
 .sheet-head h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--fs-base);
 }
 
 .sheet > :not(.sheet-head) {

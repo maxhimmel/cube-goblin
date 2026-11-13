@@ -63,8 +63,12 @@ const rootRoute = createRootRoute({
 const forgeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  validateSearch: (search: Record<string, unknown>): { q?: string | undefined } =>
-    typeof search["q"] === "string" ? { q: search["q"] } : {},
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { q?: string | undefined; keep?: true | undefined } => ({
+    ...(typeof search["q"] === "string" ? { q: search["q"] } : {}),
+    ...(search["keep"] === true ? { keep: true as const } : {}),
+  }),
   beforeLoad: ({ search }) => {
     const query = search.q?.trim();
     if (query === undefined) {
@@ -73,11 +77,12 @@ const forgeRoute = createRoute({
     if (query !== "" && compileQuery(query).ok) {
       const pills = recallState("lab.pills", z.array(z.string())) ?? [];
       const pill = `x:${query}`;
-      rememberState("lab.pills", pills.includes(pill) ? pills : [...pills, pill]);
+      const kept = search.keep ? pills.filter((other) => other !== pill) : [];
+      rememberState("lab.pills", [...kept, pill]);
     }
     redirect({
       to: "/",
-      search: (prev) => ({ ...prev, q: undefined }),
+      search: (prev) => ({ ...prev, q: undefined, keep: undefined }),
       replace: true,
       throw: true,
     });

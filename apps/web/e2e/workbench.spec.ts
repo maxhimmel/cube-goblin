@@ -1182,9 +1182,18 @@ test("the tags view counts overlaps and filters forge to one", async ({ page, wo
   await page.goBack();
   await page.getByRole("link", { name: "Overlap A + Overlap B: 1 card" }).click();
   await expect(pills.getByRole("button", { name: /^Remove / })).toHaveText([
-    "tag:overlap-a -tag:overlap-b ×",
     "tag:overlap-a tag:overlap-b ×",
   ]);
+
+  await page.goBack();
+  await page.getByLabel("Keep Forge's other filters when opening an overlap").check();
+  await page.mouse.click(label.x + label.width / 2, label.y - 12);
+  await expect(pills.getByRole("button", { name: /^Remove / })).toHaveText([
+    "tag:overlap-a tag:overlap-b ×",
+    "tag:overlap-a -tag:overlap-b ×",
+  ]);
+  await page.goBack();
+  await expect(page.getByLabel("Keep Forge's other filters when opening an overlap")).toBeChecked();
 });
 
 test("the tags view sketches, flags empty tags, and creates tags in place", async ({

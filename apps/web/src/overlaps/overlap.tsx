@@ -10,7 +10,9 @@ import {
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useId, useState } from "react";
+import { z } from "zod";
 import type { CubeView, GridCard } from "../modes/mode.ts";
+import { useRemembered } from "../view-choices.ts";
 import type { VennLayout } from "./geometry.ts";
 import { VENN_LAYOUTS, inside } from "./geometry.ts";
 
@@ -24,13 +26,18 @@ function describe(
   return describeFilter(overlapFilter(picked, tags), vocabulary);
 }
 
-function forgeSearch(picked: readonly string[], tags: readonly string[]): { q: string } {
+function forgeSearch(
+  picked: readonly string[],
+  tags: readonly string[],
+  keep: boolean,
+): { q: string; keep?: true } {
   const filter = overlapFilter(picked, tags);
   return {
     q: [
       ...filter.with.map((tag) => `tag:${tag}`),
       ...filter.without.map((tag) => `-tag:${tag}`),
     ].join(" "),
+    ...(keep ? { keep: true as const } : {}),
   };
 }
 
@@ -89,10 +96,12 @@ function Venn({
   picked,
   overlaps,
   vocabulary,
+  keep,
 }: {
   picked: readonly string[];
   overlaps: readonly Overlap<GridCard>[];
   vocabulary: readonly Tag[];
+  keep: boolean;
 }): ReactNode {
   const navigate = useNavigate();
   const id = useId().replace(/[^a-zA-Z0-9]/gu, "");
@@ -121,7 +130,7 @@ function Venn({
           const point = svgPoint(event);
           const key = point && regionAt(layout, point.x, point.y);
           if (key !== undefined) {
-            void navigate({ to: "/", search: forgeSearch(picked, tagsOf(key)) });
+            void navigate({ to: "/", search: forgeSearch(picked, tagsOf(key), keep) });
           }
         }}
       >
@@ -166,7 +175,9 @@ function Venn({
       </svg>
       <figcaption className="muted">
         {hovered === undefined
-          ? "Click a region to filter Forge to its cards."
+          ? keep
+            ? "Click a region to add its filter in Forge."
+            : "Click a region to filter Forge to its cards."
           : `${describe(hovered, picked, vocabulary)} · ${cardCount(counts.get(hover ?? "")?.cards.length ?? 0)}`}
       </figcaption>
     </figure>
@@ -177,10 +188,12 @@ function OverlapTable({
   picked,
   overlaps,
   vocabulary,
+  keep,
 }: {
   picked: readonly string[];
   overlaps: readonly Overlap<GridCard>[];
   vocabulary: readonly Tag[];
+  keep: boolean;
 }): ReactNode {
   const most = Math.max(1, ...overlaps.map((overlap) => overlap.cards.length));
   const hued = picked.length <= SET_HUES.length;
@@ -227,7 +240,7 @@ function OverlapTable({
               <td className="overlap-count">
                 <Link
                   to="/"
-                  search={forgeSearch(picked, overlap.tags)}
+                  search={forgeSearch(picked, overlap.tags, keep)}
                   aria-label={`${describe(overlap.tags, picked, vocabulary)}: ${cardCount(count)}`}
                 >
                   <span
@@ -253,6 +266,7 @@ export function OverlapResults({
   picked: readonly string[];
 }): ReactNode {
   const overlaps = tagOverlaps(considered(cube), picked);
+  const [keep, setKeep] = useRemembered("tags.keepForgeFilters", false, z.boolean());
   if (picked.length === 0) {
     return (
       <p className="muted overlap-hint">
@@ -262,11 +276,28 @@ export function OverlapResults({
     );
   }
   return (
-    <div className="overlap-body">
-      {(picked.length === 2 || picked.length === 3) && (
-        <Venn picked={picked} overlaps={overlaps} vocabulary={cube.vocabulary} />
-      )}
-      <OverlapTable picked={picked} overlaps={overlaps} vocabulary={cube.vocabulary} />
+    <div className="overlap-results">
+      <label className="overlap-keep">
+        <input
+          type="checkbox"
+          checked={keep}
+          onChange={(event) => {
+            setKeep(event.target.checked);
+          }}
+        />
+        Keep Forge&apos;s other filters when opening an overlap
+      </label>
+      <div className="overlap-body">
+        {(picked.length === 2 || picked.length === 3) && (
+          <Venn picked={picked} overlaps={overlaps} vocabulary={cube.vocabulary} keep={keep} />
+        )}
+        <OverlapTable
+          picked={picked}
+          overlaps={overlaps}
+          vocabulary={cube.vocabulary}
+          keep={keep}
+        />
+      </div>
     </div>
   );
 }

@@ -161,6 +161,31 @@ test("the top bar holds brand, views, save state, add, and settings only", async
   await expect(topbar).not.toContainText("cards ·");
 });
 
+test("the dev type scale panel resizes text live and copies the scale", async ({
+  page,
+  workbench,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto(`${workbench.url}#/history`);
+  const button = page.getByRole("button", { name: "Expand all" });
+  const size = (): Promise<string> =>
+    button.evaluate((element) => getComputedStyle(element).fontSize);
+  const before = await size();
+  await page.getByRole("button", { name: "Type scale" }).click();
+  const panel = page.getByRole("region", { name: "Type scale" });
+  await panel.locator(".type-scale-row", { hasText: /^sm/u }).locator("input").fill("1.2");
+  await expect.poll(size).not.toBe(before);
+  await panel.getByRole("button", { name: "Copy CSS" }).click();
+  await expect(panel.getByRole("button", { name: "Copied" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("--fs-sm: 1.2rem;");
+  await page.reload();
+  await expect.poll(size).not.toBe(before);
+  await page.getByRole("button", { name: "Type scale" }).click();
+  await panel.getByRole("button", { name: "Reset" }).click();
+  await expect.poll(size).toBe(before);
+});
+
 test("the add panel opens over any view and the old /add link opens it too", async ({
   page,
   workbench,

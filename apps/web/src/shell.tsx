@@ -1,11 +1,13 @@
 import { mode } from "#mode";
 import { Link, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { CardPane } from "./card-pane.tsx";
 import type { ViewIconName } from "./icons.tsx";
 import { ViewIcon } from "./icons.tsx";
 import { TopbarSlot } from "./topbar-slot.tsx";
+
+const TypeScalePanel = import.meta.env.DEV ? lazy(() => import("./type-scale.tsx")) : null;
 
 const VIEWS: readonly {
   to: "/" | "/tags" | "/insights" | "/history";
@@ -73,6 +75,11 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
       </main>
       {card !== undefined && <CardPane key={card} slug={card} />}
       {add === true && <mode.AddPanel key={`add:${replaces ?? ""}`} replaces={replaces} />}
+      {TypeScalePanel && (
+        <Suspense>
+          <TypeScalePanel />
+        </Suspense>
+      )}
     </div>
   );
 }

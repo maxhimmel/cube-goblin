@@ -547,3 +547,17 @@
   gap: 8px;
   align-items: center;
 }
+
+.settings-choice {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings-choice legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-weight: 600;
+}

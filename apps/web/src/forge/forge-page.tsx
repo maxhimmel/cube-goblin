@@ -88,12 +88,12 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
               <SortMenu keys={lab.sort} onChange={lab.setSort} />
             </div>
           </header>
+          {pile(draft, false)}
           {view === "images" && (
             <div className="lab-bulk-slot">
               <mode.BulkBar />
             </div>
           )}
-          {pile(draft, false)}
         </section>
         <PendingGutter lab={lab} tags={tags} open={pendingOpen} setOpen={setPendingOpen} />
         <section

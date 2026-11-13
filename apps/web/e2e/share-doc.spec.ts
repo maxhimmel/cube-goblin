@@ -141,15 +141,17 @@ test("share doc shows the change log read-only with its timeline", async ({ page
   await page.goto(DOC_URL);
   await page
     .getByRole("navigation", { name: "Views" })
-    .getByRole("link", { name: "Log", exact: true })
+    .getByRole("link", { name: "History", exact: true })
     .click();
-  await expect(page.getByRole("heading", { name: "Change log" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "History" })).toBeVisible();
   const entries = page.getByTestId("log-entry");
   await expect(entries).toHaveCount(snapshot.log.length);
   const { subject, body } = parseMessage(latest.message);
   const entry = page.locator(`#log-entry-${latest.id}`);
   await expect(entry.locator(".log-subject")).toHaveText(subject);
   if (body !== "") {
+    await expect(entry.locator(".log-body")).toHaveCount(0);
+    await entry.locator(".log-subject").click();
     await expect(entry.locator(".log-body")).toHaveText(body);
   }
   await expect(page.getByRole("button", { name: /^Revert/u })).toHaveCount(0);

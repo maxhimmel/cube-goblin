@@ -151,8 +151,7 @@ test("the top bar holds brand, views, save state, add, and settings only", async
     "Forge",
     "Tags",
     "Insights",
-    "Versions",
-    "Log",
+    "History",
     "",
   ]);
   await expect(topbar.getByRole("link").last()).toHaveAccessibleName("Add card");
@@ -1245,39 +1244,48 @@ test("the tags view sketches, flags empty tags, and creates tags in place", asyn
   );
 });
 
-test("a saved version compares with the current cube", async ({ page, workbench }) => {
+test("history saves a version and compares any two points", async ({ page, workbench }) => {
   const slug = "brazen-scourge";
   const drafted = await page.request.patch(`${workbench.url}api/cards/${slug}`, {
     data: { status: "draft" },
   });
   expect(drafted.status()).toBe(200);
-  await page.goto(`${workbench.url}#/`);
-  await page
-    .getByRole("navigation", { name: "Views" })
-    .getByRole("link", { name: "Versions" })
-    .click();
+  await page.goto(`${workbench.url}#/versions`);
+  await expect(page).toHaveURL(/#\/history$/u);
   await page.getByLabel("Version name").fill("Before the cut");
   await page.getByRole("button", { name: "Save version" }).click();
-  const row = page.locator("tr[data-version$='-before-the-cut']");
-  await expect(row).toContainText("Before the cut");
+  const version = page.locator("[data-testid='log-version'][data-version$='-before-the-cut']");
+  await expect(version).toContainText("Before the cut");
   const versionsDir = join(workbench.cardsDir, "..", "versions");
   const [file] = await readdir(versionsDir);
   expect(file).toMatch(/^\d{4}-\d{2}-\d{2}-before-the-cut\.json$/u);
 
   const patched = await page.request.patch(`${workbench.url}api/cards/${slug}`, {
     data: { status: "cut", addTags: ["tempo"] },
+    headers: { "X-Log-Subject": "Cut the Scourge" },
   });
   expect(patched.status()).toBe(200);
-  await row.getByRole("button", { name: "Compare with now" }).click();
+  await version.getByRole("button", { name: "Compare from version Before the cut" }).click();
   await expect(page).toHaveURL(/from=\d{4}-\d{2}-\d{2}-before-the-cut&to=current/u);
-
-  const moved = page.getByRole("region", { name: "Draft → Cut" });
+  const pane = page.getByRole("complementary", { name: /Before the cut.*→ Now/u });
+  await expect(pane).toBeVisible();
+  const moved = pane.getByRole("region", { name: "Draft → Cut" });
   await expect(moved.getByRole("link", { name: "Brazen Scourge" })).toBeVisible();
-  const edited = page.getByRole("region", { name: "Edited" });
+  const edited = pane.getByRole("region", { name: "Edited" });
   await expect(edited.locator("li").filter({ hasText: "Brazen Scourge" })).toContainText("+ Tempo");
+  const cut = page.getByTestId("log-entry").filter({ hasText: "Cut the Scourge" });
+  await expect(cut).toHaveAttribute("data-in-range", "true");
 
-  await page.getByLabel("To").selectOption({ label: "Before the cut" });
-  await expect(page.getByText("No changes.")).toBeVisible();
+  await cut.getByRole("button", { name: "Compare from Cut the Scourge" }).click();
+  const fromCut = page.getByRole("complementary", { name: /Before "Cut the Scourge" → Now/u });
+  await expect(fromCut.getByRole("region", { name: "Draft → Cut" })).toBeVisible();
+  await version.getByRole("button", { name: "Compare to version Before the cut" }).click();
+  await expect(
+    page.getByRole("complementary", { name: /→ Version "Before the cut"/u }),
+  ).toContainText("No changes.");
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("complementary")).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/history$/u);
 
   await page.getByLabel("Version name").fill("before the CUT");
   await page.getByRole("button", { name: "Save version" }).click();
@@ -2105,6 +2113,10 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   const status = async (): Promise<string> => (await readEntry(workbench.cardsDir, slug)).status;
 
   await page.goto(`${workbench.url}#/log`);
+  await expect(page).toHaveURL(/#\/history$/u);
+  await openFolds();
+  await expect(entry("Trim the curve")).not.toContainText("Too many 3s.");
+  await entry("Trim the curve").locator(".log-subject").click();
   await expect(entry("Trim the curve")).toContainText("Too many 3s.");
   await expect(entry("Trim the curve").locator('[data-trailer="Card"]')).toHaveCount(2);
   await page.reload();
@@ -2160,6 +2172,7 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
   await expect.poll(async () => (await readEntry(workbench.cardsDir, two)).status).toBe("cut");
 
   await page.getByLabel("Filter the log").fill(added.name);
+  await page.getByRole("button", { name: "Expand all" }).click();
   for (const item of await entries.all()) {
     await expect(item).toContainText(added.name);
   }
@@ -2441,8 +2454,8 @@ test("no view puts a ringed control flush against a clipping edge", async ({ pag
       "tags?mode=sketch",
       "tags?mode=overlaps&tags=removal,tempo",
       "insights",
-      "versions",
-      "log",
+      "history",
+      "history?from=current&to=current",
       "add",
       "insights?bucket=curve%3A2",
     ]) {

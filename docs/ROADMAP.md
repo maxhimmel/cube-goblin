@@ -11,9 +11,12 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-051: Suggestions from the share doc](tickets/T-051-share-doc-suggestions.md)
+
 ## Next
 
-- [T-051: Suggestions from the share doc](tickets/T-051-share-doc-suggestions.md)
+- [T-054: Reviews view](tickets/T-054-reviews-view.md)
+- [T-055: Forge overlay](tickets/T-055-forge-overlay.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)
 
 ## Later

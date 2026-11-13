@@ -28,3 +28,4 @@ First of three tickets that turn a friend's review into something the workbench 
 - `pnpm export` runs `pnpm cube share-version`, which saves `cube/versions/<date>-shared-<snapshot id>.json` once per snapshot. A review's `snapshotId` names its base.
 - The share doc scopes view state and Insights layout by snapshot id (`storage-scope.ts`), so exports don't mix in one browser. Two copies of the _same_ snapshot still share state; the saved copy's embedded review wins if it is newer.
 - The share doc has a Settings button with Forge's settings. Dim or hide, panel side, and tags on cards were already on the Forge page.
+- The share doc's top bar holds one **Review** menu (name, counts, copy code, save copy, snapshot id) and the settings button, so it stays on one line. A top bar menu now opens above the card pane.

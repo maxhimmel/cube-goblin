@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { snapshot } from "../data.ts";
 import { LogView } from "../log/log-view.tsx";
+import { Menu } from "../menu.tsx";
 import { TagsView } from "../overlaps/tags-view.tsx";
 import {
   downloadSavedDocument,
@@ -25,62 +26,68 @@ const view: CubeView = {
 
 const NO_SELECTION: ReadonlySet<string> = new Set();
 
-function Toolbar(): ReactNode {
+function ReviewMenu(): ReactNode {
   const review = useReview();
   const [code, setCode] = useState<string | undefined>(undefined);
   const reviewed = Object.keys(review.cards).length;
   const moves = review.moves.length;
-
+  const total = reviewed + moves;
   return (
-    <>
-      <span className="muted">snapshot {snapshot.id}</span>
-      <label className="reviewer">
-        Your name
-        <input
-          aria-label="Your name"
-          value={review.reviewer}
-          onChange={(event) => {
-            setReviewer(event.target.value);
-          }}
-          placeholder="who's reviewing?"
-        />
-      </label>
-      <span className="muted" data-testid="reviewed-count">
-        {reviewed} reviewed
-      </span>
-      <span className="muted" data-testid="moves-count">
-        {moves} {moves === 1 ? "move" : "moves"}
-      </span>
-      <button type="button" onClick={downloadSavedDocument}>
-        Save copy to send back
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          const next = reviewCode();
-          setCode(next);
-          if (window.isSecureContext) {
-            void navigator.clipboard.writeText(next).catch(() => undefined);
-          }
-        }}
-      >
-        Copy review code
-      </button>
-      {code !== undefined && (
-        <div className="code-panel">
-          <textarea aria-label="Review code" readOnly value={code} rows={3} />
-          <button
-            type="button"
-            onClick={() => {
-              setCode(undefined);
+    <Menu
+      label={
+        <>
+          Review
+          {total > 0 && <span className="review-badge">{total}</span>}
+        </>
+      }
+      listLabel="Review"
+    >
+      <div className="review-menu">
+        <label className="field">
+          Your name
+          <input
+            aria-label="Your name"
+            value={review.reviewer}
+            onChange={(event) => {
+              setReviewer(event.target.value);
             }}
-          >
-            Close
-          </button>
-        </div>
-      )}
+            placeholder="who's reviewing?"
+          />
+        </label>
+        <p className="muted">
+          <span data-testid="reviewed-count">{reviewed} reviewed</span> ·{" "}
+          <span data-testid="moves-count">
+            {moves} {moves === 1 ? "move" : "moves"}
+          </span>
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            const next = reviewCode();
+            setCode(next);
+            if (window.isSecureContext) {
+              void navigator.clipboard.writeText(next).catch(() => undefined);
+            }
+          }}
+        >
+          Copy review code
+        </button>
+        {code !== undefined && <textarea aria-label="Review code" readOnly value={code} rows={3} />}
+        <button type="button" onClick={downloadSavedDocument}>
+          Save copy to send back
+        </button>
+        <p className="muted review-snapshot">snapshot {snapshot.id}</p>
+      </div>
+    </Menu>
+  );
+}
+
+function Toolbar(): ReactNode {
+  return (
+    <div className="topbar-actions">
+      <ReviewMenu />
       <ShareSettings />
-    </>
+    </div>
   );
 }
 

@@ -19,3 +19,13 @@ Feedback on [Forge](../GLOSSARY.md#forge) charts after [T-052](T-052-forge-polis
 ## Done when
 
 - Each item above is fixed and checked in the running app at 1440px and 900px.
+
+## Built (2026-11-13)
+
+- The seam handle stays on its line in every state: a collapsed seam widens to a 48px rail so the hover disc fits on screen. The arrow for the current side shows a dot; its tooltip says "Show charts on the …" when collapsed.
+- In a top or bottom panel, every chart stretches to the tile's height.
+- The chart panel no longer contains scroll, so the wheel passes to the page.
+- An empty cell in either grid chart (nothing drawn) ignores hover and clicks.
+- Hide mode keeps applied-filter non-matches hidden while peeking or typing; the peek dims within them.
+- Combat matchups: both axis labels center on the plot.
+- Multicolor symbol: options mocked, waiting on the user's pick.

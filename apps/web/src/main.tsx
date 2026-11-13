@@ -14,7 +14,7 @@ import "./pane.css";
 import "./board.css";
 import "./insights/insights.css";
 import "./overlaps/overlap.css";
-import "./versions.css";
+import "./workbench/compare.css";
 import "./log/log.css";
 import "./forge/lab.css";
 import "./query/query.css";

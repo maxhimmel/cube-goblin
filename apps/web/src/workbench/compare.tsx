@@ -1,159 +1,9 @@
-import type {
-  CardDiff,
-  CubeDiff,
-  SectionDiff,
-  Tag,
-  VersionSummary,
-  Workbench,
-} from "@repo/cube/browser";
-import { CARD_STATUSES, CARD_STATUS_LABELS, CURRENT, tagLabel } from "@repo/cube/browser";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import type { CardDiff, CubeDiff, SectionDiff, Tag, Workbench } from "@repo/cube/browser";
+import { CARD_STATUSES, CARD_STATUS_LABELS, tagLabel } from "@repo/cube/browser";
+import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { CardLink } from "../card-pane.tsx";
-import { queryClient } from "../query-client.ts";
-import { VERSIONS_QUERY_KEY, compareRequest, fetchVersions, saveVersionRequest } from "./api.ts";
-import { showToast } from "./toast.tsx";
-
-function versionName(id: string, versions: readonly VersionSummary[]): string {
-  return id === CURRENT
-    ? "Current cube"
-    : (versions.find((version) => version.id === id)?.label ?? id);
-}
-
-function savedOn(savedAt: string): string {
-  return new Date(savedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
-
-function SaveVersion(): ReactNode {
-  const [label, setLabel] = useState("");
-  const save = useMutation({
-    mutationFn: saveVersionRequest,
-    onSuccess: async (version) => {
-      setLabel("");
-      showToast({ message: `Saved version "${version.label}"`, tone: "info" });
-      await queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
-    },
-    onError: (error) => {
-      showToast({ message: error.message, tone: "error" });
-    },
-  });
-  return (
-    <form
-      className="inline"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (label.trim()) {
-          save.mutate(label.trim());
-        }
-      }}
-    >
-      <input
-        aria-label="Version name"
-        value={label}
-        onChange={(event) => {
-          setLabel(event.target.value);
-        }}
-        placeholder="name this version, e.g. before the trim"
-        size={36}
-      />
-      <button type="submit" disabled={save.isPending || !label.trim()}>
-        Save version
-      </button>
-    </form>
-  );
-}
-
-function VersionList({ versions }: { versions: readonly VersionSummary[] }): ReactNode {
-  if (versions.length === 0) {
-    return <p className="muted">No saved versions yet.</p>;
-  }
-  return (
-    <table className="tag-table version-table">
-      <thead>
-        <tr>
-          <th>Version</th>
-          <th>Saved</th>
-          {CARD_STATUSES.map((status) => (
-            <th key={status}>{CARD_STATUS_LABELS[status]}</th>
-          ))}
-          <th>Compare</th>
-        </tr>
-      </thead>
-      <tbody>
-        {versions.map((version) => (
-          <tr key={version.id} data-version={version.id}>
-            <td>{version.label}</td>
-            <td className="muted">{savedOn(version.savedAt)}</td>
-            {CARD_STATUSES.map((status) => (
-              <td key={status}>{version.counts[status]}</td>
-            ))}
-            <td>
-              <CompareLink from={version.id} to={CURRENT}>
-                Compare with now
-              </CompareLink>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-function CompareLink({
-  from,
-  to,
-  children,
-}: {
-  from: string;
-  to: string;
-  children: ReactNode;
-}): ReactNode {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      className="link-button"
-      onClick={() => {
-        void navigate({ to: "/versions", search: { from, to }, resetScroll: false });
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function VersionSelect({
-  label,
-  value,
-  versions,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  versions: readonly VersionSummary[];
-  onChange: (next: string) => void;
-}): ReactNode {
-  return (
-    <label className="field-inline">
-      {label}
-      <select
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      >
-        <option value={CURRENT}>Current cube</option>
-        {versions.map((version) => (
-          <option key={version.id} value={version.id}>
-            {version.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
+import { VERSIONS_QUERY_KEY, compareRequest } from "./api.ts";
 
 function CardName({
   card,
@@ -376,15 +226,15 @@ function SectionChange({
   );
 }
 
-function Comparison({
+export function Comparison({
   from,
   to,
-  versions,
+  labelOf,
   cube,
 }: {
   from: string;
   to: string;
-  versions: readonly VersionSummary[];
+  labelOf: (id: string) => string;
   cube: Workbench;
 }): ReactNode {
   const { data: diff, error } = useQuery({
@@ -421,13 +271,13 @@ function Comparison({
         </thead>
         <tbody>
           <tr>
-            <th scope="row">{versionName(from, versions)}</th>
+            <th scope="row">{labelOf(from)}</th>
             {CARD_STATUSES.map((status) => (
               <td key={status}>{diff.counts.before[status]}</td>
             ))}
           </tr>
           <tr>
-            <th scope="row">{versionName(to, versions)}</th>
+            <th scope="row">{labelOf(to)}</th>
             {CARD_STATUSES.map((status) => (
               <td key={status}>{diff.counts.after[status]}</td>
             ))}
@@ -457,70 +307,5 @@ function Comparison({
         </div>
       )}
     </section>
-  );
-}
-
-export function VersionsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
-  const search = useSearch({ from: "/versions" });
-  const navigate = useNavigate();
-  const { data: versions, error } = useQuery({
-    queryKey: VERSIONS_QUERY_KEY,
-    queryFn: fetchVersions,
-  });
-  if (!cube || !versions) {
-    return error ? (
-      <p role="alert" className="error">
-        {error.message}
-      </p>
-    ) : (
-      <p className="muted">Loading versions…</p>
-    );
-  }
-  const known = (id: string | undefined): id is string =>
-    id === CURRENT || versions.some((version) => version.id === id);
-  const from = known(search.from) ? search.from : versions[0]?.id;
-  const to = known(search.to) ? search.to : CURRENT;
-  const pick = (next: { from?: string; to?: string }): void => {
-    void navigate({
-      to: "/versions",
-      search: { from: next.from ?? from, to: next.to ?? to },
-      resetScroll: false,
-    });
-  };
-
-  return (
-    <div className="versions-page">
-      <h1>Versions</h1>
-      <p className="muted">
-        A version saves the whole cube: every card with its status, tags, notes, and printing, plus
-        the tag list and Board sections. Files live in <code>cube/versions/</code>.
-      </p>
-      <SaveVersion />
-      <VersionList versions={versions} />
-      {from !== undefined && (
-        <section className="compare" aria-labelledby="compare-title">
-          <h2 id="compare-title">Compare</h2>
-          <div className="inline compare-pickers">
-            <VersionSelect
-              label="From"
-              value={from}
-              versions={versions}
-              onChange={(next) => {
-                pick({ from: next });
-              }}
-            />
-            <VersionSelect
-              label="To"
-              value={to}
-              versions={versions}
-              onChange={(next) => {
-                pick({ to: next });
-              }}
-            />
-          </div>
-          <Comparison from={from} to={to} versions={versions} cube={cube} />
-        </section>
-      )}
-    </div>
   );
 }

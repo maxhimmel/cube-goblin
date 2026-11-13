@@ -4,6 +4,7 @@ import { defineChart, dot, lineY, ruleX } from "@tanstack/charts";
 import { decorative } from "@tanstack/charts/mark/decorative";
 import { Chart as RendererChart } from "@tanstack/charts/react/core";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
+import { text } from "@tanstack/charts/text";
 import { tooltip } from "@tanstack/charts/tooltip";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef } from "react";
@@ -37,8 +38,15 @@ const groupSchema = z.enum(
 
 const MODE_LABELS: Record<TimelineMode, string> = { change: "Change", values: "Values" };
 
+export interface TimelineMarker {
+  id: string;
+  label: string;
+  x: number;
+}
+
 export interface TimelineProps {
   entries: readonly LogEntry[];
+  markers?: readonly TimelineMarker[];
   active: string | undefined;
   onPick: (id: string) => void;
 }
@@ -52,8 +60,11 @@ function formatChange(value: number): string {
   return value > 0 ? `+${text}` : value < 0 ? `−${text}` : "±0";
 }
 
+const NO_MARKERS: readonly TimelineMarker[] = [];
+
 function TimelineChart({
   points,
+  markers,
   keys,
   count,
   activeIndex,
@@ -61,6 +72,7 @@ function TimelineChart({
   onPick,
 }: {
   points: readonly TimelinePoint[];
+  markers: readonly TimelineMarker[];
   keys: readonly string[];
   count: number;
   mode: TimelineMode;
@@ -73,9 +85,40 @@ function TimelineChart({
     const low = Math.min(...values);
     const high = Math.max(...values);
     const pad = high > low ? (high - low) * 0.15 : Math.max(0.1, high * 0.05);
+    const top = high + pad;
     return defineChart({
-      margin: { top: 12, right: 16, bottom: 12, left: 40 },
+      margin: { top: markers.length > 0 ? 24 : 12, right: 16, bottom: 12, left: 40 },
       marks: [
+        ...(markers.length === 0
+          ? []
+          : [
+              decorative(
+                ruleX(markers, {
+                  id: "versions",
+                  x: "x",
+                  stroke: "var(--muted)",
+                  strokeOpacity: 0.7,
+                  strokeWidth: 1.5,
+                  strokeDasharray: "4 3",
+                }),
+              ),
+              decorative(
+                text(
+                  markers.map((marker) => ({ ...marker, y: top })),
+                  {
+                    id: "version-labels",
+                    key: "id",
+                    x: "x",
+                    y: "y",
+                    text: (marker) => `◆ ${marker.label}`,
+                    fill: "var(--muted)",
+                    fontSize: 11,
+                    anchor: "middle",
+                    dy: -8,
+                  },
+                ),
+              ),
+            ]),
         ...(activeIndex === undefined
           ? []
           : [
@@ -130,7 +173,7 @@ function TimelineChart({
         y: {
           scale: scaleLinear().domain([
             mode === "change" ? low - pad : Math.max(0, low - pad),
-            high + pad,
+            top,
           ]),
           nice: true,
           grid: true,
@@ -155,7 +198,7 @@ function TimelineChart({
       },
       focusRing: false,
     });
-  }, [activeIndex, count, keys, mode, points]);
+  }, [activeIndex, count, keys, markers, mode, points]);
   return (
     <div
       className="chart-plot log-timeline-plot"
@@ -309,7 +352,12 @@ function StatPicker({
   );
 }
 
-export function Timeline({ entries, active, onPick }: TimelineProps): ReactNode {
+export function Timeline({
+  entries,
+  markers = NO_MARKERS,
+  active,
+  onPick,
+}: TimelineProps): ReactNode {
   const section = useHeightVar("--log-timeline-height");
   const [keys, setKeys] = useRemembered<string[]>(STATS_KEY, [...DEFAULT_STATS], statsSchema);
   const options = useMemo(() => statOptions(entries), [entries]);
@@ -397,6 +445,7 @@ export function Timeline({ entries, active, onPick }: TimelineProps): ReactNode 
         <>
           <TimelineChart
             points={points}
+            markers={markers}
             keys={shown}
             count={entries.length}
             activeIndex={index === -1 ? undefined : index}
@@ -415,7 +464,9 @@ export function Timeline({ entries, active, onPick }: TimelineProps): ReactNode 
                   : `${statGroupOf(key)} ${statLabel(key)}`}
               </span>
             ))}
-            <span className="log-timeline-key">● with a why ○ without</span>
+            <span className="log-timeline-key">
+              ● with a why ○ without{markers.length > 0 && " ◆ saved version"}
+            </span>
           </p>
         </>
       )}

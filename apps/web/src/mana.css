@@ -5,3 +5,53 @@
   font-style: normal;
   font-display: swap;
 }
+
+.ms-gold {
+  --star: var(--mana-b);
+  --wheel: conic-gradient(
+    var(--mana-w) 0deg 90deg,
+    var(--mana-u) 90deg 180deg,
+    var(--mana-r) 180deg 270deg,
+    var(--mana-g) 270deg 360deg
+  );
+
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  background: var(--wheel);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 18%);
+}
+
+.ms-gold[data-star="white"] {
+  --star: var(--mana-w);
+  --wheel: conic-gradient(
+    var(--mana-u) 0deg 90deg,
+    var(--mana-b) 90deg 180deg,
+    var(--mana-r) 180deg 270deg,
+    var(--mana-g) 270deg 360deg
+  );
+}
+
+.ms-gold svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ms-gold path {
+  fill: var(--star);
+}
+
+.ms-gold[data-star="white"] path {
+  stroke: rgb(0 0 0 / 35%);
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+}
+
+.ms-gold > .ms-c {
+  position: relative;
+  color: #111;
+  font-size: 1em;
+  line-height: 1;
+}

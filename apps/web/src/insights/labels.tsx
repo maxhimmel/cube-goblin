@@ -1,7 +1,7 @@
 import type { Bucket, BucketKind, Count, CubeStats } from "@repo/cube/browser";
 import { COLOR_GROUPS, CURVE_COLUMNS, HEAVY_PIPS, PT_VALUES } from "@repo/cube/browser";
 import type { ReactNode } from "react";
-import { ManaSymbol } from "../mana.tsx";
+import { ManaSymbol, MulticolorSymbol } from "../mana.tsx";
 import type { TickLabel } from "./charts.tsx";
 
 export const COLOR_SYMBOLS: Record<string, string> = { multicolored: "multicolor", colorless: "C" };
@@ -23,7 +23,7 @@ export function manaFill(row: Count): string {
 export function colorIcon(id: string): ReactNode {
   const symbol = COLOR_SYMBOLS[id] ?? id;
   return symbol === "multicolor" ? (
-    <i className="ms ms-multicolor" aria-hidden="true" />
+    <MulticolorSymbol />
   ) : (
     <i className={`ms ms-${symbol.toLowerCase()} ms-cost`} aria-hidden="true" />
   );

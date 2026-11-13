@@ -168,6 +168,35 @@ function PillBar({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
+function NonMatches({ lab }: { lab: Lab }): ReactNode {
+  const options = [
+    { id: false, label: "Dim" },
+    { id: true, label: "Hide" },
+  ] as const;
+  return (
+    <span
+      className="query-nonmatch"
+      role="group"
+      aria-label="Cards that don't match"
+      title="Cards that don't match the filter"
+      data-idle={lab.pills.length === 0 ? "" : undefined}
+    >
+      {options.map((option) => (
+        <button
+          key={option.label}
+          type="button"
+          aria-pressed={lab.hide === option.id}
+          onClick={() => {
+            lab.setHide(option.id);
+          }}
+        >
+          {option.label}
+        </button>
+      ))}
+    </span>
+  );
+}
+
 export function QueryBar({ lab }: { lab: Lab }): ReactNode {
   const [round, setRound] = useState(0);
   const result = compileQuery(lab.typing);
@@ -185,6 +214,7 @@ export function QueryBar({ lab }: { lab: Lab }): ReactNode {
         vocabulary={lab.vocabulary}
         label="Filter the Forge"
         slashFocus
+        actions={<NonMatches lab={lab} />}
         status={
           count === undefined
             ? undefined

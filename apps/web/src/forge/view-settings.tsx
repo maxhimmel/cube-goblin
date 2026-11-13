@@ -45,24 +45,11 @@ export function usePlacedDock(): Dock {
 }
 
 export function ForgeSettings(): ReactNode {
-  const [hide, setHide] = useHideNonMatches();
   const [baseline, setBaseline] = useBaseline();
   return (
     <section className="settings-section" aria-label="Forge">
       <h3>Forge</h3>
       <p className="muted">Kept in this browser.</p>
-      <label className="field">
-        Cards that don&apos;t match the filter
-        <select
-          value={hide ? "hide" : "dim"}
-          onChange={(event) => {
-            setHide(event.target.value === "hide");
-          }}
-        >
-          <option value="dim">Dim</option>
-          <option value="hide">Hide</option>
-        </select>
-      </label>
       <label className="settings-check">
         <input
           type="checkbox"

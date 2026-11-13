@@ -22,6 +22,4 @@ Feedback on [Forge](../GLOSSARY.md#forge) after [T-046](T-046-wall-and-lab.md) (
 - Blocks and Layouts share one popup (`apps/web/src/forge/menu.tsx`) that opens toward whichever side has room and closes only on a click outside, Escape, or focus leaving it.
 - The bulk bar floats at the bottom of the draft pile, so it no longer covers the stuck group heads or moves tiles.
 
-## Open
-
-- Header layout: variants mocked on 2026-11-12, waiting on the user's pick.
+- Header (user picked mock C, 2026-11-12, without controls on the seam): the draft count and gauge sit in the top bar through a slot each view can fill (`apps/web/src/topbar-slot.tsx`), and Forge's own header is one row: query, Blocks, Layouts. Show cut sits on the Prospects head. Card layouts are icons, and a Tags toggle beside them shows in Columns only, where tags appear. Baseline moved to settings (user, 2026-11-12). Dim or hide for non-matches is a small switch inside the query box, faded until a filter is applied.

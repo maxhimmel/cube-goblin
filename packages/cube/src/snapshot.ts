@@ -71,12 +71,18 @@ export const cardReviewSchema = z.strictObject({
   updatedAt: z.string(),
 });
 
+export const pendingMoveSchema = z.strictObject({
+  slug: z.string(),
+  to: z.enum(["draft", "prospect"]),
+});
+
 export const reviewSchema = z.strictObject({
   version: z.literal(1),
   snapshotId: z.string(),
   reviewer: z.string(),
   updatedAt: z.string(),
   cards: z.record(z.string(), cardReviewSchema),
+  moves: z.array(pendingMoveSchema).default([]),
 });
 
 export const REVIEW_SCRIPT_ID = "review-state";
@@ -90,3 +96,4 @@ export type SearchResult = z.infer<typeof searchResultSchema>;
 export type Vote = (typeof VOTES)[number];
 export type CardReview = z.infer<typeof cardReviewSchema>;
 export type Review = z.infer<typeof reviewSchema>;
+export type PendingMoveEntry = z.infer<typeof pendingMoveSchema>;

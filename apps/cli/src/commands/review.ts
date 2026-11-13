@@ -42,7 +42,7 @@ export async function importReview(source: string): Promise<number> {
   const votes = (vote: string) => reviewed.filter((card) => card.vote === vote).length;
   console.log(
     chalk.green(
-      `Imported review by ${review.reviewer} (snapshot ${review.snapshotId}): ${String(reviewed.length)} cards, ${String(votes("keep"))} keep, ${String(votes("cut"))} cut -> ${path}`,
+      `Imported review by ${review.reviewer} (snapshot ${review.snapshotId}): ${String(reviewed.length)} cards, ${String(votes("keep"))} keep, ${String(votes("cut"))} cut, ${String(review.moves.length)} moves -> ${path}`,
     ),
   );
   return 0;

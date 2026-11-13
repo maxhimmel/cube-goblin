@@ -14,6 +14,7 @@ const review: Review = {
       updatedAt: "2026-11-08T00:00:00.000Z",
     },
   },
+  moves: [{ slug: "shock", to: "prospect" }],
 };
 
 const bundle = [
@@ -54,5 +55,14 @@ describe("embedReview", () => {
 
   it("returns undefined when nothing is embedded, despite the marker in the bundle", () => {
     expect(extractReview(html)).toBeUndefined();
+  });
+
+  it("reads a review saved before moves travelled as having none", () => {
+    const old = embedReview(html, review).replace(
+      ',"moves":[{"slug":"shock","to":"prospect"}]',
+      "",
+    );
+    expect(old).not.toContain('"moves"');
+    expect(extractReview(old)?.moves).toEqual([]);
   });
 });

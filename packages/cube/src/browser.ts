@@ -3,6 +3,7 @@ export {
   REVIEW_SCRIPT_ID,
   VOTES,
   cardReviewSchema,
+  pendingMoveSchema,
   printingSchema,
   reviewSchema,
   searchResultSchema,
@@ -13,6 +14,7 @@ export {
 } from "./snapshot.ts";
 export type {
   CardReview,
+  PendingMoveEntry,
   Printing,
   Review,
   SearchResult,

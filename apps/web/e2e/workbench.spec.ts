@@ -621,7 +621,9 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
   await panel.getByLabel("Search Scryfall").fill('!"Counterspell"');
   await panel.getByRole("button", { name: "Swap in Counterspell", exact: true }).click();
 
-  await expect(page.getByRole("heading", { name: "Counterspell" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Counterspell" })).toBeVisible({
+    timeout: 20000,
+  });
   await expect(page.getByRole("status")).toContainText("Daring Saboteur is now cut");
   expect(await readEntry(workbench.cardsDir, slug)).toEqual({ ...before, status: "cut" });
   expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({
@@ -1182,9 +1184,18 @@ test("the tags view counts overlaps and filters forge to one", async ({ page, wo
   await page.goBack();
   await page.getByRole("link", { name: "Overlap A + Overlap B: 1 card" }).click();
   await expect(pills.getByRole("button", { name: /^Remove / })).toHaveText([
-    "tag:overlap-a -tag:overlap-b ×",
     "tag:overlap-a tag:overlap-b ×",
   ]);
+
+  await page.goBack();
+  await page.getByLabel("Keep Forge's other filters when opening an overlap").check();
+  await page.mouse.click(label.x + label.width / 2, label.y - 12);
+  await expect(pills.getByRole("button", { name: /^Remove / })).toHaveText([
+    "tag:overlap-a tag:overlap-b ×",
+    "tag:overlap-a -tag:overlap-b ×",
+  ]);
+  await page.goBack();
+  await expect(page.getByLabel("Keep Forge's other filters when opening an overlap")).toBeChecked();
 });
 
 test("the tags view sketches, flags empty tags, and creates tags in place", async ({

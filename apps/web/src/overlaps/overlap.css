@@ -190,6 +190,15 @@
   min-width: 0;
 }
 
+.overlap-keep {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .overlap-hint {
   margin: 8px 0;
 }

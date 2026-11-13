@@ -25,4 +25,4 @@ The type list lives in `TYPE_COLUMNS` (`packages/cube/src/stats.ts`). A card sho
 
 ## Look
 
-Palette from the binder direction (navy pages, violet accent); cards lift and tilt on hover. Screenshots of the three explored directions are not kept; the CSS that ships is the source of truth.
+Palette from the binder direction (navy pages, violet accent); cards lift and tilt on hover. Forge is the reference look: its panels, uppercase headings, segmented controls, chips, and menus are the shared styles in `apps/web/src/ui.css`, and font sizes come from the `--fs-*` type scale, tunable live in `pnpm dev` ([T-050](../tickets/T-050-visual-system.md)). Screenshots of the three explored directions are not kept; the CSS that ships is the source of truth.

@@ -9,6 +9,7 @@ import "mana-font/css/mana.css";
 import "./mana.css";
 import "./fonts.css";
 import "./styles.css";
+import "./ui.css";
 import "./strip.css";
 import "./pane.css";
 import "./board.css";

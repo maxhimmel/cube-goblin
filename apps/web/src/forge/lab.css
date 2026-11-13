@@ -448,13 +448,6 @@
   animation: lab-pop 0.2s var(--lift);
 }
 
-.lab-link {
-  background: none;
-  border: 0;
-  color: var(--accent);
-  font-size: var(--fs-md);
-}
-
 .lab-switches {
   display: flex;
   flex-wrap: wrap;
@@ -892,34 +885,6 @@
   align-items: center;
 }
 
-.lab-seg {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--field);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-}
-
-.lab-seg button {
-  padding: 2px 11px;
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  background: none;
-  border: 0;
-  border-radius: 6px;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-
-.lab-seg button.on {
-  color: var(--fg);
-  background: var(--panel);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
-}
-
 .lab-menu {
   position: relative;
 }
@@ -1229,34 +1194,6 @@
   align-items: center;
   justify-content: flex-end;
   font-size: var(--fs-sm);
-}
-
-.lab-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.lab-chip {
-  padding: 1px 8px;
-  color: var(--muted);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  background: var(--field);
-}
-
-.lab-chip span {
-  opacity: 0.7;
-}
-
-.lab-chip:hover,
-.lab-chip.on {
-  color: var(--fg);
-  border-color: var(--accent);
-}
-
-.lab-chip.on {
-  background: color-mix(in oklab, var(--accent) 16%, var(--field));
 }
 
 .lab-floor {
@@ -1784,17 +1721,17 @@ button.lab-stat:hover {
   outline-color: color-mix(in oklab, var(--lab-loss) 60%, transparent);
 }
 
-.lab-chip .lab-ghost-label {
+.toggle-chip .lab-ghost-label {
   position: static;
   margin-left: 3px;
   font-size: var(--fs-xs);
 }
 
-.lab-chip[data-ghost="up"] {
+.toggle-chip[data-ghost="up"] {
   border-color: var(--lab-ghost);
 }
 
-.lab-chip[data-ghost="down"] {
+.toggle-chip[data-ghost="down"] {
   border-color: var(--lab-loss);
 }
 
@@ -1812,7 +1749,7 @@ button.lab-stat[data-picked] {
   outline-offset: -2px;
 }
 
-.lab-chip[data-picked] {
+.toggle-chip[data-picked] {
   color: var(--fg);
   background: color-mix(in oklab, var(--accent) 16%, var(--field));
   border-color: var(--accent);
@@ -1823,12 +1760,12 @@ button.lab-stat[data-picked] {
   font-weight: 650;
 }
 
-.lab-chips .lab-chip {
+.toggle-chips .toggle-chip {
   position: relative;
   overflow: hidden;
 }
 
-.lab-chips .lab-chip[data-filtered] {
+.toggle-chips .toggle-chip[data-filtered] {
   background: linear-gradient(
     90deg,
     color-mix(in oklab, var(--accent) 28%, var(--field)) calc(var(--share) * 100%),
@@ -1836,7 +1773,7 @@ button.lab-stat[data-picked] {
   );
 }
 
-.lab-chips .lab-chip .lab-ghost-label {
+.toggle-chips .toggle-chip .lab-ghost-label {
   position: absolute;
   top: 0;
   right: 3px;

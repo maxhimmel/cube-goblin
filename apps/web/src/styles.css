@@ -316,16 +316,9 @@ textarea {
   margin-bottom: 6px;
 }
 
-.segmented,
 .inline {
   display: flex;
   gap: 6px;
-}
-
-.segmented button[aria-pressed="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
 }
 
 .chips {

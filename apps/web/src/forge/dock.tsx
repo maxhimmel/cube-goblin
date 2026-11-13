@@ -201,7 +201,7 @@ function NewFilter({ lab, onDone }: { lab: Lab; onDone: () => void }): ReactNode
         status={count === undefined ? undefined : `${String(count)} in draft`}
       />
       <div className="lab-new-filter-foot">
-        <button type="button" className="lab-link" onClick={onDone}>
+        <button type="button" className="link-btn" onClick={onDone}>
           Cancel
         </button>
         <button type="submit" disabled={!ready}>
@@ -349,7 +349,7 @@ export function BlocksMenu({ dock }: { dock: DockState }): ReactNode {
           </label>
         );
       })}
-      <button type="button" className="lab-link" onClick={dock.reset}>
+      <button type="button" className="link-btn" onClick={dock.reset}>
         Reset blocks
       </button>
     </Menu>

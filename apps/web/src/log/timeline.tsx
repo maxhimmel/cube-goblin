@@ -378,7 +378,7 @@ export function Timeline({
   const index = entries.findIndex((entry) => entry.id === active);
   return (
     <section ref={section} className="log-timeline" aria-label="Stats timeline">
-      <div className="log-timeline-groups" role="tablist" aria-label="Stat group">
+      <div className="log-timeline-groups segmented" role="tablist" aria-label="Stat group">
         {STAT_GROUPS.map(({ trailer }) => {
           const picked = shown.filter((key) => statGroupOf(key) === trailer).length;
           return (
@@ -400,6 +400,7 @@ export function Timeline({
       <div className="log-timeline-tools">
         <button
           type="button"
+          className="link-btn"
           onClick={() => {
             setKeys(setStats(keys, groupKeys, true));
           }}
@@ -408,6 +409,7 @@ export function Timeline({
         </button>
         <button
           type="button"
+          className="link-btn"
           onClick={() => {
             setKeys(setStats(keys, groupKeys, false));
           }}
@@ -417,7 +419,7 @@ export function Timeline({
         <span className="log-timeline-hint muted">
           Drag across to set several · Shift-click for a range · Alt-click for only one
         </span>
-        <span className="log-timeline-modes" role="group" aria-label="Plot">
+        <span className="log-timeline-modes segmented" role="group" aria-label="Plot">
           {TIMELINE_MODES.map((item) => (
             <button
               key={item}

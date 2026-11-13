@@ -87,7 +87,7 @@ function SaveStack({ save }: { save: (label: string) => void }): ReactNode {
     return (
       <button
         type="button"
-        className="lab-link"
+        className="link-btn"
         title="Save every applied filter as one saved filter"
         onClick={() => {
           setNaming(true);
@@ -160,7 +160,7 @@ function PillBar({ lab }: { lab: Lab }): ReactNode {
       ))}
       {lab.pills.length > 1 && lab.saveStack && <SaveStack save={lab.saveStack} />}
       {lab.pills.length > 1 && (
-        <button type="button" className="lab-link" onClick={lab.clearPills}>
+        <button type="button" className="link-btn" onClick={lab.clearPills}>
           Clear
         </button>
       )}
@@ -244,12 +244,11 @@ export function Segmented<T extends string>({
   onChange: (next: T) => void;
 }): ReactNode {
   return (
-    <div className="lab-seg" role="group" aria-label={label}>
+    <div className="segmented" role="group" aria-label={label}>
       {options.map((option) => (
         <button
           key={option.id}
           type="button"
-          className={option.id === value ? "on" : undefined}
           aria-pressed={option.id === value}
           aria-label={option.title}
           title={option.title}

@@ -137,7 +137,7 @@ function ApplyForm({ lab }: { lab: Lab }): ReactNode {
         </button>
         <button
           type="button"
-          className="lab-link"
+          className="link-btn"
           disabled={lab.pending.length === 0}
           onClick={lab.clearPending}
         >

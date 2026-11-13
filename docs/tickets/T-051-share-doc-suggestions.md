@@ -10,6 +10,7 @@ Reviewers should use [Forge](../GLOSSARY.md#forge) in the share doc as the owner
 
 - How the workbench shows an imported reviewer's suggested moves: as pending moves to apply, or as a list beside the votes.
 - Whether reviewers can also save filters and layouts in their copy (browser only).
+- The share doc has no settings dialog, so reviewers can't change Forge's view settings (dim or hide, panel side, tags on cards). Today they can already queue pending moves and watch the charts react, but can't send them back.
 
 ## Done when
 

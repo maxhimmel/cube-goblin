@@ -79,11 +79,11 @@ The cards that carry exactly one combination of the tags picked in the Tags view
 
 ## Filter
 
-A saved, named set of conditions that picks cards out of the cube. Cube Cobra uses the same word for the parsed search terms its cube views check each card against ("converts them to a filter object, which can be used to check if a card matches all of the filters within"). Here a filter is a query written in a Scryfall-style syntax (`t:creature pow>=3 -c:g`): terms AND together (an explicit `and` is allowed and changes nothing; `and` binds tighter than `or`, as in Cube Cobra), `or` and parentheses group, `-` negates. Every Insights [bucket](tickets/T-016-insights-drill-down.md) has an equivalent query, so a chart click becomes a filter. A filter whose query names a status (`is:draft`) counts the whole cube; otherwise it counts the page's scope. Filters live in `cube/filters.json` and show as blocks on Insights ([T-027](tickets/T-027-filter-widgets.md), [T-028](tickets/T-028-filter-query-syntax.md)). Not the Wall's tag filter (`?with=&without=`), which is not saved. In code: `compileQuery` (`packages/cube/src/query.ts`), `filterCards` (`packages/cube/src/filters.ts`). ([Cube Cobra parser docs](https://github.com/dekkerglen/CubeCobra/blob/master/packages/docs/parser.md), [Scryfall syntax](https://scryfall.com/docs/syntax))
+A saved, named set of conditions that picks cards out of the cube. Cube Cobra uses the same word for the parsed search terms its cube views check each card against ("converts them to a filter object, which can be used to check if a card matches all of the filters within"). Here a filter is a query written in a Scryfall-style syntax (`t:creature pow>=3 -c:g`): terms AND together (an explicit `and` is allowed and changes nothing; `and` binds tighter than `or`, as in Cube Cobra), `or` and parentheses group, `-` negates. Every Insights [bucket](tickets/T-016-insights-drill-down.md) has an equivalent query, so a chart click becomes a filter. A filter whose query names a status (`is:draft`) counts the whole cube; otherwise it counts the page's scope. Filters live in `cube/filters.json` and show as blocks on Insights ([T-027](tickets/T-027-filter-widgets.md), [T-028](tickets/T-028-filter-query-syntax.md)). A link to `#/?q=<query>` opens [Forge](#forge) with that query applied, unsaved. In code: `compileQuery` (`packages/cube/src/query.ts`), `filterCards` (`packages/cube/src/filters.ts`). ([Cube Cobra parser docs](https://github.com/dekkerglen/CubeCobra/blob/master/packages/docs/parser.md), [Scryfall syntax](https://scryfall.com/docs/syntax))
 
 ## Forge
 
-A project-defined term with no outside source, named by the user on 2026-11-12: the main view (`#/`) that merged the Wall and the [Lab](#lab). It shows the draft and prospects as columns, rows, or images, with charts and filter blocks in a side panel ([T-046](tickets/T-046-wall-and-lab.md)).
+A project-defined term with no outside source, named by the user on 2026-11-12: the main view (`#/`) that merged the Wall and the [Lab](#lab). It shows the draft and prospects as columns, rows, or images, with charts and filter blocks in a panel that can be hidden ([T-046](tickets/T-046-wall-and-lab.md)).
 
 ## Lab
 
@@ -91,11 +91,11 @@ A project-defined term with no outside source, replaced by [Forge](#forge): the 
 
 ## Layout
 
-A project-defined term with no outside source: a named snapshot of the [Lab](#lab)'s settings (dock blocks and their scopes, grouping, card layout, switches, and applied filters), saved to `cube/layouts.json` to switch between setups. The Lab remembers its current settings without one ([T-031](tickets/T-031-lab-view.md)). Not an Insights dashboard layout, which stays in the browser ([T-015](tickets/T-015-insights-dashboard-layout.md)).
+A project-defined term with no outside source: a named snapshot of [Forge](#forge)'s settings (dock blocks and their scopes, grouping, card layout, switches, and applied filters), saved to `cube/layouts.json` to switch between setups. Forge remembers its current settings without one ([T-031](tickets/T-031-lab-view.md)). Not an Insights dashboard layout, which stays in the browser ([T-015](tickets/T-015-insights-dashboard-layout.md)).
 
 ## Pending
 
-A project-defined term with no outside source: the [Lab](#lab)'s queue of card moves (adds to the draft and cuts from it) that every Lab chart and the draft count show together as ghost deltas before any is saved. Apply saves them all as one undoable change; until then they live in the browser and survive a reload ([T-037](tickets/T-037-lab-scenario.md)). Not a [version](#version), which saves the whole cube.
+A project-defined term with no outside source: [Forge](#forge)'s queue of card moves (adds to the draft and cuts from it) that every Forge chart and the draft count show together as ghost deltas before any is saved. Apply saves them all as one undoable change; until then they live in the browser and survive a reload ([T-037](tickets/T-037-lab-scenario.md)). Not a [version](#version), which saves the whole cube.
 
 ## Version
 

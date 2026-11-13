@@ -24,7 +24,7 @@ A label on a card, naming a set of cards the designer wants to see together, suc
 
 ## Section
 
-A project-defined term with no outside source: a named box on the workbench Board that holds cards while the designer sketches a [Tag](#tag) before tagging. A card can sit in several sections. Sections live in `cube/board.json`, apart from tags. A section has its own name and links any number of [Tags](#tag); applying them adds every linked tag to every card in the section ([T-023](tickets/T-023-section-tags.md)). Not the same as a bucket in Insights, which is one bar or cell of a chart. Called a bin until [T-018](tickets/T-018-sections-on-the-board.md); before that, "section" was a card field naming the deck a card was imported from, now a `Deck: <name>` line in its notes.
+A project-defined term with no outside source: a named box in the Sketch mode of the workbench Tags view (the Board until [T-047](tickets/T-047-tag-workspace.md)) that holds cards while the designer sketches a [Tag](#tag) before tagging. A card can sit in several sections. Sections live in `cube/board.json`, apart from tags. A section has its own name and links any number of [Tags](#tag); applying them adds every linked tag to every card in the section ([T-023](tickets/T-023-section-tags.md)). Not the same as a bucket in Insights, which is one bar or cell of a chart. Called a bin until [T-018](tickets/T-018-sections-on-the-board.md); before that, "section" was a card field naming the deck a card was imported from, now a `Deck: <name>` line in its notes.
 
 ## Enabler / payoff
 
@@ -83,7 +83,7 @@ A project-defined term with no outside source, named by the user on 2026-11-12: 
 
 ## Lab
 
-A project-defined term with no outside source, replaced by [Forge](#forge): the workbench view (`#/lab`) that put the cards in contention, charts, and filter blocks in one layout the user arranges, where applied filters change the cards and charts at once ([T-031](tickets/T-031-lab-view.md)). Clicking two buckets in one Lab chart applies them as one `or` filter; filters from different charts `and` ([T-035](tickets/T-035-lab-insights-blocks.md)). Not the Board, which sketches [sections](#section).
+A project-defined term with no outside source, replaced by [Forge](#forge): the workbench view (`#/lab`) that put the cards in contention, charts, and filter blocks in one layout the user arranges, where applied filters change the cards and charts at once ([T-031](tickets/T-031-lab-view.md)). Clicking two buckets in one Lab chart applies them as one `or` filter; filters from different charts `and` ([T-035](tickets/T-035-lab-insights-blocks.md)). Not the Tags view's Sketch mode, which sketches [sections](#section).
 
 ## Layout
 
@@ -95,7 +95,7 @@ A project-defined term with no outside source: [Forge](#forge)'s queue of card m
 
 ## Version
 
-A project-defined term with no outside source: a named, dated snapshot of the whole cube (every card with its status, tags, notes, and printing, plus the tag list and Board [sections](#section)), saved to `cube/versions/<date>-<label>.json` from the workbench's Versions view. Comparing two versions, or one with the current cube, lists what changed ([T-014](tickets/T-014-versions-and-compare.md)). Not a git commit, though version files are committed like other cube data.
+A project-defined term with no outside source: a named, dated snapshot of the whole cube (every card with its status, tags, notes, and printing, plus the tag list and [sections](#section)), saved to `cube/versions/<date>-<label>.json` from the workbench's Versions view. Comparing two versions, or one with the current cube, lists what changed ([T-014](tickets/T-014-versions-and-compare.md)). Not a git commit, though version files are committed like other cube data.
 
 ## Change log
 

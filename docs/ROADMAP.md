@@ -12,6 +12,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Now
 
 - [T-043: Polish pass](tickets/T-043-polish-pass.md)
+- [T-053: Forge charts polish](tickets/T-053-forge-charts-polish.md)
 
 ## Next
 

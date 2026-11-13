@@ -153,22 +153,38 @@ const boardRoute = createRoute({
   },
 });
 
+function validatePoints(search: Record<string, unknown>): {
+  from?: string | undefined;
+  to?: string | undefined;
+} {
+  return {
+    ...(typeof search["from"] === "string" ? { from: search["from"] } : {}),
+    ...(typeof search["to"] === "string" ? { to: search["to"] } : {}),
+  };
+}
+
+const historyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/history",
+  validateSearch: validatePoints,
+  component: () => <mode.HistoryPage />,
+});
+
 const versionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/versions",
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { from?: string | undefined; to?: string | undefined } => ({
-    ...(typeof search["from"] === "string" ? { from: search["from"] } : {}),
-    ...(typeof search["to"] === "string" ? { to: search["to"] } : {}),
-  }),
-  component: () => <mode.VersionsPage />,
+  validateSearch: validatePoints,
+  beforeLoad: () => {
+    redirect({ to: "/history", search: (prev) => prev, replace: true, throw: true });
+  },
 });
 
 const logRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/log",
-  component: () => <mode.LogPage />,
+  beforeLoad: () => {
+    redirect({ to: "/history", search: (prev) => prev, replace: true, throw: true });
+  },
 });
 
 const labRoute = createRoute({
@@ -202,6 +218,7 @@ export const router = createRouter({
     cardRoute,
     tagsRoute,
     boardRoute,
+    historyRoute,
     versionsRoute,
     logRoute,
     labRoute,

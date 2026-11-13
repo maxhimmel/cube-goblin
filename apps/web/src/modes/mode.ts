@@ -17,8 +17,7 @@ export interface Mode {
   CardPanel: (props: { slug: string }) => ReactNode;
   CardImageCaption: (props: { slug: string }) => ReactNode;
   TagsPage: () => ReactNode;
-  VersionsPage: () => ReactNode;
-  LogPage: () => ReactNode;
+  HistoryPage: () => ReactNode;
   SelectCard: (props: { slug: string; name: string }) => ReactNode;
   SelectPile: (props: { slugs: string[]; label: string }) => ReactNode;
   BulkBar: () => ReactNode;

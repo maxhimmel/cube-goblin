@@ -37,8 +37,7 @@ import { editsPending, runCardEdit } from "../workbench/edits.ts";
 import { clearSelection, useSelection } from "../workbench/selection.ts";
 import { SettingsPanel } from "../workbench/settings-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
-import { VersionsPage } from "../workbench/versions-page.tsx";
-import { WorkbenchLogPage } from "../workbench/log-page.tsx";
+import { WorkbenchHistoryPage } from "../workbench/history-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
 import type { Mode } from "./mode.ts";
 
@@ -184,8 +183,7 @@ export const mode: Mode = {
     return card ? <CardPrinting card={card} /> : null;
   },
   TagsPage: () => <TagsPage cube={useWorkbench()} />,
-  VersionsPage: () => <VersionsPage cube={useWorkbench()} />,
-  LogPage: WorkbenchLogPage,
+  HistoryPage: () => <WorkbenchHistoryPage cube={useWorkbench()} />,
   SelectCard,
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,

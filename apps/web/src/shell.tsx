@@ -8,7 +8,7 @@ import { ViewIcon } from "./icons.tsx";
 import { TopbarSlot } from "./topbar-slot.tsx";
 
 const VIEWS: readonly {
-  to: "/" | "/tags" | "/insights" | "/versions" | "/log";
+  to: "/" | "/tags" | "/insights" | "/history";
   label: string;
   icon: ViewIconName;
   workbench: boolean;
@@ -16,8 +16,7 @@ const VIEWS: readonly {
   { to: "/", label: "Forge", icon: "forge", workbench: false },
   { to: "/tags", label: "Tags", icon: "tags", workbench: false },
   { to: "/insights", label: "Insights", icon: "insights", workbench: false },
-  { to: "/versions", label: "Versions", icon: "versions", workbench: true },
-  { to: "/log", label: "Log", icon: "log", workbench: false },
+  { to: "/history", label: "History", icon: "history", workbench: false },
 ];
 
 export function Shell({ children }: { children: ReactNode }): ReactNode {

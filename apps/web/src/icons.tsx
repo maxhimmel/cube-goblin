@@ -50,15 +50,7 @@ const VIEW_PATHS = {
     </>
   ),
   insights: <path d="M5 20V12M12 20V5M19 20v-5" />,
-  versions: (
-    <>
-      <circle cx="6.5" cy="6" r="2.2" />
-      <circle cx="6.5" cy="18" r="2.2" />
-      <circle cx="17.5" cy="9" r="2.2" />
-      <path d="M6.5 8.2v7.6M17.5 11.2c0 3-4 3.3-9 5.2" />
-    </>
-  ),
-  log: (
+  history: (
     <>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 7.5V12l3 2" />

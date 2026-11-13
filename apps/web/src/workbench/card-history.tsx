@@ -50,8 +50,8 @@ export function CardHistory({ card }: { card: WorkbenchCard }): ReactNode {
           })}
         </ol>
       )}
-      <Link to="/log" className="link-button">
-        Open the change log
+      <Link to="/history" className="link-button">
+        Open the history
       </Link>
     </section>
   );

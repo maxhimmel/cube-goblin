@@ -5,9 +5,9 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Handoff
 
 - **Updated**: 2026-11-13
-- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: the change log `#/log` with a stats timeline ([T-038](tickets/T-038-change-log.md), [T-039](tickets/T-039-stats-timeline.md)), read-only in the share doc ([T-041](tickets/T-041-change-log-in-share-doc.md)), and backfilled from git history back to the first import (`pnpm cube backfill-log`, [T-040](tickets/T-040-change-log-from-git.md)). Every view setting persists, inventoried in [T-034](tickets/T-034-persistence-audit.md). Commits run fast staged-file checks and merges run the full `pnpm check`; e2e tests are independent and parallel ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
-- **Polish so far**: papercuts and a ring-crop e2e sweep ([T-044](tickets/T-044-papercuts.md)), favicon ([T-050](tickets/T-050-visual-system.md)), top bar and settings ([T-045](tickets/T-045-top-bar-and-settings.md)), **Forge** at `#/` replacing the Wall, Cards, and Lab ([T-046](tickets/T-046-wall-and-lab.md), [T-052](tickets/T-052-forge-polish.md), [T-053](tickets/T-053-forge-charts-polish.md)), the reference look for [T-050](tickets/T-050-visual-system.md). Board and Tags are one **Tags** view; a Venn region opens Forge filtered to it alone ([T-047](tickets/T-047-tag-workspace.md)).
-- **Next step**: History, merging Versions into the Log ([T-048](tickets/T-048-history.md)), the next merge in [T-043](tickets/T-043-polish-pass.md). The user wants reviewers to use Forge in the share doc and send suggestions back: [T-051](tickets/T-051-share-doc-suggestions.md).
+- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: **History** at `#/history` merges the change log and versions: one-line entries, versions as markers on the stats timeline, and a compare pane between any two points, before or after any entry ([T-048](tickets/T-048-history.md)). Every view setting persists ([T-034](tickets/T-034-persistence-audit.md)). Commits run fast staged-file checks and merges run the full `pnpm check` ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
+- **Polish so far**: papercuts ([T-044](tickets/T-044-papercuts.md)), top bar and settings ([T-045](tickets/T-045-top-bar-and-settings.md)), **Forge** at `#/` ([T-046](tickets/T-046-wall-and-lab.md), [T-052](tickets/T-052-forge-polish.md), [T-053](tickets/T-053-forge-charts-polish.md)), one **Tags** view ([T-047](tickets/T-047-tag-workspace.md)), History ([T-048](tickets/T-048-history.md)), favicon and the reference look ([T-050](tickets/T-050-visual-system.md)).
+- **Next step**: Insights trim ([T-049](tickets/T-049-insights-trim.md)), the last merge in [T-043](tickets/T-043-polish-pass.md). The user wants reviewers to use Forge in the share doc and send suggestions back: [T-051](tickets/T-051-share-doc-suggestions.md).
 
 ## Now
 
@@ -15,7 +15,6 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Next
 
-- [T-048: History](tickets/T-048-history.md)
 - [T-049: Insights trim](tickets/T-049-insights-trim.md)
 - [T-050: Visual system and favicon](tickets/T-050-visual-system.md)
 - [T-051: Suggestions from the share doc](tickets/T-051-share-doc-suggestions.md)
@@ -32,6 +31,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-048: History](tickets/T-048-history.md)
 - [T-047: Tag workspace](tickets/T-047-tag-workspace.md)
 - [T-053: Forge charts polish](tickets/T-053-forge-charts-polish.md)
 - [T-052: Forge polish](tickets/T-052-forge-polish.md)

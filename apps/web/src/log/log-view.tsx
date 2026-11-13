@@ -6,15 +6,33 @@ import { z } from "zod";
 import { CardLink } from "../card-pane.tsx";
 import type { LogRow } from "./fold.ts";
 import { foldCanceled, foldSummary, foldedIds, rowMatches } from "./fold.ts";
+import type { Marker } from "./points.ts";
+import { markerPosition, rangeOf } from "./points.ts";
 import { Timeline } from "./timeline.tsx";
 import { useRemembered } from "../view-choices.ts";
 
 export interface LogViewProps {
   entries: readonly LogEntry[];
+  versions?: readonly Marker[];
   selected?: ReadonlySet<string>;
   onSelect?: (id: string, on: boolean) => void;
   actions?: ReactNode;
   entryActions?: (entry: LogEntry) => ReactNode;
+  versionActions?: (version: Marker) => ReactNode;
+  compare?: ReactNode;
+  from?: string | undefined;
+  to?: string | undefined;
+}
+
+type HistoryRow = LogRow | { kind: "version"; version: Marker };
+
+const NO_VERSIONS: readonly Marker[] = [];
+
+function rowTime(row: HistoryRow): string {
+  if (row.kind === "version") {
+    return row.version.at;
+  }
+  return row.kind === "fold" ? (row.entries[row.entries.length - 1]?.at ?? "") : row.entry.at;
 }
 
 function day(at: string): string {
@@ -59,6 +77,9 @@ function Entry({
   onSelect,
   actions,
   active,
+  open,
+  inRange,
+  onToggle,
   onActive,
   onInactive,
 }: {
@@ -67,11 +88,15 @@ function Entry({
   onSelect: ((id: string, on: boolean) => void) | undefined;
   actions: ReactNode;
   active: boolean;
+  open: boolean;
+  inRange: boolean;
+  onToggle: (id: string) => void;
   onActive: (id: string) => void;
   onInactive: (id: string) => void;
 }): ReactNode {
   const message = parseMessage(entry.message);
   const names = cardNames(entry);
+  const details = message.body !== "" || message.trailers.length > 0;
   return (
     <li
       id={entryElementId(entry.id)}
@@ -79,6 +104,8 @@ function Entry({
       data-testid="log-entry"
       data-source={entry.source}
       data-active={active}
+      data-open={open}
+      data-in-range={inRange || undefined}
       onMouseEnter={() => {
         onActive(entry.id);
       }}
@@ -106,12 +133,25 @@ function Entry({
         <time dateTime={entry.at} className="muted">
           {time(entry.at)}
         </time>
-        <strong className="log-subject">{message.subject}</strong>
+        {details ? (
+          <button
+            type="button"
+            className="log-subject"
+            aria-expanded={open}
+            onClick={() => {
+              onToggle(entry.id);
+            }}
+          >
+            {message.subject}
+          </button>
+        ) : (
+          <strong className="log-subject">{message.subject}</strong>
+        )}
         {entry.source !== "workbench" && <span className="log-source">{entry.source}</span>}
         {actions !== undefined && <span className="log-entry-actions">{actions}</span>}
       </div>
-      {message.body !== "" && <p className="log-body">{message.body}</p>}
-      {message.trailers.length > 0 && (
+      {open && message.body !== "" && <p className="log-body">{message.body}</p>}
+      {open && message.trailers.length > 0 && (
         <dl className="log-trailers">
           {message.trailers.map(([key, value], index) => {
             const ordinal = message.trailers.slice(0, index).filter(([k]) => k === "Card").length;
@@ -131,15 +171,51 @@ function Entry({
   );
 }
 
+function VersionRow({
+  version,
+  actions,
+  point,
+}: {
+  version: Marker;
+  actions: ReactNode;
+  point: "from" | "to" | undefined;
+}): ReactNode {
+  return (
+    <li
+      className="log-version"
+      data-testid="log-version"
+      data-version={version.id}
+      data-point={point}
+    >
+      <time dateTime={version.at} className="muted">
+        {time(version.at)}
+      </time>
+      <span className="log-version-mark" aria-hidden="true">
+        ◆
+      </span>
+      <span>
+        Version <strong>{version.label}</strong> saved
+      </span>
+      {actions !== undefined && <span className="log-entry-actions">{actions}</span>}
+    </li>
+  );
+}
+
 export function LogView({
   entries,
+  versions = NO_VERSIONS,
   selected,
   onSelect,
   actions,
   entryActions,
+  versionActions,
+  compare,
+  from,
+  to,
 }: LogViewProps): ReactNode {
   const [query, setQuery] = useRemembered("log.query", "", z.string());
   const [active, setActive] = useState<string | undefined>(undefined);
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
   const [jump, setJump] = useState<{ id: string } | undefined>(undefined);
   useEffect(() => {
     if (jump === undefined) {
@@ -154,16 +230,40 @@ export function LogView({
     const folded = foldedIds(rows);
     return entries.filter((entry) => !folded.has(entry.id));
   }, [entries, rows]);
+  const markers = useMemo(
+    () =>
+      versions.map((version) => ({
+        id: version.id,
+        label: version.label,
+        x: markerPosition(plotted, version.at),
+      })),
+    [plotted, versions],
+  );
+  const range = useMemo(() => rangeOf(entries, versions, from, to), [entries, versions, from, to]);
   const days = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const groups = new Map<string, LogRow[]>();
-    for (const row of [...rows].reverse().filter((item) => rowMatches(item, needle))) {
-      const last = row.kind === "fold" ? row.entries[row.entries.length - 1] : row.entry;
-      const key = day(last?.at ?? "");
+    const items: HistoryRow[] = [
+      ...rows.filter((item) => rowMatches(item, needle)),
+      ...versions
+        .filter((version) => needle === "" || version.label.toLowerCase().includes(needle))
+        .map((version) => ({ kind: "version" as const, version })),
+    ].sort((a, b) => rowTime(b).localeCompare(rowTime(a)));
+    const groups = new Map<string, HistoryRow[]>();
+    for (const row of items) {
+      const key = day(rowTime(row));
       groups.set(key, [...(groups.get(key) ?? []), row]);
     }
     return [...groups.entries()];
-  }, [rows, query]);
+  }, [rows, versions, query]);
+  const toggle = (id: string): void => {
+    setOpen((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) {
+        next.add(id);
+      }
+      return next;
+    });
+  };
   const renderEntry = (entry: LogEntry): ReactNode => (
     <Entry
       key={entry.id}
@@ -172,17 +272,21 @@ export function LogView({
       onSelect={onSelect}
       actions={entryActions?.(entry)}
       active={active === entry.id}
+      open={open.has(entry.id)}
+      inRange={range.has(entry.id)}
+      onToggle={toggle}
       onActive={setActive}
       onInactive={(id) => {
         setActive((current) => (current === id ? undefined : current));
       }}
     />
   );
+  const allOpen = entries.length > 0 && entries.every((entry) => open.has(entry.id));
 
   return (
     <section className="log-page">
       <header className="log-toolbar">
-        <h1>Change log</h1>
+        <h1>History</h1>
         <input
           type="search"
           aria-label="Filter the log"
@@ -193,11 +297,20 @@ export function LogView({
           }}
           size={32}
         />
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(allOpen ? new Set() : new Set(entries.map((entry) => entry.id)));
+          }}
+        >
+          {allOpen ? "Collapse all" : "Expand all"}
+        </button>
         {actions}
       </header>
       {entries.length > 0 && (
         <Timeline
           entries={plotted}
+          markers={markers}
           active={active}
           onPick={(id) => {
             const entry = entries.find((item) => item.id === id);
@@ -205,12 +318,14 @@ export function LogView({
               setQuery("");
             }
             setActive(id);
+            setOpen((current) => new Set([...current, id]));
             setJump({ id });
           }}
         />
       )}
       <div className="log-list">
-        {entries.length === 0 ? (
+        {compare}
+        {entries.length === 0 && versions.length === 0 ? (
           <p className="muted">No edits logged yet. Every saved edit lands here.</p>
         ) : days.length === 0 ? (
           <p className="muted">No entries match.</p>
@@ -222,6 +337,15 @@ export function LogView({
                 {items.map((row) =>
                   row.kind === "entry" ? (
                     renderEntry(row.entry)
+                  ) : row.kind === "version" ? (
+                    <VersionRow
+                      key={`version-${row.version.id}`}
+                      version={row.version}
+                      actions={versionActions?.(row.version)}
+                      point={
+                        from === row.version.id ? "from" : to === row.version.id ? "to" : undefined
+                      }
+                    />
                   ) : (
                     <li key={row.id} className="log-fold" data-testid="log-fold">
                       <details>

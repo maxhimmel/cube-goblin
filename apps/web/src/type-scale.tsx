@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
+import "./type-scale.css";
 
 const STORE = "dev.typeScale";
 
@@ -53,7 +54,7 @@ export default function TypeScalePanel(): ReactNode {
   const [values, setValues] = useState<Record<string, number>>(stored);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement.style;
     for (const size of sizes) {
       const value = values[size.name];
@@ -63,7 +64,11 @@ export default function TypeScalePanel(): ReactNode {
         root.setProperty(size.name, `${String(value)}${size.unit}`);
       }
     }
-    localStorage.setItem(STORE, JSON.stringify(values));
+    if (Object.keys(values).length === 0) {
+      localStorage.removeItem(STORE);
+    } else {
+      localStorage.setItem(STORE, JSON.stringify(values));
+    }
   }, [sizes, values]);
 
   if (!open) {

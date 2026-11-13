@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { Block } from "../insights/block.tsx";
 import { QueryInput } from "../query/query-input.tsx";
 import { useRemembered } from "../view-choices.ts";
-import { Menu } from "./menu.tsx";
+import { Menu } from "../menu.tsx";
 import { colorIcon } from "../insights/labels.tsx";
 import {
   BalanceStrips,

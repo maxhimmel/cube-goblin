@@ -885,43 +885,6 @@
   align-items: center;
 }
 
-.lab-menu {
-  position: relative;
-}
-
-.lab-menu > button {
-  padding: 3px 12px;
-  font-size: var(--fs-sm);
-}
-
-.lab-menu-list {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 40;
-  display: grid;
-  gap: 4px;
-  min-width: 220px;
-  padding: 10px 12px;
-  font-size: var(--fs-md);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
-}
-
-.lab-menu-list[data-align="end"] {
-  right: 0;
-  left: auto;
-}
-
-.lab-menu-list label {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  cursor: pointer;
-}
-
 .lab-dock {
   grid-area: dock;
   display: flex;

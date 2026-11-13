@@ -1479,8 +1479,8 @@ test("a saved filter becomes an Insights block that can chart, hide, and be dele
   await expect(block).toHaveCount(0);
   await page.reload();
   await expect(page.locator('[data-block="combat"]')).toHaveCount(0);
-  const menu = page.locator(".blocks-menu");
-  await menu.getByText(/Blocks/u).click();
+  const menu = page.locator(".menu", { hasText: "Blocks" });
+  await menu.getByRole("button", { name: /Blocks/u }).click();
   await expect(menu).toContainText("2 hidden");
   await menu.getByLabel("Cheap red").check();
   await expect(block).toBeVisible();
@@ -1767,7 +1767,7 @@ test("every Forge chart previews a hovered card's move and peeks at a hovered ba
   await page.setViewportSize({ width: 1600, height: 1100 });
   await page.goto(`${workbench.url}#/`);
   await chartsOn(page, "left");
-  const menu = page.locator(".lab-menu").first();
+  const menu = page.locator(".menu").first();
   await menu.getByRole("button", { name: /^Blocks/u }).click();
   for (const box of await menu.locator("input[type=checkbox]").all()) {
     await box.check();
@@ -1808,7 +1808,7 @@ test("Forge creature charts peek, pick, and preview a move in a top and a side d
 }) => {
   await page.setViewportSize({ width: 1600, height: 1100 });
   await page.goto(`${workbench.url}#/`);
-  const menu = page.locator(".lab-menu").first();
+  const menu = page.locator(".menu").first();
   await menu.getByRole("button", { name: /^Blocks/u }).click();
   for (const box of await menu.locator("input[type=checkbox]").all()) {
     await box.check();

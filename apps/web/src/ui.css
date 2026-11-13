@@ -83,3 +83,42 @@
 .toggle-chip[aria-pressed="true"] {
   background: color-mix(in oklab, var(--accent) 16%, var(--field));
 }
+
+.menu {
+  position: relative;
+}
+
+.menu > button {
+  padding: 3px 12px;
+  font-size: var(--fs-sm);
+}
+
+.menu-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  gap: 4px;
+  min-width: 220px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  font-size: var(--fs-md);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+}
+
+.menu-list[data-align="end"] {
+  right: 0;
+  left: auto;
+}
+
+.menu-list label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+}

@@ -215,6 +215,16 @@
   transition-delay: 0.25s;
 }
 
+.lab-seam-handle:has(.lab-seam-sides button:hover, .lab-seam-sides :focus-visible) .lab-seam-tip {
+  animation: lab-seam-tip-swap 0.3s var(--lift);
+}
+
+@keyframes lab-seam-tip-swap {
+  from {
+    scale: 0.85;
+  }
+}
+
 .lab-seam-sides {
   position: absolute;
   inset: 0;

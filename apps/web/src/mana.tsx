@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { z } from "zod";
+import { useRemembered } from "./view-choices.ts";
 
 const SYMBOL = /\{([^}]+)\}/gu;
 
@@ -84,5 +86,39 @@ export function ManaCost({ cost }: { cost: string }): ReactNode {
         </span>
       ))}
     </span>
+  );
+}
+
+export const MULTICOLOR_STYLES = ["black", "white"] as const;
+export type MulticolorStyle = (typeof MULTICOLOR_STYLES)[number];
+
+export function useMulticolorStyle(): [MulticolorStyle, (style: MulticolorStyle) => void] {
+  return useRemembered<MulticolorStyle>("look.multicolor", "black", z.enum(MULTICOLOR_STYLES));
+}
+
+const STAR = "M10 3.2Q11.3 8.7 16.8 10Q11.3 11.3 10 16.8Q8.7 11.3 3.2 10Q8.7 8.7 10 3.2Z";
+
+export function MulticolorSymbol({
+  label,
+  style: chosen,
+}: {
+  label?: string;
+  style?: MulticolorStyle;
+}): ReactNode {
+  const [stored] = useMulticolorStyle();
+  const style = chosen ?? stored;
+  return (
+    <i
+      className="ms ms-cost ms-gold"
+      data-star={style}
+      role={label === undefined ? undefined : "img"}
+      aria-label={label}
+      aria-hidden={label === undefined ? true : undefined}
+    >
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <path d={STAR} />
+      </svg>
+      {style === "black" && <i className="ms ms-c" aria-hidden="true" />}
+    </i>
   );
 }

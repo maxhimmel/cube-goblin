@@ -1537,6 +1537,13 @@ test("Forge moves cards by drag and filters them with typed, applied, and peeked
 
   await nonMatches(page, "Hide");
   await expect(cells).toHaveCount(total - both);
+  await page
+    .getByRole("region", { name: "Color" })
+    .locator('.lab-hbar[aria-label^="Blue:"]')
+    .hover();
+  await expect.poll(async () => dim.count()).toBeGreaterThan(0);
+  await expect(cells).toHaveCount(total - both);
+  await page.getByRole("link", { name: "Max's Cube" }).hover();
   await page.reload();
   await expect(page.getByRole("button", { name: "Remove c=r" })).toBeVisible();
   await expect(cells).toHaveCount(total - both);
@@ -1872,6 +1879,10 @@ test("clicks in one Forge chart or together, and tag charts switch to chips", as
   await expect(pill).not.toContainText(" or ");
   await expect(heat.locator(".lab-heat-cell[data-picked]")).toHaveCount(1);
   await cells.nth(1).click();
+  await expect(pill).toHaveCount(0);
+
+  const pt = page.getByRole("region", { name: "Power × toughness" });
+  await pt.locator(".lab-pt-cell[data-empty]").first().click({ force: true });
   await expect(pill).toHaveCount(0);
 
   const groups = page.getByRole("region", { name: "Groups" });

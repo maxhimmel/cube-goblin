@@ -302,7 +302,7 @@ export function useLab(): Lab | undefined {
       peeking
         ? lens !== undefined && !lens(card)
         : !hide && applied !== undefined && !applied(card),
-    hidden: (card) => hide && !peeking && applied !== undefined && !applied(card),
+    hidden: (card) => hide && applied !== undefined && !applied(card),
     baseline,
     setBaseline,
     hide,

@@ -7,6 +7,7 @@ status: todo
 Part of [T-043](T-043-polish-pass.md). The Lab and Wall are polished; Tags and Versions look like bare HTML. One set of panels, headings, chips, buttons, and selection styles for every view.
 
 - Favicon: the user picked option E, two crossed cards with a star (2026-11-12), from six drafts in the app's violets.
+- Type scale (user, 2026-11-13): a dev-only panel to tweak font sizes live and copy the result, so the user can pick sizes and hand them back. It needs the font sizes gathered into a few CSS variables first.
 
 ## Done when
 

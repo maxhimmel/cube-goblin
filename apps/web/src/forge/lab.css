@@ -259,7 +259,7 @@
 
 .lab-seam-handle:hover .lab-seam-sides button,
 .lab-seam-handle:has(:focus-visible) .lab-seam-sides button {
-  --out: 30px;
+  --out: var(--out-open, 30px);
 
   pointer-events: auto;
   opacity: 1;
@@ -687,6 +687,7 @@
 
 .lab-pt-cell[data-empty] {
   background: color-mix(in oklab, var(--fg) 2%, transparent);
+  pointer-events: none;
 }
 
 .lab-pt-cell:hover {
@@ -963,7 +964,6 @@
   min-height: 0;
   padding-bottom: 4px;
   overflow: auto;
-  overscroll-behavior: contain;
 }
 
 .lab[data-dock="right"] .lab-dock,
@@ -1321,13 +1321,6 @@
 
 .lab-title-symbol .ms {
   font-size: 1rem;
-}
-
-.lab-title-symbol .ms-multicolor {
-  margin: 0 3px;
-  font-size: 1.3rem;
-  line-height: 0.8;
-  transform: scale(1.45);
 }
 
 .lab-title-text {
@@ -2022,9 +2015,9 @@ button.lab-stat[data-picked] {
 .lab-combat {
   display: grid;
   grid-template:
-    "axis wall wins" auto
+    ". wall wins" auto
     "axis field field" minmax(120px, 1fr)
-    "axis chump cannon" auto
+    ". chump cannon" auto
     ". xaxis xaxis" auto
     / 12px minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 4px;
@@ -2180,12 +2173,13 @@ button.lab-stat[data-picked] {
 
 .lab-combat-axis[data-axis="x"] {
   grid-area: xaxis;
-  text-align: right;
+  text-align: center;
 }
 
 .lab-combat-axis[data-axis="y"] {
   grid-area: axis;
   align-self: center;
+  justify-self: center;
   white-space: nowrap;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
@@ -2643,16 +2637,22 @@ button.lab-stat[data-picked] {
   background: var(--accent);
 }
 
-.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle {
-  translate: -36px 0;
+.lab[data-dock="right"]:not([data-dock-open]),
+.lab[data-dock="left"]:not([data-dock-open]),
+.lab[data-dock="bottom"]:not([data-dock-open]) {
+  --seam: 48px;
 }
 
-.lab[data-dock="left"]:not([data-dock-open]) .lab-seam-handle {
-  translate: 36px 0;
+.lab:not([data-dock="top"], [data-dock-open]) .lab-seam-handle {
+  --out-open: 28px;
+
+  width: 80px;
+  height: 80px;
+  margin: -29px;
 }
 
-.lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-handle {
-  translate: 0 -36px;
+.lab:not([data-dock="top"], [data-dock-open]) .lab-seam-handle::before {
+  inset: 0;
 }
 
 .lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-tip {
@@ -2662,4 +2662,60 @@ button.lab-stat[data-picked] {
 
 .lab-pile:has(.lab-bulk-slot .bulk-bar) {
   padding-bottom: 72px;
+}
+
+.lab-seam-sides .lab-seam-here {
+  fill: currentColor;
+  stroke: none;
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-tip {
+  --tip-x: calc(-100% + 40px);
+
+  translate: var(--tip-x) -4px;
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle:hover .lab-seam-tip,
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle:has(:focus-visible) .lab-seam-tip {
+  translate: var(--tip-x) 0;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-tile-body > :only-child {
+  box-sizing: border-box;
+  min-height: 100%;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-bars, .lab-combat) {
+  height: 100%;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-hbars, .lab-tiles) {
+  grid-auto-rows: minmax(min-content, 1fr);
+  align-items: center;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-tiles {
+  align-items: stretch;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-heat {
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(20px, 1fr);
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-heat-cell {
+  height: auto;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-pt, .lab-balance) {
+  display: flex;
+  flex-direction: column;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-pt-row, .lab-balance-row) {
+  flex: 1 1 auto;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-pt-row:not(.lab-pt-foot) {
+  align-items: stretch;
 }

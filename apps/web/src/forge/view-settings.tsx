@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
+import { MulticolorSymbol, useMulticolorStyle } from "../mana.tsx";
 import { useRemembered } from "../view-choices.ts";
 import type { Dock } from "./dock.tsx";
 import { DOCKS } from "./dock.tsx";
@@ -46,6 +47,7 @@ export function usePlacedDock(): Dock {
 
 export function ForgeSettings(): ReactNode {
   const [baseline, setBaseline] = useBaseline();
+  const [multicolor, setMulticolor] = useMulticolorStyle();
   return (
     <section className="settings-section" aria-label="Forge">
       <h3>Forge</h3>
@@ -60,6 +62,28 @@ export function ForgeSettings(): ReactNode {
         />
         Faint baseline under filtered charts
       </label>
+      <fieldset className="settings-choice">
+        <legend>Multicolor symbol</legend>
+        {(
+          [
+            ["black", "Black star"],
+            ["white", "White star"],
+          ] as const
+        ).map(([id, label]) => (
+          <label key={id} className="settings-check">
+            <input
+              type="radio"
+              name="multicolor"
+              checked={multicolor === id}
+              onChange={() => {
+                setMulticolor(id);
+              }}
+            />
+            <MulticolorSymbol style={id} />
+            {label}
+          </label>
+        ))}
+      </fieldset>
     </section>
   );
 }

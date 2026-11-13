@@ -140,6 +140,10 @@ h2 {
   padding: 0 16px 48px;
 }
 
+.shell:has(> main > .lab) {
+  padding-bottom: 8px;
+}
+
 .topbar {
   position: sticky;
   top: 0;

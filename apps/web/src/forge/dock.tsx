@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Block } from "../insights/block.tsx";
 import { QueryInput } from "../query/query-input.tsx";
 import { useRemembered } from "../view-choices.ts";
+import { Menu } from "./menu.tsx";
 import { colorIcon } from "../insights/labels.tsx";
 import {
   BalanceStrips,
@@ -331,53 +332,30 @@ export function useDockState(): DockState {
 }
 
 export function BlocksMenu({ dock }: { dock: DockState }): ReactNode {
-  const [open, setOpen] = useState(false);
   return (
-    <div
-      className="lab-menu"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setOpen(false);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          setOpen(false);
-        }
-      }}
+    <Menu
+      label={`Blocks${dock.hidden.size > 0 ? ` · ${String(dock.hidden.size)} hidden` : ""}`}
+      listLabel="Blocks"
     >
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => {
-          setOpen(!open);
-        }}
-      >
-        Blocks{dock.hidden.size > 0 && ` · ${String(dock.hidden.size)} hidden`}
+      {dock.order.map((id) => {
+        const block = ALL_BLOCKS.find((entry) => entry.id === id);
+        return (
+          <label key={id}>
+            <input
+              type="checkbox"
+              checked={!dock.hidden.has(id)}
+              onChange={(event) => {
+                dock.setHidden(id, !event.target.checked);
+              }}
+            />
+            {block?.title ?? id}
+          </label>
+        );
+      })}
+      <button type="button" className="lab-link" onClick={dock.reset}>
+        Reset blocks
       </button>
-      {open && (
-        <div className="lab-menu-list">
-          {dock.order.map((id) => {
-            const block = ALL_BLOCKS.find((entry) => entry.id === id);
-            return (
-              <label key={id}>
-                <input
-                  type="checkbox"
-                  checked={!dock.hidden.has(id)}
-                  onChange={(event) => {
-                    dock.setHidden(id, !event.target.checked);
-                  }}
-                />
-                {block?.title ?? id}
-              </label>
-            );
-          })}
-          <button type="button" className="lab-link" onClick={dock.reset}>
-            Reset blocks
-          </button>
-        </div>
-      )}
-    </div>
+    </Menu>
   );
 }
 

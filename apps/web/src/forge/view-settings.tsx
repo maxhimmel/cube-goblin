@@ -5,15 +5,12 @@ import { useRemembered } from "../view-choices.ts";
 import type { Dock } from "./dock.tsx";
 import { DOCKS } from "./dock.tsx";
 
-const DOCK_LABELS: Record<Dock, string> = {
-  top: "Top",
-  right: "Right",
-  bottom: "Bottom",
-  left: "Left",
-};
-
 export function useHideNonMatches(): [boolean, (on: boolean) => void] {
   return useRemembered("lab.hide", false, z.boolean());
+}
+
+export function useBaseline(): [boolean, (on: boolean) => void] {
+  return useRemembered("lab.baseline", true, z.boolean());
 }
 
 export function useStripTags(): [boolean, (on: boolean) => void] {
@@ -34,59 +31,34 @@ function subscribeWide(onChange: () => void): () => void {
   };
 }
 
+export function useWide(): boolean {
+  return useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches);
+}
+
+export function isSideDock(side: Dock): boolean {
+  return side === "left" || side === "right";
+}
+
 export function usePlacedDock(): Dock {
   const [side] = useDockSide();
-  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches);
-  return wide || side === "top" || side === "bottom" ? side : "top";
+  return useWide() || !isSideDock(side) ? side : "top";
 }
 
 export function ForgeSettings(): ReactNode {
-  const [hide, setHide] = useHideNonMatches();
-  const [tags, setTags] = useStripTags();
-  const [side, setSide] = useDockSide();
+  const [baseline, setBaseline] = useBaseline();
   return (
     <section className="settings-section" aria-label="Forge">
       <h3>Forge</h3>
       <p className="muted">Kept in this browser.</p>
-      <label className="field">
-        Cards that don&apos;t match the filter
-        <select
-          value={hide ? "hide" : "dim"}
-          onChange={(event) => {
-            setHide(event.target.value === "hide");
-          }}
-        >
-          <option value="dim">Dim</option>
-          <option value="hide">Hide</option>
-        </select>
-      </label>
-      <label className="field">
-        Charts panel side (wide screens)
-        <select
-          value={side}
-          onChange={(event) => {
-            const next = DOCKS.find((option) => option === event.target.value);
-            if (next) {
-              setSide(next);
-            }
-          }}
-        >
-          {DOCKS.map((option) => (
-            <option key={option} value={option}>
-              {DOCK_LABELS[option]}
-            </option>
-          ))}
-        </select>
-      </label>
       <label className="settings-check">
         <input
           type="checkbox"
-          checked={tags}
+          checked={baseline}
           onChange={(event) => {
-            setTags(event.target.checked);
+            setBaseline(event.target.checked);
           }}
         />
-        Tags on cards
+        Faint baseline under filtered charts
       </label>
     </section>
   );

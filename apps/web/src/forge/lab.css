@@ -6,11 +6,14 @@
   --dock-row: auto;
   --dock-col: auto;
 
+  --seam: 22px;
+
   display: grid;
-  grid-template-areas: "head" "dock" "floor";
-  grid-template-rows: auto var(--dock-row) minmax(0, 1fr);
+  grid-template-areas: "head" "dock" "seam" "floor";
+  grid-template-rows: auto var(--dock-row) var(--seam) minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  row-gap: 0;
+  column-gap: 0;
   height: calc(100dvh - var(--topbar-height, 64px) - 8px);
   min-height: 640px;
 }
@@ -21,26 +24,310 @@
 }
 
 .lab[data-dock="bottom"] {
-  grid-template-areas: "head" "floor" "dock";
-  grid-template-rows: auto minmax(0, 1fr) var(--dock-row);
+  grid-template-areas: "head" "floor" "seam" "dock";
+  grid-template-rows: auto minmax(0, 1fr) var(--seam) var(--dock-row);
 }
 
 .lab[data-dock="right"] {
-  grid-template-areas: "head head" "floor dock";
+  grid-template-areas: "head head head" "floor seam dock";
   grid-template-rows: auto minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr) var(--dock-col);
+  grid-template-columns: minmax(0, 1fr) var(--seam) var(--dock-col);
 }
 
 .lab[data-dock="left"] {
-  grid-template-areas: "head head" "dock floor";
+  grid-template-areas: "head head head" "dock seam floor";
   grid-template-rows: auto minmax(0, 1fr);
-  grid-template-columns: var(--dock-col) minmax(0, 1fr);
+  grid-template-columns: var(--dock-col) var(--seam) minmax(0, 1fr);
 }
 
-.lab[data-dock]:not([data-dock-open]) {
-  grid-template-areas: "head" "floor";
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr);
+.lab[data-dock="top"]:not([data-dock-open]) {
+  grid-template-areas: "head" "seam" "floor";
+  grid-template-rows: auto var(--seam) minmax(0, 1fr);
+}
+
+.lab[data-dock="bottom"]:not([data-dock-open]) {
+  grid-template-areas: "head" "floor" "seam";
+  grid-template-rows: auto minmax(0, 1fr) var(--seam);
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) {
+  grid-template-areas: "head head" "floor seam";
+  grid-template-columns: minmax(0, 1fr) var(--seam);
+}
+
+.lab[data-dock="left"]:not([data-dock-open]) {
+  grid-template-areas: "head head" "seam floor";
+  grid-template-columns: var(--seam) minmax(0, 1fr);
+}
+
+.lab-seam {
+  position: relative;
+  z-index: 5;
+  grid-area: seam;
+  display: grid;
+  place-items: center;
+}
+
+.lab-seam::before {
+  position: absolute;
+  inset: 50% 8px auto;
+  height: 2px;
+  content: "";
+  background: var(--line);
+  border-radius: 2px;
+  transform: translateY(-50%);
+  transition: background 0.2s;
+}
+
+.lab[data-dock="right"] .lab-seam::before,
+.lab[data-dock="left"] .lab-seam::before {
+  inset: 8px auto 8px 50%;
+  width: 2px;
+  height: auto;
+  transform: translateX(-50%);
+}
+
+.lab-seam:has(.lab-seam-handle:hover, .lab-seam-handle :focus-visible)::before {
+  background: color-mix(in oklab, var(--accent) 55%, var(--line));
+}
+
+.lab-seam-handle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin: -35px;
+  pointer-events: none;
+}
+
+.lab-seam-handle::before {
+  position: absolute;
+  inset: 4px;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  background: color-mix(in oklab, var(--panel) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  scale: 0.4;
+  transition:
+    opacity 0.15s 0.15s,
+    scale 0.35s 0.15s var(--lift);
+}
+
+.lab-seam-handle:hover::before,
+.lab-seam-handle:has(:focus-visible)::before {
+  pointer-events: auto;
+  opacity: 1;
+  scale: 1;
+  transition-delay: 0.35s;
+}
+
+.lab-seam-toggle {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+  transition:
+    rotate 0.45s var(--lift),
+    scale 0.25s var(--lift),
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.lab-seam-toggle svg,
+.lab-seam-sides svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lab-seam-handle:hover .lab-seam-toggle,
+.lab-seam-toggle:focus-visible {
+  scale: 1.15;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.lab-seam-handle:hover .lab-seam-toggle svg {
+  animation: lab-seam-nudge 0.9s var(--lift) infinite;
+}
+
+@keyframes lab-seam-nudge {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  40% {
+    translate: 0 -2px;
+  }
+}
+
+.lab-seam-tip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  z-index: 3;
+  padding: 3px 8px;
+  color: var(--on-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 30%);
+  opacity: 0;
+  translate: -50% -4px;
+  scale: 0.8;
+  transition:
+    opacity 0.15s,
+    translate 0.3s var(--lift),
+    scale 0.3s var(--lift);
+}
+
+.lab-seam-handle:hover .lab-seam-tip,
+.lab-seam-handle:has(:focus-visible) .lab-seam-tip {
+  opacity: 1;
+  translate: -50% 0;
+  scale: 1;
+  transition-delay: 0.25s;
+}
+
+.lab-seam-handle:has(.lab-seam-sides button:hover, .lab-seam-sides :focus-visible) .lab-seam-tip {
+  animation: lab-seam-tip-swap 0.3s var(--lift);
+}
+
+@keyframes lab-seam-tip-swap {
+  from {
+    scale: 0.85;
+  }
+}
+
+.lab-seam-sides {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.lab-seam-sides button {
+  --out: 0px;
+
+  position: absolute;
+  top: calc(50% - 11px);
+  left: calc(50% - 11px);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+  opacity: 0;
+  scale: 0.3;
+  transition:
+    opacity 0.15s var(--lift) 0.15s,
+    translate 0.35s var(--lift) 0.15s,
+    scale 0.35s var(--lift) 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.lab-seam-handle:hover .lab-seam-sides button,
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides button {
+  --out: 30px;
+
+  pointer-events: auto;
+  opacity: 1;
+  scale: 1;
+}
+
+.lab-seam-handle:hover .lab-seam-sides [data-side="top"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="top"] {
+  transition-delay: calc(0.35s + 0s), calc(0.35s + 0s), calc(0.35s + 0s), 0s, 0s;
+}
+
+.lab-seam-sides [data-side="top"] {
+  translate: 0 calc(-1 * var(--out));
+}
+
+.lab-seam-handle:hover .lab-seam-sides [data-side="right"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="right"] {
+  transition-delay: calc(0.35s + 0.03s), calc(0.35s + 0.03s), calc(0.35s + 0.03s), 0s, 0s;
+}
+
+.lab-seam-sides [data-side="right"] {
+  translate: var(--out) 0;
+}
+
+.lab-seam-handle:hover .lab-seam-sides [data-side="bottom"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="bottom"] {
+  transition-delay: calc(0.35s + 0.06s), calc(0.35s + 0.06s), calc(0.35s + 0.06s), 0s, 0s;
+}
+
+.lab-seam-sides [data-side="bottom"] {
+  translate: 0 var(--out);
+}
+
+.lab-seam-handle:hover .lab-seam-sides [data-side="left"],
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides [data-side="left"] {
+  transition-delay: calc(0.35s + 0.09s), calc(0.35s + 0.09s), calc(0.35s + 0.09s), 0s, 0s;
+}
+
+.lab-seam-sides [data-side="left"] {
+  translate: calc(-1 * var(--out)) 0;
+}
+
+.lab-seam-sides button[aria-pressed="true"] {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.lab-seam-sides button:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+.lab-seam-handle .lab-seam-sides button:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-seam-toggle,
+  .lab-seam-sides button,
+  .lab-seam-tip {
+    transition-duration: 0.01s;
+  }
+
+  .lab-seam-handle:hover .lab-seam-toggle svg {
+    animation: none;
+  }
 }
 
 .lab-top {
@@ -49,13 +336,8 @@
   flex-wrap: wrap;
   gap: 8px 20px;
   align-items: center;
+  margin-bottom: 12px;
   padding-top: 8px;
-}
-
-.lab-top h1 {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 800;
 }
 
 .lab-count {
@@ -89,6 +371,53 @@
 
 .lab-count .gauge {
   align-self: center;
+}
+
+.topbar-view .lab-count {
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.topbar-view .lab-count-label {
+  font-size: 0.72rem;
+}
+
+.topbar-view .lab-count-value {
+  font-size: 1.1rem;
+}
+
+.topbar-view .gauge-track {
+  width: 110px;
+}
+
+@media (max-width: 1100px) {
+  .topbar-view .gauge-label {
+    font-size: 0;
+  }
+
+  .topbar-view .gauge-label strong {
+    font-size: 0.8rem;
+  }
+
+  .topbar-view .gauge-track {
+    width: 70px;
+  }
+}
+
+.lab-pile-head .lab-switches {
+  margin-left: auto;
+}
+
+.lab-seg-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 @keyframes lab-pop {
@@ -602,7 +931,7 @@
 .lab-menu-list {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
   z-index: 40;
   display: grid;
   gap: 4px;
@@ -613,6 +942,11 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+}
+
+.lab-menu-list[data-align="end"] {
+  right: 0;
+  left: auto;
 }
 
 .lab-menu-list label {
@@ -636,6 +970,14 @@
 .lab[data-dock="left"] .lab-dock {
   flex-direction: column;
   padding-right: 4px;
+}
+
+.lab[data-dock="top"] .lab-dock {
+  margin-bottom: -4px;
+}
+
+.lab[data-dock="left"] .lab-dock {
+  margin-right: -4px;
 }
 
 .lab-block {
@@ -2240,29 +2582,84 @@ button.lab-stat[data-picked] {
 
 .lab-bulk-slot {
   position: sticky;
-  top: -10px;
+  bottom: 0;
   z-index: 3;
-  display: flex;
-  align-items: center;
-  min-height: 34px;
-  margin: 0 -10px 8px;
-  padding: 0 10px;
-  background: var(--panel);
+  height: 0;
 }
 
 .lab-bulk-slot .bulk-bar {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  margin: calc(-1 * var(--ring-room));
-  padding: var(--ring-room);
-}
-
-.lab-bulk-slot .bulk-bar > * {
-  flex: none;
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  left: 0;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  animation: lab-pop 0.22s var(--lift);
 }
 
 .lab-bulk-slot .bulk-bar button,
 .lab-bulk-slot .bulk-bar select {
   padding: 4px 10px;
   font-size: 0.82rem;
+}
+
+.query-nonmatch {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 2px;
+  padding: 2px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition: opacity 0.2s;
+}
+
+.query-nonmatch[data-idle] {
+  opacity: 0.55;
+}
+
+.query-nonmatch:hover,
+.query-nonmatch:focus-within {
+  opacity: 1;
+}
+
+.query-nonmatch button {
+  padding: 1px 9px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.query-nonmatch button[aria-pressed="true"] {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle {
+  translate: -36px 0;
+}
+
+.lab[data-dock="left"]:not([data-dock-open]) .lab-seam-handle {
+  translate: 36px 0;
+}
+
+.lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-handle {
+  translate: 0 -36px;
+}
+
+.lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-tip {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.lab-pile:has(.lab-bulk-slot .bulk-bar) {
+  padding-bottom: 72px;
 }

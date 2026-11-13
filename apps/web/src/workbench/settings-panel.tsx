@@ -4,15 +4,29 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { ForgeSettings } from "../forge/view-settings.tsx";
+import { z } from "zod";
 import { queryClient } from "../query-client.ts";
+import { useRemembered } from "../view-choices.ts";
 import { CONFIG_QUERY_KEY, CUBE_QUERY_KEY, fetchConfig, saveConfigRequest } from "./api.ts";
 import { showToast } from "./toast.tsx";
 
 const FORMATS = cubeConfigSchema.shape.format.options;
 
+const TABS = [
+  { id: "cube", label: "Cube" },
+  { id: "forge", label: "Forge" },
+] as const;
+
+type Tab = (typeof TABS)[number]["id"];
+
 export function SettingsPanel({ onClose }: { onClose: () => void }): ReactNode {
   const dialog = useRef<HTMLDialogElement>(null);
   const config = useQuery({ queryKey: CONFIG_QUERY_KEY, queryFn: fetchConfig });
+  const [tab, setTab] = useRemembered<Tab>(
+    "settings.tab",
+    "cube",
+    z.enum(TABS.map((option) => option.id) as [Tab, ...Tab[]]),
+  );
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -32,13 +46,66 @@ export function SettingsPanel({ onClose }: { onClose: () => void }): ReactNode {
           ×
         </button>
       </header>
-      {config.error && (
-        <p role="alert" className="error">
-          {config.error.message}
-        </p>
-      )}
-      {config.data && <CubeSettings key={JSON.stringify(config.data)} saved={config.data} />}
-      <ForgeSettings />
+      <div className="settings-body">
+        <div
+          className="settings-tabs"
+          role="tablist"
+          aria-label="Settings"
+          aria-orientation="vertical"
+        >
+          {TABS.map((option, index) => (
+            <button
+              key={option.id}
+              id={`settings-tab-${option.id}`}
+              type="button"
+              role="tab"
+              aria-selected={option.id === tab}
+              aria-controls={`settings-page-${option.id}`}
+              tabIndex={option.id === tab ? 0 : -1}
+              onClick={() => {
+                setTab(option.id);
+              }}
+              onKeyDown={(event) => {
+                const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+                if (step === undefined) {
+                  return;
+                }
+                event.preventDefault();
+                const next = TABS[(index + step + TABS.length) % TABS.length];
+                if (next) {
+                  setTab(next.id);
+                  document.getElementById(`settings-tab-${next.id}`)?.focus();
+                }
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <div
+          className="settings-page"
+          role="tabpanel"
+          id="settings-page-cube"
+          aria-labelledby="settings-tab-cube"
+          hidden={tab !== "cube"}
+        >
+          {config.error && (
+            <p role="alert" className="error">
+              {config.error.message}
+            </p>
+          )}
+          {config.data && <CubeSettings key={JSON.stringify(config.data)} saved={config.data} />}
+        </div>
+        <div
+          className="settings-page"
+          role="tabpanel"
+          id="settings-page-forge"
+          aria-labelledby="settings-tab-forge"
+          hidden={tab !== "forge"}
+        >
+          <ForgeSettings />
+        </div>
+      </div>
     </dialog>
   );
 }

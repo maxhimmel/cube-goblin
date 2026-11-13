@@ -1,10 +1,11 @@
 import { mode } from "#mode";
 import { Link, useSearch } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CardPane } from "./card-pane.tsx";
 import type { ViewIconName } from "./icons.tsx";
 import { ViewIcon } from "./icons.tsx";
+import { TopbarSlot } from "./topbar-slot.tsx";
 
 const VIEWS: readonly {
   to: "/" | "/board" | "/tags" | "/insights" | "/versions" | "/log";
@@ -23,6 +24,7 @@ const VIEWS: readonly {
 export function Shell({ children }: { children: ReactNode }): ReactNode {
   const { card, add, replaces } = useSearch({ strict: false });
   const topbar = useRef<HTMLElement>(null);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const element = topbar.current;
@@ -65,9 +67,12 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
             </Link>
           ))}
         </nav>
+        <div className="topbar-view" ref={setSlot} />
         <mode.Toolbar />
       </header>
-      <main>{children}</main>
+      <main>
+        <TopbarSlot.Provider value={slot}>{children}</TopbarSlot.Provider>
+      </main>
       {card !== undefined && <CardPane key={card} slug={card} />}
       {add === true && <mode.AddPanel key={`add:${replaces ?? ""}`} replaces={replaces} />}
     </div>

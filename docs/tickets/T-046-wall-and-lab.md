@@ -29,3 +29,5 @@ Part of [T-043](T-043-polish-pass.md). The [Lab](T-031-lab-view.md) already hold
 - The bulk bar has a fixed sticky slot above the draft so ticking a card never moves the grid; leaving Images clears the selection; tile checkboxes always show on touch screens.
 - CSS classes and stored keys keep their `lab` names so saved layouts and settings carry over.
 - E2E: every Wall, Cards, and Lab test now drives Forge; new tests for group selection in Images and for the settings that moved.
+
+Later changes to the toolbar, chart panel, and settings: [T-052](T-052-forge-polish.md).

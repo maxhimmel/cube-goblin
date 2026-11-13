@@ -11,14 +11,30 @@ import { LayoutsMenu } from "./layouts-menu.tsx";
 import { PendingGutter, usePendingOpen } from "./pending.tsx";
 import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx";
 import type { Lab } from "./use-lab.ts";
+import { InTopbar } from "../topbar-slot.tsx";
+import { Seam } from "./seam.tsx";
 import { useLab } from "./use-lab.ts";
 import { usePlacedDock, useStripTags } from "./view-settings.tsx";
 
 type CardView = "columns" | "rows" | "images";
 
+const LAYOUT_PATHS: Record<CardView, ReactNode> = {
+  columns: <path d="M3.5 4h4v16h-4zM10 4h4v11h-4zM16.5 4h4v13.5h-4z" />,
+  rows: <path d="M4 5.5h16M4 10h16M4 14.5h16M4 19h16" />,
+  images: <path d="M4 4h6.5v7.5H4zM13.5 4H20v7.5h-6.5zM4 13.5h6.5V20H4zM13.5 13.5H20V20h-6.5z" />,
+};
+
+function LayoutIcon({ name }: { name: CardView }): ReactNode {
+  return (
+    <svg className="lab-seg-icon" viewBox="0 0 24 24" aria-hidden="true">
+      {LAYOUT_PATHS[name]}
+    </svg>
+  );
+}
+
 function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode {
   const dockAt = usePlacedDock();
-  const [tags] = useStripTags();
+  const [tags, setTags] = useStripTags();
   const [open, setOpen] = useRemembered("labc.dockOpen", true, z.boolean());
   const [view, setView] = useRemembered<CardView>(
     "labc.view",
@@ -45,18 +61,15 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
       data-pending-open={pendingOpen ? "" : undefined}
       {...lab.dragRoot}
     >
-      <header className="lab-top">
-        <h1>Forge</h1>
+      <InTopbar>
         <DraftCount lab={lab} />
+      </InTopbar>
+      <header className="lab-top">
+        <h1 className="sr-only">Forge</h1>
         <QueryBar lab={lab} />
         <div className="lab-controls">
           <BlocksMenu dock={dock} />
           <LayoutsMenu onApply={onApply} />
-          <div className="lab-switches">
-            <Toggle label="Charts" checked={open} onChange={setOpen} />
-            <Toggle label="Baseline" checked={lab.baseline} onChange={lab.setBaseline} />
-            <Toggle label="Show cut" checked={lab.showCut} onChange={lab.setShowCut} />
-          </div>
         </div>
       </header>
       {open && (
@@ -64,6 +77,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           <DockBlocks lab={lab} dock={dock} />
         </div>
       )}
+      <Seam placed={dockAt} open={open} setOpen={setOpen} />
       <div className="lab-floor">
         <section className="lab-pile" aria-label="Draft" {...lab.zone("draft")}>
           <header className="lab-pile-head">
@@ -72,9 +86,9 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
               <Segmented
                 label="Card layout"
                 options={[
-                  { id: "columns", label: "Columns" },
-                  { id: "rows", label: "Rows" },
-                  { id: "images", label: "Images" },
+                  { id: "columns", label: <LayoutIcon name="columns" />, title: "Columns" },
+                  { id: "rows", label: <LayoutIcon name="rows" />, title: "Rows" },
+                  { id: "images", label: <LayoutIcon name="images" />, title: "Images" },
                 ]}
                 value={view}
                 onChange={(next) => {
@@ -84,16 +98,21 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
                   setView(next);
                 }}
               />
+              {view === "columns" && (
+                <div className="lab-switches">
+                  <Toggle label="Tags" checked={tags} onChange={setTags} />
+                </div>
+              )}
               <AxisTabs lab={lab} />
               <SortMenu keys={lab.sort} onChange={lab.setSort} />
             </div>
           </header>
+          {pile(draft, false)}
           {view === "images" && (
             <div className="lab-bulk-slot">
               <mode.BulkBar />
             </div>
           )}
-          {pile(draft, false)}
         </section>
         <PendingGutter lab={lab} tags={tags} open={pendingOpen} setOpen={setPendingOpen} />
         <section
@@ -106,6 +125,9 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
             <h2>
               Prospects <span className="muted">{prospects.length}</span>
             </h2>
+            <div className="lab-switches">
+              <Toggle label="Show cut" checked={lab.showCut} onChange={lab.setShowCut} />
+            </div>
           </header>
           {pile(prospects, true)}
         </section>

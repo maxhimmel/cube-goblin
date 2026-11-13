@@ -6,6 +6,14 @@ import { isSideDock, useDockSide, useWide } from "./view-settings.tsx";
 
 const TURN: Record<Dock, number> = { top: 0, right: 90, bottom: 180, left: 270 };
 
+function Here(): ReactNode {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className="lab-seam-here">
+      <circle cx="8" cy="8" r="3.2" />
+    </svg>
+  );
+}
+
 function Chevron(): ReactNode {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -36,9 +44,11 @@ export function Seam({
   const tip =
     aim === undefined
       ? toggleTip
-      : aim === placed && open
-        ? `Charts are on the ${aim}`
-        : `Move charts to the ${aim}`;
+      : aim !== placed
+        ? `Move charts to the ${aim}`
+        : open
+          ? `Charts are on the ${aim}`
+          : `Show charts on the ${aim}`;
   return (
     <div className="lab-seam" data-open={open ? "" : undefined}>
       <div className="lab-seam-handle">
@@ -84,7 +94,7 @@ export function Seam({
                 setOpen(true);
               }}
             >
-              <Chevron />
+              {option === placed ? <Here /> : <Chevron />}
             </button>
           ))}
         </div>

@@ -259,7 +259,7 @@
 
 .lab-seam-handle:hover .lab-seam-sides button,
 .lab-seam-handle:has(:focus-visible) .lab-seam-sides button {
-  --out: 30px;
+  --out: var(--out-open, 30px);
 
   pointer-events: auto;
   opacity: 1;
@@ -2643,16 +2643,22 @@ button.lab-stat[data-picked] {
   background: var(--accent);
 }
 
-.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle {
-  translate: -36px 0;
+.lab[data-dock="right"]:not([data-dock-open]),
+.lab[data-dock="left"]:not([data-dock-open]),
+.lab[data-dock="bottom"]:not([data-dock-open]) {
+  --seam: 48px;
 }
 
-.lab[data-dock="left"]:not([data-dock-open]) .lab-seam-handle {
-  translate: 36px 0;
+.lab:not([data-dock="top"], [data-dock-open]) .lab-seam-handle {
+  --out-open: 28px;
+
+  width: 80px;
+  height: 80px;
+  margin: -29px;
 }
 
-.lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-handle {
-  translate: 0 -36px;
+.lab:not([data-dock="top"], [data-dock-open]) .lab-seam-handle::before {
+  inset: 0;
 }
 
 .lab[data-dock="bottom"]:not([data-dock-open]) .lab-seam-tip {
@@ -2662,4 +2668,20 @@ button.lab-stat[data-picked] {
 
 .lab-pile:has(.lab-bulk-slot .bulk-bar) {
   padding-bottom: 72px;
+}
+
+.lab-seam-sides .lab-seam-here {
+  fill: currentColor;
+  stroke: none;
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-tip {
+  --tip-x: calc(-100% + 40px);
+
+  translate: var(--tip-x) -4px;
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle:hover .lab-seam-tip,
+.lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle:has(:focus-visible) .lab-seam-tip {
+  translate: var(--tip-x) 0;
 }

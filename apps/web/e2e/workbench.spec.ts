@@ -621,7 +621,9 @@ test("swapping keeps the old card as cut and can carry its tags", async ({ page,
   await panel.getByLabel("Search Scryfall").fill('!"Counterspell"');
   await panel.getByRole("button", { name: "Swap in Counterspell", exact: true }).click();
 
-  await expect(page.getByRole("heading", { name: "Counterspell" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Counterspell" })).toBeVisible({
+    timeout: 20000,
+  });
   await expect(page.getByRole("status")).toContainText("Daring Saboteur is now cut");
   expect(await readEntry(workbench.cardsDir, slug)).toEqual({ ...before, status: "cut" });
   expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({

@@ -92,12 +92,18 @@ async function openImages(page: Page, url: string, showCut = false): Promise<voi
   }
 }
 
-async function forgeSetting(page: Page, label: string, value: string): Promise<void> {
+async function nonMatches(page: Page, choice: "Dim" | "Hide"): Promise<void> {
+  await page
+    .getByRole("group", { name: "Cards that don't match" })
+    .getByRole("button", { name: choice })
+    .click();
+}
+
+async function forgeBaseline(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: "Settings" }).click();
   const dialog = page.getByRole("dialog", { name: "Settings" });
   await dialog.getByRole("tab", { name: "Forge" }).click();
-  await dialog.getByLabel(label).selectOption(value);
-  await dialog.getByRole("button", { name: "Close" }).click();
+  return dialog.getByRole("checkbox", { name: "Faint baseline under filtered charts" });
 }
 
 async function chartsOn(page: Page, side: string): Promise<void> {
@@ -1522,19 +1528,19 @@ test("Forge moves cards by drag and filters them with typed, applied, and peeked
   const two = curve.locator('.lab-bar[aria-label^="MV 2:"]');
   await two.hover();
   await expect.poll(async () => dim.count()).toBeGreaterThan(redDim);
-  await page.locator(".lab-top h1").hover();
+  await page.getByRole("link", { name: "Max's Cube" }).hover();
   await expect(dim).toHaveCount(redDim);
   await two.click();
   await expect(page.getByRole("button", { name: "Remove MV 2" })).toBeVisible();
   const both = await dim.count();
   expect(both).toBeGreaterThan(redDim);
 
-  await forgeSetting(page, "Cards that don't match the filter", "hide");
+  await nonMatches(page, "Hide");
   await expect(cells).toHaveCount(total - both);
   await page.reload();
   await expect(page.getByRole("button", { name: "Remove c=r" })).toBeVisible();
   await expect(cells).toHaveCount(total - both);
-  await forgeSetting(page, "Cards that don't match the filter", "dim");
+  await nonMatches(page, "Dim");
   await page.getByRole("button", { name: "Remove MV 2" }).click();
   await expect(dim).toHaveCount(redDim);
 
@@ -1572,7 +1578,9 @@ test("a Forge chart pins to a scope or follows the filter, with its own baseline
   await curve.hover();
   await curve.getByLabel("Baseline for Curve").click();
   await expect(curve.locator(".lab-bar-base")).toHaveCount(0);
-  await expect(page.getByLabel("Baseline", { exact: true })).toBeChecked();
+  const baseline = await forgeBaseline(page);
+  await expect(baseline).toBeChecked();
+  await page.keyboard.press("Escape");
 
   await curve.getByLabel("Scope of Curve").selectOption("draft");
   await expect(three).toHaveAttribute("aria-label", unfiltered ?? "");
@@ -1707,7 +1715,7 @@ test("every Forge chart previews a hovered card's move and peeks at a hovered ba
   await prospect.hover();
   await expect(summary.locator(".lab-ghost-label").first()).toHaveText("+1");
   await expect(types.locator(".lab-ghost-label").first()).toHaveText("+1");
-  await page.locator(".lab-top h1").hover();
+  await page.getByRole("link", { name: "Max's Cube" }).hover();
   await expect(summary.locator(".lab-ghost-label")).toHaveCount(0);
 
   const dim = page.locator(".lab-cell[data-dim]");
@@ -1749,14 +1757,14 @@ test("Forge creature charts peek, pick, and preview a move in a top and a side d
     await expect(balance.locator(".lab-ghost-label")).toHaveCount(0);
     await rows.first().hover();
     await expect.poll(async () => dim.count()).toBeGreaterThan(0);
-    await page.locator(".lab-top h1").hover();
+    await page.getByRole("link", { name: "Max's Cube" }).hover();
 
     await combat.scrollIntoViewIfNeeded();
     const dots = combat.getByRole("listitem");
     await expect(dots).not.toHaveCount(0);
     await dots.first().hover();
     await expect.poll(async () => dim.count()).toBeGreaterThan(0);
-    await page.locator(".lab-top h1").hover();
+    await page.getByRole("link", { name: "Max's Cube" }).hover();
     await expect(dim).toHaveCount(0);
 
     let ghosts = { balance: false, combat: false };
@@ -1772,7 +1780,7 @@ test("Forge creature charts peek, pick, and preview a move in a top and a side d
       };
     }
     expect(ghosts).toEqual({ balance: true, combat: true });
-    await page.locator(".lab-top h1").hover();
+    await page.getByRole("link", { name: "Max's Cube" }).hover();
   }
 
   const row = balance.getByRole("listitem").first();
@@ -1854,7 +1862,7 @@ test("clicks in one Forge chart or together, and tag charts switch to chips", as
   const pill = page.locator(".lab-pill");
   await expect(pill).toHaveCount(1);
   await expect(pill).toContainText(" or ");
-  await page.locator(".lab-top h1").hover();
+  await page.getByRole("link", { name: "Max's Cube" }).hover();
   await expect.poll(async () => dim.count()).toBeLessThan(one);
   const both = await dim.count();
   await expect(heat.locator(".lab-heat-cell[data-picked]")).toHaveCount(2);
@@ -2305,7 +2313,7 @@ test("moving between Forge chart marks goes from one peek to the next without a 
   const resets = await page.evaluate(() => (window as unknown as { resets: number }).resets);
   expect(resets).toBe(0);
 
-  await page.locator(".lab-top h1").hover();
+  await page.getByRole("link", { name: "Max's Cube" }).hover();
   await expect(dim).toHaveCount(0);
 });
 

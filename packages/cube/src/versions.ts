@@ -1,16 +1,21 @@
 import type { CubeDiff, CubeState } from "./diff.ts";
-import { CURRENT, diffCube, statusCounts } from "./diff.ts";
+import { diffCube, statusCounts } from "./diff.ts";
+import { parsePoint, stateAtEntry } from "./history.ts";
+import { describeConflicts } from "./revert.ts";
+import { readLogState } from "./save-log.ts";
 import type { Version, VersionSummary } from "./schema.ts";
 import { newVersionSchema } from "./schema.ts";
 import { slugify } from "./slug.ts";
 import type { CubePaths } from "./store.ts";
-import { readBoard, readCards, readTags, readVersions, writeVersion } from "./store.ts";
+import { readBoard, readCards, readLog, readTags, readVersions, writeVersion } from "./store.ts";
 
 export type VersionResult =
   { ok: true; version: VersionSummary } | { ok: false; status: 400 | 409; error: string };
 
 export type CompareResult =
-  { ok: true; diff: CubeDiff } | { ok: false; status: 404; error: string };
+  { ok: true; diff: CubeDiff } | { ok: false; status: 404 | 409; error: string };
+
+type PointState = { ok: true; state: CubeState } | { ok: false; status: 404 | 409; error: string };
 
 export function localDate(date: Date): string {
   const pad = (value: number): string => String(value).padStart(2, "0");
@@ -70,17 +75,47 @@ export async function saveVersion(
   return { ok: true, version: summarize(version) };
 }
 
+async function pointState(paths: CubePaths, id: string): Promise<PointState> {
+  const point = parsePoint(id);
+  if (point.kind === "current") {
+    return { ok: true, state: await readCubeState(paths) };
+  }
+  if (point.kind === "version") {
+    const version = (await readVersions(paths)).find((item) => item.id === point.id);
+    return version
+      ? { ok: true, state: version }
+      : { ok: false, status: 404, error: `No version "${id}"` };
+  }
+  const [state, log] = await Promise.all([readLogState(paths), readLog(paths)]);
+  const plan = stateAtEntry(state, log, point.side, point.entry);
+  if (!plan) {
+    return { ok: false, status: 404, error: `No log entry "${point.entry}"` };
+  }
+  if (!plan.ok) {
+    const reasons = [
+      ...(plan.conflicts.length > 0 ? [describeConflicts(plan.conflicts)] : []),
+      ...plan.problems,
+    ];
+    return {
+      ok: false,
+      status: 409,
+      error: `The log can't rebuild the cube ${point.side} that entry: ${reasons.join("; ")}`,
+    };
+  }
+  return { ok: true, state: plan.state };
+}
+
 export async function compareVersions(
   paths: CubePaths,
   from: string,
   to: string,
 ): Promise<CompareResult> {
-  const versions = await readVersions(paths);
-  const state = async (id: string): Promise<CubeState | undefined> =>
-    id === CURRENT ? readCubeState(paths) : versions.find((version) => version.id === id);
-  const [before, after] = await Promise.all([state(from), state(to)]);
-  if (!before || !after) {
-    return { ok: false, status: 404, error: `No version "${before ? to : from}"` };
+  const [before, after] = await Promise.all([pointState(paths, from), pointState(paths, to)]);
+  if (!before.ok) {
+    return before;
   }
-  return { ok: true, diff: diffCube(before, after) };
+  if (!after.ok) {
+    return after;
+  }
+  return { ok: true, diff: diffCube(before.state, after.state) };
 }

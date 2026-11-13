@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { CubePaths } from "./store.ts";
 import { cubePaths, readVersionFiles, versionProblems, writeCard } from "./store.ts";
 import { CURRENT } from "./diff.ts";
+import { entryPoint } from "./history.ts";
+import { readLogState, recordEdit } from "./save-log.ts";
 import { compareVersions, listVersions, localDate, saveVersion } from "./versions.ts";
 
 let paths: CubePaths;
@@ -67,6 +69,42 @@ describe("compareVersions", () => {
     expect(result.ok && result.diff.cards).toMatchObject([
       { name: "Shock", before: "draft", after: "cut" },
     ]);
+  });
+
+  it("compares the cube before and after logged edits", async () => {
+    const noStats = () => Promise.resolve({});
+    const start = await readLogState(paths);
+    await writeCard(paths, { ...shock, status: "prospect" });
+    const first = await recordEdit(paths, start, noStats, { at: new Date(2026, 10, 10, 13) });
+    const middle = await readLogState(paths);
+    await writeCard(paths, { ...shock, status: "cut" });
+    const second = await recordEdit(paths, middle, noStats, { at: new Date(2026, 10, 10, 14) });
+    const statuses = async (from: string, to: string) => {
+      const result = await compareVersions(paths, from, to);
+      return result.ok ? result.diff.cards.map((card) => [card.before, card.after]) : result;
+    };
+    const one = entryPoint("before", first?.id ?? "");
+    const two = entryPoint("after", second?.id ?? "");
+    expect(await statuses(one, two)).toEqual([["draft", "cut"]]);
+    expect(await statuses(entryPoint("after", first?.id ?? ""), CURRENT)).toEqual([
+      ["prospect", "cut"],
+    ]);
+    expect(await statuses(two, CURRENT)).toEqual([]);
+    expect(await compareVersions(paths, entryPoint("after", "nope"), CURRENT)).toEqual({
+      ok: false,
+      status: 404,
+      error: 'No log entry "nope"',
+    });
+  });
+
+  it("refuses a log point the log can't rebuild", async () => {
+    const start = await readLogState(paths);
+    await writeCard(paths, { ...shock, status: "prospect" });
+    const entry = await recordEdit(paths, start, () => Promise.resolve({}));
+    await writeCard(paths, { ...shock, status: "cut" });
+    expect(
+      await compareVersions(paths, entryPoint("before", entry?.id ?? ""), CURRENT),
+    ).toMatchObject({ ok: false, status: 409 });
   });
 
   it("says which version is missing", async () => {

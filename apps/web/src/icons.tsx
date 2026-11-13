@@ -37,19 +37,10 @@ export function SettingsIcon(): ReactNode {
 }
 
 const VIEW_PATHS = {
-  wall: (
+  forge: (
     <>
-      <rect x="3.5" y="4" width="4.5" height="16" rx="1.5" />
-      <rect x="9.75" y="4" width="4.5" height="11" rx="1.5" />
-      <rect x="16" y="4" width="4.5" height="13.5" rx="1.5" />
-    </>
-  ),
-  cards: (
-    <>
-      <rect x="3.5" y="3.5" width="7" height="7" rx="1.8" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="1.8" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="1.8" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="1.8" />
+      <path d="M3.5 6.5h17v2.2c0 1.8-1.5 3.3-3.3 3.3H14.5l-.8 3.5h-3.4l-.8-3.5c-3.3 0-6-2.4-6-5.5z" />
+      <path d="M7.5 19.5h9M9 19.5l1.3-4M15 19.5l-1.3-4" />
     </>
   ),
   board: (
@@ -65,12 +56,6 @@ const VIEW_PATHS = {
     </>
   ),
   insights: <path d="M5 20V12M12 20V5M19 20v-5" />,
-  lab: (
-    <>
-      <path d="M9.5 3.5h5M10.5 3.5v5.2L5 18.2A1.6 1.6 0 0 0 6.4 20.5h11.2a1.6 1.6 0 0 0 1.4-2.3l-5.5-9.5V3.5" />
-      <path d="M7.6 14h8.8" />
-    </>
-  ),
   versions: (
     <>
       <circle cx="6.5" cy="6" r="2.2" />

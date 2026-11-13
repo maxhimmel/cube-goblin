@@ -37,6 +37,12 @@
   grid-template-columns: var(--dock-col) minmax(0, 1fr);
 }
 
+.lab[data-dock]:not([data-dock-open]) {
+  grid-template-areas: "head" "floor";
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .lab-top {
   grid-area: head;
   display: flex;
@@ -490,18 +496,31 @@
 .lab-query {
   position: relative;
   display: flex;
-  flex: 1 1 420px;
-  flex-wrap: wrap;
-  gap: 6px 10px;
+  flex: 1 1 520px;
+  gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 
 .lab-query .lab-pills {
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
   min-height: 0;
+  margin: calc(-1 * var(--ring-room));
+  padding: var(--ring-room);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.lab-query .lab-pill-wrap,
+.lab-query .lab-pills > * {
+  flex: none;
 }
 
 .lab-query .query-input {
-  flex: 1 1 360px;
+  flex: 1 1 300px;
+  min-width: 240px;
 }
 
 .lab-pill-wrap {
@@ -552,8 +571,7 @@
   border-radius: 9px;
 }
 
-.lab-seg button,
-.lab-dock-toggle {
+.lab-seg button {
   padding: 2px 11px;
   color: var(--muted);
   font-size: 0.82rem;
@@ -566,36 +584,10 @@
     color 0.15s;
 }
 
-.lab-seg button.on,
-.lab-dock-toggle[aria-pressed="true"] {
+.lab-seg button.on {
   color: var(--fg);
   background: var(--panel);
   box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
-}
-
-.lab-seg-label {
-  align-self: center;
-  padding: 0 6px 0 4px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.lab-dock-controls {
-  display: inline-flex;
-  align-items: center;
-  background: var(--field);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-}
-
-.lab-dock-controls .lab-seg {
-  border: 0;
-}
-
-.lab-dock-toggle {
-  margin-right: 3px;
 }
 
 .lab-menu {
@@ -644,22 +636,6 @@
 .lab[data-dock="left"] .lab-dock {
   flex-direction: column;
   padding-right: 4px;
-}
-
-.lab-dock-bar {
-  flex: 1;
-  padding: 6px 14px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  text-align: left;
-  background: var(--panel);
-  border-radius: 12px;
-}
-
-.lab[data-dock="right"] .lab-dock-bar,
-.lab[data-dock="left"] .lab-dock-bar {
-  text-align: center;
-  writing-mode: vertical-rl;
 }
 
 .lab-block {
@@ -973,6 +949,8 @@
 
 .lab-pile-head {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 6px;
@@ -989,6 +967,7 @@
 
 .lab-pile-tools {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -2174,4 +2153,116 @@ button.lab-stat[data-picked] {
   .pending[data-target] {
     animation: none;
   }
+}
+
+.lab-images {
+  padding-top: 4px;
+}
+
+.lab-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 12px 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lab-images[data-compact] .lab-image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.lab-tile-cell {
+  position: relative;
+  transition:
+    opacity 0.18s ease,
+    filter 0.18s ease;
+}
+
+.lab-tile-cell[data-status="cut"] .lab-image {
+  opacity: 0.5;
+}
+
+.lab-tile-cell[data-dim] {
+  opacity: 0.22;
+  filter: saturate(0.2);
+}
+
+.lab-image {
+  border-radius: 4.75% / 3.4%;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+}
+
+.lab-image img {
+  aspect-ratio: 488 / 680;
+  border-radius: 4.75% / 3.4%;
+}
+
+.lab-tile-cell[data-pending] .lab-image {
+  outline: 3px dashed var(--pending-mark);
+  outline-offset: 2px;
+}
+
+.lab-tile-cell[data-pending="add"] {
+  --pending-mark: var(--keep);
+}
+
+.lab-tile-cell[data-pending="cut"] {
+  --pending-mark: var(--cut);
+}
+
+.lab-tile-cell .select {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+  opacity: 0;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 60%));
+  transition: opacity 0.12s ease;
+}
+
+@media (hover: none) {
+  .lab-tile-cell .select {
+    opacity: 1;
+  }
+}
+
+.lab-tile-cell:hover .select,
+.lab-tile-cell .select:focus-visible,
+.lab-tile-cell .select:checked,
+.lab-image-grid:has(.select:checked) .select {
+  opacity: 1;
+}
+
+.lab-bulk-slot {
+  position: sticky;
+  top: -10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  margin: 0 -10px 8px;
+  padding: 0 10px;
+  background: var(--panel);
+}
+
+.lab-bulk-slot .bulk-bar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin: calc(-1 * var(--ring-room));
+  padding: var(--ring-room);
+}
+
+.lab-bulk-slot .bulk-bar > * {
+  flex: none;
+}
+
+.lab-bulk-slot .bulk-bar button,
+.lab-bulk-slot .bulk-bar select {
+  padding: 4px 10px;
+  font-size: 0.82rem;
 }

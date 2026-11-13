@@ -27,11 +27,12 @@ test("friend reviews from file://, saves a copy, and the copy carries the review
     throw new Error("empty snapshot");
   }
   await page.goto(`${DOC_URL}#/cards`);
-  await expect(page.locator(".grid img")).toHaveCount(snapshot.cards.length);
+  await page.getByRole("checkbox", { name: "Show cut" }).check();
+  await expect(page.locator(".lab-image img")).toHaveCount(snapshot.cards.length);
 
   await page.getByLabel("Your name").fill("Sam");
-  await page.locator(".grid a").first().click();
-  await expect(page).toHaveURL(new RegExp(`#/cards\\?card=${FIRST.slug}$`, "u"));
+  await page.locator(`.lab-image:has(img[alt=${JSON.stringify(FIRST.name)}])`).click();
+  await expect(page).toHaveURL(new RegExp(`#/\\?card=${FIRST.slug}$`, "u"));
   await expect(page.getByRole("heading", { name: FIRST.name })).toBeVisible();
 
   await page.getByRole("button", { name: "cut" }).click();
@@ -118,16 +119,16 @@ test("share doc keeps view choices across views and reloads", async ({ page }) =
   await page.goto(`${DOC_URL}#/insights`);
   await page.getByLabel("Count cards in").selectOption("all");
   const views = page.getByRole("navigation", { name: "Views" });
-  await views.getByRole("link", { name: "Wall", exact: true }).click();
-  await page
-    .getByRole("group", { name: "Columns" })
-    .getByRole("button", { name: "Card type" })
-    .click();
+  await views.getByRole("link", { name: "Forge", exact: true }).click();
+  const cardType = page.getByRole("group", { name: "Group by" }).getByRole("button", {
+    name: "Card type",
+  });
+  await cardType.click();
   await page.reload();
   await views.getByRole("link", { name: "Insights", exact: true }).click();
   await expect(page.getByLabel("Count cards in")).toHaveValue("all");
-  await views.getByRole("link", { name: "Wall", exact: true }).click();
-  await expect(page).toHaveURL(/by=type/u);
+  await views.getByRole("link", { name: "Forge", exact: true }).click();
+  await expect(cardType).toHaveAttribute("aria-pressed", "true");
 });
 
 test("share doc shows the change log read-only with its timeline", async ({ page }) => {

@@ -183,7 +183,7 @@ export function QueryBar({ lab }: { lab: Lab }): ReactNode {
           lab.setTyping(valid ? query.trim() : lab.typing);
         }}
         vocabulary={lab.vocabulary}
-        label="Filter the Lab"
+        label="Filter the Forge"
         slashFocus
         status={
           count === undefined
@@ -202,30 +202,25 @@ export function QueryBar({ lab }: { lab: Lab }): ReactNode {
   );
 }
 
-export function Segmented<T extends string | boolean>({
+export function Segmented<T extends string>({
   label,
-  caption,
   options,
   value,
   onChange,
 }: {
   label: string;
-  caption?: string;
-  options: readonly { id: T; label: ReactNode; title?: string }[];
+  options: readonly { id: T; label: ReactNode }[];
   value: T;
   onChange: (next: T) => void;
 }): ReactNode {
   return (
     <div className="lab-seg" role="group" aria-label={label}>
-      {caption !== undefined && <span className="lab-seg-label">{caption}</span>}
       {options.map((option) => (
         <button
-          key={String(option.id)}
+          key={option.id}
           type="button"
           className={option.id === value ? "on" : undefined}
           aria-pressed={option.id === value}
-          aria-label={option.title}
-          title={option.title}
           onClick={() => {
             onChange(option.id);
           }}
@@ -245,15 +240,13 @@ export function Toggle({
   label,
   checked,
   onChange,
-  hidden,
 }: {
   label: string;
   checked: boolean;
   onChange: (on: boolean) => void;
-  hidden?: boolean;
 }): ReactNode {
   return (
-    <label hidden={hidden}>
+    <label>
       <input
         type="checkbox"
         checked={checked}

@@ -1,9 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 
 export const REMEMBERED = {
-  "/": [["by"], ["with", "without"]],
-  "/cards": [["by"]],
   "/insights": [["scope"]],
   "/tags": [["tags"]],
   "/board": [["sort"]],
@@ -108,6 +106,8 @@ export function recallState<T>(
   return parsed.success ? parsed.data : undefined;
 }
 
+const stateListeners = new Map<string, Set<(value: unknown) => void>>();
+
 export function rememberState(
   key: string,
   value: unknown,
@@ -115,6 +115,9 @@ export function rememberState(
 ): void {
   const all = read(store, STATE_KEY, stateSchema) ?? {};
   write(store, STATE_KEY, { ...all, [key]: value });
+  for (const listener of stateListeners.get(key) ?? []) {
+    listener(value);
+  }
 }
 
 export function useRemembered<T>(
@@ -123,11 +126,25 @@ export function useRemembered<T>(
   schema: z.ZodType<T>,
 ): [T, (next: T) => void] {
   const [value, setValue] = useState<T>(() => recallState(key, schema) ?? fallback);
+  useEffect(() => {
+    const listener = (next: unknown): void => {
+      const parsed = schema.safeParse(next);
+      if (parsed.success) {
+        setValue(parsed.data);
+      }
+    };
+    const listeners = stateListeners.get(key) ?? new Set();
+    listeners.add(listener);
+    stateListeners.set(key, listeners);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, [key, schema]);
   return [
     value,
     (next: T) => {
-      setValue(next);
       rememberState(key, next);
+      setValue(next);
     },
   ];
 }

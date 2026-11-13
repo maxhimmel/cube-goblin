@@ -2,6 +2,7 @@ import { mode } from "#mode";
 import type { Column } from "@repo/cube/browser";
 import { colorKey, columnsBy, sortCards } from "@repo/cube/browser";
 import type { CSSProperties, DragEvent, MouseEvent, PointerEvent, ReactNode } from "react";
+import { CardImage } from "../card-image.tsx";
 import { CardLink } from "../card-pane.tsx";
 import { colorIcon, curveTick } from "../insights/labels.tsx";
 import { ManaCost } from "../mana.tsx";
@@ -255,4 +256,53 @@ export function CardRows({ lab, cards }: { lab: Lab; cards: readonly GridCard[] 
       </ul>
     </div>
   ));
+}
+
+function CardTile({ lab, card }: { lab: Lab; card: GridCard }): ReactNode {
+  const mark = mode.useTileMark(card.slug);
+  return (
+    <li
+      className="lab-tile-cell"
+      data-status={card.status}
+      data-dim={lab.dimmed(card) ? "" : undefined}
+      data-pending={lab.pendingOf(card)}
+    >
+      <CardLink className="tile lab-image" {...cardLinkProps(lab, card)} {...mark}>
+        <CardImage key={card.image} src={card.image} alt={card.name} width={146} height={204} />
+      </CardLink>
+      <mode.SelectCard slug={card.slug} name={card.name} />
+    </li>
+  );
+}
+
+export function CardImages({
+  lab,
+  cards,
+  compact,
+}: {
+  lab: Lab;
+  cards: readonly GridCard[];
+  compact: boolean;
+}): ReactNode {
+  return (
+    <div className="lab-images" data-compact={compact ? "" : undefined}>
+      {shownGroups(lab, cards).map((column) => (
+        <section key={column.id} className="lab-group">
+          <header className="lab-group-head">
+            <mode.SelectPile
+              slugs={column.cards.map((card) => card.slug)}
+              label={`${column.label}${compact ? " prospects" : ""}`}
+            />
+            <GroupTitle axis={lab.axis} column={column} />
+            <span className="lab-group-count">{litCount(lab, column, " of ")}</span>
+          </header>
+          <ul className="lab-image-grid">
+            {column.cards.map((card) => (
+              <CardTile key={card.slug} lab={lab} card={card} />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
 }

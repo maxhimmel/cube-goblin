@@ -192,14 +192,6 @@ h2 {
   font-family: ui-monospace, monospace;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-  list-style: none;
-  padding: 0;
-}
-
 .tile {
   display: block;
   border-radius: 6px;
@@ -420,38 +412,11 @@ textarea {
   border-color: var(--accent);
 }
 
-.grid-tools {
-  position: sticky;
-  top: 52px;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  padding: 6px 0;
-  background: var(--bg);
-}
-
 .bulk-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-}
-
-.tile-cell {
-  position: relative;
-}
-
-.tile-cell .select {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  width: 22px;
-  height: 22px;
-  margin: 0;
-  cursor: pointer;
-  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 60%));
 }
 
 .select-pile {
@@ -462,12 +427,6 @@ textarea {
 
 .tile[data-selected="true"] {
   outline-color: var(--accent);
-}
-
-.pile-head {
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 .add-options {
@@ -500,11 +459,6 @@ textarea {
 
 .mana-cost .ms + .ms {
   margin-left: 2px;
-}
-
-.grid-layout {
-  display: grid;
-  gap: 20px;
 }
 
 .stat-table {

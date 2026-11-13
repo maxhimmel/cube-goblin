@@ -6,8 +6,8 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 - **Updated**: 2026-11-12
 - **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: the change log `#/log` with a stats timeline ([T-038](tickets/T-038-change-log.md), [T-039](tickets/T-039-stats-timeline.md)), read-only in the share doc ([T-041](tickets/T-041-change-log-in-share-doc.md)), and backfilled from git history back to the first import (`pnpm cube backfill-log`, [T-040](tickets/T-040-change-log-from-git.md)). Every view setting persists, inventoried in [T-034](tickets/T-034-persistence-audit.md). Commits run fast staged-file checks and merges run the full `pnpm check`; e2e tests are independent and parallel ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
-- **Polish so far**: papercuts done, an e2e sweep fails any view where a ring would be cropped ([T-044](tickets/T-044-papercuts.md)), favicon E ships ([T-050](tickets/T-050-visual-system.md)), and the top bar is brand, icon views, save state, add panel, and a settings dialog that edits `cube.config.json` ([T-045](tickets/T-045-top-bar-and-settings.md)).
-- **Next step**: Polish pass [T-043](tickets/T-043-polish-pass.md): the view merges in the order the ticket gives, starting with Wall + Lab ([T-046](tickets/T-046-wall-and-lab.md)); each moves its view settings into the settings dialog. The user picked favicon E ([T-050](tickets/T-050-visual-system.md)) and the name Forge for the merged Wall and Lab ([T-046](tickets/T-046-wall-and-lab.md)).
+- **Polish so far**: papercuts done, an e2e sweep fails any view where a ring would be cropped ([T-044](tickets/T-044-papercuts.md)), favicon E ships ([T-050](tickets/T-050-visual-system.md)), the top bar has brand, icon views, save state, add panel, and a settings dialog ([T-045](tickets/T-045-top-bar-and-settings.md)), and **Forge** replaces the Wall, Cards, and Lab at `#/` ([T-046](tickets/T-046-wall-and-lab.md)).
+- **Next step**: Tag workspace [T-047](tickets/T-047-tag-workspace.md), the next merge in [T-043](tickets/T-043-polish-pass.md). The user wants reviewers to use Forge in the share doc and send suggestions back: [T-051](tickets/T-051-share-doc-suggestions.md).
 
 ## Now
 
@@ -15,11 +15,11 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Next
 
-- [T-046: Merge the Wall and the Lab](tickets/T-046-wall-and-lab.md)
 - [T-047: Tag workspace](tickets/T-047-tag-workspace.md)
 - [T-048: History](tickets/T-048-history.md)
 - [T-049: Insights trim](tickets/T-049-insights-trim.md)
 - [T-050: Visual system and favicon](tickets/T-050-visual-system.md)
+- [T-051: Suggestions from the share doc](tickets/T-051-share-doc-suggestions.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)
 
 ## Later
@@ -33,6 +33,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-046: Merge the Wall and the Lab](tickets/T-046-wall-and-lab.md)
 - [T-045: Top bar and settings](tickets/T-045-top-bar-and-settings.md)
 - [T-044: Papercuts](tickets/T-044-papercuts.md)
 - [T-034: Persistence audit](tickets/T-034-persistence-audit.md)

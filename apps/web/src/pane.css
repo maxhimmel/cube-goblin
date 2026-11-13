@@ -480,3 +480,14 @@
 .settings-range input {
   width: 6em;
 }
+
+.settings-panel .settings-section + .settings-section {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

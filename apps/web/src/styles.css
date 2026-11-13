@@ -174,6 +174,10 @@ h2 {
     border-color 160ms ease;
 }
 
+.topbar:has(.menu-list) {
+  z-index: 35;
+}
+
 .topbar[data-stuck="true"] {
   background: color-mix(in oklab, var(--bg) 78%, transparent);
   backdrop-filter: blur(12px) saturate(1.4);
@@ -192,20 +196,39 @@ h2 {
   color: var(--muted);
 }
 
-.reviewer {
-  display: flex;
-  gap: 6px;
-  align-items: center;
+.review-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: var(--fs-xs);
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 9px;
 }
 
-.code-panel {
-  display: flex;
+.review-menu {
+  display: grid;
   gap: 8px;
+  width: 260px;
 }
 
-.code-panel textarea {
-  flex: 1;
+.review-menu .field {
+  display: grid;
+  gap: 4px;
+}
+
+.review-menu p {
+  margin: 0;
+}
+
+.review-menu textarea {
   font-family: ui-monospace, monospace;
+}
+
+.review-snapshot {
+  font-size: var(--fs-xs);
 }
 
 .tile {

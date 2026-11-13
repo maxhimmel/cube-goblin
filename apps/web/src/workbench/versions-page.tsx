@@ -328,13 +328,7 @@ function TagGroup({ tags }: { tags: CubeDiff["tags"] }): ReactNode {
         ))}
         {tags.changed.map(({ before, after }) => (
           <li key={after.id}>
-            {before.label === after.label ? after.label : `${before.label} → ${after.label}`}
-            {before.kind !== after.kind && (
-              <span className="muted">
-                {" "}
-                ({before.kind} → {after.kind})
-              </span>
-            )}
+            {before.label} → {after.label}
           </li>
         ))}
       </ul>

@@ -71,9 +71,9 @@ describe("parseTagList", () => {
 
 describe("describeFilter", () => {
   const vocabulary = [
-    { id: "a", label: "A", kind: "group" as const },
-    { id: "b", label: "B", kind: "group" as const },
-    { id: "c", label: "C", kind: "group" as const },
+    { id: "a", label: "A" },
+    { id: "b", label: "B" },
+    { id: "c", label: "C" },
   ];
 
   it("joins kept tags with + and left-out tags with or", () => {

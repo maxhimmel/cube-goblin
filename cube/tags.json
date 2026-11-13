@@ -2,163 +2,131 @@
   "tags": [
     {
       "id": "ping",
-      "label": "ping",
-      "kind": "archetype"
+      "label": "ping"
     },
     {
       "id": "payoff",
-      "label": "payoff",
-      "kind": "group"
+      "label": "payoff"
     },
     {
       "id": "enabler",
-      "label": "enabler",
-      "kind": "group"
+      "label": "enabler"
     },
     {
       "id": "counters",
-      "label": "counters",
-      "kind": "group"
+      "label": "counters"
     },
     {
       "id": "go-wide",
-      "label": "go wide",
-      "kind": "group"
+      "label": "go wide"
     },
     {
       "id": "big-ass-foo",
-      "label": "big ass foo'",
-      "kind": "group"
+      "label": "big ass foo'"
     },
     {
       "id": "removal",
-      "label": "removal",
-      "kind": "group"
+      "label": "removal"
     },
     {
       "id": "board-wipe",
-      "label": "board wipe",
-      "kind": "group"
+      "label": "board wipe"
     },
     {
       "id": "burn",
-      "label": "burn",
-      "kind": "group"
+      "label": "burn"
     },
     {
       "id": "bounce",
-      "label": "bounce",
-      "kind": "group"
+      "label": "bounce"
     },
     {
       "id": "counterspell",
-      "label": "counterspell",
-      "kind": "group"
+      "label": "counterspell"
     },
     {
       "id": "discard",
-      "label": "discard",
-      "kind": "group"
+      "label": "discard"
     },
     {
       "id": "ramp",
-      "label": "ramp",
-      "kind": "group"
+      "label": "ramp"
     },
     {
       "id": "fixing",
-      "label": "fixing",
-      "kind": "group"
+      "label": "fixing"
     },
     {
       "id": "card-draw",
-      "label": "card draw",
-      "kind": "group"
+      "label": "card draw"
     },
     {
       "id": "looting",
-      "label": "looting",
-      "kind": "group"
+      "label": "looting"
     },
     {
       "id": "tutor",
-      "label": "tutor",
-      "kind": "group"
+      "label": "tutor"
     },
     {
       "id": "recursion",
-      "label": "recursion",
-      "kind": "group"
+      "label": "recursion"
     },
     {
       "id": "reanimate",
-      "label": "reanimate",
-      "kind": "group"
+      "label": "reanimate"
     },
     {
       "id": "token-maker",
-      "label": "token maker",
-      "kind": "group"
+      "label": "token maker"
     },
     {
       "id": "lifegain",
-      "label": "lifegain",
-      "kind": "group"
+      "label": "lifegain"
     },
     {
       "id": "sac-outlet",
-      "label": "sac outlet",
-      "kind": "group"
+      "label": "sac outlet"
     },
     {
       "id": "mill",
-      "label": "mill",
-      "kind": "group"
+      "label": "mill"
     },
     {
       "id": "evasion",
-      "label": "evasion",
-      "kind": "group"
+      "label": "evasion"
     },
     {
       "id": "combat-trick",
-      "label": "combat trick",
-      "kind": "group"
+      "label": "combat trick"
     },
     {
       "id": "protection",
-      "label": "protection",
-      "kind": "group"
+      "label": "protection"
     },
     {
       "id": "flicker",
-      "label": "flicker",
-      "kind": "group"
+      "label": "flicker"
     },
     {
       "id": "etb",
-      "label": "ETB",
-      "kind": "group"
+      "label": "ETB"
     },
     {
       "id": "control",
-      "label": "control",
-      "kind": "group"
+      "label": "control"
     },
     {
       "id": "beatdown",
-      "label": "beatdown",
-      "kind": "group"
+      "label": "beatdown"
     },
     {
       "id": "nullify",
-      "label": "nullify",
-      "kind": "group"
+      "label": "nullify"
     },
     {
       "id": "breaking",
-      "label": "breaking",
-      "kind": "group"
+      "label": "breaking"
     }
   ]
 }

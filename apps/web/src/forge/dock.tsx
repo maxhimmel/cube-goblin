@@ -47,8 +47,7 @@ const LAB_BLOCKS = [
   { id: "lab:combat", title: "Combat matchups" },
   { id: "lab:types", title: "Card types" },
   { id: "lab:heavy", title: "Heavy pips" },
-  { id: "lab:archetypes", title: "Archetypes" },
-  { id: "lab:groups", title: "Groups" },
+  { id: "lab:tags", title: "Tags" },
 ] as const;
 
 const COLOR_ROWS = [
@@ -79,13 +78,12 @@ function summaryTallies(view: BlockView): Tally[] {
 }
 
 const RENAMED: Partial<Record<string, string>> = {
-  "lab:tags": "lab:groups",
+  "lab:groups": "lab:tags",
   summary: "lab:summary",
   color: "lab:color",
   heavy: "lab:heavy",
   types: "lab:types",
-  groups: "lab:groups",
-  archetypes: "lab:archetypes",
+  groups: "lab:tags",
   "creature-balance": "lab:balance",
   combat: "lab:combat",
 };
@@ -96,7 +94,7 @@ const DEFAULT_ORDER = ALL_BLOCKS.map((block) => block.id);
 
 const DEFAULT_HIDDEN: string[] = [];
 
-const TAG_BLOCKS = new Set<string>(["lab:archetypes", "lab:groups"]);
+const TAG_BLOCKS = new Set<string>(["lab:tags"]);
 
 const CHARTS = new Set<string>(
   LAB_BLOCKS.map((block) => block.id).filter((id) => id !== "lab:filters"),
@@ -279,6 +277,7 @@ export function useDockState(): DockState {
   const baselines = renameKeys(storedBaselines);
   const hidden = migrate(storedHidden);
   const collapsed = migrate(storedCollapsed);
+  const chips = migrate(storedChips);
   const known = [
     ...migrate(order).filter((id) => ALL_BLOCKS.some((block) => block.id === id)),
     ...ALL_BLOCKS.map((block) => block.id).filter((id) => !migrate(order).includes(id)),
@@ -289,12 +288,10 @@ export function useDockState(): DockState {
     collapsed: new Set(collapsed),
     pins,
     baselines,
-    chips: new Set(storedChips),
+    chips: new Set(chips),
     setChips: (id, on) => {
       setStoredChips(
-        on
-          ? [...storedChips.filter((other) => other !== id), id]
-          : storedChips.filter((other) => other !== id),
+        on ? [...chips.filter((other) => other !== id), id] : chips.filter((other) => other !== id),
       );
     },
     setPin: (id, pin) => {
@@ -623,13 +620,9 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
           />,
           true,
         );
-      case "lab:archetypes":
-      case "lab:groups": {
-        const kind = id === "lab:archetypes" ? "archetype" : "group";
-        const title = id === "lab:archetypes" ? "Archetypes" : "Groups";
-        const rows = lab.vocabulary
-          .filter((tag) => tag.kind === kind)
-          .map((tag) => ({ id: `tag:${tag.id}`, label: tag.label }));
+      case "lab:tags": {
+        const title = "Tags";
+        const rows = lab.vocabulary.map((tag) => ({ id: `tag:${tag.id}`, label: tag.label }));
         const tallies = bucketTallies(rows, view.scope, view.next, view.lens).toSorted(
           (a, b) => b.base - a.base || a.label.localeCompare(b.label),
         );
@@ -698,7 +691,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
     .filter((id) => !dock.hidden.has(id))
     .map((id) => {
       const spec = ALL_BLOCKS.find((block) => block.id === id);
-      const scoped = id !== "lab:filters" && id !== "lab:tags";
+      const scoped = id !== "lab:filters";
       return (
         <DockBlock key={id} id={id} dock={dock} dragging={dragging} setDragging={setDragging}>
           <TileExtras.Provider

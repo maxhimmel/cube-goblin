@@ -208,19 +208,12 @@ function cardTrailer({ before, after }: Change<CardEntry>): string {
 function tagTrailer({ before, after }: Change<Tag>): string {
   const tag = after ?? before;
   if (before === undefined) {
-    return `Tag: ${tag?.id ?? ""} added (${after?.kind ?? ""})`;
+    return `Tag: ${tag?.id ?? ""} added`;
   }
   if (after === undefined) {
     return `Tag: ${before.id} removed`;
   }
-  const parts: string[] = [];
-  if (before.label !== after.label) {
-    parts.push(`renamed ${before.label}→${after.label}`);
-  }
-  if (before.kind !== after.kind) {
-    parts.push(`${before.kind}→${after.kind}`);
-  }
-  return `Tag: ${after.id} ${list(parts)}`;
+  return `Tag: ${after.id} renamed ${before.label}→${after.label}`;
 }
 
 function sectionTrailer({ before, after }: Change<Section>): string {

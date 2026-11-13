@@ -45,9 +45,9 @@ describe("validateCube", () => {
       tags: ["burn", "elves", "burn"],
     };
     const vocabulary = [
-      { id: "burn", label: "Burn", kind: "group" as const },
-      { id: "burn", label: "Burn again", kind: "archetype" as const },
-      { id: "shock", label: "burn", kind: "group" as const },
+      { id: "burn", label: "Burn" },
+      { id: "burn", label: "Burn again" },
+      { id: "shock", label: "burn" },
     ];
     const problems = validateCube([tagged], vocabulary);
     expect(problems).toEqual([

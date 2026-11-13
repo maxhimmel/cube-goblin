@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { joinTyped, suggest, typedQuery } from "./query-input.tsx";
 
 const tags: Tag[] = [
-  { id: "removal", label: "Removal", kind: "group" },
-  { id: "ramp", label: "Ramp", kind: "group" },
+  { id: "removal", label: "Removal" },
+  { id: "ramp", label: "Ramp" },
 ];
 
 describe("suggest", () => {

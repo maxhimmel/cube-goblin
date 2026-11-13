@@ -25,7 +25,7 @@ const shock: CardEntry = {
   source: { batch: "test", line: 1, input: "Shock" },
 };
 const opt: CardEntry = { ...shock, name: "Opt", oracleId: "8b4b6b0e-0000-4000-8000-000000000002" };
-const burn: Tag = { id: "burn", label: "Burn", kind: "group" };
+const burn: Tag = { id: "burn", label: "Burn" };
 
 const board: Board = {
   sections: [

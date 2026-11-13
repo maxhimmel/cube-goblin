@@ -1,4 +1,4 @@
-import type { Section, Board, CardChange, TagKind, Workbench } from "@repo/cube/browser";
+import type { Section, Board, CardChange, Workbench } from "@repo/cube/browser";
 import { EMPTY_BOARD, linkTag, unlinkTag } from "@repo/cube/browser";
 import { MutationObserver, useQuery } from "@tanstack/react-query";
 import { queryClient } from "../query-client.ts";
@@ -112,9 +112,9 @@ export function unlinkSectionTag(id: string, tag: string): void {
   editBoard((board) => unlinkTag(board, id, tag));
 }
 
-export async function createSectionTag(id: string, label: string, kind: TagKind): Promise<void> {
+export async function createSectionTag(id: string, label: string): Promise<void> {
   try {
-    const tag = await createTagRequest(label, kind);
+    const tag = await createTagRequest(label);
     cacheTag(tag);
     linkSectionTag(id, tag.id);
   } catch (error) {

@@ -99,9 +99,7 @@ function diffTags(before: readonly Tag[], after: readonly Tag[]): CubeDiff["tags
     removed: before.filter((tag) => !next.has(tag.id)),
     changed: after.flatMap((tag) => {
       const was = old.get(tag.id);
-      return was && (was.label !== tag.label || was.kind !== tag.kind)
-        ? [{ before: was, after: tag }]
-        : [];
+      return was && was.label !== tag.label ? [{ before: was, after: tag }] : [];
     }),
   };
 }

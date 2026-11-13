@@ -25,8 +25,8 @@ const before: CubeState = {
     card("Forest", ID(4)),
   ],
   tags: [
-    { id: "burn", label: "Burn", kind: "group" },
-    { id: "tempo", label: "Tempo", kind: "archetype" },
+    { id: "burn", label: "Burn" },
+    { id: "tempo", label: "Tempo" },
   ],
   board: {
     sections: [
@@ -45,8 +45,8 @@ const after: CubeState = {
     card("Bolt", ID(5), { status: "prospect" }),
   ],
   tags: [
-    { id: "burn", label: "Burn spells", kind: "group" },
-    { id: "removal", label: "Removal", kind: "group" },
+    { id: "burn", label: "Burn spells" },
+    { id: "removal", label: "Removal" },
   ],
   board: {
     sections: [
@@ -111,12 +111,12 @@ describe("diffCube", () => {
 
   it("diffs the tag list", () => {
     expect(diff.tags).toEqual({
-      added: [{ id: "removal", label: "Removal", kind: "group" }],
-      removed: [{ id: "tempo", label: "Tempo", kind: "archetype" }],
+      added: [{ id: "removal", label: "Removal" }],
+      removed: [{ id: "tempo", label: "Tempo" }],
       changed: [
         {
-          before: { id: "burn", label: "Burn", kind: "group" },
-          after: { id: "burn", label: "Burn spells", kind: "group" },
+          before: { id: "burn", label: "Burn" },
+          after: { id: "burn", label: "Burn spells" },
         },
       ],
     });

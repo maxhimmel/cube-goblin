@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { snapshot } from "../data.ts";
 import { LogView } from "../log/log-view.tsx";
-import { TagOverlap } from "../overlaps/overlap.tsx";
+import { TagsView } from "../overlaps/tags-view.tsx";
 import {
   downloadSavedDocument,
   reviewCode,
@@ -117,8 +117,7 @@ export const mode: Mode = {
   Toolbar,
   CardPanel,
   CardImageCaption: () => null,
-  TagsPage: TagOverlap,
-  BoardPage: () => <p className="muted">The board lives in the workbench.</p>,
+  TagsPage: () => <TagsView />,
   VersionsPage: () => <p className="muted">Versions live in the workbench.</p>,
   LogPage: () => <LogView entries={snapshot.log} />,
   SelectCard: () => null,

@@ -366,10 +366,6 @@ textarea {
   background: var(--cut);
 }
 
-.chip[data-kind="archetype"] {
-  border-color: var(--accent);
-}
-
 .create-tag {
   display: flex;
   flex-wrap: wrap;
@@ -410,10 +406,6 @@ textarea {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--on-accent);
-}
-
-.suggestion[data-kind="archetype"] {
-  border-color: var(--accent);
 }
 
 .bulk-bar {

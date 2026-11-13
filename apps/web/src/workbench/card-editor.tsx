@@ -97,7 +97,7 @@ function TagsField({
       onRemove={(id) => {
         save("tags", { removeTags: [id] }, { addTags: [id] });
       }}
-      onCreate={(label, kind) => createTag.mutateAsync({ label, kind, addTo: slug })}
+      onCreate={(label) => createTag.mutateAsync({ label, addTo: slug })}
     />
   );
 }

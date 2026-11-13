@@ -24,7 +24,7 @@ function card(name: string, n: number, overrides: Partial<CardEntry> = {}): Card
 
 const before: LogState = {
   cards: [card("Shock", 1, { status: "prospect" }), card("Ponder", 2, { tags: ["cantrip"] })],
-  tags: [{ id: "cantrip", label: "Cantrip", kind: "group" }],
+  tags: [{ id: "cantrip", label: "Cantrip" }],
   board: { sections: [{ id: "removal", label: "Removal", cards: [], tags: [] }] },
   filters: [],
 };
@@ -36,8 +36,8 @@ const after: LogState = {
     card("Opt", 3, { status: "prospect" }),
   ],
   tags: [
-    { id: "cantrip", label: "Cantrip", kind: "group" },
-    { id: "burn", label: "Burn", kind: "group" },
+    { id: "cantrip", label: "Cantrip" },
+    { id: "burn", label: "Burn" },
   ],
   board: { sections: [{ id: "removal", label: "Removal", cards: ["shock"], tags: [] }] },
   filters: [{ id: "cheap", label: "Cheap", query: "mv<=2", view: "cards" }],
@@ -50,7 +50,7 @@ describe("logChanges", () => {
       ["prospect", "draft"],
       [undefined, "prospect"],
     ]);
-    expect(changes.tags).toEqual([{ after: { id: "burn", label: "Burn", kind: "group" } }]);
+    expect(changes.tags).toEqual([{ after: { id: "burn", label: "Burn" } }]);
     expect(changes.sections).toHaveLength(1);
     expect(changes.filters).toHaveLength(1);
   });
@@ -95,7 +95,7 @@ describe("logStats", () => {
         stat({ status: "prospect", cmc: 9 }),
         stat({ cmc: 0, colors: [], typeLine: "Land" }),
       ],
-      [{ id: "burn", label: "Burn", kind: "group" }],
+      [{ id: "burn", label: "Burn" }],
     );
     expect(stats).toMatchObject({
       draft: 3,
@@ -145,7 +145,7 @@ describe("message", () => {
         "",
         "Card: Shock prospect→draft, +burn",
         "Card: Opt added as prospect",
-        "Tag: burn added (group)",
+        "Tag: burn added",
         "Section: Removal +shock",
         "Filter: Cheap added",
         "Counts: draft 1→2",

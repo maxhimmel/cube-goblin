@@ -127,8 +127,8 @@ const PALETTE = [
   "var(--chart-functions)",
   "var(--chart-types)",
   "var(--chart-status)",
-  "var(--chart-group)",
-  "var(--chart-archetype)",
+  "var(--chart-tag)",
+  "var(--chart-green)",
 ];
 
 export function statColor(key: string, keys: readonly string[]): string {

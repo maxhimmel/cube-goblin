@@ -326,19 +326,12 @@ const BAR_BLOCKS: Partial<Record<BlockId, BarBlock>> = {
     rows: (stats) => stats.status,
     fill: "var(--chart-status)",
   },
-  archetypes: {
+  tags: {
     kind: "tag",
-    title: "Archetypes",
-    rows: (stats) => byCount(stats.tags.filter((row) => row.kind === "archetype")),
-    fill: "var(--chart-archetype)",
-    empty: "No archetype tags yet.",
-  },
-  groups: {
-    kind: "tag",
-    title: "Groups",
-    rows: (stats) => byCount(stats.tags.filter((row) => row.kind === "group")),
-    fill: "var(--chart-group)",
-    empty: "No group tags yet.",
+    title: "Tags",
+    rows: (stats) => byCount(stats.tags),
+    fill: "var(--chart-tag)",
+    empty: "No tags yet.",
   },
 };
 

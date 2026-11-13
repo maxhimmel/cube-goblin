@@ -143,7 +143,7 @@ function SectionTags({ section, cube }: { section: Section; cube: Workbench }): 
         {section.tags.map((id) => {
           const tag = byId.get(id);
           return (
-            <li key={id} className="chip" data-kind={tag?.kind}>
+            <li key={id} className="chip">
               {tag?.label ?? id}
             </li>
           );
@@ -192,7 +192,7 @@ function SectionTags({ section, cube }: { section: Section; cube: Workbench }): 
             onRemove={(id) => {
               unlinkSectionTag(section.id, id);
             }}
-            onCreate={(label, kind) => createSectionTag(section.id, label, kind)}
+            onCreate={(label) => createSectionTag(section.id, label)}
           />
           <p className="muted">Removing a tag here unlinks it; cards keep it.</p>
           <button
@@ -448,7 +448,7 @@ function SortPicker({ sort }: { sort: readonly CardSort[] }): ReactNode {
       keys={sort}
       onChange={(keys) => {
         void navigate({
-          to: "/board",
+          to: "/tags",
           search: (prev) => ({ ...prev, sort: formatSortKeys(keys) }),
         });
       }}
@@ -458,7 +458,7 @@ function SortPicker({ sort }: { sort: readonly CardSort[] }): ReactNode {
 
 export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode {
   const { board, error } = useBoard();
-  const sort = parseSortKeys(useSearch({ from: "/board" }).sort);
+  const sort = parseSortKeys(useSearch({ from: "/tags" }).sort);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [fresh, setFresh] = useState<string | undefined>(undefined);
   if (error) {

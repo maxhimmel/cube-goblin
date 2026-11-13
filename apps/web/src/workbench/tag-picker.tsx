@@ -1,5 +1,4 @@
-import type { Tag, TagKind } from "@repo/cube/browser";
-import { TAG_KINDS } from "@repo/cube/browser";
+import type { Tag } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useId, useRef, useState } from "react";
 import { findTag } from "./tags.ts";
@@ -25,7 +24,7 @@ export function TagPicker({
   vocabulary: readonly Tag[];
   onAdd: (id: string) => void;
   onRemove: (id: string) => void;
-  onCreate: (label: string, kind: TagKind) => Promise<unknown>;
+  onCreate: (label: string) => Promise<unknown>;
 }): ReactNode {
   const [input, setInput] = useState("");
   const [creating, setCreating] = useState<string | undefined>(undefined);
@@ -68,7 +67,7 @@ export function TagPicker({
           const tag = byId.get(id);
           const label = tag?.label ?? id;
           return (
-            <li key={id} className="chip" data-kind={tag?.kind}>
+            <li key={id} className="chip">
               {label}
               <button
                 type="button"
@@ -147,7 +146,6 @@ export function TagPicker({
             role="option"
             aria-selected={index === current}
             className="suggestion"
-            data-kind={tag.kind}
             onMouseDown={(event) => {
               event.preventDefault();
             }}
@@ -163,29 +161,26 @@ export function TagPicker({
         {creating !== undefined && (
           <div className="create-tag" role="group" aria-label="Create tag">
             <span>&ldquo;{creating}&rdquo; is not a tag yet.</span>
-            {TAG_KINDS.map((kind, index) => (
-              <button
-                key={kind}
-                ref={index === 0 ? focusOnMount : undefined}
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  setPending(true);
-                  onCreate(creating, kind).then(
-                    () => {
-                      setPending(false);
-                      setInput("");
-                      closeCreate();
-                    },
-                    () => {
-                      setPending(false);
-                    },
-                  );
-                }}
-              >
-                Create as {kind}
-              </button>
-            ))}
+            <button
+              ref={focusOnMount}
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setPending(true);
+                onCreate(creating).then(
+                  () => {
+                    setPending(false);
+                    setInput("");
+                    closeCreate();
+                  },
+                  () => {
+                    setPending(false);
+                  },
+                );
+              }}
+            >
+              Create tag
+            </button>
             <button type="button" onClick={closeCreate}>
               Cancel
             </button>

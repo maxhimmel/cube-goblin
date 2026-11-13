@@ -2686,3 +2686,43 @@ button.lab-stat[data-picked] {
 .lab[data-dock="right"]:not([data-dock-open]) .lab-seam-handle:has(:focus-visible) .lab-seam-tip {
   translate: var(--tip-x) 0;
 }
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-tile-body > :only-child {
+  box-sizing: border-box;
+  min-height: 100%;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-bars, .lab-combat) {
+  height: 100%;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-hbars, .lab-tiles) {
+  grid-auto-rows: minmax(min-content, 1fr);
+  align-items: center;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-tiles {
+  align-items: stretch;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-heat {
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(20px, 1fr);
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-heat-cell {
+  height: auto;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-pt, .lab-balance) {
+  display: flex;
+  flex-direction: column;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) :is(.lab-pt-row, .lab-balance-row) {
+  flex: 1 1 auto;
+}
+
+.lab:is([data-dock="top"], [data-dock="bottom"]) .lab-pt-row:not(.lab-pt-foot) {
+  align-items: stretch;
+}

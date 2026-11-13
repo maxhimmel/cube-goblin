@@ -149,7 +149,6 @@ test("the top bar holds brand, views, save state, add, and settings only", async
   await expect(topbar.getByRole("link")).toHaveText([
     "Max's Cube",
     "Forge",
-    "Board",
     "Tags",
     "Insights",
     "Versions",
@@ -1148,8 +1147,8 @@ test("the tags view counts overlaps and filters forge to one", async ({ page, wo
   expect(patched.status()).toBe(200);
   await page.goto(`${workbench.url}#/`);
   await page.getByRole("navigation", { name: "Views" }).getByRole("link", { name: "Tags" }).click();
-  await page.getByRole("button", { name: "Overlap A 2" }).click();
-  await page.getByRole("button", { name: "Overlap B 2" }).click();
+  await page.getByRole("checkbox", { name: "Pick Overlap A" }).check();
+  await page.getByRole("checkbox", { name: "Pick Overlap B" }).check();
   await expect(page).toHaveURL(/tags=overlap-a%2Coverlap-b/u);
 
   const venn = page.getByRole("img", { name: /^Venn diagram of Overlap A, Overlap B/u });
@@ -1186,6 +1185,53 @@ test("the tags view counts overlaps and filters forge to one", async ({ page, wo
     "tag:overlap-a -tag:overlap-b ×",
     "tag:overlap-a tag:overlap-b ×",
   ]);
+});
+
+test("the tags view sketches, flags empty tags, and creates tags in place", async ({
+  page,
+  workbench,
+}) => {
+  await page.goto(`${workbench.url}#/board?sort=name`);
+  await expect(page).toHaveURL(/#\/tags\?.*mode=sketch/u);
+  await expect(page).toHaveURL(/sort=name/u);
+  await expect(page.getByRole("complementary", { name: "Card pool" })).toBeVisible();
+  const modes = page.getByRole("group", { name: "Tags mode" });
+  await expect(modes.getByRole("button", { name: "Sketch" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await modes.getByRole("button", { name: "Overlaps" }).click();
+  await expect(page.getByRole("complementary", { name: "Card pool" })).toHaveCount(0);
+  const list = page.getByRole("complementary", { name: "Tag list" });
+  await list.getByLabel("New tag label").fill("Sideboard tech");
+  await list.getByRole("button", { name: "Create tag" }).click();
+  await expect(list.getByLabel("New tag label")).toHaveValue("");
+  const row = list.locator('[data-tag="sideboard-tech"]');
+  await expect(row).toHaveAttribute("data-empty", "true");
+  await expect(row).toContainText("empty");
+  await expect(row.getByRole("checkbox")).toBeDisabled();
+  expect(await readVocabulary(workbench.cardsDir)).toMatchObject({
+    tags: expect.arrayContaining([{ id: "sideboard-tech", label: "Sideboard tech" }]),
+  });
+
+  const label = list.getByLabel("Label for sideboard-tech");
+  await label.fill("Side tech");
+  await label.press("Escape");
+  await expect(label).toHaveValue("Sideboard tech");
+
+  const tagged = await page.request.patch(`${workbench.url}api/cards`, {
+    data: { changes: [{ slug: "shock", patch: { addTags: ["sideboard-tech"] } }] },
+  });
+  expect(tagged.ok()).toBe(true);
+  await page.reload();
+  await expect(row).not.toHaveAttribute("data-empty");
+  await expect(row.getByRole("checkbox")).toBeEnabled();
+  await page.reload();
+  await expect(modes.getByRole("button", { name: "Overlaps" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });
 
 test("a saved version compares with the current cube", async ({ page, workbench }) => {
@@ -1238,7 +1284,11 @@ test("each view keeps its choices across views and reloads", async ({ page, work
   await page.getByRole("button", { name: "Images" }).click();
   await go("Insights");
   await page.getByLabel("Count cards in").selectOption("all");
-  await go("Board");
+  await go("Tags");
+  await page
+    .getByRole("group", { name: "Tags mode" })
+    .getByRole("button", { name: "Sketch" })
+    .click();
   const pool = page.getByRole("complementary", { name: "Card pool" });
   await pool.getByRole("button", { name: "Draft", exact: true }).click();
   await pool.getByLabel("Filter cards").fill("sh");
@@ -1259,7 +1309,8 @@ test("each view keeps its choices across views and reloads", async ({ page, work
     );
     await go("Insights");
     await expect(page.getByLabel("Count cards in")).toHaveValue("all");
-    await go("Board");
+    await go("Tags");
+    await expect(page).toHaveURL(/mode=sketch/u);
     await expect(page).toHaveURL(/sort=mv/u);
     await expect(pool.getByRole("button", { name: "Draft", exact: true })).toHaveAttribute(
       "aria-pressed",
@@ -2376,8 +2427,8 @@ test("no view puts a ringed control flush against a clipping edge", async ({ pag
     for (const view of [
       "",
       "cards",
-      "board",
-      "tags",
+      "tags?mode=sketch",
+      "tags?mode=overlaps&tags=removal,tempo",
       "insights",
       "versions",
       "log",

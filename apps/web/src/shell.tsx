@@ -8,13 +8,12 @@ import { ViewIcon } from "./icons.tsx";
 import { TopbarSlot } from "./topbar-slot.tsx";
 
 const VIEWS: readonly {
-  to: "/" | "/board" | "/tags" | "/insights" | "/versions" | "/log";
+  to: "/" | "/tags" | "/insights" | "/versions" | "/log";
   label: string;
   icon: ViewIconName;
   workbench: boolean;
 }[] = [
   { to: "/", label: "Forge", icon: "forge", workbench: false },
-  { to: "/board", label: "Board", icon: "board", workbench: true },
   { to: "/tags", label: "Tags", icon: "tags", workbench: false },
   { to: "/insights", label: "Insights", icon: "insights", workbench: false },
   { to: "/versions", label: "Versions", icon: "versions", workbench: true },

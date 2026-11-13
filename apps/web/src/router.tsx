@@ -9,6 +9,8 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { InsightsPage } from "./insights/insights-page.tsx";
+import type { TagMode } from "./overlaps/tags-view.tsx";
+import { isTagMode } from "./overlaps/tags-view.tsx";
 import { ForgePage } from "./forge/forge-page.tsx";
 import { Shell } from "./shell.tsx";
 import type { RememberedPath } from "./view-choices.ts";
@@ -118,9 +120,15 @@ const tagsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tags",
   beforeLoad: restoreChoices("/tags"),
-  validateSearch: (search: Record<string, unknown>): { tags?: string | undefined } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { mode?: TagMode | undefined; tags?: string | undefined; sort?: string | undefined } => {
     const tags = parseTagList(search["tags"]);
-    return tags.length > 0 ? { tags: tags.join(",") } : {};
+    return {
+      ...(isTagMode(search["mode"]) ? { mode: search["mode"] } : {}),
+      ...(tags.length > 0 ? { tags: tags.join(",") } : {}),
+      ...(typeof search["sort"] === "string" ? { sort: search["sort"] } : {}),
+    };
   },
   component: () => <mode.TagsPage />,
 });
@@ -128,10 +136,16 @@ const tagsRoute = createRoute({
 const boardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/board",
-  beforeLoad: restoreChoices("/board"),
   validateSearch: (search: Record<string, unknown>): { sort?: string | undefined } =>
     typeof search["sort"] === "string" ? { sort: search["sort"] } : {},
-  component: () => <mode.BoardPage />,
+  beforeLoad: ({ search }) => {
+    redirect({
+      to: "/tags",
+      search: (prev) => ({ ...prev, ...search, mode: "sketch" as const }),
+      replace: true,
+      throw: true,
+    });
+  },
 });
 
 const versionsRoute = createRoute({

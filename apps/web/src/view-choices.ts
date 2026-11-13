@@ -3,8 +3,7 @@ import { z } from "zod";
 
 export const REMEMBERED = {
   "/insights": [["scope"]],
-  "/tags": [["tags"]],
-  "/board": [["sort"]],
+  "/tags": [["mode"], ["tags"], ["sort"]],
 } as const satisfies Record<string, readonly (readonly string[])[]>;
 
 const FORGOTTEN: Partial<Record<RememberedPath, Record<string, readonly string[]>>> = {

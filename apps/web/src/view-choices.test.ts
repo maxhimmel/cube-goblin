@@ -49,17 +49,17 @@ describe("view choices", () => {
   it("keeps each view apart and ignores keys a view does not remember", () => {
     const store = memory();
     rememberSearch("/tags", { tags: "removal", bucket: "curve:2" }, store);
+    expect(recallSearch("/insights", {}, store)).toBeUndefined();
     rememberSearch("/insights", { scope: "all", bucket: "curve:2" }, store);
     expect(recallSearch("/tags", {}, store)).toEqual({ tags: "removal" });
     expect(recallSearch("/insights", {}, store)).toEqual({ scope: "all" });
-    expect(recallSearch("/board", {}, store)).toBeUndefined();
   });
 
   it("survives junk in storage", () => {
     const store = memory();
     store.setItem("maxs-cube:view-search:v1", "{not json");
     store.setItem("maxs-cube:view-state:v1", JSON.stringify({ "wall.trayOpen": "yes" }));
-    expect(recallSearch("/board", {}, store)).toBeUndefined();
+    expect(recallSearch("/tags", {}, store)).toBeUndefined();
     expect(recallState("wall.trayOpen", z.boolean(), store)).toBeUndefined();
   });
 
@@ -69,6 +69,15 @@ describe("view choices", () => {
     rememberState("wall.trayOpen", false, store);
     expect(recallState("board.poolStatus", z.enum(["all", "draft"]), store)).toBe("draft");
     expect(recallState("wall.trayOpen", z.boolean(), store)).toBe(false);
+  });
+
+  it("restores each remembered key of the tags view on its own", () => {
+    const store = memory();
+    rememberSearch("/tags", { mode: "sketch", tags: "removal", sort: "name" }, store);
+    expect(recallSearch("/tags", { tags: "burn" }, store)).toEqual({
+      mode: "sketch",
+      sort: "name",
+    });
   });
 
   it("snapshots and replaces a group of remembered states", () => {

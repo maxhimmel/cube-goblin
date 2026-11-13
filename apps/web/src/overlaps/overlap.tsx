@@ -1,19 +1,16 @@
-import { mode } from "#mode";
 import type { Overlap, Tag } from "@repo/cube/browser";
 import {
   cardCount,
   describeFilter,
   overlapFilter,
   overlapKey,
-  parseTagList,
-  tagCounts,
   tagLabel as label,
   tagOverlaps,
 } from "@repo/cube/browser";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useId, useState } from "react";
-import type { GridCard } from "../modes/mode.ts";
+import type { CubeView, GridCard } from "../modes/mode.ts";
 import type { VennLayout } from "./geometry.ts";
 import { VENN_LAYOUTS, inside } from "./geometry.ts";
 
@@ -39,41 +36,6 @@ function forgeSearch(picked: readonly string[], tags: readonly string[]): { q: s
 
 function indexKey(picked: readonly string[], tags: readonly string[]): string {
   return overlapKey(tags.map((tag) => String(picked.indexOf(tag))));
-}
-
-function TagPicker({
-  vocabulary,
-  counts,
-  picked,
-  onChange,
-}: {
-  vocabulary: readonly Tag[];
-  counts: ReadonlyMap<string, number>;
-  picked: readonly string[];
-  onChange: (next: string[]) => void;
-}): ReactNode {
-  return (
-    <div className="overlap-picker" role="group" aria-label="Tags">
-      {vocabulary.map((tag) => {
-        const on = picked.includes(tag.id);
-        const count = counts.get(tag.id) ?? 0;
-        return (
-          <button
-            key={tag.id}
-            type="button"
-            className="overlap-tag"
-            aria-pressed={on}
-            disabled={!on && count === 0}
-            onClick={() => {
-              onChange(on ? picked.filter((id) => id !== tag.id) : [...picked, tag.id]);
-            }}
-          >
-            {tag.label} <span className="muted">{count}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function svgPoint(event: MouseEvent<SVGSVGElement>): { x: number; y: number } | undefined {
@@ -283,48 +245,32 @@ function OverlapTable({
   );
 }
 
-export function TagOverlap(): ReactNode {
-  const cube = mode.useCube();
-  const search = useSearch({ from: "/tags" });
-  const navigate = useNavigate();
-  if (!cube) {
-    return <p className="muted">Loading cube…</p>;
-  }
-  const cards = cube.cards.filter((card) => card.status !== "cut");
-  const known = new Set(cube.vocabulary.map((tag) => tag.id));
-  const picked = parseTagList(search.tags).filter((tag) => known.has(tag));
-  const counts = tagCounts(cards);
-  const overlaps = tagOverlaps(cards, picked);
-
-  return (
-    <section className="overlap" aria-labelledby="overlap-title">
-      <h1 id="overlap-title">Tag overlaps</h1>
-      <p className="muted">
-        Draft and prospect cards. Pick tags to see how they overlap; each card counts in one overlap
-        only.
+export function OverlapResults({
+  cube,
+  picked,
+}: {
+  cube: CubeView;
+  picked: readonly string[];
+}): ReactNode {
+  const overlaps = tagOverlaps(considered(cube), picked);
+  if (picked.length === 0) {
+    return (
+      <p className="muted overlap-hint">
+        Pick two or three tags for a Venn diagram, or more for the table. Each card counts in one
+        overlap only.
       </p>
-      <TagPicker
-        vocabulary={cube.vocabulary}
-        counts={counts}
-        picked={picked}
-        onChange={(next) => {
-          void navigate({
-            to: "/tags",
-            search: (prev) => ({ ...prev, tags: next.length > 0 ? next.join(",") : undefined }),
-            resetScroll: false,
-          });
-        }}
-      />
-      {picked.length === 0 ? (
-        <p className="muted">Pick two or three tags for a Venn diagram, or more for the table.</p>
-      ) : (
-        <div className="overlap-body">
-          {(picked.length === 2 || picked.length === 3) && (
-            <Venn picked={picked} overlaps={overlaps} vocabulary={cube.vocabulary} />
-          )}
-          <OverlapTable picked={picked} overlaps={overlaps} vocabulary={cube.vocabulary} />
-        </div>
+    );
+  }
+  return (
+    <div className="overlap-body">
+      {(picked.length === 2 || picked.length === 3) && (
+        <Venn picked={picked} overlaps={overlaps} vocabulary={cube.vocabulary} />
       )}
-    </section>
+      <OverlapTable picked={picked} overlaps={overlaps} vocabulary={cube.vocabulary} />
+    </div>
   );
+}
+
+export function considered(cube: CubeView): GridCard[] {
+  return cube.cards.filter((card) => card.status !== "cut");
 }

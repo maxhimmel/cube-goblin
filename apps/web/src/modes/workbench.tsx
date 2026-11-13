@@ -29,7 +29,6 @@ import {
   fetchCube,
 } from "../workbench/api.ts";
 import { boardSavesPending } from "../workbench/board.ts";
-import { BoardPage } from "../workbench/board-page.tsx";
 import { AddPanel } from "../workbench/add-panel.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor, CardPrinting } from "../workbench/card-editor.tsx";
@@ -185,7 +184,6 @@ export const mode: Mode = {
     return card ? <CardPrinting card={card} /> : null;
   },
   TagsPage: () => <TagsPage cube={useWorkbench()} />,
-  BoardPage: () => <BoardPage cube={useWorkbench()} />,
   VersionsPage: () => <VersionsPage cube={useWorkbench()} />,
   LogPage: WorkbenchLogPage,
   SelectCard,

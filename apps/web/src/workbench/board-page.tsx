@@ -448,7 +448,7 @@ function SortPicker({ sort }: { sort: readonly CardSort[] }): ReactNode {
       keys={sort}
       onChange={(keys) => {
         void navigate({
-          to: "/board",
+          to: "/tags",
           search: (prev) => ({ ...prev, sort: formatSortKeys(keys) }),
         });
       }}
@@ -458,7 +458,7 @@ function SortPicker({ sort }: { sort: readonly CardSort[] }): ReactNode {
 
 export function BoardPage({ cube }: { cube: Workbench | undefined }): ReactNode {
   const { board, error } = useBoard();
-  const sort = parseSortKeys(useSearch({ from: "/board" }).sort);
+  const sort = parseSortKeys(useSearch({ from: "/tags" }).sort);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const [fresh, setFresh] = useState<string | undefined>(undefined);
   if (error) {

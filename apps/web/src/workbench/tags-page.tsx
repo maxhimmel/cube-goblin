@@ -1,11 +1,12 @@
-import type { Tag, Workbench } from "@repo/cube/browser";
-import { tagCounts } from "@repo/cube/browser";
+import type { Workbench } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { TagOverlap } from "../overlaps/overlap.tsx";
+import type { TagLabelProps } from "../overlaps/tags-view.tsx";
+import { TagsView } from "../overlaps/tags-view.tsx";
+import { BoardPage } from "./board-page.tsx";
 import { useChangeTag, useCreateTag } from "./tags.ts";
 
-function TagRow({ tag, count }: { tag: Tag; count: number }): ReactNode {
+function EditableLabel({ tag }: TagLabelProps): ReactNode {
   const changeTag = useChangeTag();
   const [label, setLabel] = useState<string | undefined>(undefined);
 
@@ -26,25 +27,24 @@ function TagRow({ tag, count }: { tag: Tag; count: number }): ReactNode {
   }
 
   return (
-    <tr data-tag={tag.id}>
-      <td>
-        <input
-          aria-label={`Label for ${tag.id}`}
-          value={label ?? tag.label}
-          onChange={(event) => {
-            setLabel(event.target.value);
-          }}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              commit();
-            }
-          }}
-        />
-      </td>
-      <td className="muted">{tag.id}</td>
-      <td>{count}</td>
-    </tr>
+    <input
+      className="tag-row-label tag-row-input"
+      aria-label={`Label for ${tag.id}`}
+      title={`Id ${tag.id}: renaming changes the label only, so no card files change`}
+      value={label ?? tag.label}
+      onChange={(event) => {
+        setLabel(event.target.value);
+      }}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        }
+        if (event.key === "Escape") {
+          setLabel(undefined);
+        }
+      }}
+    />
   );
 }
 
@@ -53,7 +53,7 @@ function NewTagForm(): ReactNode {
   const [label, setLabel] = useState("");
   return (
     <form
-      className="inline"
+      className="tag-rail-new"
       onSubmit={(event) => {
         event.preventDefault();
         if (label.trim()) {
@@ -74,9 +74,9 @@ function NewTagForm(): ReactNode {
         onChange={(event) => {
           setLabel(event.target.value);
         }}
-        placeholder="new tag"
+        placeholder="New tag…"
       />
-      <button type="submit" disabled={createTag.isPending}>
+      <button type="submit" disabled={createTag.isPending || label.trim() === ""}>
         Create tag
       </button>
     </form>
@@ -84,32 +84,7 @@ function NewTagForm(): ReactNode {
 }
 
 export function TagsPage({ cube }: { cube: Workbench | undefined }): ReactNode {
-  if (!cube) {
-    return <p className="muted">Loading cube…</p>;
-  }
-  const counts = tagCounts(cube.cards);
   return (
-    <div className="tags-page">
-      <TagOverlap />
-      <h2>Manage tags</h2>
-      <p className="muted">
-        Renaming changes the label only. Cards keep the tag id, so no card files change.
-      </p>
-      <NewTagForm />
-      <table className="tag-table">
-        <thead>
-          <tr>
-            <th>Label</th>
-            <th>Id</th>
-            <th>All cards</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cube.vocabulary.map((tag) => (
-            <TagRow key={tag.id} tag={tag} count={counts.get(tag.id) ?? 0} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <TagsView sketch={<BoardPage cube={cube} />} Label={EditableLabel} footer={<NewTagForm />} />
   );
 }

@@ -126,3 +126,76 @@
 .field .segmented {
   align-self: flex-start;
 }
+
+.tile-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.tile-actions button,
+.tile-actions select,
+.ghost-btn {
+  height: 20px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1;
+  background: none;
+  border-color: transparent;
+}
+
+.tile-actions button:hover,
+.tile-actions button[aria-pressed="true"],
+.ghost-btn:hover,
+.ghost-btn[aria-pressed="true"] {
+  color: var(--fg);
+  background: color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.block-head,
+.lab-strip[draggable="true"],
+.lab-row[draggable="true"],
+.strip[draggable="true"] {
+  position: relative;
+}
+
+.block-head::after,
+.lab-strip[draggable="true"]::after,
+.lab-row[draggable="true"]::after,
+.strip[draggable="true"]::after {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--fg) 28%, transparent) 0.8px,
+    transparent 1.2px
+  );
+  background-size: 5px 5px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  content: "";
+}
+
+.block-head::after {
+  inset: -4px -6px;
+  border-radius: 8px;
+  mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent);
+}
+
+.lab-strip[draggable="true"]::after,
+.lab-row[draggable="true"]::after,
+.strip[draggable="true"]::after {
+  mask-image: linear-gradient(90deg, transparent 40%, #000);
+}
+
+.block-head:hover::after {
+  opacity: 0.7;
+}
+
+.lab-strip[draggable="true"]:hover::after,
+.lab-row[draggable="true"]:hover::after,
+.strip[draggable="true"]:hover::after {
+  opacity: 0.45;
+}

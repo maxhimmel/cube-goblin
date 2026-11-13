@@ -3,7 +3,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { useRemembered } from "../view-choices.ts";
 import { PendingStrips } from "./cards.tsx";
-import { CollapseButton } from "./dock.tsx";
+import { CollapseButton } from "../collapse-button.tsx";
 import type { Lab } from "./use-lab.ts";
 
 const MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/u.test(navigator.userAgent);

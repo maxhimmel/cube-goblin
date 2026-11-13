@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Block } from "../insights/block.tsx";
 import { QueryInput } from "../query/query-input.tsx";
 import { useRemembered } from "../view-choices.ts";
+import { CollapseButton } from "../collapse-button.tsx";
 import { Menu } from "../menu.tsx";
 import { colorIcon } from "../insights/labels.tsx";
 import {
@@ -420,27 +421,6 @@ function DockBlock({
   );
 }
 
-export function CollapseButton({
-  title,
-  collapsed,
-  onToggle,
-}: {
-  title: string;
-  collapsed: boolean;
-  onToggle: () => void;
-}): ReactNode {
-  return (
-    <button
-      type="button"
-      aria-expanded={!collapsed}
-      aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
-      onClick={onToggle}
-    >
-      {collapsed ? "+" : "–"}
-    </button>
-  );
-}
-
 const SHORT_CAPTION = 40;
 
 function Tile({
@@ -461,7 +441,7 @@ function Tile({
       <header className="block-head lab-tile-head">
         <h2 title={typeof caption === "string" && !short ? caption : undefined}>{title}</h2>
         {short && !collapsed && <span className="lab-tile-caption">{caption}</span>}
-        <span className="lab-tile-actions">
+        <span className="lab-tile-actions tile-actions">
           {!collapsed && actions}
           {!collapsed && extras}
           {table !== undefined && !collapsed && (

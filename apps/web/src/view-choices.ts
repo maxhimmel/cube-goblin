@@ -12,6 +12,10 @@ const FORGOTTEN: Partial<Record<RememberedPath, Record<string, readonly string[]
 
 export type RememberedPath = keyof typeof REMEMBERED;
 
+const FOLDED: Partial<Record<RememberedPath, readonly string[]>> = {
+  "/tags": ["/board"],
+};
+
 const SEARCH_KEY = "maxs-cube:view-search:v1";
 const STATE_KEY = "maxs-cube:view-state:v1";
 
@@ -90,7 +94,10 @@ export function recallSearch(
   search: Record<string, unknown>,
   store: KeyValueStore | undefined = browserStore(),
 ): Choices | undefined {
-  const saved = pickChoices(path, read(store, SEARCH_KEY, storedSchema)?.[path] ?? {});
+  const all = read(store, SEARCH_KEY, storedSchema) ?? {};
+  const folded = all[path] ? [] : (FOLDED[path] ?? []).map((old) => all[old] ?? {});
+  const merged: Choices = Object.assign({}, ...folded, all[path] ?? {}) as Choices;
+  const saved = pickChoices(path, merged);
   const missing = REMEMBERED[path].filter((group) => Object.keys(pick(group, search)).length === 0);
   const restored = pick(missing.flat(), saved);
   return Object.keys(restored).length > 0 ? restored : undefined;

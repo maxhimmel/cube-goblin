@@ -80,6 +80,16 @@ describe("view choices", () => {
     });
   });
 
+  it("carries the old Board sort into the tags view", () => {
+    const store = memory();
+    store.setItem("maxs-cube:view-search:v1", JSON.stringify({ "/board": { sort: "mv" } }));
+    expect(recallSearch("/tags", {}, store)).toEqual({ sort: "mv" });
+    rememberSearch("/tags", { sort: "name" }, store);
+    expect(recallSearch("/tags", {}, store)).toEqual({ sort: "name" });
+    rememberSearch("/tags", {}, store);
+    expect(recallSearch("/tags", {}, store)).toBeUndefined();
+  });
+
   it("snapshots and replaces a group of remembered states", () => {
     const store = memory();
     const lab = (key: string): boolean => key.startsWith("lab.");

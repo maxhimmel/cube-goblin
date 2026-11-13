@@ -277,6 +277,7 @@ export function useDockState(): DockState {
   const baselines = renameKeys(storedBaselines);
   const hidden = migrate(storedHidden);
   const collapsed = migrate(storedCollapsed);
+  const chips = migrate(storedChips);
   const known = [
     ...migrate(order).filter((id) => ALL_BLOCKS.some((block) => block.id === id)),
     ...ALL_BLOCKS.map((block) => block.id).filter((id) => !migrate(order).includes(id)),
@@ -287,12 +288,10 @@ export function useDockState(): DockState {
     collapsed: new Set(collapsed),
     pins,
     baselines,
-    chips: new Set(migrate(storedChips)),
+    chips: new Set(chips),
     setChips: (id, on) => {
       setStoredChips(
-        on
-          ? [...storedChips.filter((other) => other !== id), id]
-          : storedChips.filter((other) => other !== id),
+        on ? [...chips.filter((other) => other !== id), id] : chips.filter((other) => other !== id),
       );
     },
     setPin: (id, pin) => {

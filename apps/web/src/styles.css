@@ -76,6 +76,7 @@ select,
 input:not([type="checkbox"]),
 textarea {
   font: inherit;
+  font-size: var(--fs-md);
   color: var(--fg);
   background: var(--field);
   border: 1px solid var(--line);
@@ -109,6 +110,8 @@ select:focus-visible {
 
 button {
   cursor: pointer;
+  padding: 3px 12px;
+  font-size: var(--fs-sm);
   font-weight: 550;
 }
 

@@ -72,29 +72,25 @@ test("share doc shows insights from the snapshot", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`${DOC_URL}#/insights`);
-  const drafted = snapshot.cards.filter((card) => card.status === "draft").length;
-  await expect(page.getByTestId("stat-cards").locator(".stat-value")).toHaveText(String(drafted));
-  await expect(page.getByRole("img", { name: "Mana curve" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Tags" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Color by mana value" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Combat matchups" })).toBeVisible();
+  await expect(page.getByTestId("stat-creatures").locator(".stat-value")).toHaveText(/^\d+$/u);
   await expect(page.getByLabel("Count cards in").locator("option")).toHaveText([
     "Draft",
     "Draft + prospects",
     "All cards",
   ]);
-  await page
-    .getByRole("region", { name: "Card types" })
-    .locator(".ts-chart__bar path")
-    .first()
-    .click();
-  const creatures = snapshot.cards.filter(
-    (card) =>
-      card.status === "draft" &&
-      /\bCreature\b/u.test(card.typeLine.split(" // ")[0] ?? "") &&
-      !/\bLand\b/u.test(card.typeLine.split(" // ")[0] ?? ""),
-  ).length;
+  const heat = page.getByRole("region", { name: "Color by mana value" });
+  await heat.getByRole("button", { name: "Table" }).click();
+  const row = heat
+    .locator("tbody tr")
+    .filter({ hasNot: page.locator('td:text-is("0")') })
+    .first();
+  const count = Number(await row.locator("td").textContent());
+  await row.getByRole("button").click();
   await expect(
     page.getByRole("complementary", { name: "Cards in bucket" }).locator(".strip"),
-  ).toHaveCount(creatures);
+  ).toHaveCount(count);
   expect(errors).toEqual([]);
 });
 
@@ -165,7 +161,7 @@ test("share doc keeps a filter block's view and table toggle across reloads", as
   if (!filter) {
     throw new Error("the snapshot needs a saved filter");
   }
-  const next = filter.view === "curve" ? "color" : "curve";
+  const next = filter.view === "heat" ? "pt" : "heat";
   await page.goto(`${DOC_URL}#/insights`);
   const block = page.getByRole("region", { name: filter.label, exact: true });
   await block.getByLabel(`Show ${filter.label} as`).selectOption(next);

@@ -1,5 +1,5 @@
 import type { Count, GridCell } from "@repo/cube/browser";
-import { barX, barY, cell, defineChart, dot, lineY, link, rect, text } from "@tanstack/charts";
+import { cell, defineChart, dot, lineY, link, rect, text } from "@tanstack/charts";
 import { Chart as RendererChart } from "@tanstack/charts/react/core";
 import { motion } from "@tanstack/charts/motion";
 import { scaleBand } from "@tanstack/charts/scales/band";
@@ -11,22 +11,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type TickLabel = (id: string) => ReactNode;
 
-export type BarFill = string | ((row: Count) => string);
-
 export const CHART_MOTION = motion({
   initial: false,
   transition: { type: "spring", stiffness: 260, damping: 24, mass: 0.8 },
 });
 
-const BAR = "var(--chart-bar)";
-const BAR_THICKNESS = 24;
 const TICK_GUTTER = 132;
 const MIN_PLOT_HEIGHT = 120;
 const HEAT_STEPS = 6;
-
-function peak(rows: readonly Count[]): number {
-  return Math.max(1, ...rows.map((row) => row.count));
-}
 
 function heatStep(count: number, max: number): number {
   return max === 0 || count === 0 ? 0 : Math.ceil((count / max) * HEAT_STEPS);
@@ -38,10 +30,6 @@ function heatFill(step: number): string {
 
 function dimmed(color: string, on: boolean): string {
   return on ? color : `color-mix(in oklab, ${color} 30%, transparent)`;
-}
-
-function paint(fill: BarFill, row: Count): string {
-  return typeof fill === "string" ? fill : fill(row);
 }
 
 export function usePlotHeight(): [RefObject<HTMLDivElement | null>, number | undefined] {
@@ -144,333 +132,9 @@ function TickOverlay({
   );
 }
 
-const INSIDE_LABEL_MIN = 2;
-
 const CURVE_TICKS = 8;
 
 const FOCUS_RING = false;
-
-interface BarProps {
-  rows: readonly Count[];
-  name: string;
-  fill?: BarFill;
-  tick?: TickLabel | undefined;
-  selected?: string | undefined;
-  onPick?: ((id: string) => void) | undefined;
-}
-
-function pickFrom(onPick: ((id: string) => void) | undefined) {
-  return (point: { datum: { id: string } } | null) => {
-    if (point && onPick) {
-      onPick(point.datum.id);
-    }
-  };
-}
-
-export function ColumnChart({
-  rows,
-  name,
-  fill = BAR,
-  tick,
-  selected,
-  onPick,
-}: BarProps): ReactNode {
-  const overlay = useTickOverlay("x");
-  const [plot, height] = usePlotHeight();
-  const definition = useMemo(
-    () =>
-      defineChart({
-        margin: tick ? { top: 20, bottom: 40 } : { top: 20 },
-        marks: [
-          barY(rows, {
-            x: "id",
-            y: "count",
-            fill: (row) => dimmed(paint(fill, row), selected === undefined || row.id === selected),
-            maxThickness: BAR_THICKNESS,
-            radius: [4, 4, 0, 0],
-          }),
-          text(
-            rows.filter((row) => row.count > 0),
-            { x: "id", y: "count", text: "count", dy: -8, fill: "currentColor", fontSize: 12 },
-          ),
-        ],
-        scales: {
-          x: {
-            scale: scaleBand()
-              .domain(rows.map((row) => row.id))
-              .padding(0.25),
-            axis: {
-              ticks: {
-                size: 0,
-                format: (id: string) => rows.find((row) => row.id === id)?.label ?? id,
-              },
-              ...(tick ? { tickLabels: false } : {}),
-            },
-          },
-          y: { scale: scaleLinear().domain([0, peak(rows)]), axis: false },
-        },
-        focusRing: FOCUS_RING,
-      }),
-    [fill, rows, selected, tick],
-  );
-  return (
-    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
-      {tick && (
-        <TickOverlay
-          ids={rows.map((row) => row.id)}
-          tick={tick}
-          axis="x"
-          overlayRef={overlay.ref}
-          label={`${name} axis`}
-          onPick={onPick}
-        />
-      )}
-      <RendererChart
-        renderer={CHART_MOTION}
-        definition={definition}
-        ariaLabel={name}
-        height={height ?? 220}
-        initialWidth={420}
-        onRender={overlay.onRender}
-        onSelect={pickFrom(onPick)}
-      />
-    </div>
-  );
-}
-
-export function RowChart({ rows, name, fill = BAR, tick, selected, onPick }: BarProps): ReactNode {
-  const overlay = useTickOverlay("y");
-  const [plot, height] = usePlotHeight();
-  const definition = useMemo(
-    () =>
-      defineChart({
-        margin: { right: 36, ...(tick ? { left: TICK_GUTTER } : {}) },
-        marks: [
-          barX(rows, {
-            x: "count",
-            y: "id",
-            fill: (row) => dimmed(paint(fill, row), selected === undefined || row.id === selected),
-            maxThickness: BAR_THICKNESS - 4,
-            radius: [0, 4, 4, 0],
-          }),
-          text(rows, {
-            x: "count",
-            y: "id",
-            text: "count",
-            anchor: "start",
-            dx: 6,
-            fill: "currentColor",
-            fontSize: 12,
-          }),
-        ],
-        scales: {
-          x: { scale: scaleLinear().domain([0, peak(rows)]), axis: false },
-          y: {
-            scale: scaleBand()
-              .domain(rows.map((row) => row.id))
-              .padding(0.2),
-            axis: {
-              line: false,
-              ticks: {
-                size: 0,
-                format: (id: string) => rows.find((row) => row.id === id)?.label ?? id,
-              },
-              ...(tick ? { tickLabels: false } : {}),
-            },
-          },
-        },
-        focusRing: FOCUS_RING,
-      }),
-    [fill, rows, selected, tick],
-  );
-  return (
-    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
-      {tick && (
-        <TickOverlay
-          ids={rows.map((row) => row.id)}
-          tick={tick}
-          axis="y"
-          overlayRef={overlay.ref}
-          label={`${name} axis`}
-          onPick={onPick}
-        />
-      )}
-      <RendererChart
-        renderer={CHART_MOTION}
-        definition={definition}
-        ariaLabel={name}
-        height={height ?? rows.length * 34 + 12}
-        initialWidth={420}
-        onRender={overlay.onRender}
-        onSelect={pickFrom(onPick)}
-      />
-    </div>
-  );
-}
-
-export interface StackedRow {
-  id: string;
-  label: string;
-  bucket: string;
-  parts: readonly { bucket: string; label: string; count: number; fill: string; ink: string }[];
-}
-
-export function StackedRowChart({
-  rows,
-  name,
-  tick,
-  selected,
-  onPick,
-}: {
-  rows: readonly StackedRow[];
-  name: string;
-  tick?: TickLabel | undefined;
-  selected?: string | undefined;
-  onPick?: ((bucket: string) => void) | undefined;
-}): ReactNode {
-  const overlay = useTickOverlay("y");
-  const [plot, height] = usePlotHeight();
-  const segments = useMemo(
-    () =>
-      rows.flatMap((row) => {
-        let start = 0;
-        return row.parts
-          .filter((part) => part.count > 0)
-          .map((part) => {
-            const segment = {
-              ...part,
-              whole: row.bucket,
-              id: part.bucket,
-              row: row.id,
-              x1: start,
-              x2: start + part.count,
-            };
-            start = segment.x2;
-            return segment;
-          })
-          .map((segment, index, all) => ({ ...segment, last: index === all.length - 1 }));
-      }),
-    [rows],
-  );
-  const totals = useMemo(
-    () =>
-      rows.map((row) => {
-        const total = row.parts.reduce((sum, part) => sum + part.count, 0);
-        return { row: row.id, total, text: String(total) };
-      }),
-    [rows],
-  );
-  const definition = useMemo(
-    () =>
-      defineChart({
-        margin: { right: 36, ...(tick ? { left: TICK_GUTTER } : {}) },
-        marks: [
-          ...[false, true].map((last) =>
-            barX(
-              segments.filter((segment) => segment.last === last),
-              {
-                id: last ? "stack-end" : "stack-inner",
-                x1: "x1",
-                x2: "x2",
-                y: "row",
-                fill: (segment) =>
-                  dimmed(
-                    segment.fill,
-                    selected === undefined ||
-                      segment.bucket === selected ||
-                      segment.whole === selected,
-                  ),
-                maxThickness: BAR_THICKNESS - 4,
-                ...(last ? { radius: [0, 4, 4, 0] as const } : {}),
-              },
-            ),
-          ),
-          text(
-            segments.filter(
-              (segment) =>
-                segment.count >= INSIDE_LABEL_MIN &&
-                segments.filter((other) => other.row === segment.row).length > 1,
-            ),
-            {
-              x: (segment) => (segment.x1 + segment.x2) / 2,
-              y: "row",
-              text: "count",
-              fill: (segment) =>
-                selected === undefined || segment.bucket === selected || segment.whole === selected
-                  ? segment.ink
-                  : "var(--fg)",
-              fontSize: 11,
-            },
-          ),
-          text(totals, {
-            x: "total",
-            y: "row",
-            text: "text",
-            anchor: "start",
-            dx: 6,
-            fill: "currentColor",
-            fontSize: 12,
-          }),
-        ],
-        scales: {
-          x: {
-            scale: scaleLinear().domain([0, Math.max(1, ...totals.map((entry) => entry.total))]),
-            axis: false,
-          },
-          y: {
-            scale: scaleBand()
-              .domain(rows.map((row) => row.id))
-              .padding(0.2),
-            axis: {
-              line: false,
-              ticks: {
-                size: 0,
-                format: (id: string) => rows.find((row) => row.id === id)?.label ?? id,
-              },
-              ...(tick ? { tickLabels: false } : {}),
-            },
-          },
-        },
-        focusRing: FOCUS_RING,
-      }),
-    [rows, segments, selected, tick, totals],
-  );
-  return (
-    <div className="chart-plot" ref={plot} data-pickable={onPick !== undefined}>
-      {tick && (
-        <TickOverlay
-          ids={rows.map((row) => row.id)}
-          tick={tick}
-          axis="y"
-          overlayRef={overlay.ref}
-          label={`${name} axis`}
-          onPick={
-            onPick &&
-            ((id: string) => {
-              const row = rows.find((candidate) => candidate.id === id);
-              if (row) {
-                onPick(row.bucket);
-              }
-            })
-          }
-        />
-      )}
-      <RendererChart
-        renderer={CHART_MOTION}
-        definition={definition}
-        ariaLabel={name}
-        height={height ?? rows.length * 34 + 12}
-        initialWidth={420}
-        onRender={overlay.onRender}
-        onSelect={(point) => {
-          if (point && onPick && "bucket" in point.datum) {
-            onPick(point.datum.bucket);
-          }
-        }}
-      />
-    </div>
-  );
-}
 
 export function HeatChart({
   cells,

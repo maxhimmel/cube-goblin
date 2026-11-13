@@ -10,17 +10,10 @@ export interface BlockSpec {
 }
 
 export const BLOCKS = [
-  { id: "summary", title: "Summary", span: 12, h: 4, minH: 3 },
-  { id: "curve", title: "Mana curve", span: 4, h: 11, minH: 6 },
-  { id: "color", title: "Color", span: 4, h: 11, minH: 6 },
-  { id: "heavy", title: "Heavy pips", span: 4, h: 11, minH: 6 },
-  { id: "heat", title: "Color by mana value", span: 12, h: 12, minH: 7 },
-  { id: "types", title: "Card types", span: 4, h: 12, minH: 6 },
-  { id: "pt", title: "Power and toughness", span: 8, h: 12, minH: 7 },
+  { id: "heat", title: "Color by mana value", span: 7, h: 13, minH: 7 },
+  { id: "pt", title: "Power and toughness", span: 5, h: 13, minH: 7 },
   { id: "creature-balance", title: "Creature balance", span: 12, h: 26, minH: 8 },
   { id: "combat", title: "Combat matchups", span: 12, h: 20, minH: 10 },
-  { id: "status", title: "Status", span: 4, h: 8, minH: 5 },
-  { id: "tags", title: "Tags", span: 8, h: 26, minH: 8 },
 ] as const satisfies readonly BlockSpec[];
 
 export type BlockId = (typeof BLOCKS)[number]["id"];
@@ -67,18 +60,23 @@ function packed(specs: readonly BlockSpec[], cols: number): Item[] {
   let x = 0;
   let y = 0;
   let rowHeight = 0;
-  return specs.map((block) => {
+  const items: Item[] = [];
+  for (const block of specs) {
     const w = Math.max(1, Math.min(cols, Math.round((block.span * cols) / 12)));
     if (x + w > cols) {
+      const last = items.at(-1);
+      if (last) {
+        last.w = cols - last.x;
+      }
       x = 0;
       y += rowHeight;
       rowHeight = 0;
     }
-    const item = { i: block.id, x, y, w, h: block.h };
+    items.push({ i: block.id, x, y, w, h: block.h });
     x += w;
     rowHeight = Math.max(rowHeight, block.h);
-    return item;
-  });
+  }
+  return items;
 }
 
 function emptyLayouts(): Record<Breakpoint, Item[]> {

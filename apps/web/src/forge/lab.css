@@ -602,7 +602,7 @@
 .lab-menu-list {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
   z-index: 40;
   display: grid;
   gap: 4px;
@@ -613,6 +613,11 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+}
+
+.lab-menu-list[data-align="end"] {
+  right: 0;
+  left: auto;
 }
 
 .lab-menu-list label {
@@ -2240,25 +2245,22 @@ button.lab-stat[data-picked] {
 
 .lab-bulk-slot {
   position: sticky;
-  top: -10px;
+  bottom: 0;
   z-index: 3;
-  display: flex;
-  align-items: center;
-  min-height: 34px;
-  margin: 0 -10px 8px;
-  padding: 0 10px;
-  background: var(--panel);
+  height: 0;
 }
 
 .lab-bulk-slot .bulk-bar {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  margin: calc(-1 * var(--ring-room));
-  padding: var(--ring-room);
-}
-
-.lab-bulk-slot .bulk-bar > * {
-  flex: none;
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  left: 0;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  animation: lab-pop 0.22s var(--lift);
 }
 
 .lab-bulk-slot .bulk-bar button,

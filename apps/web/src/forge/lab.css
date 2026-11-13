@@ -964,7 +964,6 @@
   min-height: 0;
   padding-bottom: 4px;
   overflow: auto;
-  overscroll-behavior: contain;
 }
 
 .lab[data-dock="right"] .lab-dock,

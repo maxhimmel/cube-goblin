@@ -12,10 +12,10 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Now
 
 - [T-043: Polish pass](tickets/T-043-polish-pass.md)
+- [T-048: History](tickets/T-048-history.md)
 
 ## Next
 
-- [T-048: History](tickets/T-048-history.md)
 - [T-049: Insights trim](tickets/T-049-insights-trim.md)
 - [T-050: Visual system and favicon](tickets/T-050-visual-system.md)
 - [T-051: Suggestions from the share doc](tickets/T-051-share-doc-suggestions.md)

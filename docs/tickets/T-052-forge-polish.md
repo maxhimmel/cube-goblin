@@ -1,7 +1,7 @@
 ---
 id: T-052
 title: Forge polish
-status: doing
+status: done
 ---
 
 Feedback on [Forge](../GLOSSARY.md#forge) after [T-046](T-046-wall-and-lab.md) (user, 2026-11-12).
@@ -23,3 +23,5 @@ Feedback on [Forge](../GLOSSARY.md#forge) after [T-046](T-046-wall-and-lab.md) (
 - The bulk bar floats at the bottom of the draft pile, so it no longer covers the stuck group heads or moves tiles.
 
 - Header (user picked mock C, 2026-11-12, without controls on the seam): the draft count and gauge sit in the top bar through a slot each view can fill (`apps/web/src/topbar-slot.tsx`), and Forge's own header is one row: query, Blocks, Layouts. Show cut sits on the Prospects head. Card layouts are icons, and a Tags toggle beside them shows in Columns only, where tags appear. Baseline moved to settings (user, 2026-11-12). Dim or hide for non-matches is a small switch inside the query box, faded until a filter is applied.
+- Review fixes: the collapsed handle sits just inside the edge so nothing spills off screen, arrows mark where the charts actually sit (not the saved side below 1280px), the chevron turns the short way, Escape in a menu returns focus to its button, settings tabs stay mounted so unsaved Cube edits survive, and the pile leaves room for the floating bulk bar.
+- E2E: settings tabs, the seam's arrows (`chartsOn`), the Dim and Hide switch in the query box, and Baseline in settings.

@@ -376,6 +376,22 @@
   margin-left: auto;
 }
 
+.topbar-view {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.topbar-view:empty {
+  display: none;
+}
+
+.topbar-view:not(:empty) + .topbar-actions {
+  margin-left: 0;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
 .save-state {
   font-size: 0.85rem;
 }

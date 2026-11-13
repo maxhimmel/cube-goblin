@@ -345,12 +345,6 @@
   padding-top: 8px;
 }
 
-.lab-top h1 {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 800;
-}
-
 .lab-count {
   display: flex;
   align-items: baseline;
@@ -382,6 +376,53 @@
 
 .lab-count .gauge {
   align-self: center;
+}
+
+.topbar-view .lab-count {
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.topbar-view .lab-count-label {
+  font-size: 0.72rem;
+}
+
+.topbar-view .lab-count-value {
+  font-size: 1.1rem;
+}
+
+.topbar-view .gauge-track {
+  width: 110px;
+}
+
+@media (max-width: 1100px) {
+  .topbar-view .gauge-label {
+    font-size: 0;
+  }
+
+  .topbar-view .gauge-label strong {
+    font-size: 0.8rem;
+  }
+
+  .topbar-view .gauge-track {
+    width: 70px;
+  }
+}
+
+.lab-pile-head .lab-switches {
+  margin-left: auto;
+}
+
+.lab-seg-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 @keyframes lab-pop {

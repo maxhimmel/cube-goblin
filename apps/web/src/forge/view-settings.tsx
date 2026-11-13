@@ -9,6 +9,10 @@ export function useHideNonMatches(): [boolean, (on: boolean) => void] {
   return useRemembered("lab.hide", false, z.boolean());
 }
 
+export function useBaseline(): [boolean, (on: boolean) => void] {
+  return useRemembered("lab.baseline", true, z.boolean());
+}
+
 export function useStripTags(): [boolean, (on: boolean) => void] {
   return useRemembered("labc.stripTags", false, z.boolean());
 }
@@ -42,7 +46,7 @@ export function usePlacedDock(): Dock {
 
 export function ForgeSettings(): ReactNode {
   const [hide, setHide] = useHideNonMatches();
-  const [tags, setTags] = useStripTags();
+  const [baseline, setBaseline] = useBaseline();
   return (
     <section className="settings-section" aria-label="Forge">
       <h3>Forge</h3>
@@ -62,12 +66,12 @@ export function ForgeSettings(): ReactNode {
       <label className="settings-check">
         <input
           type="checkbox"
-          checked={tags}
+          checked={baseline}
           onChange={(event) => {
-            setTags(event.target.checked);
+            setBaseline(event.target.checked);
           }}
         />
-        Tags on cards
+        Faint baseline under filtered charts
       </label>
     </section>
   );

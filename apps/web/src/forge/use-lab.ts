@@ -22,7 +22,7 @@ import {
   usedIn,
 } from "./model.ts";
 import { usePeek } from "./use-peek.ts";
-import { useHideNonMatches } from "./view-settings.tsx";
+import { useBaseline, useHideNonMatches } from "./view-settings.tsx";
 
 export type Axis = ColumnAxis | "none";
 
@@ -154,7 +154,7 @@ export function useLab(): Lab | undefined {
   const cube = mode.useCube();
   const filters = mode.useFilters() ?? [];
   const [pillKeys, setPillKeys] = useRemembered("lab.pills", [], z.array(z.string()));
-  const [baseline, setBaseline] = useRemembered("lab.baseline", true, z.boolean());
+  const [baseline, setBaseline] = useBaseline();
   const [hide, setHide] = useHideNonMatches();
   const [showCut, setShowCut] = useRemembered("lab.showCut", false, z.boolean());
   const [axis, setAxis] = useRemembered<Axis>(

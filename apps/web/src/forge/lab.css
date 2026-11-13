@@ -1323,10 +1323,6 @@
   font-size: 1rem;
 }
 
-.lab-title-text {
-  font-size: 0.78rem;
-}
-
 .lab-stack {
   display: grid;
   gap: 3px;

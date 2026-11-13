@@ -84,6 +84,29 @@ async function seedBurn(page: Page, workbench: Workbench): Promise<void> {
   expect(board.ok()).toBe(true);
 }
 
+async function openImages(page: Page, url: string, showCut = false): Promise<void> {
+  await page.goto(`${url}#/cards`);
+  await expect(page.locator(".lab-image").first()).toBeVisible();
+  if (showCut) {
+    await page.getByRole("checkbox", { name: "Show cut" }).check();
+  }
+}
+
+async function forgeSetting(page: Page, label: string, value: string): Promise<void> {
+  await page.getByRole("button", { name: "Settings" }).click();
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByLabel(label).selectOption(value);
+  await dialog.getByRole("button", { name: "Close" }).click();
+}
+
+async function chartsOn(page: Page, side: string): Promise<void> {
+  await forgeSetting(page, "Charts panel side (wide screens)", side);
+}
+
+function tileOf(page: Page, name: string): Locator {
+  return page.locator(".lab-tile-cell").filter({ has: page.getByAltText(name, { exact: true }) });
+}
+
 async function readEntry(cardsDir: string, slug: string): Promise<CardEntry> {
   return cardEntrySchema.parse(JSON.parse(await readFile(join(cardsDir, `${slug}.json`), "utf8")));
 }
@@ -102,8 +125,8 @@ async function lastSubject(cardsDir: string): Promise<string> {
 
 test("workbench shows live data from cube/cards", async ({ page, workbench }) => {
   const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
-  await page.goto(`${workbench.url}#/cards`);
-  await expect(page.locator(".grid img")).toHaveCount(files.length);
+  await openImages(page, workbench.url, true);
+  await expect(page.locator(".lab-image img")).toHaveCount(files.length);
   await expect(page.getByLabel("Your name")).toHaveCount(0);
 });
 
@@ -116,12 +139,10 @@ test("the top bar holds brand, views, save state, add, and settings only", async
   await expect(page.getByTestId("save-state")).toHaveText("Saved");
   await expect(topbar.getByRole("link")).toHaveText([
     "Max's Cube",
-    "Wall",
-    "Cards",
+    "Forge",
     "Board",
     "Tags",
     "Insights",
-    "Lab",
     "Versions",
     "Log",
     "",
@@ -193,9 +214,13 @@ test("an edit on disk shows up without a reload", async ({ page, workbench }) =>
   await pressed("cut");
   await expect(page.getByLabel("Notes")).toHaveValue("edited on disk");
 
-  await page.getByRole("link", { name: "Cards", exact: true }).click();
-  await expect(page.locator('[data-pile="cut"] img[alt="Abrade"]')).toBeVisible();
-  await expect(page.locator('[data-pile="draft"] img[alt="Abrade"]')).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.getByRole("checkbox", { name: "Show cut" }).check();
+  await page.getByRole("button", { name: "Images" }).click();
+  await expect(tileOf(page, "Abrade")).toHaveAttribute("data-status", "cut");
+  await expect(
+    page.getByRole("region", { name: "Draft", exact: true }).getByAltText("Abrade"),
+  ).toHaveCount(0);
 });
 
 test("the write API validates and lands edits on disk", async ({ page, workbench }) => {
@@ -328,8 +353,8 @@ test("leaving the card right after typing keeps every edit", async ({ page, work
   await page.goto(`${workbench.url}#/card/${slug}`);
   await page.getByRole("button", { name: "cut", exact: true }).click();
   await page.getByLabel("Notes").fill("left in a hurry");
-  await page.getByRole("link", { name: "Cards", exact: true }).click();
-  await expect(page.locator('[data-pile="cut"] img[alt="Essence Scatter"]')).toBeVisible();
+  await openImages(page, workbench.url, true);
+  await expect(tileOf(page, "Essence Scatter")).toHaveAttribute("data-status", "cut");
   await expect.poll(async () => (await disk()).notes).toBe("left in a hurry");
   expect((await disk()).status).toBe("cut");
   await page.locator('img[alt="Essence Scatter"]').click();
@@ -466,7 +491,7 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
   const before = await Promise.all(slugs.map((slug) => readEntry(workbench.cardsDir, slug)));
   const disk = (): Promise<CardEntry[]> =>
     Promise.all(slugs.map((slug) => readEntry(workbench.cardsDir, slug)));
-  await page.goto(`${workbench.url}#/cards`);
+  await openImages(page, workbench.url, true);
 
   for (const name of names) {
     await page
@@ -503,53 +528,41 @@ test("bulk edits land on every selected card and undo as one", async ({ page, wo
 
   await bar.getByRole("button", { name: "Clear selection" }).click();
   await expect(bar).toHaveCount(0);
-  await expect(page.getByLabel("Organize by")).toBeFocused();
+  await expect(page.locator(".lab-image-grid .select").first()).toBeFocused();
 });
 
-test("the grid organizes by status and tag kind", async ({ page, workbench }) => {
-  const slug = "clarion-conqueror";
-  const created = await page.request.post(`${workbench.url}api/tags`, {
-    data: { label: "Pile test", kind: "archetype" },
-  });
-  expect(created.status()).toBe(200);
-  const patched = await page.request.patch(`${workbench.url}api/cards`, {
-    data: { changes: [{ slug, patch: { addTags: ["pile-test", "removal"] } }] },
-  });
-  expect(patched.status()).toBe(200);
-  await page.goto(`${workbench.url}#/cards`);
-  const organize = page.getByLabel("Organize by");
-  const tile = (pile: string) => page.locator(`[data-pile="${pile}"] img[alt="Clarion Conqueror"]`);
-
-  await organize.selectOption("archetype");
-  await expect(tile("tag-pile-test")).toBeVisible();
-  await expect(tile("no-archetype")).toHaveCount(0);
-  await expect(page).toHaveURL(/by=archetype/u);
-
-  await organize.selectOption("group");
-  await expect(tile("tag-removal")).toBeVisible();
-  await expect(tile("no-group")).toHaveCount(0);
-  await page.reload();
-  await expect(organize).toHaveValue("group");
-  await expect(tile("tag-removal")).toBeVisible();
-
-  await expect(organize.locator('option[value="section"]')).toHaveCount(0);
-
-  await organize.selectOption("status");
-  const draft = page.locator('[data-pile="draft"]');
-  await draft.getByRole("checkbox", { name: "Select all in Draft" }).check();
-  const count = await draft.locator(".tile").count();
+test("the images layout groups by the forge axis and selects a whole group", async ({
+  page,
+  workbench,
+}) => {
+  await openImages(page, workbench.url);
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  await page
+    .getByRole("group", { name: "Group by" })
+    .getByRole("button", { name: "Color" })
+    .click();
+  const label = "Select all in White";
+  await draft.getByRole("checkbox", { name: label }).check();
+  const count = await draft
+    .locator(".lab-group")
+    .filter({ has: page.getByRole("checkbox", { name: label }) })
+    .locator(".lab-tile-cell")
+    .count();
+  expect(count).toBeGreaterThan(0);
   await expect(page.getByTestId("selected-count")).toHaveText(`${String(count)} selected`);
   await page.getByRole("button", { name: "Clear selection" }).click();
-
-  await organize.selectOption("overview");
-  await expect(page).not.toHaveURL(/by=/u);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Images" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 });
 
 test("adding a card from Scryfall writes it with its function tags and a batch line", async ({
   page,
   workbench,
 }) => {
-  await page.goto(`${workbench.url}#/cards`);
+  await page.goto(`${workbench.url}#/`);
   await page.getByRole("link", { name: "Add card" }).click();
   await page.getByRole("button", { name: "draft", exact: true }).click();
   await page.getByLabel("Search Scryfall").fill('!"Lightning Bolt"');
@@ -662,12 +675,12 @@ test("insights count the draft, follow edits, and scope to a selection", async (
   const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
   await expect(total).toHaveText(String(files.length));
 
-  await page.getByRole("link", { name: "Cards", exact: true }).click();
+  await openImages(page, workbench.url, true);
   await page.getByRole("checkbox", { name: "Select Abrade", exact: true }).first().check();
   await page.getByRole("link", { name: "Insights" }).click();
   await page.getByLabel("Count cards in").selectOption("selected");
   await expect(total).toHaveText("1");
-  await page.getByRole("link", { name: "Cards", exact: true }).click();
+  await page.getByRole("link", { name: "Forge", exact: true }).click();
   await page.getByRole("button", { name: "Clear selection" }).click();
 });
 
@@ -756,15 +769,18 @@ test("the large card image keeps the card's shape", async ({ page, workbench }) 
   expect((box?.width ?? 0) / (box?.height ?? 1)).toBeCloseTo(488 / 680, 2);
 });
 
-test("the Wall shows names and costs, previews on hover, and opens the pane", async ({
+test("forge strips show names and costs, preview on hover, and open the pane", async ({
   page,
   workbench,
 }) => {
   await page.goto(workbench.url);
+  await expect(page.getByRole("meter", { name: "Draft size" })).toHaveAttribute(
+    "aria-valuenow",
+    String(await draftCount(workbench.cardsDir)),
+  );
   const strip = page.getByRole("link", { name: /^Bite Down/u });
   await expect(strip).toBeVisible();
   await expect(strip.getByRole("img", { name: /^Mana cost: /u })).toBeVisible();
-  await expect(page.locator('[data-column="1"] .column-count').first()).not.toHaveText("0");
 
   await strip.hover();
   await expect(page.locator("img.preview")).toBeVisible();
@@ -775,97 +791,49 @@ test("the Wall shows names and costs, previews on hover, and opens the pane", as
   await expect(pane.getByRole("heading", { name: "Bite Down" })).toBeFocused();
   await expect(strip).toHaveAttribute("aria-current", "page");
 
-  await page.getByRole("button", { name: "Color" }).click();
-  await expect(page).toHaveURL(/by=color/u);
+  await page
+    .getByRole("group", { name: "Group by" })
+    .getByRole("button", { name: "Color" })
+    .click();
   await expect(pane).toBeVisible();
 
   await page.keyboard.press("Escape");
   await expect(pane).toHaveCount(0);
   await expect(page).not.toHaveURL(/card=/u);
-  await expect(page).toHaveURL(/by=color/u);
 });
 
-test("opening and closing a card keeps the scroll position", async ({ page, workbench }) => {
+test("opening and closing a card keeps the pile's scroll position", async ({ page, workbench }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto(`${workbench.url}#/cards`);
-  const tiles = page.locator("a.tile");
-  await expect(tiles.first()).toBeVisible();
-  const tile = tiles.nth(40);
+  await openImages(page, workbench.url);
+  const draft = page.getByRole("region", { name: "Draft", exact: true });
+  const tile = draft.locator("a.tile").nth(40);
   await tile.scrollIntoViewIfNeeded();
-  const before = await page.evaluate(() => window.scrollY);
+  const scrolled = (): Promise<number> => draft.evaluate((element) => element.scrollTop);
+  const before = await scrolled();
   expect(before).toBeGreaterThan(0);
 
   await tile.click();
   await expect(page).toHaveURL(/[?&]card=/u);
   await expect(page.locator("aside.pane h1")).toBeFocused();
-  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  expect(await scrolled()).toBe(before);
 
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page).not.toHaveURL(/card=/u);
-  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  expect(await scrolled()).toBe(before);
 });
 
-test("dragging a card between the Wall and the tray changes its status", async ({
+test("a group checkbox shows when only some of its cards are selected", async ({
   page,
   workbench,
 }) => {
-  const config = JSON.parse(
-    await readFile(join(workbench.cardsDir, "..", "..", "cube.config.json"), "utf8"),
-  ) as { size: { min: number; max: number } };
-  const files = (await readdir(workbench.cardsDir)).filter((file) => file.endsWith(".json"));
-  const entries = await Promise.all(
-    files.map(async (file) => ({
-      slug: file.replace(/\.json$/u, ""),
-      ...(await readEntry(workbench.cardsDir, file.replace(/\.json$/u, ""))),
-    })),
-  );
-  const prospect = entries.find((entry) => entry.status === "prospect");
-  if (!prospect) {
-    throw new Error("fixture has no prospect");
-  }
-  const drafted = await draftCount(workbench.cardsDir);
-
-  await page.goto(workbench.url);
-  const gauge = page.getByTestId("draft-gauge");
-  await expect(gauge).toContainText(`target ${String(config.size.min)}–${String(config.size.max)}`);
-  await expect(page.getByRole("meter", { name: "Draft size" })).toHaveAttribute(
-    "aria-valuenow",
-    String(drafted),
-  );
-
-  const strip = page.locator(
-    `.tray .strip:has(.strip-name:text-is(${JSON.stringify(prospect.name)}))`,
-  );
-  await strip.dragTo(page.locator(".wall-body"));
-  await expect(
-    page.locator(`.wall-body .strip:has(.strip-name:text-is(${JSON.stringify(prospect.name)}))`),
-  ).toBeVisible();
-  await expect(page.getByRole("meter", { name: "Draft size" })).toHaveAttribute(
-    "aria-valuenow",
-    String(drafted + 1),
-  );
-  await expect
-    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
-    .toBe("draft");
-
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect
-    .poll(async () => (await readEntry(workbench.cardsDir, prospect.slug)).status)
-    .toBe("prospect");
-  await expect(
-    page.locator(`.tray .strip:has(.strip-name:text-is(${JSON.stringify(prospect.name)}))`),
-  ).toBeVisible();
-});
-
-test("a pile checkbox shows when only some of its cards are selected", async ({
-  page,
-  workbench,
-}) => {
-  await page.goto(`${workbench.url}#/cards`);
-  const draft = page.locator('[data-pile="draft"]');
-  const pile = draft.getByRole("checkbox", { name: "Select all in Draft" });
+  await openImages(page, workbench.url);
+  const group = page
+    .getByRole("region", { name: "Draft", exact: true })
+    .locator(".lab-group")
+    .first();
+  const pile = group.getByRole("checkbox", { name: /^Select all in / });
   await expect(pile).toHaveJSProperty("indeterminate", false);
-  await draft.locator(".tile-cell .select").first().check();
+  await group.locator(".lab-tile-cell .select").first().check();
   await expect(pile).toHaveJSProperty("indeterminate", true);
   await expect(pile).not.toBeChecked();
   await pile.check();
@@ -874,8 +842,8 @@ test("a pile checkbox shows when only some of its cards are selected", async ({
 });
 
 test("card images come from the local image cache", async ({ page, workbench }) => {
-  await page.goto(`${workbench.url}#/cards`);
-  const first = page.locator(".grid img").first();
+  await openImages(page, workbench.url);
+  const first = page.locator(".lab-image img").first();
   await expect(first).toHaveAttribute("src", /^\/api\/image\?u=https%3A%2F%2Fcards\.scryfall\.io/u);
   await expect
     .poll(() => first.evaluate((image) => (image as HTMLImageElement).naturalWidth))
@@ -1149,7 +1117,7 @@ test("a chosen printing that can't be found falls back and says so", async ({
   await expect(page.getByRole("note")).toHaveCount(0);
 });
 
-test("the tags view counts overlaps and filters the Wall to one", async ({ page, workbench }) => {
+test("the tags view counts overlaps and filters forge to one", async ({ page, workbench }) => {
   for (const label of ["Overlap A", "Overlap B"]) {
     const created = await page.request.post(`${workbench.url}api/tags`, {
       data: { label, kind: "group" },
@@ -1177,11 +1145,14 @@ test("the tags view counts overlaps and filters the Wall to one", async ({ page,
   await expect(venn.locator('[data-key="1"]')).toHaveText("1");
   await expect(venn.locator('[data-key="0+1"]')).toHaveText("1");
 
+  const lit = page.locator(".lab-cell:not([data-dim]) .lab-strip-name");
+  const pills = page.getByRole("group", { name: "Applied filters" });
   await page.getByRole("link", { name: "Overlap A + Overlap B: 1 card" }).click();
-  await expect(page).toHaveURL(/#\/\?with=overlap-a%2Coverlap-b$/u);
-  const filter = page.getByRole("status", { name: "Tag filter" });
-  await expect(filter).toContainText("Tagged Overlap A + Overlap B");
-  await expect(page.locator(".strip-name")).toHaveText(["Adanto Vanguard"]);
+  await expect(page).toHaveURL(/#\/$/u);
+  await expect(pills.getByRole("button", { name: /^Remove / })).toHaveText([
+    "tag:overlap-a tag:overlap-b ×",
+  ]);
+  await expect(lit).toHaveText(["Adanto Vanguard"]);
 
   await page.goBack();
   const label = await venn.locator('[data-key="0"]').boundingBox();
@@ -1189,13 +1160,11 @@ test("the tags view counts overlaps and filters the Wall to one", async ({ page,
     throw new Error("no Overlap A-only label");
   }
   await page.mouse.click(label.x + label.width / 2, label.y - 12);
-  await expect(page).toHaveURL(/with=overlap-a&without=overlap-b/u);
-  await expect(filter).toContainText("Tagged Overlap A, not Overlap B");
-  await expect(page.locator(".strip-name")).toHaveText(["Biotech Specialist"]);
-
-  await filter.getByRole("button", { name: "Clear filter" }).click();
-  await expect(filter).toHaveCount(0);
-  await expect(page).not.toHaveURL(/with=/u);
+  await expect(page).toHaveURL(/#\/$/u);
+  await expect(pills.getByRole("button", { name: /^Remove / })).toHaveText([
+    "tag:overlap-a -tag:overlap-b ×",
+  ]);
+  await expect(lit).toHaveText(["Biotech Specialist"]);
 });
 
 test("a saved version compares with the current cube", async ({ page, workbench }) => {
@@ -1242,11 +1211,10 @@ test("each view keeps its choices across views and reloads", async ({ page, work
   const go = async (name: string) => {
     await views.getByRole("link", { name, exact: true }).click();
   };
+  const groupBy = page.getByRole("group", { name: "Group by" });
   await page.goto(`${workbench.url}#/`);
-  await page.getByRole("group", { name: "Columns" }).getByRole("button", { name: "Color" }).click();
-  await page.getByRole("button", { name: /^Prospects/u }).click();
-  await go("Cards");
-  await page.getByLabel("Organize by").selectOption("status");
+  await groupBy.getByRole("button", { name: "Color" }).click();
+  await page.getByRole("button", { name: "Images" }).click();
   await go("Insights");
   await page.getByLabel("Count cards in").selectOption("all");
   await go("Board");
@@ -1259,14 +1227,15 @@ test("each view keeps its choices across views and reloads", async ({ page, work
     if (reload) {
       await page.reload();
     }
-    await go("Wall");
-    await expect(page).toHaveURL(/#\/\?by=color$/u);
-    await expect(page.getByRole("button", { name: /^Prospects/u })).toHaveAttribute(
-      "aria-expanded",
-      "false",
+    await go("Forge");
+    await expect(groupBy.getByRole("button", { name: "Color" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
     );
-    await go("Cards");
-    await expect(page.getByLabel("Organize by")).toHaveValue("status");
+    await expect(page.getByRole("button", { name: "Images" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await go("Insights");
     await expect(page.getByLabel("Count cards in")).toHaveValue("all");
     await go("Board");
@@ -1281,9 +1250,15 @@ test("each view keeps its choices across views and reloads", async ({ page, work
   await go("Insights");
   await page.getByLabel("Count cards in").selectOption("draft");
   await go("Tags");
-  await page.goto(`${workbench.url}#/?with=removal`);
-  await expect(page).toHaveURL(/with=removal/u);
-  await expect(page).toHaveURL(/by=color/u);
+  await page.goto(`${workbench.url}#/?q=tag:removal`);
+  await expect(page).toHaveURL(/#\/$/u);
+  await expect(
+    page.getByRole("group", { name: "Applied filters" }).getByRole("button", { name: /^Remove / }),
+  ).toHaveText(["tag:removal ×"]);
+  await expect(groupBy.getByRole("button", { name: "Color" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await go("Insights");
   await expect(page.getByLabel("Count cards in")).toHaveValue("draft");
   await expect(page).not.toHaveURL(/scope=/u);
@@ -1471,7 +1446,7 @@ test("typing or joins the next term with the last pill, and and adds nothing", a
   await editor.getByRole("button", { name: "Close filter editor" }).click();
 });
 
-test("the Lab moves cards by drag and filters them with typed, applied, and peeked queries", async ({
+test("Forge moves cards by drag and filters them with typed, applied, and peeked queries", async ({
   page,
   workbench,
 }) => {
@@ -1489,7 +1464,7 @@ test("the Lab moves cards by drag and filters them with typed, applied, and peek
   }
   const drafted = await draftCount(workbench.cardsDir);
 
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const count = page.locator(".lab-count-value");
   await expect(count).toHaveText(String(drafted));
   const draft = page.getByRole("region", { name: "Draft", exact: true });
@@ -1513,7 +1488,7 @@ test("the Lab moves cards by drag and filters them with typed, applied, and peek
   const dim = draft.locator(".lab-cell[data-dim]");
   const total = await cells.count();
   await expect(dim).toHaveCount(0);
-  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  const query = page.getByRole("textbox", { name: "Filter the Forge" });
   await query.pressSequentially("c=r");
   await expect.poll(async () => dim.count()).toBeGreaterThan(0);
   const redDim = await dim.count();
@@ -1533,12 +1508,12 @@ test("the Lab moves cards by drag and filters them with typed, applied, and peek
   const both = await dim.count();
   expect(both).toBeGreaterThan(redDim);
 
-  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  await forgeSetting(page, "Cards that don't match the filter", "hide");
   await expect(cells).toHaveCount(total - both);
   await page.reload();
   await expect(page.getByRole("button", { name: "Remove c=r" })).toBeVisible();
   await expect(cells).toHaveCount(total - both);
-  await page.getByRole("button", { name: "Dim", exact: true }).click();
+  await forgeSetting(page, "Cards that don't match the filter", "dim");
   await page.getByRole("button", { name: "Remove MV 2" }).click();
   await expect(dim).toHaveCount(redDim);
 
@@ -1558,16 +1533,16 @@ test("the Lab moves cards by drag and filters them with typed, applied, and peek
   await page.screenshot({ path: "test-results/lab-peek.png" });
 });
 
-test("a Lab chart pins to a scope or follows the filter, with its own baseline", async ({
+test("a Forge chart pins to a scope or follows the filter, with its own baseline", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const curve = page.getByRole("region", { name: "Curve" });
   const three = curve.locator('.lab-bar[aria-label^="MV 3:"]');
   const unfiltered = await three.getAttribute("aria-label");
-  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  const query = page.getByRole("textbox", { name: "Filter the Forge" });
   await query.pressSequentially("c=g");
   await query.press("Enter");
   await expect(three).not.toHaveAttribute("aria-label", unfiltered ?? "");
@@ -1600,17 +1575,17 @@ async function readLayouts(cardsDir: string): Promise<unknown> {
   }
 }
 
-test("a named Lab layout saves to the cube and brings its settings back", async ({
+test("a named Forge layout saves to the cube and brings its settings back", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const draft = page.getByRole("region", { name: "Draft", exact: true });
   await draft.getByRole("button", { name: "Rows" }).click();
   await draft.getByRole("button", { name: "None", exact: true }).click();
-  await page.getByRole("button", { name: "Charts on the left" }).click();
-  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await chartsOn(page, "left");
+  const query = page.getByRole("textbox", { name: "Filter the Forge" });
   await query.pressSequentially("t:creature");
   await query.press("Enter");
   await expect(draft.locator(".lab-group")).toHaveCount(1);
@@ -1638,7 +1613,7 @@ test("a named Lab layout saves to the cube and brings its settings back", async 
 
   await draft.getByRole("button", { name: "Columns" }).click();
   await draft.getByRole("button", { name: "Mana value", exact: true }).click();
-  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await chartsOn(page, "top");
   await page.getByRole("button", { name: "Remove t:creature" }).click();
   await expect(page.locator(".lab")).toHaveAttribute("data-dock", "top");
 
@@ -1658,14 +1633,14 @@ test("a named Lab layout saves to the cube and brings its settings back", async 
   await page.getByRole("button", { name: /^Layouts/u }).click();
   await draft.getByRole("button", { name: "Columns" }).click();
   await draft.getByRole("button", { name: "Mana value", exact: true }).click();
-  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await chartsOn(page, "top");
   await page.getByRole("button", { name: "Remove t:creature" }).click();
 });
 
-test("the Lab saves its stack of applied filters as one filter", async ({ page, workbench }) => {
+test("Forge saves its stack of applied filters as one filter", async ({ page, workbench }) => {
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto(`${workbench.url}#/lab`);
-  const query = page.getByRole("textbox", { name: "Filter the Lab" });
+  await page.goto(`${workbench.url}#/`);
+  const query = page.getByRole("textbox", { name: "Filter the Forge" });
   await query.pressSequentially("c=u");
   await query.press("Enter");
   await page
@@ -1686,13 +1661,13 @@ test("the Lab saves its stack of applied filters as one filter", async ({ page, 
   await page.getByRole("button", { name: "Remove Cheap blue" }).click();
 });
 
-test("every Lab chart previews a hovered card's move and peeks at a hovered bar", async ({
+test("every Forge chart previews a hovered card's move and peeks at a hovered bar", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1100 });
-  await page.goto(`${workbench.url}#/lab`);
-  await page.getByRole("button", { name: "Charts on the left" }).click();
+  await page.goto(`${workbench.url}#/`);
+  await chartsOn(page, "left");
   const menu = page.locator(".lab-menu").first();
   await menu.getByRole("button", { name: /^Blocks/u }).click();
   for (const box of await menu.locator("input[type=checkbox]").all()) {
@@ -1725,15 +1700,15 @@ test("every Lab chart previews a hovered card's move and peeks at a hovered bar"
     /^Red: (\d+) of \1$/u,
   );
   await page.getByRole("button", { name: "Remove Has Red" }).click();
-  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await chartsOn(page, "top");
 });
 
-test("the Lab creature charts peek, pick, and preview a move in a top and a side dock", async ({
+test("Forge creature charts peek, pick, and preview a move in a top and a side dock", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1100 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const menu = page.locator(".lab-menu").first();
   await menu.getByRole("button", { name: /^Blocks/u }).click();
   for (const box of await menu.locator("input[type=checkbox]").all()) {
@@ -1746,7 +1721,7 @@ test("the Lab creature charts peek, pick, and preview a move in a top and a side
   const prospects = page.locator('[data-pile="prospects"] .lab-strip');
 
   for (const dock of ["top", "left"]) {
-    await page.getByRole("button", { name: `Charts on the ${dock}` }).click();
+    await chartsOn(page, dock);
     await balance.scrollIntoViewIfNeeded();
     const rows = balance.getByRole("listitem");
     await expect(rows).not.toHaveCount(0);
@@ -1787,7 +1762,7 @@ test("the Lab creature charts peek, pick, and preview a move in a top and a side
   await expect(pill).toBeVisible();
   await expect(row).toHaveAttribute("data-picked", "");
   await pill.click();
-  await page.getByRole("button", { name: "Charts on the top" }).click();
+  await chartsOn(page, "top");
 
   await balance.hover();
   await page.getByRole("button", { name: "Collapse Creature balance" }).click();
@@ -1798,12 +1773,12 @@ test("the Lab creature charts peek, pick, and preview a move in a top and a side
   await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeGreaterThan(200);
 });
 
-test("the Lab sorts its cards by a chain of keys that survives a reload", async ({
+test("Forge sorts its cards by a chain of keys that survives a reload", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1500, height: 1000 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const draft = page.getByRole("region", { name: "Draft", exact: true });
   await draft.getByRole("button", { name: "Rows" }).click();
   await draft.getByRole("button", { name: "Card type", exact: true }).click();
@@ -1843,12 +1818,12 @@ test("the Lab sorts its cards by a chain of keys that survives a reload", async 
   await draft.getByRole("button", { name: "Columns" }).click();
 });
 
-test("clicks in one Lab chart or together, and tag charts switch to chips", async ({
+test("clicks in one Forge chart or together, and tag charts switch to chips", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const heat = page.getByRole("region", { name: "Color × mana value" });
   const cells = heat.locator(".lab-heat-cell:not([data-empty])");
   const dim = page.locator(".lab-cell[data-dim]");
@@ -1859,8 +1834,8 @@ test("clicks in one Lab chart or together, and tag charts switch to chips", asyn
   await expect(pill).toHaveCount(1);
   await expect(pill).toContainText(" or ");
   await page.locator(".lab-top h1").hover();
+  await expect.poll(async () => dim.count()).toBeLessThan(one);
   const both = await dim.count();
-  expect(both).toBeLessThan(one);
   await expect(heat.locator(".lab-heat-cell[data-picked]")).toHaveCount(2);
   await cells.nth(14).hover();
   await expect.poll(async () => dim.count()).toBeLessThan(both);
@@ -1883,12 +1858,12 @@ test("clicks in one Lab chart or together, and tag charts switch to chips", asyn
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
 });
 
-test("an opened card stays highlighted in the Lab and previews its move in every chart", async ({
+test("an opened card stays highlighted in Forge and previews its move in every chart", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const prospect = page.locator('[data-pile="prospects"] .lab-cell').first();
   const name = (await prospect.locator(".lab-strip-name").textContent()) ?? "";
   await prospect.locator(".lab-strip").click();
@@ -1909,12 +1884,12 @@ test("an opened card stays highlighted in the Lab and previews its move in every
   await expect(summary.locator(".lab-ghost-label")).toHaveCount(0);
 });
 
-test("Lab Pending queues adds and cuts, previews them together, and applies as one undoable edit", async ({
+test("Forge Pending queues adds and cuts, previews them together, and applies as one undoable edit", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const draft = page.getByRole("region", { name: "Draft", exact: true });
   const prospects = page.getByRole("region", { name: "Prospects", exact: true });
   const pending = page.getByRole("region", { name: "Pending", exact: true });
@@ -2267,18 +2242,22 @@ test("the active nav link stays readable on hover and a selected strip's ring si
   await expect(active).toHaveCSS("color", "rgb(255, 255, 255)");
 
   await page.goto(workbench.url);
+  await expect(page.getByRole("meter", { name: "Draft size" })).toHaveAttribute(
+    "aria-valuenow",
+    String(await draftCount(workbench.cardsDir)),
+  );
   const strip = page.getByRole("link", { name: /^Bite Down/u });
   await strip.click();
   await expect(strip).toHaveAttribute("aria-current", "page");
-  await expect(strip).toHaveCSS("outline-offset", "-2px");
+  await expect(strip).toHaveCSS("box-shadow", /inset/u);
 });
 
-test("moving between Lab chart marks goes from one peek to the next without a reset", async ({
+test("moving between Forge chart marks goes from one peek to the next without a reset", async ({
   page,
   workbench,
 }) => {
   await page.setViewportSize({ width: 1600, height: 1100 });
-  await page.goto(`${workbench.url}#/lab`);
+  await page.goto(`${workbench.url}#/`);
   const color = page.getByRole("region", { name: "Color", exact: true });
   const red = color.getByRole("listitem", { name: /^Red:/u });
   const green = color.getByRole("listitem", { name: /^Green:/u });
@@ -2366,7 +2345,6 @@ test("no view puts a ringed control flush against a clipping edge", async ({ pag
       "board",
       "tags",
       "insights",
-      "lab",
       "versions",
       "log",
       "add",

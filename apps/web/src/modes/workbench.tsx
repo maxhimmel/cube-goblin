@@ -35,7 +35,7 @@ import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
 import { CardEditor, CardPrinting } from "../workbench/card-editor.tsx";
 import { CardHistory } from "../workbench/card-history.tsx";
 import { editsPending, runCardEdit } from "../workbench/edits.ts";
-import { useSelection } from "../workbench/selection.ts";
+import { clearSelection, useSelection } from "../workbench/selection.ts";
 import { SettingsPanel } from "../workbench/settings-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { VersionsPage } from "../workbench/versions-page.tsx";
@@ -192,5 +192,6 @@ export const mode: Mode = {
   SelectPile,
   BulkBar: () => <BulkBar cube={useWorkbench()} />,
   useSelection,
+  clearSelection,
   AddPanel: ({ replaces }) => <AddPanel cube={useWorkbench()} replaces={replaces} />,
 };

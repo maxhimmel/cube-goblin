@@ -24,7 +24,8 @@ Part of [T-043](T-043-polish-pass.md). The [Lab](T-031-lab-view.md) already hold
 - Card layouts: Columns, Rows, Images. Images groups tiles by the Forge axis with a checkbox per group and per card, the bulk bar above the draft, share-doc vote marks, a faded look for cut cards, and the same dim, pending, drag, and hover preview as strips. Organizing the grid by status or tag kind is dropped; tags get their own workspace in [T-047](T-047-tag-workspace.md).
 - Toolbar: query bar, Blocks, Layouts, and switches for Charts, Baseline, and Show cut. Settings gets a Forge section kept in the browser: dim or hide non-matches, the chart panel's side (default right), and tags on cards. Below 1280px the panel sits above the cards whatever the setting says.
 - `useRemembered` now tells every component reading a key when it changes, so the settings dialog updates Forge live.
-- The Tags view links to `#/?q=<query>`, which applies the query as Forge's one filter pill.
+- The Tags view links to `#/?q=<query>`, which adds the query as a filter pill next to any already applied.
 - Fix found on the way: applying a filter pill wrapped the query bar to a second line, which pushed the charts down under the pointer. Pills and the query now share one row that scrolls sideways.
+- The bulk bar has a fixed sticky slot above the draft so ticking a card never moves the grid; leaving Images clears the selection; tile checkboxes always show on touch screens.
 - CSS classes and stored keys keep their `lab` names so saved layouts and settings carry over.
 - E2E: every Wall, Cards, and Lab test now drives Forge; new tests for group selection in Images and for the settings that moved.

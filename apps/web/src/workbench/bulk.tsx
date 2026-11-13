@@ -168,7 +168,10 @@ export function BulkBar({ cube }: { cube: Workbench | undefined }): ReactNode {
         type="button"
         onClick={() => {
           clearSelection();
-          document.querySelector<HTMLElement>(".lab-image-grid .select")?.focus();
+          (
+            document.querySelector<HTMLElement>(".lab-image-grid .select") ??
+            document.querySelector<HTMLElement>('[aria-label="Card layout"] [aria-pressed="true"]')
+          )?.focus();
         }}
       >
         Clear selection

@@ -222,7 +222,7 @@ function Venn({
       </svg>
       <figcaption className="muted">
         {hovered === undefined
-          ? "Click a region to show its cards on the Wall."
+          ? "Click a region to filter Forge to its cards."
           : `${describe(hovered, picked, vocabulary)} · ${cardCount(counts.get(hover ?? "")?.cards.length ?? 0)}`}
       </figcaption>
     </figure>

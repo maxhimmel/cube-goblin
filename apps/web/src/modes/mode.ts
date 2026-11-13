@@ -24,6 +24,7 @@ export interface Mode {
   SelectPile: (props: { slugs: string[]; label: string }) => ReactNode;
   BulkBar: () => ReactNode;
   useSelection: () => ReadonlySet<string>;
+  clearSelection?: () => void;
   AddPanel: (props: { replaces: string | undefined }) => ReactNode;
   moveCard?: (card: GridCard, status: CardStatus) => void;
   moveCards?: (

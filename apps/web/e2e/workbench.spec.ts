@@ -550,7 +550,15 @@ test("the images layout groups by the forge axis and selects a whole group", asy
     .count();
   expect(count).toBeGreaterThan(0);
   await expect(page.getByTestId("selected-count")).toHaveText(`${String(count)} selected`);
+  const tile = draft.locator(".lab-tile-cell").nth(count);
+  const before = await tile.boundingBox();
   await page.getByRole("button", { name: "Clear selection" }).click();
+  expect(await tile.boundingBox()).toEqual(before);
+
+  await draft.getByRole("checkbox", { name: label }).check();
+  await page.getByRole("button", { name: "Columns" }).click();
+  await page.getByRole("button", { name: "Images" }).click();
+  await expect(page.getByTestId("selected-count")).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("button", { name: "Images" })).toHaveAttribute(
     "aria-pressed",
@@ -1153,6 +1161,8 @@ test("the tags view counts overlaps and filters forge to one", async ({ page, wo
     "tag:overlap-a tag:overlap-b ×",
   ]);
   await expect(lit).toHaveText(["Adanto Vanguard"]);
+  await pills.getByRole("button", { name: /^Remove / }).click();
+  await expect(pills.getByRole("button", { name: /^Remove / })).toHaveCount(0);
 
   await page.goBack();
   const label = await venn.locator('[data-key="0"]').boundingBox();
@@ -1165,6 +1175,13 @@ test("the tags view counts overlaps and filters forge to one", async ({ page, wo
     "tag:overlap-a -tag:overlap-b ×",
   ]);
   await expect(lit).toHaveText(["Biotech Specialist"]);
+
+  await page.goBack();
+  await page.getByRole("link", { name: "Overlap A + Overlap B: 1 card" }).click();
+  await expect(pills.getByRole("button", { name: /^Remove / })).toHaveText([
+    "tag:overlap-a -tag:overlap-b ×",
+    "tag:overlap-a tag:overlap-b ×",
+  ]);
 });
 
 test("a saved version compares with the current cube", async ({ page, workbench }) => {

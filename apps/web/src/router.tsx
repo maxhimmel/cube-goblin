@@ -12,7 +12,14 @@ import { InsightsPage } from "./insights/insights-page.tsx";
 import { ForgePage } from "./forge/forge-page.tsx";
 import { Shell } from "./shell.tsx";
 import type { RememberedPath } from "./view-choices.ts";
-import { isRemembered, recallSearch, rememberSearch, rememberState } from "./view-choices.ts";
+import {
+  isRemembered,
+  recallSearch,
+  recallState,
+  rememberSearch,
+  rememberState,
+} from "./view-choices.ts";
+import { z } from "zod";
 
 function restoreChoices(path: RememberedPath) {
   return ({
@@ -62,7 +69,9 @@ const forgeRoute = createRoute({
       return;
     }
     if (query !== "" && compileQuery(query).ok) {
-      rememberState("lab.pills", [`x:${query}`]);
+      const pills = recallState("lab.pills", z.array(z.string())) ?? [];
+      const pill = `x:${query}`;
+      rememberState("lab.pills", pills.includes(pill) ? pills : [...pills, pill]);
     }
     redirect({
       to: "/",
@@ -147,7 +156,7 @@ const labRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/lab",
   beforeLoad: () => {
-    redirect({ to: "/", replace: true, throw: true });
+    redirect({ to: "/", search: (prev) => prev, replace: true, throw: true });
   },
 });
 

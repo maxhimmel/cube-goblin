@@ -77,13 +77,22 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
                   { id: "images", label: "Images" },
                 ]}
                 value={view}
-                onChange={setView}
+                onChange={(next) => {
+                  if (next !== "images") {
+                    mode.clearSelection?.();
+                  }
+                  setView(next);
+                }}
               />
               <AxisTabs lab={lab} />
               <SortMenu keys={lab.sort} onChange={lab.setSort} />
             </div>
           </header>
-          {view === "images" && <mode.BulkBar />}
+          {view === "images" && (
+            <div className="lab-bulk-slot">
+              <mode.BulkBar />
+            </div>
+          )}
           {pile(draft, false)}
         </section>
         <PendingGutter lab={lab} tags={tags} open={pendingOpen} setOpen={setPendingOpen} />

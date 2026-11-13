@@ -590,15 +590,6 @@
   box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
 }
 
-.lab-seg-label {
-  align-self: center;
-  padding: 0 6px 0 4px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .lab-menu {
   position: relative;
 }
@@ -2234,6 +2225,12 @@ button.lab-stat[data-picked] {
   transition: opacity 0.12s ease;
 }
 
+@media (hover: none) {
+  .lab-tile-cell .select {
+    opacity: 1;
+  }
+}
+
 .lab-tile-cell:hover .select,
 .lab-tile-cell .select:focus-visible,
 .lab-tile-cell .select:checked,
@@ -2241,12 +2238,31 @@ button.lab-stat[data-picked] {
   opacity: 1;
 }
 
-.lab-pile > .bulk-bar {
-  margin: 0 0 8px;
+.lab-bulk-slot {
+  position: sticky;
+  top: -10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  margin: 0 -10px 8px;
+  padding: 0 10px;
+  background: var(--panel);
 }
 
-.lab-pile > .bulk-bar button,
-.lab-pile > .bulk-bar select {
+.lab-bulk-slot .bulk-bar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin: calc(-1 * var(--ring-room));
+  padding: var(--ring-room);
+}
+
+.lab-bulk-slot .bulk-bar > * {
+  flex: none;
+}
+
+.lab-bulk-slot .bulk-bar button,
+.lab-bulk-slot .bulk-bar select {
   padding: 4px 10px;
   font-size: 0.82rem;
 }

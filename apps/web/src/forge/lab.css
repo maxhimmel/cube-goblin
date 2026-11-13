@@ -6,11 +6,14 @@
   --dock-row: auto;
   --dock-col: auto;
 
+  --seam: 22px;
+
   display: grid;
-  grid-template-areas: "head" "dock" "floor";
-  grid-template-rows: auto var(--dock-row) minmax(0, 1fr);
+  grid-template-areas: "head" "dock" "seam" "floor";
+  grid-template-rows: auto var(--dock-row) var(--seam) minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  row-gap: 0;
+  column-gap: 0;
   height: calc(100dvh - var(--topbar-height, 64px) - 8px);
   min-height: 640px;
 }
@@ -21,26 +24,285 @@
 }
 
 .lab[data-dock="bottom"] {
-  grid-template-areas: "head" "floor" "dock";
-  grid-template-rows: auto minmax(0, 1fr) var(--dock-row);
+  grid-template-areas: "head" "floor" "seam" "dock";
+  grid-template-rows: auto minmax(0, 1fr) var(--seam) var(--dock-row);
 }
 
 .lab[data-dock="right"] {
-  grid-template-areas: "head head" "floor dock";
+  grid-template-areas: "head head head" "floor seam dock";
   grid-template-rows: auto minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr) var(--dock-col);
+  grid-template-columns: minmax(0, 1fr) var(--seam) var(--dock-col);
 }
 
 .lab[data-dock="left"] {
-  grid-template-areas: "head head" "dock floor";
+  grid-template-areas: "head head head" "dock seam floor";
   grid-template-rows: auto minmax(0, 1fr);
-  grid-template-columns: var(--dock-col) minmax(0, 1fr);
+  grid-template-columns: var(--dock-col) var(--seam) minmax(0, 1fr);
 }
 
-.lab[data-dock]:not([data-dock-open]) {
-  grid-template-areas: "head" "floor";
-  grid-template-rows: auto minmax(0, 1fr);
-  grid-template-columns: minmax(0, 1fr);
+.lab[data-dock="top"]:not([data-dock-open]) {
+  grid-template-areas: "head" "seam" "floor";
+  grid-template-rows: auto var(--seam) minmax(0, 1fr);
+}
+
+.lab[data-dock="bottom"]:not([data-dock-open]) {
+  grid-template-areas: "head" "floor" "seam";
+  grid-template-rows: auto minmax(0, 1fr) var(--seam);
+}
+
+.lab[data-dock="right"]:not([data-dock-open]) {
+  grid-template-areas: "head head" "floor seam";
+  grid-template-columns: minmax(0, 1fr) var(--seam);
+}
+
+.lab[data-dock="left"]:not([data-dock-open]) {
+  grid-template-areas: "head head" "seam floor";
+  grid-template-columns: var(--seam) minmax(0, 1fr);
+}
+
+.lab-seam {
+  position: relative;
+  z-index: 5;
+  grid-area: seam;
+  display: grid;
+  place-items: center;
+}
+
+.lab-seam::before {
+  position: absolute;
+  inset: 50% 8px auto;
+  height: 2px;
+  content: "";
+  background: var(--line);
+  border-radius: 2px;
+  transform: translateY(-50%);
+  transition: background 0.2s;
+}
+
+.lab[data-dock="right"] .lab-seam::before,
+.lab[data-dock="left"] .lab-seam::before {
+  inset: 8px auto 8px 50%;
+  width: 2px;
+  height: auto;
+  transform: translateX(-50%);
+}
+
+.lab-seam:has(.lab-seam-handle:hover, .lab-seam-handle :focus-visible)::before {
+  background: color-mix(in oklab, var(--accent) 55%, var(--line));
+}
+
+.lab-seam-handle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin: -35px;
+}
+
+.lab-seam-handle::before {
+  position: absolute;
+  inset: 4px;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  background: color-mix(in oklab, var(--panel) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  scale: 0.4;
+  transition:
+    opacity 0.15s,
+    scale 0.35s var(--lift);
+}
+
+.lab-seam-handle:hover::before,
+.lab-seam-handle:has(:focus-visible)::before {
+  opacity: 1;
+  scale: 1;
+}
+
+.lab-seam-toggle {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+  transition:
+    rotate 0.45s var(--lift),
+    scale 0.25s var(--lift),
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.lab[data-dock="right"] .lab-seam-toggle,
+.lab[data-dock="left"] .lab-seam-toggle {
+  width: 30px;
+}
+
+.lab-seam-toggle svg,
+.lab-seam-sides svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lab-seam-handle:hover .lab-seam-toggle,
+.lab-seam-toggle:focus-visible {
+  scale: 1.15;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.lab-seam-handle:hover .lab-seam-toggle svg {
+  animation: lab-seam-nudge 0.9s var(--lift) infinite;
+}
+
+@keyframes lab-seam-nudge {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+
+  40% {
+    translate: 0 -2px;
+  }
+}
+
+.lab-seam-tip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  z-index: 3;
+  padding: 3px 8px;
+  color: var(--on-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 30%);
+  opacity: 0;
+  translate: -50% -4px;
+  scale: 0.8;
+  transition:
+    opacity 0.15s,
+    translate 0.3s var(--lift),
+    scale 0.3s var(--lift);
+}
+
+.lab-seam-handle:hover .lab-seam-tip,
+.lab-seam-handle:has(:focus-visible) .lab-seam-tip {
+  opacity: 1;
+  translate: -50% 0;
+  scale: 1;
+  transition-delay: 0.25s;
+}
+
+.lab-seam-sides {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.lab-seam-sides button {
+  --out: 0px;
+
+  position: absolute;
+  top: calc(50% - 11px);
+  left: calc(50% - 11px);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+  opacity: 0;
+  scale: 0.3;
+  transition:
+    opacity 0.15s,
+    translate 0.35s var(--lift),
+    scale 0.35s var(--lift),
+    color 0.15s,
+    background 0.15s;
+}
+
+.lab-seam-handle:hover .lab-seam-sides button,
+.lab-seam-handle:has(:focus-visible) .lab-seam-sides button {
+  --out: 30px;
+
+  pointer-events: auto;
+  opacity: 1;
+  scale: 1;
+}
+
+.lab-seam-sides [data-side="top"] {
+  translate: 0 calc(-1 * var(--out));
+  transition-delay: 0s;
+}
+
+.lab-seam-sides [data-side="right"] {
+  translate: var(--out) 0;
+  transition-delay: 0.03s;
+}
+
+.lab-seam-sides [data-side="bottom"] {
+  translate: 0 var(--out);
+  transition-delay: 0.06s;
+}
+
+.lab-seam-sides [data-side="left"] {
+  translate: calc(-1 * var(--out)) 0;
+  transition-delay: 0.09s;
+}
+
+.lab-seam-sides button[aria-pressed="true"] {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.lab-seam-sides button:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+.lab-seam-handle .lab-seam-sides button:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-seam-toggle,
+  .lab-seam-sides button,
+  .lab-seam-tip {
+    transition-duration: 0.01s;
+  }
+
+  .lab-seam-handle:hover .lab-seam-toggle svg {
+    animation: none;
+  }
 }
 
 .lab-top {
@@ -49,6 +311,7 @@
   flex-wrap: wrap;
   gap: 8px 20px;
   align-items: center;
+  margin-bottom: 12px;
   padding-top: 8px;
 }
 

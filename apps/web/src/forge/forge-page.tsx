@@ -11,6 +11,7 @@ import { LayoutsMenu } from "./layouts-menu.tsx";
 import { PendingGutter, usePendingOpen } from "./pending.tsx";
 import { AxisTabs, DraftCount, QueryBar, Segmented, Toggle } from "./toolbar.tsx";
 import type { Lab } from "./use-lab.ts";
+import { Seam } from "./seam.tsx";
 import { useLab } from "./use-lab.ts";
 import { usePlacedDock, useStripTags } from "./view-settings.tsx";
 
@@ -53,7 +54,6 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           <BlocksMenu dock={dock} />
           <LayoutsMenu onApply={onApply} />
           <div className="lab-switches">
-            <Toggle label="Charts" checked={open} onChange={setOpen} />
             <Toggle label="Baseline" checked={lab.baseline} onChange={lab.setBaseline} />
             <Toggle label="Show cut" checked={lab.showCut} onChange={lab.setShowCut} />
           </div>
@@ -64,6 +64,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
           <DockBlocks lab={lab} dock={dock} />
         </div>
       )}
+      <Seam placed={dockAt} open={open} setOpen={setOpen} />
       <div className="lab-floor">
         <section className="lab-pile" aria-label="Draft" {...lab.zone("draft")}>
           <header className="lab-pile-head">

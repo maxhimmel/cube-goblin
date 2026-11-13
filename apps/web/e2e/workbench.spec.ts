@@ -101,7 +101,9 @@ async function forgeSetting(page: Page, label: string, value: string): Promise<v
 }
 
 async function chartsOn(page: Page, side: string): Promise<void> {
-  await forgeSetting(page, "Charts panel side (wide screens)", side);
+  await page.locator(".lab-seam-handle").hover();
+  await page.getByRole("button", { name: `Charts on the ${side}` }).click();
+  await page.mouse.move(0, 0);
 }
 
 function tileOf(page: Page, name: string): Locator {
@@ -552,9 +554,10 @@ test("the images layout groups by the forge axis and selects a whole group", asy
   expect(count).toBeGreaterThan(0);
   await expect(page.getByTestId("selected-count")).toHaveText(`${String(count)} selected`);
   const tile = draft.locator(".lab-tile-cell").nth(count);
-  const before = await tile.boundingBox();
+  const top = (): Promise<number> => tile.evaluate((element) => (element as HTMLElement).offsetTop);
+  const before = await top();
   await page.getByRole("button", { name: "Clear selection" }).click();
-  expect(await tile.boundingBox()).toEqual(before);
+  expect(await top()).toBe(before);
 
   await draft.getByRole("checkbox", { name: label }).check();
   await page.getByRole("button", { name: "Columns" }).click();

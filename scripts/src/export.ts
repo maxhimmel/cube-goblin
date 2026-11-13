@@ -5,6 +5,7 @@ import { REPO_ROOT } from "./repo.ts";
 
 cd(REPO_ROOT);
 await $`pnpm -s cube snapshot`;
+await $`pnpm -s cube share-version`;
 await $`pnpm exec turbo run build --filter=@repo/web`;
 
 const snapshot = JSON.parse(

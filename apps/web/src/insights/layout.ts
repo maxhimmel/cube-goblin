@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { z } from "zod";
+import { scoped } from "../storage-scope.ts";
 
 export interface BlockSpec {
   id: string;
@@ -100,7 +101,9 @@ interface Stored {
 
 function load(): Stored {
   try {
-    const parsed = storedSchema.parse(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"));
+    const parsed = storedSchema.parse(
+      JSON.parse(localStorage.getItem(scoped(STORAGE_KEY)) ?? "null"),
+    );
     const layouts = Object.fromEntries(
       BREAKPOINT_IDS.map((bp) => [bp, parsed.layouts[bp] ?? []]),
     ) as Layouts;
@@ -112,7 +115,7 @@ function load(): Stored {
 
 function save(stored: Stored): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    localStorage.setItem(scoped(STORAGE_KEY), JSON.stringify(stored));
   } catch {
     return;
   }

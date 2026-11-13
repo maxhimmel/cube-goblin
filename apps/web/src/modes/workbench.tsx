@@ -1,4 +1,7 @@
 import type { Workbench, WorkbenchCard } from "@repo/cube/browser";
+import { pendingMoveSchema } from "@repo/cube/browser";
+import { z } from "zod";
+import { useRemembered } from "../view-choices.ts";
 import {
   deleteFilter,
   filterSavesPending,
@@ -132,7 +135,10 @@ function CardPanel({ slug }: { slug: string }): ReactNode {
   );
 }
 
+const pendingSchema = z.array(pendingMoveSchema).readonly();
+
 export const mode: Mode = {
+  usePending: () => useRemembered("pending.lab", [], pendingSchema),
   useFilters: useWorkbenchFilters,
   putFilter,
   deleteFilter,

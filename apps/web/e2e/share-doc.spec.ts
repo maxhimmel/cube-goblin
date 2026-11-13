@@ -186,3 +186,73 @@ test("share doc carries its favicon inline and it renders", async ({ page }) => 
   });
   expect(size).toBeGreaterThan(0);
 });
+
+test("a reviewer's pending moves travel in the review code and the saved copy", async ({
+  page,
+  browser,
+}, testInfo) => {
+  const card = snapshot.cards.find((candidate) => candidate.status === "draft");
+  if (!card) {
+    throw new Error("the snapshot needs a draft card");
+  }
+  await page.goto(DOC_URL);
+  await page.getByLabel("Your name").fill("Sam");
+  await page
+    .locator(".lab-strip")
+    .filter({ hasText: card.name })
+    .first()
+    .click({ modifiers: ["Alt"] });
+  await expect(page.getByTestId("moves-count")).toHaveText("1 move");
+  await page.reload();
+  await expect(page.getByTestId("moves-count")).toHaveText("1 move");
+
+  await page.getByRole("button", { name: "Copy review code" }).click();
+  const code = await page.getByLabel("Review code").inputValue();
+  const decoded = reviewSchema.parse(JSON.parse(lzString.decompressFromEncodedURIComponent(code)));
+  expect(decoded.moves).toEqual([{ slug: card.slug, to: "prospect" }]);
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Save copy to send back" }).click();
+  const savedPath = testInfo.outputPath("saved.html");
+  await (await downloadPromise).saveAs(savedPath);
+  expect(extractReview(await readFile(savedPath, "utf8"))?.moves).toEqual(decoded.moves);
+
+  const fresh = await browser.newContext();
+  const reopened = await fresh.newPage();
+  await reopened.goto(pathToFileURL(savedPath).href);
+  await expect(reopened.getByTestId("moves-count")).toHaveText("1 move");
+  await fresh.close();
+});
+
+test("share doc keeps its own state apart from other copies in the same browser", async ({
+  page,
+}) => {
+  const card = snapshot.cards.find((candidate) => candidate.status === "draft");
+  if (!card) {
+    throw new Error("the snapshot needs a draft card");
+  }
+  await page.goto(DOC_URL);
+  await page.evaluate((slug) => {
+    localStorage.setItem(
+      "maxs-cube:view-state:v1",
+      JSON.stringify({ "pending.lab": [{ slug, to: "prospect" }], "lab.axis": "type" }),
+    );
+  }, card.slug);
+  await page.reload();
+  await expect(page.getByTestId("moves-count")).toHaveText("0 moves");
+  await expect(
+    page.getByRole("group", { name: "Group by" }).getByRole("button", { name: "Card type" }),
+  ).toHaveAttribute("aria-pressed", "false");
+});
+
+test("share doc reviewers can change Forge settings", async ({ page }) => {
+  await page.goto(DOC_URL);
+  await page.getByRole("button", { name: "Settings" }).click();
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  const baseline = settings.getByLabel("Faint baseline under filtered charts");
+  await expect(baseline).toBeChecked();
+  await baseline.uncheck();
+  await page.reload();
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(baseline).not.toBeChecked();
+});

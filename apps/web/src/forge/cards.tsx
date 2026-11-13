@@ -263,6 +263,7 @@ function CardTile({ lab, card }: { lab: Lab; card: GridCard }): ReactNode {
   return (
     <li
       className="lab-tile-cell"
+      data-status={card.status}
       data-dim={lab.dimmed(card) ? "" : undefined}
       data-pending={lab.pendingOf(card)}
     >

@@ -23,8 +23,8 @@ import { showToast } from "./toast.tsx";
 
 async function refresh(): Promise<void> {
   await Promise.all(
-    [CUBE_QUERY_KEY, BOARD_QUERY_KEY, FILTERS_QUERY_KEY, LOG_QUERY_KEY].map((queryKey) =>
-      queryClient.invalidateQueries({ queryKey }),
+    [CUBE_QUERY_KEY, BOARD_QUERY_KEY, FILTERS_QUERY_KEY, LOG_QUERY_KEY, VERSIONS_QUERY_KEY].map(
+      (queryKey) => queryClient.invalidateQueries({ queryKey }),
     ),
   );
 }
@@ -109,12 +109,14 @@ function PointButtons({
   name,
   from,
   to,
+  alone,
   current,
   onPick,
 }: {
   name: string;
   from: string;
   to: string;
+  alone: string;
   current: { from: string | undefined; to: string | undefined };
   onPick: (next: { from: string; to: string }) => void;
 }): ReactNode {
@@ -139,7 +141,7 @@ function PointButtons({
         title="Compare up to here"
         aria-pressed={current.to === to}
         onClick={() => {
-          onPick({ from: current.from ?? from, to });
+          onPick({ from: current.from ?? alone, to });
         }}
       >
         To
@@ -276,6 +278,7 @@ export function WorkbenchHistoryPage({ cube }: { cube: Workbench | undefined }):
               name={subject}
               from={entryPoint("before", entry.id)}
               to={entryPoint("after", entry.id)}
+              alone={entryPoint("before", entry.id)}
               current={current}
               onPick={pick}
             />
@@ -298,6 +301,7 @@ export function WorkbenchHistoryPage({ cube }: { cube: Workbench | undefined }):
           name={`version ${version.label}`}
           from={version.id}
           to={version.id}
+          alone={CURRENT}
           current={current}
           onPick={pick}
         />

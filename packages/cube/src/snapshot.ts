@@ -64,6 +64,24 @@ export const searchResultSchema = z.strictObject({
   inCube: z.boolean(),
 });
 
+export const offlineRunSchema = z.strictObject({
+  running: z.boolean(),
+  done: z.number(),
+  total: z.number(),
+  failed: z.number(),
+  error: z.string().optional(),
+});
+
+export const offlineStatusSchema = z.strictObject({
+  cards: z.number(),
+  cached: z.number(),
+  bytes: z.number(),
+  complete: z.boolean(),
+  run: offlineRunSchema.optional(),
+});
+
+export const connectionSchema = z.strictObject({ online: z.boolean() });
+
 export const VOTES = ["keep", "cut"] as const;
 
 export const cardReviewSchema = z.strictObject({
@@ -98,3 +116,6 @@ export type Vote = (typeof VOTES)[number];
 export type CardReview = z.infer<typeof cardReviewSchema>;
 export type Review = z.infer<typeof reviewSchema>;
 export type PendingMoveEntry = z.infer<typeof pendingMoveSchema>;
+export type OfflineRun = z.infer<typeof offlineRunSchema>;
+export type OfflineStatus = z.infer<typeof offlineStatusSchema>;
+export type Connection = z.infer<typeof connectionSchema>;

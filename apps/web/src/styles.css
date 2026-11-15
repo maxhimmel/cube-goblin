@@ -563,13 +563,28 @@ textarea {
 }
 
 .cube-recent {
-  display: flex;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 6px;
   align-items: center;
 }
 
+.cube-recent + .cube-recent {
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.cube-offline,
+.cube-make-offline {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.cube-offline {
+  font-size: var(--fs-xs);
+}
+
 .cube-open {
-  flex: 1;
   overflow: hidden;
   text-align: start;
   text-overflow: ellipsis;

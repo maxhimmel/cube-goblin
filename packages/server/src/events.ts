@@ -1,3 +1,5 @@
+import type { OfflineStatus } from "@repo/cube/browser";
+
 export const CUBE_CHANGED_EVENT = "cube:changed";
 
 export const CUBES_CHANNEL = {
@@ -6,6 +8,7 @@ export const CUBES_CHANNEL = {
   openFolder: "cubes:open-folder",
   switchTo: "cubes:switch",
   remove: "cubes:remove",
+  offlineStatus: "cubes:offline-status",
 } as const;
 
 export interface CubeRef {
@@ -25,6 +28,7 @@ export interface CubesBridge {
   openFolder: () => Promise<CubeRef | undefined>;
   switchTo: (dir: string) => Promise<CubeRef>;
   remove: (dir: string) => Promise<CubeList>;
+  offlineStatus: (dir: string) => Promise<OfflineStatus>;
 }
 
 export interface DesktopBridge {

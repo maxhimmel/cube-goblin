@@ -86,3 +86,11 @@ Built under [T-056](../tickets/T-056-desktop-app.md); `apps/desktop/e2e/desktop.
 - **One custom scheme** (`app://bundle`) serves the renderer, `/api/*`, and `/api/image` through a shared `Request → Response` handler pulled out of `workbench-plugin.ts`. The browser dev server keeps working through the same handler.
 - **IPC only for native needs**: folder picker, recent folders and settings, `cube:changed` push. Each is a named `contextBridge` function, and every handler checks the sender.
 - **Spike first**: one window serving `GET /api/cube` over `app://`, watch → push working, an unsigned `--mac dir --arm64` build launched, and one Playwright `_electron` test. Then port the remaining routes.
+
+## Offline testing
+
+Read 2026-11-15 from [net](https://www.electronjs.org/docs/latest/api/net#netfetchinput-init).
+
+- `net.fetch` sends requests through Chromium's network stack from the default session, and they trigger that session's `webRequest` handlers. Node's `fetch` in main doesn't.
+- **Don't use `net.fetch` for Scryfall here.** On this Mac a content filter (Livigent) rewrites Chromium-stack traffic: `net.fetch` got a blank 672×936 JPEG for a card image while Node's `fetch` in the same Electron process got the real one (verified 2026-11-15). The app cached 37 blanks before this was caught.
+- So main keeps Node's `fetch`. In hidden test launches (`CUBE_DESKTOP_HIDDEN=1`) it wraps fetch with `globalThis.cubeTestNetwork.cut`, which the e2e flips through `app.evaluate` to cut Scryfall.

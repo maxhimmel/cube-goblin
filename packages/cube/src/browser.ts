@@ -3,6 +3,8 @@ export {
   REVIEW_SCRIPT_ID,
   VOTES,
   cardReviewSchema,
+  connectionSchema,
+  offlineStatusSchema,
   pendingMoveSchema,
   printingSchema,
   reviewSchema,
@@ -14,6 +16,9 @@ export {
 } from "./snapshot.ts";
 export type {
   CardReview,
+  Connection,
+  OfflineRun,
+  OfflineStatus,
   PendingMoveEntry,
   Printing,
   Review,

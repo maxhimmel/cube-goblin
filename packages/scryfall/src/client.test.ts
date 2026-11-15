@@ -3,7 +3,13 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FileCache, MemoryCache } from "./cache.ts";
-import { CARD_ENDPOINT_INTERVAL_MS, ScryfallClient, ScryfallError, chunk } from "./client.ts";
+import {
+  CARD_ENDPOINT_INTERVAL_MS,
+  RATE_LIMIT_COOLDOWN_MS,
+  ScryfallClient,
+  ScryfallError,
+  chunk,
+} from "./client.ts";
 
 const card = {
   object: "card",
@@ -104,7 +110,34 @@ describe("ScryfallClient", () => {
       },
     });
     await Promise.all([client.named("Entomb"), client.named("Reanimate"), client.named("Exhume")]);
-    expect(sleeps).toEqual([CARD_ENDPOINT_INTERVAL_MS, 2 * CARD_ENDPOINT_INTERVAL_MS]);
+    expect(sleeps).toEqual([CARD_ENDPOINT_INTERVAL_MS, CARD_ENDPOINT_INTERVAL_MS]);
+  });
+
+  it("stops calling Scryfall for a minute after a 429", async () => {
+    const calls: Call[] = [];
+    let clock = 0;
+    const limited = { object: "error", status: 429, code: "rate_limited", details: "Slow down" };
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      fetch: fakeFetch(
+        [
+          { status: 429, body: limited },
+          { status: 200, body: card },
+        ],
+        calls,
+      ),
+      now: () => clock,
+      sleep: (ms) => {
+        clock += ms;
+        return Promise.resolve();
+      },
+    });
+    await expect(client.named("Entomb")).rejects.toThrow("Slow down");
+    await expect(client.named("Entomb")).rejects.toThrow("try again in a minute");
+    expect(calls).toHaveLength(1);
+    clock += RATE_LIMIT_COOLDOWN_MS;
+    expect((await client.named("Entomb")).name).toBe("Entomb");
+    expect(calls).toHaveLength(2);
   });
 
   it("caches cards per oracle id, so an added card costs one small request", async () => {
@@ -221,6 +254,52 @@ describe("ScryfallClient", () => {
       ),
     });
     await expect(client.byIds(["p1"])).rejects.toThrow("Bad");
+  });
+
+  it("serves the last printings list when Scryfall can't be reached", async () => {
+    const cache = new MemoryCache();
+    const online = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache,
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch([{ status: 200, body: { object: "list", data: [card] } }], []),
+    });
+    await online.printings("abc");
+    const offline = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache,
+      sleep: () => Promise.resolve(),
+      fetch: () => Promise.reject(new TypeError("fetch failed")),
+    });
+    expect((await offline.printings("abc")).map((printing) => printing.id)).toEqual(["1"]);
+    await expect(offline.printings("other")).rejects.toThrow("fetch failed");
+  });
+
+  it("serves stale cards when Scryfall answers with an HTML error page", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-html-"));
+    await new FileCache(dir).set("oracle:a", card);
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new FileCache(dir, 1000, () => Date.now() + 10_000),
+      sleep: () => Promise.resolve(),
+      fetch: () => Promise.resolve(new Response("<html>down</html>", { status: 503 })),
+    });
+    expect((await client.byOracleIds(["a"])).cards.map((found) => found.id)).toEqual(["1"]);
+  });
+
+  it("reports what the cache holds for an entry", async () => {
+    const cache = new MemoryCache();
+    const client = new ScryfallClient({ userAgent: "Test/1.0", cache });
+    await cache.set("oracle:a", card);
+    await cache.set("print:p1", { ...card, id: "p1" });
+    const chosen = await client.cachedEntry({ oracleId: "a", printing: "p1" });
+    expect(chosen.card?.id).toBe("p1");
+    expect(chosen.missing).toEqual(["printings:a"]);
+    expect(chosen.bytes).toBeGreaterThan(0);
+    const plain = await client.cachedEntry({ oracleId: "a" });
+    expect(plain.card?.id).toBe("1");
+    const none = await client.cachedEntry({ oracleId: "b" });
+    expect(none).toEqual({ card: undefined, bytes: 0, missing: ["oracle:b", "printings:b"] });
   });
 
   it("returns no printings when Scryfall finds none", async () => {

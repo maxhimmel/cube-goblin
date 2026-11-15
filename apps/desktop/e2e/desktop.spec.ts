@@ -243,3 +243,83 @@ test("two cubes keep their own cards, history, and view choices, and the app reo
   await expect(recents.getByRole("button", { name: "Max's Cube", exact: true })).toHaveCount(0);
   expect(await notes(desktop.cardsDir, "abrade")).toBe("only in the first cube");
 });
+
+async function imagesLoad(page: Page, selector: string): Promise<void> {
+  const images = page.locator(selector);
+  await expect(images.first()).toBeVisible();
+  const count = Math.min(await images.count(), 12);
+  for (let index = 0; index < count; index += 1) {
+    const image = images.nth(index);
+    await image.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth))
+      .toBeGreaterThan(0);
+  }
+}
+
+test("a cube made available offline loads every view and saves edits with Scryfall blocked", async ({
+  desktop,
+}) => {
+  test.setTimeout(300_000);
+  const { page, app, cardsDir } = desktop;
+  await page.waitForURL("app://bundle/");
+  const menu = await switcher(page);
+  const current = menu.locator(".cube-recent[data-current='true']");
+  const make = current.getByRole("button", { name: "Make available offline" });
+  await expect(current.getByText(/Available offline · |cards saved offline · /u)).toBeVisible();
+  if (await make.isVisible()) {
+    await make.click();
+  }
+  await expect(current.getByText(/^Available offline · /u)).toBeVisible({ timeout: 280_000 });
+  await page.keyboard.press("Escape");
+
+  await app.evaluate(() => {
+    const network = (globalThis as { cubeTestNetwork?: { cut: boolean } }).cubeTestNetwork;
+    if (!network) {
+      throw new Error("The hidden test launch has no network switch");
+    }
+    network.cut = true;
+  });
+  await page.reload();
+
+  await page.evaluate(() => {
+    window.location.hash = "#/";
+  });
+  await page.getByRole("button", { name: "Images", exact: true }).click();
+  await imagesLoad(page, ".lab-image img");
+  for (const view of ["Tags", "Insights", "History"]) {
+    await page.getByRole("navigation", { name: "Views" }).getByRole("link", { name: view }).click();
+    await expect(page.getByRole("heading", { name: view, level: 1 })).toBeVisible();
+    await expect(page.locator("main .error")).toHaveCount(0);
+  }
+  await page.evaluate(() => {
+    window.location.hash = "#/card/abrade";
+  });
+  await imagesLoad(page, ".pane img");
+  await page.getByLabel("Notes").fill("written offline");
+  await page.getByLabel("Notes").blur();
+  await expect.poll(() => notes(cardsDir, "abrade")).toBe("written offline");
+
+  await page.evaluate(() => {
+    window.location.hash = "#/?add=true";
+  });
+  await page.getByRole("searchbox", { name: "Search Scryfall" }).fill("lightning bolt");
+  await expect(page.getByRole("status").filter({ hasText: "Offline" })).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Search Scryfall" })).toBeDisabled();
+});
+
+test("printing thumbnails load through the app", async ({ desktop }) => {
+  const { page } = desktop;
+  await page.waitForURL("app://bundle/");
+  await page.evaluate(() => {
+    window.location.hash = "#/card/shock";
+  });
+  await page.getByRole("button", { name: "Change printing…" }).click();
+  const browser = page.getByRole("dialog", { name: "Printings of Shock" });
+  const thumb = browser.locator(".printing:not(.printing-default) img").first();
+  await expect(thumb).toBeVisible({ timeout: 20_000 });
+  expect(await thumb.getAttribute("src")).toMatch(/^\/api\/image\?u=/u);
+  await expect
+    .poll(() => thumb.evaluate((element: HTMLImageElement) => element.naturalWidth))
+    .toBeGreaterThan(0);
+});

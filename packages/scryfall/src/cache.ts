@@ -6,6 +6,7 @@ export interface Cache {
   get(key: string): Promise<unknown>;
   peek(key: string): Promise<unknown>;
   set(key: string, value: unknown): Promise<void>;
+  size(key: string): Promise<number | undefined>;
 }
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
@@ -49,6 +50,14 @@ export class FileCache implements Cache {
     await mkdir(this.#dir, { recursive: true });
     await writeFile(this.#path(key), JSON.stringify(value));
   }
+
+  async size(key: string): Promise<number | undefined> {
+    try {
+      return (await stat(this.#path(key))).size;
+    } catch {
+      return undefined;
+    }
+  }
 }
 
 export class MemoryCache implements Cache {
@@ -65,5 +74,10 @@ export class MemoryCache implements Cache {
   set(key: string, value: unknown): Promise<void> {
     this.#entries.set(key, value);
     return Promise.resolve();
+  }
+
+  size(key: string): Promise<number | undefined> {
+    const value = this.#entries.get(key);
+    return Promise.resolve(value === undefined ? undefined : JSON.stringify(value).length);
   }
 }

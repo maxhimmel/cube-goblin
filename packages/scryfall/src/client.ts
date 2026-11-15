@@ -9,6 +9,9 @@ export const COLLECTION_MAX_IDENTIFIERS = 75;
 export const CARD_ENDPOINT_INTERVAL_MS = 500;
 export const DEFAULT_INTERVAL_MS = 100;
 export const BULK_HOST = "data.scryfall.io";
+export const REQUEST_TIMEOUT_MS = 15_000;
+export const RATE_LIMIT_COOLDOWN_MS = 60_000;
+const DOWNLOAD_TIMEOUT_MS = 180_000;
 
 export class ScryfallError extends Error {
   readonly status: number;
@@ -54,6 +57,18 @@ function printKey(id: string): string {
   return `print:${id}`;
 }
 
+function printingsKey(oracleId: string): string {
+  return `printings:${oracleId}`;
+}
+
+const printingsSchema = cardSchema.array();
+
+export interface CachedEntry {
+  card: Card | undefined;
+  bytes: number;
+  missing: string[];
+}
+
 export function isUnreachable(error: unknown): boolean {
   if (error instanceof ScryfallError) {
     return error.status === 429 || error.status >= 500;
@@ -88,7 +103,9 @@ export class ScryfallClient {
   readonly #fetch: typeof fetch;
   readonly #sleep: (ms: number) => Promise<void>;
   readonly #now: () => number;
-  readonly #lastRequestAt = new Map<number, number>();
+  readonly #lanes = new Map<number, Promise<unknown>>();
+  readonly #doneAt = new Map<number, number>();
+  #coolUntil = 0;
 
   constructor(options: ScryfallClientOptions) {
     this.#userAgent = options.userAgent;
@@ -98,15 +115,32 @@ export class ScryfallClient {
     this.#now = options.now ?? Date.now;
   }
 
-  async #throttle(path: string): Promise<void> {
+  #paced<T>(path: string, send: () => Promise<T>): Promise<T> {
     const interval = intervalFor(path);
-    const last = this.#lastRequestAt.get(interval);
-    const now = this.#now();
-    const slot = last === undefined ? now : Math.max(now, last + interval);
-    this.#lastRequestAt.set(interval, slot);
-    if (slot > now) {
-      await this.#sleep(slot - now);
-    }
+    const turn = (this.#lanes.get(interval) ?? Promise.resolve()).then(async () => {
+      const last = this.#doneAt.get(interval);
+      const wait = last === undefined ? 0 : last + interval - this.#now();
+      if (wait > 0) {
+        await this.#sleep(wait);
+      }
+      if (this.#now() < this.#coolUntil) {
+        throw new ScryfallError(
+          429,
+          "cooling_down",
+          "Scryfall asked for fewer requests; try again in a minute",
+        );
+      }
+      try {
+        return await send();
+      } finally {
+        this.#doneAt.set(interval, this.#now());
+      }
+    });
+    this.#lanes.set(
+      interval,
+      turn.catch(() => undefined),
+    );
+    return turn;
   }
 
   async #request<S extends z.ZodType>(spec: RequestSpec, schema: S): Promise<z.infer<S>> {
@@ -121,7 +155,6 @@ export class ScryfallClient {
       return schema.parse(cached);
     }
 
-    await this.#throttle(spec.path);
     const init: RequestInit = {
       method: spec.body === undefined ? "GET" : "POST",
       headers: {
@@ -133,8 +166,22 @@ export class ScryfallClient {
     if (spec.body !== undefined) {
       init.body = JSON.stringify(spec.body);
     }
-    const response = await this.#fetch(url, init);
-    const json: unknown = await response.json();
+    const { response, json } = await this.#paced(spec.path, async () => {
+      const sent = await this.#fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (sent.status === 429) {
+        this.#coolUntil = this.#now() + RATE_LIMIT_COOLDOWN_MS;
+      }
+      let body: unknown;
+      try {
+        body = await sent.json();
+      } catch {
+        throw new ScryfallError(sent.status, "unreadable", sent.statusText);
+      }
+      return { response: sent, json: body };
+    });
 
     if (!response.ok) {
       const error = errorSchema.safeParse(json);
@@ -296,7 +343,7 @@ export class ScryfallClient {
     await this.#cache.set(printKey(card.id), card);
   }
 
-  async printings(oracleId: string): Promise<Card[]> {
+  async #fetchPrintings(oracleId: string): Promise<Card[]> {
     const cards: Card[] = [];
     let page = 1;
     let hasMore = true;
@@ -331,6 +378,43 @@ export class ScryfallClient {
     return cards;
   }
 
+  async printings(oracleId: string): Promise<Card[]> {
+    try {
+      const cards = await this.#fetchPrintings(oracleId);
+      await this.#cache.set(printingsKey(oracleId), cards);
+      return cards;
+    } catch (error) {
+      const stale = isUnreachable(error) ? await this.cachedPrintings(oracleId) : undefined;
+      if (stale === undefined) {
+        throw error;
+      }
+      return stale;
+    }
+  }
+
+  async cachedPrintings(oracleId: string): Promise<Card[] | undefined> {
+    const stale = printingsSchema.safeParse(await this.#cache.peek(printingsKey(oracleId)));
+    return stale.success ? stale.data : undefined;
+  }
+
+  async cachedEntry(entry: PrintedEntry): Promise<CachedEntry> {
+    const keys = [
+      oracleKey(entry.oracleId),
+      printingsKey(entry.oracleId),
+      ...(entry.printing === undefined ? [] : [printKey(entry.printing)]),
+    ];
+    const sizes = await Promise.all(keys.map((key) => this.#cache.size(key)));
+    const shownKey = entry.printing === undefined ? keys[0] : keys[2];
+    const shown = cardSchema.safeParse(
+      shownKey === undefined ? undefined : await this.#cache.peek(shownKey),
+    );
+    return {
+      card: shown.success ? shown.data : undefined,
+      bytes: sizes.reduce<number>((sum, size) => sum + (size ?? 0), 0),
+      missing: keys.filter((_key, index) => sizes[index] === undefined),
+    };
+  }
+
   bulkData(type: string): Promise<BulkData> {
     return this.#request({ path: `/bulk-data/${type}`, cache: false }, bulkDataSchema);
   }
@@ -340,7 +424,10 @@ export class ScryfallClient {
     if (url.protocol !== "https:" || url.hostname !== BULK_HOST) {
       throw new Error(`Refusing to download from ${url.hostname}`);
     }
-    const response = await this.#fetch(url, { headers: { "User-Agent": this.#userAgent } });
+    const response = await this.#fetch(url, {
+      headers: { "User-Agent": this.#userAgent },
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    });
     if (!response.ok) {
       throw new ScryfallError(response.status, "download", response.statusText);
     }

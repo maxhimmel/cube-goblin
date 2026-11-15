@@ -248,6 +248,13 @@ function serveCubes(server: WorkbenchServer, recent: RecentCubes): void {
       }
       return switchTo(dir);
     },
+    [CUBES_CHANNEL.offlineStatus]: async (dir) => {
+      const known = (await recent.load()).cubes.some((cube) => cube.dir === dir);
+      if (typeof dir !== "string" || (!known && dir !== server.cube().dir)) {
+        throw new TypeError("Only a cube from the recent list has an offline status");
+      }
+      return server.offlineStatus(dir);
+    },
     [CUBES_CHANNEL.remove]: async (dir) => {
       if (typeof dir !== "string") {
         throw new TypeError("No cube folder given");
@@ -293,6 +300,20 @@ function lockDown(): void {
 
 const hidden = process.env["CUBE_DESKTOP_HIDDEN"] === "1";
 
+interface TestNetwork {
+  cut: boolean;
+}
+
+function scryfallFetch(): typeof fetch {
+  if (!hidden) {
+    return fetch;
+  }
+  const network: TestNetwork = { cut: false };
+  (globalThis as { cubeTestNetwork?: TestNetwork }).cubeTestNetwork = network;
+  return (input, init) =>
+    network.cut ? Promise.reject(new TypeError("fetch failed")) : fetch(input, init);
+}
+
 function openWindow(): void {
   const window = new BrowserWindow({
     width: 1440,
@@ -337,6 +358,7 @@ async function start(): Promise<void> {
       cubeDir,
       cacheDir: join(cacheDir, "scryfall"),
       imageCacheDir: join(cacheDir, "scryfall-images"),
+      fetch: scryfallFetch(),
     });
   } catch (error) {
     dialog.showErrorBox("Could not open the cube", `${cubeDir}\n\n${String(error)}`);

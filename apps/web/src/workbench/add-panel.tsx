@@ -8,6 +8,7 @@ import { CardImage } from "../card-image.tsx";
 import { ManaCost } from "../mana.tsx";
 import { queryClient } from "../query-client.ts";
 import { CUBE_QUERY_KEY, addCardRequest, searchCards } from "./api.ts";
+import { OFFLINE_REASON, useOnline } from "./connection.ts";
 import { editsPending } from "./edits.ts";
 import { showToast } from "./toast.tsx";
 
@@ -112,7 +113,8 @@ function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNo
   const [copyTags, setCopyTags] = useState(true);
   const navigate = useNavigate();
   const settled = useDebounced(query.trim());
-  const enabled = settled.length >= MIN_QUERY_LENGTH;
+  const online = useOnline();
+  const enabled = online && settled.length >= MIN_QUERY_LENGTH;
   const results = useQuery({
     queryKey: ["search", settled],
     queryFn: ({ signal }) => searchCards(settled, signal),
@@ -194,6 +196,7 @@ function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNo
           aria-label="Search Scryfall"
           placeholder="card name or Scryfall syntax, e.g. o:flying t:dragon"
           value={query}
+          disabled={!online}
           autoFocus
           onChange={(event) => {
             setQuery(event.target.value);
@@ -201,9 +204,10 @@ function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNo
         />
       </label>
       <div aria-live="polite" className="muted">
+        {!online && `${OFFLINE_REASON}, so search and adding cards are off.`}
         {enabled && results.isFetching && "Searching…"}
         {enabled && results.isSuccess && results.data.length === 0 && "No cards found."}
-        {results.error && <span className="error">{results.error.message}</span>}
+        {online && results.error && <span className="error">{results.error.message}</span>}
       </div>
       {enabled && results.data && (
         <ul className="results" aria-label="Search results">
@@ -212,7 +216,7 @@ function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNo
               key={result.oracleId}
               result={result}
               action={outgoing ? "Swap in" : "Add"}
-              disabled={add.isPending}
+              disabled={add.isPending || !online}
               onPick={() => {
                 add.mutate({
                   oracleId: result.oracleId,

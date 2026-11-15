@@ -37,3 +37,10 @@ Read 2026-11-10 from [search](https://scryfall.com/docs/api/cards/search), [card
 ## Access note
 
 The docs pages return 403 to WebFetch but load with `curl` and a `User-Agent` header.
+
+## Rate limit lessons
+
+Read 2026-11-15 from [rate limits](https://scryfall.com/docs/api/rate-limits); limits unchanged.
+
+- Spacing requests 500ms apart by send time still drew a 429 after about 30 `/cards/search` calls: network jitter can land three in one second. Spacing from the previous response guarantees the gap at Scryfall.
+- A 429 limits access for 30s (the response said 60s); further requests risk a ban. The client stops calling for 60s after one.

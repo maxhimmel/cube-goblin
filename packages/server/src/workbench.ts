@@ -574,7 +574,7 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
         return answer(
           explained(
             listPrintings(paths, client, printingsOf, remembered),
-            "this card's printings aren't saved for offline use",
+            "printings need a connection",
           ),
           (printings) =>
             printings === undefined
@@ -619,8 +619,8 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
 
   async function offlineStatus(dir: string): Promise<OfflineStatus> {
     const folder = dir === current.folder.dir ? current.folder : await openCubeFolder(dir);
-    const status = await cacheStatus(folder.paths, offlineDeps);
     const run = runs.get(folder.config.id);
+    const status = await cacheStatus(folder.paths, offlineDeps);
     return run === undefined ? status : { ...status, run };
   }
 

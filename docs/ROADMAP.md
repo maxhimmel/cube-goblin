@@ -21,6 +21,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Later
 
+- [T-060: Optionally save every printing offline](tickets/T-060-offline-printings.md)
 - [T-042: Known gaps](tickets/T-042-known-gaps.md)
 - [T-002: Trim draft to target size](tickets/T-002-trim-draft-to-target.md)
 - [T-005: Synergy and combo map](tickets/T-005-synergy-and-combo-map.md)

@@ -113,27 +113,22 @@ async function prefetch(paths: CubePaths, deps: OfflineDeps, run: OfflineRun): P
     run.failed += 1;
     run.error ??= errorText(error);
   };
-  for (const entry of entries) {
-    const card = cards.get(entry.oracleId);
-    const fields = card ? displayFields(card) : undefined;
-    if (!fields) {
-      fail(new Error(`No card data for ${entry.name}`));
-      run.done += 1;
-      continue;
-    }
-    const images = Promise.all([deps.images.get(fields.image), deps.images.get(fields.imageLarge)]);
-    try {
-      if ((await deps.client.cachedPrintings(entry.oracleId)) === undefined) {
-        await deps.client.printings(entry.oracleId);
+  await Promise.all(
+    entries.map(async (entry) => {
+      const card = cards.get(entry.oracleId);
+      const fields = card ? displayFields(card) : undefined;
+      try {
+        if (!fields) {
+          throw new Error(`No card data for ${entry.name}`);
+        }
+        await Promise.all([deps.images.get(fields.image), deps.images.get(fields.imageLarge)]);
+      } catch (error) {
+        fail(error);
+      } finally {
+        run.done += 1;
       }
-      await images;
-    } catch (error) {
-      await images.catch(() => undefined);
-      fail(error);
-    } finally {
-      run.done += 1;
-    }
-  }
+    }),
+  );
 }
 
 export class OfflineRuns {

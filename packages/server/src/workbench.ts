@@ -64,7 +64,6 @@ import type { Card } from "@repo/scryfall";
 import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
 
 const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
-export const CUBE_CHANGED_EVENT = "cube:changed";
 const CARD_ROUTE = /^\/api\/cards\/([a-z0-9-]+)$/u;
 const TAG_ROUTE = /^\/api\/tags\/([a-z0-9-]+)$/u;
 const PRINTINGS_ROUTE = /^\/api\/cards\/([a-z0-9-]+)\/printings$/u;

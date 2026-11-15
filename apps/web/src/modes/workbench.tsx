@@ -19,13 +19,13 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { PlusIcon, SettingsIcon } from "../icons.tsx";
+import { onCubeChanged } from "../desktop-bridge.ts";
 import { queryClient } from "../query-client.ts";
 import {
   BOARD_QUERY_KEY,
   VERSIONS_QUERY_KEY,
   LOG_QUERY_KEY,
   CONFIG_QUERY_KEY,
-  CUBE_CHANGED_EVENT,
   FILTERS_QUERY_KEY,
   LAYOUTS_QUERY_KEY,
   CUBE_QUERY_KEY,
@@ -52,17 +52,15 @@ async function refetch(key: readonly string[], pending: () => boolean): Promise<
   await queryClient.invalidateQueries({ queryKey: key });
 }
 
-if (import.meta.hot) {
-  import.meta.hot.on(CUBE_CHANGED_EVENT, () => {
-    void refetch(CUBE_QUERY_KEY, editsPending);
-    void refetch(BOARD_QUERY_KEY, boardSavesPending);
-    void refetch(FILTERS_QUERY_KEY, filterSavesPending);
-    void refetch(LAYOUTS_QUERY_KEY, layoutSavesPending);
-    void queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
-    void queryClient.invalidateQueries({ queryKey: LOG_QUERY_KEY });
-    void queryClient.invalidateQueries({ queryKey: CONFIG_QUERY_KEY });
-  });
-}
+onCubeChanged(() => {
+  void refetch(CUBE_QUERY_KEY, editsPending);
+  void refetch(BOARD_QUERY_KEY, boardSavesPending);
+  void refetch(FILTERS_QUERY_KEY, filterSavesPending);
+  void refetch(LAYOUTS_QUERY_KEY, layoutSavesPending);
+  void queryClient.invalidateQueries({ queryKey: VERSIONS_QUERY_KEY });
+  void queryClient.invalidateQueries({ queryKey: LOG_QUERY_KEY });
+  void queryClient.invalidateQueries({ queryKey: CONFIG_QUERY_KEY });
+});
 
 function useWorkbench(): Workbench | undefined {
   return useQuery({ queryKey: CUBE_QUERY_KEY, queryFn: fetchCube }).data;

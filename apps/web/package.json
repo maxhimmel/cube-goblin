@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite --configLoader runner",
     "build": "vite build --configLoader runner",
+    "build:desktop": "vite build --configLoader runner --mode desktop",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",

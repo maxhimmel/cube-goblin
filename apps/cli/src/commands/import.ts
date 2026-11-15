@@ -13,7 +13,7 @@ import {
 import type { SourceText } from "@repo/server";
 import { prepareImport, readImportSource, statsOf } from "@repo/server";
 import { chalk } from "zx";
-import { USER_AGENT, createClient } from "../client.ts";
+import { USER_AGENT, createClient, createOracleTagStore } from "../client.ts";
 
 export interface ImportOptions {
   dryRun: boolean;
@@ -54,7 +54,8 @@ export async function importList(
   const text = await readSource(source);
   const fresh = options.newCube !== undefined;
   const client = createClient();
-  const { plan, preview } = await prepareImport(client, text, {
+  const oracleTags = createOracleTagStore(client);
+  const { plan, preview } = await prepareImport({ client, oracleTags }, text, {
     existing: fresh ? [] : await readCards(target),
     tags: fresh ? [] : await readTags(target),
     boards: options.boards,

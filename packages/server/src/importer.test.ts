@@ -1,6 +1,7 @@
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
 import { createCubeFolder, readCards, readLog, readTags } from "@repo/cube";
 import { describe, expect, it } from "vitest";
 import { createWorkbenchServer } from "./workbench.ts";
@@ -30,6 +31,19 @@ const CUBE_JSON = {
   },
 };
 
+const REMOVAL_ORACLE_TAG = "444f824c-f910-4530-9dbe-ede7a84cd7f9";
+
+const ORACLE_TAGS = gzipSync(
+  JSON.stringify({
+    object: "tag",
+    id: REMOVAL_ORACLE_TAG,
+    slug: "removal",
+    label: "removal",
+    type: "oracle",
+    taggings: [{ oracle_id: SHOCK.oracle_id }],
+  }),
+);
+
 interface Seen {
   cubeCobra: string[];
 }
@@ -54,6 +68,17 @@ function network(seen: Seen): typeof fetch {
           identifier["name"] === "Shock",
       );
       return reply({ object: "list", data: hit ? [SHOCK] : [], not_found: [] });
+    }
+    if (url.hostname === "data.scryfall.io") {
+      return Promise.resolve(new Response(new Uint8Array(ORACLE_TAGS)));
+    }
+    if (url.pathname.startsWith("/bulk-data/")) {
+      return reply({
+        object: "bulk_data",
+        type: "oracle-tags",
+        updated_at: "2026-11-15",
+        jsonl_download_uri: "https://data.scryfall.io/tags.jsonl.gz",
+      });
     }
     if (url.pathname === "/cards/named") {
       return reply({ object: "error", status: 404, code: "not_found", details: "No card" }, 404);
@@ -124,9 +149,18 @@ describe("import and export routes", () => {
     expect(await response.json()).toEqual({ added: 1, title: "Burn Cube" });
     expect(seen.cubeCobra).toEqual(["/cube/api/cubeJSON/burn"]);
     expect(await readCards(folder.paths)).toMatchObject([
-      { name: "Shock", status: "draft", printing: SHOCK.id, tags: ["burn"], notes: "cheap" },
+      {
+        name: "Shock",
+        status: "draft",
+        printing: SHOCK.id,
+        tags: ["burn", "removal"],
+        notes: "cheap",
+      },
     ]);
-    expect(await readTags(folder.paths)).toEqual([{ id: "burn", label: "Burn" }]);
+    expect(await readTags(folder.paths)).toEqual([
+      { id: "burn", label: "Burn" },
+      { id: "removal", label: "removal" },
+    ]);
     expect(await readLog(folder.paths)).toHaveLength(1);
   });
 

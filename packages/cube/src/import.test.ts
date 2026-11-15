@@ -74,6 +74,37 @@ describe("planImport", () => {
   });
 });
 
+describe("planImport function tags", () => {
+  it("adds a card's function tags and defines the ones the cube lacks", () => {
+    const { rows } = parseList("1 Lightning Bolt [Burn, Removal]\n");
+    const [bolt] = rows;
+    if (!bolt) {
+      throw new Error("rows");
+    }
+    const plan = planImport({
+      matches: [
+        { row: bolt, oracleId: ORACLE(9), name: "Lightning Bolt", functionTags: ["removal"] },
+      ],
+      existing: [],
+      tags: [{ id: "removal", label: "Removal" }],
+      batch: "x",
+    });
+    expect(plan.cards[0]?.tags).toEqual(["burn", "removal"]);
+    expect(plan.newTags).toEqual([{ id: "burn", label: "Burn" }]);
+
+    const fresh = planImport({
+      matches: [
+        { row: bolt, oracleId: ORACLE(9), name: "Lightning Bolt", functionTags: ["card-draw"] },
+      ],
+      existing: [],
+      tags: [],
+      batch: "x",
+    });
+    expect(fresh.cards[0]?.tags).toEqual(["burn", "removal", "card-draw"]);
+    expect(fresh.newTags.map((tag) => tag.id)).toEqual(["burn", "removal", "card-draw"]);
+  });
+});
+
 describe("toExportCards", () => {
   it("labels tags and carries the shown printing", () => {
     const cards = toExportCards(

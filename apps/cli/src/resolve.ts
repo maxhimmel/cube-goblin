@@ -1,4 +1,7 @@
 import type { BatchLine } from "@repo/cube";
+import { normalizeName } from "@repo/cube";
+
+export { normalizeName };
 import type { Card, ScryfallClient } from "@repo/scryfall";
 import { ScryfallError } from "@repo/scryfall";
 
@@ -11,14 +14,6 @@ export interface Resolved {
 export interface Unresolved {
   entry: BatchLine;
   reason: string;
-}
-
-export function normalizeName(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/gu, "")
-    .replace(/[^a-z0-9]/gu, "");
 }
 
 function names(card: Card): string[] {

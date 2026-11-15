@@ -347,6 +347,7 @@ describe("real files", () => {
     expect(byName.get("Displace")).toMatchObject({ set: "plst", collectorNumber: "EMN-55" });
     expect(byName.get("Force of Negation")).toMatchObject({ set: "2x2", collectorNumber: "50" });
     expect(byName.get("Island")?.quantity).toBe(22);
+    expect(byName.get("Shark Typhoon")).toMatchObject({ board: "main", tags: ["Tokens"] });
     expect(byName.has("Lórien Revealed")).toBe(true);
     expect(byName.has("Hydroelectric Specimen // Hydroelectric Laboratory")).toBe(true);
   });

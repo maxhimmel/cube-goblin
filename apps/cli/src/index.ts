@@ -7,6 +7,8 @@ import { chalk } from "zx";
 import { createClient } from "./client.ts";
 import { addBatch } from "./commands/add.ts";
 import { backfillLog } from "./commands/backfill-log.ts";
+import { exportCube } from "./commands/export.ts";
+import { importList, parseBoardOptions } from "./commands/import.ts";
 import { pinPrintings } from "./commands/pin-printings.ts";
 import { importReview } from "./commands/review.ts";
 import { shareVersion } from "./commands/share-version.ts";
@@ -30,13 +32,21 @@ Commands:
   snapshot             Bake cube + Scryfall data + images for the share doc build
   share-version        Save a version of the cube the current snapshot ships, once per snapshot
   review import <src>  Import a friend's review (saved .html, code, or .json)
+  import <file|url>    Import another site's list (Cube Cobra, Draftmancer, MTGO, Arena,
+                       Moxfield, Archidekt, Cockatrice, XMage) or a Cube Cobra cube URL
+  export               Write the cube in another site's format (--format, --out)
 
 Options:
   --cube <dir>         Cube folder to work on (default: this repo's cube/)
   --fuzzy              Fuzzy name match (card)
   --limit <n>          Max results (search, default 20)
   --json               Print raw JSON
-  --dry-run            Resolve without writing (add, pin-printings, tag-functions, backfill-log)
+  --dry-run            Resolve without writing (add, import, pin-printings, tag-functions, backfill-log)
+  --new <dir>          import: make a new cube folder inside <dir> instead of merging
+  --board <b>=<status> import: map a board to draft, prospect, cut, or skip (repeatable)
+  --format <id>        export: cubecobra-csv, draftmancer, arena, mtgo-txt, mtgo-dek,
+                       moxfield, archidekt, cockatrice, xmage
+  --out <file>         export: write to a file instead of stdout
   -h, --help           Show this help`;
 
 const { positionals, values } = parseArgs({
@@ -47,6 +57,10 @@ const { positionals, values } = parseArgs({
     limit: { type: "string", default: "20" },
     json: { type: "boolean", default: false },
     "dry-run": { type: "boolean", default: false },
+    new: { type: "string" },
+    board: { type: "string", multiple: true, default: [] },
+    format: { type: "string" },
+    out: { type: "string" },
     help: { type: "boolean", short: "h", default: false },
   },
 });
@@ -74,6 +88,26 @@ async function run(): Promise<number> {
         return 1;
       }
       return addBatch(await cube(), file, { dryRun: values["dry-run"] });
+    }
+    case "import": {
+      const [source] = rest;
+      if (source === undefined) {
+        console.error("import: file or Cube Cobra URL required");
+        return 1;
+      }
+      const boards = parseBoardOptions(values.board);
+      if (typeof boards === "string") {
+        console.error(boards);
+        return 1;
+      }
+      return importList(await cube(), source, {
+        dryRun: values["dry-run"],
+        boards,
+        ...(values.new === undefined ? {} : { newCube: values.new }),
+      });
+    }
+    case "export": {
+      return exportCube(await cube(), values.format, values.out);
     }
     case "validate": {
       return validate(await cube());

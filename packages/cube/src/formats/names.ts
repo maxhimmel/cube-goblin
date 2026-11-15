@@ -38,3 +38,12 @@ export function nameCandidates(name: string): string[] {
   }
   return [...new Set(candidates)];
 }
+
+export function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/gu, "")
+    .replace(/æ/gu, "ae")
+    .replace(/[^a-z0-9]/gu, "");
+}

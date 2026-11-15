@@ -71,3 +71,5 @@ export {
 } from "./cube-folder.ts";
 export type { CubeFolder } from "./cube-folder.ts";
 export type { RecordOptions, RevertResult, StatsOf } from "./save-log.ts";
+export { applyImport, planImport, statusForBoard } from "./import.ts";
+export type { ApplyResult, BoardStatuses, ImportMatch, ImportPlan, PlanInput } from "./import.ts";

@@ -41,6 +41,7 @@ export const cardSchema = z.looseObject({
   rarity: z.string(),
   set: z.string(),
   collector_number: z.string(),
+  mtgo_id: z.number().optional(),
   scryfall_uri: z.string(),
   set_name: z.string().optional(),
   released_at: z.string().optional(),

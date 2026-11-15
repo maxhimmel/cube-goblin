@@ -35,7 +35,6 @@ const CATEGORY_BOARDS: Record<string, Board> = {
   sideboard: "side",
   cut: "cut",
   commander: "main",
-  tokens: "tokens",
 };
 
 export function parseCardLine(raw: string): ParsedLine | undefined {

@@ -76,6 +76,7 @@ Grave Researcher
 - **Query params**: `?date=<ms>` or `?changelog=<id>` returns a past version; `?metadataOnly=true` skips the cards ([cubeJSON.ts][cc-cubejson], [ApiDocsPage L260][cc-apidocs-json]).
 - **Card fields**: `cardID` is the **Scryfall printing ID**, plus `status`, `finish`, `tags[]`, `notes`, `colorCategory`, `imgUrl`, `imgBackUrl`, `custom_name`, overrides (`cmc`, `type_line`, `colors`, `rarity`), and `details` holding the Scryfall-derived data ([Card.ts `Card`][cc-card]). Draftmancer's own importer reads `cardID` and `details.{name,set,collector_number}` from this endpoint ([Draftmancer server.ts L1102][dm-server-cc], [cubeCobraIntegration.ts][dm-ccint]).
 - **`GET /cube/api/cubelist/:id`**: mainboard names only, one per line, `text/plain`, CORS `*` ([cubelist.ts][cc-cubelist]).
+- **Seen in a real cube** (`thepaupercube`, 2026-11-15): besides `mainboard` it had a custom `basics` board. Our import reads custom boards as prospect by default.
 - **Terms**: the API docs invite tool builders to use it. They ask callers to cache responses, send a `User-Agent`, back off on 429, and respect robots.txt ([ApiDocsPage L1043][cc-apidocs-rate]).
 - **Conflict**: robots.txt disallows `/cube/api/` and `/cube/download/` for generic crawlers ([robots.txt][cc-robots]), and the ToS bans "data mining, data harvesting, data extracting" ([tos.ts][cc-tos]). Safe reading: a single user-initiated fetch of one cube is fine; crawling is not.
 

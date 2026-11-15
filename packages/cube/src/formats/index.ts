@@ -152,3 +152,23 @@ export { exportName, nameCandidates } from "./names.ts";
 export type { NameStyle } from "./names.ts";
 export { DEFAULT_BOARD_STATUS, boardStatus, normalizeBoard } from "./types.ts";
 export type { Board, ExportCard, ExportMeta, ImportRow, ParsedList } from "./types.ts";
+export { normalizeName } from "./names.ts";
+export { resolveRows } from "./resolve.ts";
+export type {
+  Identifier,
+  Match,
+  MatchHow,
+  Miss,
+  ResolvableCard,
+  ResolvableRow,
+  Resolver,
+} from "./resolve.ts";
+export { toExportCards } from "./export-cards.ts";
+export type { PrintingInfo } from "./export-cards.ts";
+export {
+  CUBECOBRA_ORIGIN,
+  cubeCobraId,
+  fetchCubeCobra,
+  isCubeCobraSource,
+} from "./cubecobra-fetch.ts";
+export type { FetchCubeOptions } from "./cubecobra-fetch.ts";

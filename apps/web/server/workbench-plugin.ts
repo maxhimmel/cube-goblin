@@ -41,11 +41,11 @@ export function workbench(options: WorkbenchOptions): Plugin {
   return {
     name: "repo:workbench",
     apply: "serve",
-    configureServer(server) {
-      const workbenchServer = createWorkbenchServer(options);
+    async configureServer(server) {
+      const workbenchServer = await createWorkbenchServer(options);
       let pending: ReturnType<typeof setTimeout> | undefined;
 
-      server.watcher.add([...workbenchServer.watched]);
+      server.watcher.add([...workbenchServer.watched()]);
       server.watcher.on("all", (_event, file) => {
         if (!workbenchServer.isCubeFile(file)) {
           return;

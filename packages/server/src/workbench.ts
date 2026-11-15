@@ -9,6 +9,7 @@ import type {
   LogMessage,
   LogState,
   LogStats,
+  CubeFolder,
   CubePaths,
   FoundCard,
   Printing,
@@ -32,7 +33,7 @@ import {
   cardPatchSchema,
   changeTag,
   createTag,
-  cubePaths,
+  openCubeFolder,
   patchCard,
   patchCards,
   loadBoard,
@@ -71,7 +72,7 @@ export const CHANGE_DEBOUNCE_MS = 100;
 const SEARCH_LIMIT = 24;
 
 export interface WorkbenchOptions {
-  repoRoot: string;
+  cubeDir: string;
   cacheDir: string;
   imageCacheDir: string;
 }
@@ -158,6 +159,7 @@ interface Route {
 }
 
 const SUBJECT_HEADER = "x-log-subject";
+const CUBE_HEADER = "x-cube-id";
 const BODY_HEADER = "x-log-body";
 
 function header(request: Request, name: string): string | undefined {
@@ -375,7 +377,9 @@ function writeRoute(
 
 export interface WorkbenchServer {
   handle: (request: Request) => Promise<Response | undefined>;
-  watched: readonly string[];
+  cube: () => CubeFolder;
+  open: (dir: string) => Promise<CubeFolder>;
+  watched: () => readonly string[];
   isCubeFile: (path: string) => boolean;
 }
 
@@ -395,8 +399,14 @@ function scryfallFailure(error: unknown): number {
   return error instanceof ScryfallError ? scryfallStatus(error.status) : 502;
 }
 
-export function createWorkbenchServer(options: WorkbenchOptions): WorkbenchServer {
-  const paths = cubePaths(options.repoRoot);
+interface OpenCube {
+  folder: CubeFolder;
+  paths: CubePaths;
+  route: ReturnType<typeof writeRoute>;
+  cubeRoot: string;
+}
+
+export async function createWorkbenchServer(options: WorkbenchOptions): Promise<WorkbenchServer> {
   const client = new ScryfallClient({
     userAgent: USER_AGENT,
     cache: new FileCache(options.cacheDir),
@@ -407,13 +417,32 @@ export function createWorkbenchServer(options: WorkbenchOptions): WorkbenchServe
   });
   const images = new ImageCache(options.imageCacheDir, USER_AGENT);
   const stats = statsOf(client);
-  const route = writeRoute(paths, client, oracleTags, stats);
   const remembered = new Map<string, Card[]>();
-  const cubeRoot = resolve(paths.root) + sep;
-  const configFile = resolve(paths.configFile);
   let writes: Promise<unknown> = Promise.resolve();
 
-  async function runWrite(request: Request, matched: Route): Promise<Response> {
+  async function load(dir: string): Promise<OpenCube> {
+    const folder = await openCubeFolder(dir);
+    return {
+      folder,
+      paths: folder.paths,
+      route: writeRoute(folder.paths, client, oracleTags, stats),
+      cubeRoot: resolve(folder.dir) + sep,
+    };
+  }
+
+  let current = await load(options.cubeDir);
+
+  async function open(dir: string): Promise<CubeFolder> {
+    const next = load(dir);
+    const switched = writes.then(async () => {
+      current = await next;
+    });
+    writes = switched.catch(() => undefined);
+    await switched;
+    return current.folder;
+  }
+
+  async function runWrite(paths: CubePaths, request: Request, matched: Route): Promise<Response> {
     const body = parseJson(await request.text());
     if (!body.ok) {
       return json(400, { error: "Body is not valid JSON" });
@@ -441,6 +470,7 @@ export function createWorkbenchServer(options: WorkbenchOptions): WorkbenchServe
     const url = requestUrl.pathname;
     const method = request.method;
     const params = requestUrl.searchParams;
+    const { paths, route } = current;
     if (url === IMAGE_ROUTE && method === "GET") {
       const remote = params.get("u") ?? "";
       if (!isAllowedImage(remote)) {
@@ -509,7 +539,13 @@ export function createWorkbenchServer(options: WorkbenchOptions): WorkbenchServe
     }
     const matched = route(url, method, logMessage(request));
     if (matched !== undefined) {
-      const run = writes.then(() => runWrite(request, matched));
+      const sentFor = request.headers.get(CUBE_HEADER);
+      if (sentFor !== null && sentFor !== current.folder.config.id) {
+        return json(409, {
+          error: `This edit was for another cube; ${current.folder.config.name} is open now`,
+        });
+      }
+      const run = writes.then(() => runWrite(paths, request, matched));
       writes = run.catch(() => undefined);
       return run.catch((error: unknown) => json(500, { error: String(error) }));
     }
@@ -521,10 +557,12 @@ export function createWorkbenchServer(options: WorkbenchOptions): WorkbenchServe
 
   return {
     handle,
-    watched: [paths.root, paths.configFile],
+    cube: () => current.folder,
+    open,
+    watched: () => [current.paths.root],
     isCubeFile: (file) => {
       const path = resolve(file);
-      return !path.endsWith(".tmp") && (path.startsWith(cubeRoot) || path === configFile);
+      return !path.endsWith(".tmp") && path.startsWith(current.cubeRoot);
     },
   };
 }

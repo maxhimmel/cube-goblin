@@ -12,9 +12,10 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-058: Make a cube available offline](tickets/T-058-offline.md)
+
 ## Next
 
-- [T-058: Make a cube available offline](tickets/T-058-offline.md)
 - [T-059: Import and export other sites' formats](tickets/T-059-import-export-formats.md)
 - [T-054: Reviews view](tickets/T-054-reviews-view.md)
 - [T-055: Forge overlay](tickets/T-055-forge-overlay.md)

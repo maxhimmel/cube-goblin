@@ -1,7 +1,7 @@
 ---
 id: T-058
 title: Make a cube available offline
-status: todo
+status: doing
 ---
 
 The desktop app works offline for a cube that was opened online at least once (user, 2026-11-15). Most use is online; offline is rare.

@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { colorLabel, ptLabel } from "../insights/labels.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import type { BalanceRow, HeatRow, Matchups, Tally, Test, Used } from "./model.ts";
-import { MATCHUP_CORNERS, PT_AXIS, ghostLabel, isCreatureCard, ptCell } from "./model.ts";
+import { MATCHUP_CORNERS, PT_AXIS, ghostLabel, isCreatureCard, ptCell, scaleTop } from "./model.ts";
 
 export interface ChartEvents {
   onPeek: (key: string | undefined) => void;
@@ -82,11 +82,7 @@ export function CurveBars({
   const rows = tallies.filter(
     (row) => !used || used.curve.has(curveId(row)) || row.baseGhost !== 0,
   );
-  const scaleToBase = events.baseline || !events.filtered;
-  const top = Math.max(
-    1,
-    ...rows.map((row) => Math.max(scaleToBase ? row.base + row.baseGhost : 0, row.hit + row.ghost)),
-  );
+  const top = scaleTop(rows, events.baseline || !events.filtered);
   const pct = (value: number): string => `${String((value / top) * 100)}%`;
   return (
     <div className="lab-bars" role="list" aria-label="Mana curve">
@@ -319,14 +315,6 @@ export function PtDots({
   );
 }
 
-function scaleTop(rows: readonly Tally[], events: ChartEvents): number {
-  const toBase = events.baseline || !events.filtered;
-  return Math.max(
-    1,
-    ...rows.map((row) => Math.max(toBase ? row.base + row.baseGhost : 0, row.hit + row.ghost)),
-  );
-}
-
 function shown(row: Tally): boolean {
   return row.base > 0 || row.baseGhost !== 0 || row.hit > 0 || row.ghost !== 0;
 }
@@ -345,7 +333,7 @@ export function BarList({
   icon?: ((id: string) => ReactNode) | undefined;
 }): ReactNode {
   const rows = tallies.filter(shown);
-  const top = scaleTop(rows, events);
+  const top = scaleTop(rows, events.baseline || !events.filtered);
   const pct = (value: number): string => `${String((value / top) * 100)}%`;
   const key = (row: Tally): string => row.id.split(":").slice(1).join(":");
   if (rows.length === 0) {

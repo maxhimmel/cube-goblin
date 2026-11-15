@@ -36,5 +36,5 @@ The user is working on the same screen. Never let a window appear, take focus, o
 
 - Launch it only through Playwright `_electron` with `CUBE_DESKTOP_HIDDEN: "1"` in `env` (the window is never shown and the Dock icon is hidden; screenshots still render). Point `CUBE_DIR` at a copy of the cube folder, and `CUBE_USER_DATA` and `CUBES_HOME` (where "New cube" makes folders) at `/tmp` folders.
 - Never run `pnpm desktop` or launch the packaged `.app`; those are for the user.
-- Throwaway scripts go inside `apps/desktop` (so `@playwright/test` resolves) and run after `pnpm -s build` there, which builds `out/` from the current source.
+- Throwaway scripts go inside `apps/desktop` (so `@playwright/test` resolves) and run after `pnpm -s turbo run build --filter @repo/desktop` from the repo root. It rebuilds the web renderer (`apps/web/dist-desktop`) and `out/`; `pnpm build` inside `apps/desktop` alone leaves web changes out.
 - E2E: `apps/desktop/e2e/desktop.spec.ts`, run from `apps/desktop` with `pnpm exec playwright test`; its fixture already sets the hidden flag.

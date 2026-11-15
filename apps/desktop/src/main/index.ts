@@ -185,10 +185,13 @@ function lockDown(): void {
   });
 }
 
+const hidden = process.env["CUBE_DESKTOP_HIDDEN"] === "1";
+
 function openWindow(): void {
   const window = new BrowserWindow({
     width: 1440,
     height: 960,
+    show: !hidden,
     webPreferences: {
       preload: join(import.meta.dirname, "..", "preload", "index.cjs"),
     },
@@ -210,6 +213,9 @@ async function start(): Promise<void> {
       window.focus();
     }
   });
+  if (hidden) {
+    app.dock?.hide();
+  }
   await app.whenReady();
   lockDown();
   const repoRoot = await chooseRoot();

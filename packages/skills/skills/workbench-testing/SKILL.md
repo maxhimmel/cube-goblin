@@ -29,3 +29,12 @@ Prove a change by looking at it, on a **copy** of the cube. The user's own serve
 - Run one test alone with `pnpm exec playwright test workbench.spec.ts -g "<title>"` from `apps/web`.
 - The add-card test calls Scryfall live and takes 6 to 8 seconds.
 - A new or changed test is done when it passes alone with `-g`. The whole suite runs in the merge hook's `pnpm check`; that merge is where "`pnpm check` passes" is proven.
+
+## Desktop app (`apps/desktop`)
+
+The user is working on the same screen. Never let a window appear, take focus, or add a Dock icon.
+
+- Launch it only through Playwright `_electron` with `CUBE_DESKTOP_HIDDEN: "1"` in `env` (the window is never shown and the Dock icon is hidden; screenshots still render). Point `CUBE_REPO_ROOT` at a copy of the cube and `CUBE_USER_DATA` at a `/tmp` folder.
+- Never run `pnpm desktop` or launch the packaged `.app`; those are for the user.
+- Throwaway scripts go inside `apps/desktop` (so `@playwright/test` resolves) and run after `pnpm -s build` there, which builds `out/` from the current source.
+- E2E: `apps/desktop/e2e/desktop.spec.ts`, run from `apps/desktop` with `pnpm exec playwright test`; its fixture already sets the hidden flag.

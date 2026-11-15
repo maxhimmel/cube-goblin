@@ -12,6 +12,9 @@ import type {
   Printing,
   SearchResult,
   Tag,
+  ImportOutcome,
+  ImportPreview,
+  ImportRequestInput,
   Workbench,
 } from "@repo/cube/browser";
 import { cubeId } from "../cube-identity.ts";
@@ -27,6 +30,8 @@ import {
   printingSchema,
   searchResultSchema,
   tagSchema,
+  importPreviewSchema,
+  importResultSchema,
   workbenchSchema,
 } from "@repo/cube/browser";
 
@@ -215,4 +220,31 @@ export async function fetchLog(): Promise<LogEntry[]> {
 
 export async function revertRequest(ids: readonly string[], note: LogNote = {}): Promise<LogEntry> {
   return logEntrySchema.parse(await sendJson("POST", "/api/log/revert", { ids }, false, note));
+}
+
+export async function previewImportRequest(request: ImportRequestInput): Promise<ImportPreview> {
+  return importPreviewSchema.parse(await sendJson("POST", "/api/import/preview", request));
+}
+
+export async function importRequest(
+  request: ImportRequestInput,
+  note: LogNote = {},
+): Promise<ImportOutcome> {
+  return importResultSchema.parse(await sendJson("POST", "/api/import", request, false, note));
+}
+
+export interface ExportFile {
+  blob: Blob;
+  filename: string;
+}
+
+export async function exportRequest(format: string): Promise<ExportFile> {
+  const url = `/api/export?format=${encodeURIComponent(format)}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw await failure("GET", url, response);
+  }
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const filename = /filename="([^"]+)"/u.exec(disposition)?.[1] ?? `cube-${format}.txt`;
+  return { blob: await response.blob(), filename };
 }

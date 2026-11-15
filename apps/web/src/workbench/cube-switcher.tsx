@@ -122,7 +122,7 @@ function cubesBridge(): CubesBridge | undefined {
   return window.desktop?.cubes;
 }
 
-async function settled(): Promise<void> {
+export async function settled(): Promise<void> {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }

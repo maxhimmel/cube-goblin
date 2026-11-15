@@ -208,3 +208,18 @@ export { POINT_SIDES, entryPoint, parsePoint, stateAtEntry } from "./history.ts"
 export type { Point, PointSide } from "./history.ts";
 export type { Conflict, RevertPlan } from "./revert.ts";
 export * from "./formats/index.ts";
+export {
+  boardChoiceSchema,
+  importPreviewSchema,
+  importRequestSchema,
+  importResultSchema,
+  importSourceSchema,
+} from "./import-api.ts";
+export type {
+  BoardChoice,
+  ImportOutcome,
+  ImportPreview,
+  ImportRequest,
+  ImportRequestInput,
+  ImportSource,
+} from "./import-api.ts";

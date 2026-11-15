@@ -323,3 +323,34 @@ test("printing thumbnails load through the app", async ({ desktop }) => {
     .poll(() => thumb.evaluate((element: HTMLImageElement) => element.naturalWidth))
     .toBeGreaterThan(0);
 });
+
+test("an import can land in a new cube", async ({ desktop }) => {
+  const { page } = desktop;
+  await page.getByRole("button", { name: "Import and export" }).click();
+  const panel = page.getByRole("dialog", { name: "Import and export" });
+  await panel.getByRole("tab", { name: "Import" }).click();
+  await panel.getByLabel("List to import").fill("Deck\n1 Lightning Bolt\n\nSideboard\n1 Shock\n");
+  await panel.getByRole("button", { name: "Preview" }).click();
+  await expect(panel.getByText("Adds 1 card: 1 draft, 0 prospect, 0 cut.")).toBeVisible({
+    timeout: 30000,
+  });
+  await panel.getByLabel("A new cube").check();
+  await expect(panel.getByText("Adds 2 cards: 1 draft, 1 prospect, 0 cut.")).toBeVisible({
+    timeout: 30000,
+  });
+  await panel.getByLabel("New cube name").fill("Bolts");
+  await panel.getByRole("button", { name: "Import 2 cards" }).click();
+
+  await expect(page.getByRole("button", { name: "Import and export" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+    { timeout: 30000 },
+  );
+  await expect(page).toHaveTitle("Bolts");
+  const cards = join(desktop.cubesHome, "bolts", "cards");
+  const bolt: unknown = JSON.parse(await readFile(join(cards, "lightning-bolt.json"), "utf8"));
+  const shock: unknown = JSON.parse(await readFile(join(cards, "shock.json"), "utf8"));
+  expect(bolt).toMatchObject({ status: "draft" });
+  expect(shock).toMatchObject({ status: "prospect" });
+  expect(await notes(desktop.cardsDir, "shock")).toBe("");
+});

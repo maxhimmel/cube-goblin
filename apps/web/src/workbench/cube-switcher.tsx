@@ -7,6 +7,7 @@ import { ChevronDownIcon } from "../icons.tsx";
 import { Menu } from "../menu.tsx";
 import { queryClient } from "../query-client.ts";
 import { showToast } from "./toast.tsx";
+import { cubeId } from "../cube-identity.ts";
 import {
   OFFLINE_QUERY_KEY,
   OFFLINE_REASON,
@@ -43,18 +44,25 @@ function offlineText(status: OfflineStatus): string {
   return `${String(status.cached)} of ${String(status.cards)} cards saved offline · ${size}`;
 }
 
-function OfflineLine({ status }: { status: OfflineStatus | undefined }): ReactNode {
+function OfflineLine({
+  status,
+  failed = false,
+}: {
+  status: OfflineStatus | undefined;
+  failed?: boolean;
+}): ReactNode {
+  const pending = failed ? "Offline copy unknown" : "Checking offline copy…";
   return (
     <span className="cube-offline muted" data-complete={status?.complete}>
-      {status ? offlineText(status) : "Checking offline copy…"}
+      {status ? offlineText(status) : pending}
     </span>
   );
 }
 
 function CurrentOffline(): ReactNode {
   const online = useOnline();
-  const { data: status } = useQuery({
-    queryKey: OFFLINE_QUERY_KEY,
+  const { data: status, isError } = useQuery({
+    queryKey: [...OFFLINE_QUERY_KEY, cubeId()],
     queryFn: fetchOffline,
     staleTime: 0,
     refetchInterval: (query) => (query.state.data?.run?.running === true ? RUN_POLL_MS : false),
@@ -62,7 +70,7 @@ function CurrentOffline(): ReactNode {
   const start = useMutation({
     mutationFn: makeOffline,
     onSuccess: (next) => {
-      queryClient.setQueryData(OFFLINE_QUERY_KEY, next);
+      queryClient.setQueryData([...OFFLINE_QUERY_KEY, cubeId()], next);
     },
     onError: (error: Error) => {
       showToast({ message: error.message, tone: "error" });
@@ -72,7 +80,7 @@ function CurrentOffline(): ReactNode {
   const running = run?.running === true;
   return (
     <>
-      <OfflineLine status={status} />
+      <OfflineLine status={status} failed={isError} />
       {run !== undefined && !running && run.failed > 0 && (
         <span className="cube-offline error" role="alert">
           {String(run.failed)} card(s) not saved{run.error === undefined ? "" : `: ${run.error}`}
@@ -101,13 +109,13 @@ function CurrentOffline(): ReactNode {
 }
 
 function OtherOffline({ cube, cubes }: { cube: CubeRef; cubes: CubesBridge }): ReactNode {
-  const { data: status } = useQuery({
+  const { data: status, isError } = useQuery({
     queryKey: [...CUBES_QUERY_KEY, "offline", cube.dir],
     queryFn: () => cubes.offlineStatus(cube.dir),
     staleTime: 0,
     retry: false,
   });
-  return <OfflineLine status={status} />;
+  return <OfflineLine status={status} failed={isError} />;
 }
 
 function cubesBridge(): CubesBridge | undefined {

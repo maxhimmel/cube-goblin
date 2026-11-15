@@ -218,6 +218,7 @@ function ImportPage({ onDone }: { onDone: () => void }): ReactNode {
           </button>
         ))}
       </div>
+      {kind === "paste" && <AiHelper />}
       {kind === "paste" && (
         <textarea
           aria-label="List to import"
@@ -232,7 +233,6 @@ function ImportPage({ onDone }: { onDone: () => void }): ReactNode {
           }}
         />
       )}
-      {kind === "paste" && <AiHelper />}
       {kind === "file" && (
         <label className="transfer-file">
           <input
@@ -516,6 +516,9 @@ function ImportReview({
             {result.added.map((card) => (
               <li key={card.line}>
                 {card.card} <span className="muted">{CARD_STATUS_LABELS[card.status]}</span>
+                {card.tags.length > 0 && (
+                  <span className="transfer-tags">{card.tags.join(", ")}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -586,49 +589,76 @@ function ExportPage(): ReactNode {
   );
 }
 
+type CopyState = "idle" | "copied" | "manual";
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function AiHelper(): ReactNode {
+  const prompt = useRef<HTMLTextAreaElement>(null);
+  const shown = useRef<HTMLDetailsElement>(null);
+  const [copy, setCopy] = useState<CopyState>("idle");
   return (
-    <details className="transfer-ai">
-      <summary>Your own format? Let an AI convert it</summary>
-      <ol>
+    <section className="transfer-ai" aria-labelledby="transfer-ai-title">
+      <h3 id="transfer-ai-title">
+        <span aria-hidden="true">✨</span> Typed your list yourself? Let an AI tidy it up
+      </h3>
+      <p className="muted">
+        The easiest way in. Any list works: bullets, notes, nicknames, typos, your own groups.
+      </p>
+      <ol className="transfer-ai-steps">
         <li>
-          Copy this prompt.{" "}
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => {
-              void navigator.clipboard.writeText(AI_IMPORT_PROMPT).then(
-                () => {
-                  showToast({ message: "Prompt copied", tone: "info" });
-                },
-                () => {
-                  showToast({
-                    message: "Couldn't copy; select the prompt and copy it",
-                    tone: "error",
-                  });
-                },
-              );
-            }}
-          >
-            Copy prompt
-          </button>
+          <span className="transfer-ai-copy-row">
+            <button
+              type="button"
+              className="transfer-ai-copy"
+              data-state={copy}
+              onClick={() => {
+                void copyText(AI_IMPORT_PROMPT).then((copied) => {
+                  if (!copied && shown.current) {
+                    shown.current.open = true;
+                    prompt.current?.focus();
+                    prompt.current?.select();
+                  }
+                  setCopy(copied ? "copied" : "manual");
+                });
+              }}
+            >
+              {copy === "copied" ? "Copied ✓" : "Copy AI prompt"}
+            </button>
+            {copy === "manual" && (
+              <span role="status" className="muted">
+                Press ⌘C (Ctrl+C) to copy the selected prompt
+              </span>
+            )}
+          </span>
         </li>
         <li>
-          Paste it into an AI chat (ChatGPT, Claude, Gemini, or any other), then paste your list
-          right after it and send.
+          Paste it into any AI chat (ChatGPT, Claude, Gemini…), paste your list right after it, and
+          send.
         </li>
-        <li>Copy the AI's answer, paste it in the Paste box above, and press Preview.</li>
+        <li>Paste the AI&apos;s answer in the box below and press Preview.</li>
       </ol>
-      <textarea
-        aria-label="Prompt for an AI"
-        className="transfer-text"
-        readOnly
-        rows={6}
-        value={AI_IMPORT_PROMPT}
-        onFocus={(event) => {
-          event.target.select();
-        }}
-      />
-    </details>
+      <details ref={shown}>
+        <summary>See the prompt</summary>
+        <textarea
+          ref={prompt}
+          aria-label="Prompt for an AI"
+          className="transfer-text"
+          readOnly
+          rows={6}
+          value={AI_IMPORT_PROMPT}
+          onFocus={(event) => {
+            event.target.select();
+          }}
+        />
+      </details>
+    </section>
   );
 }

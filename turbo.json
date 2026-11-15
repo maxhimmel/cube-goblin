@@ -31,6 +31,18 @@
     "dev": {
       "persistent": true,
       "cache": false
+    },
+    "@repo/web#build:desktop": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist-desktop/**"]
+    },
+    "@repo/desktop#build": {
+      "dependsOn": ["^build", "@repo/web#build:desktop"],
+      "outputs": ["out/**"]
+    },
+    "e2e:desktop": {
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/web/e2e/fixture/**"]
     }
   }
 }

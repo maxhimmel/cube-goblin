@@ -10,3 +10,7 @@ apps/web/test-results
 apps/web/playwright-report
 exports
 .claude/settings.local.json
+apps/web/dist-desktop
+apps/desktop/out
+apps/desktop/release
+apps/desktop/test-results

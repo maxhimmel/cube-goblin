@@ -37,6 +37,14 @@ pre-commit:
       root: "packages/scryfall/"
       glob: "**/*.{ts,tsx,js,mjs}"
       run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: lint desktop
+      root: "apps/desktop/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
+    - name: lint server
+      root: "packages/server/"
+      glob: "**/*.{ts,tsx,js,mjs}"
+      run: pnpm exec eslint --max-warnings 0 {staged_files}
     - name: lint eslint-config
       root: "packages/eslint-config/"
       glob: "**/*.{ts,tsx,js,mjs}"

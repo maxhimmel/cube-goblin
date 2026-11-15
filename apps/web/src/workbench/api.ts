@@ -36,7 +36,7 @@ export const LAYOUTS_QUERY_KEY = ["layouts"] as const;
 export const VERSIONS_QUERY_KEY = ["versions"] as const;
 export const LOG_QUERY_KEY = ["log"] as const;
 export const CONFIG_QUERY_KEY = ["config"] as const;
-export const CUBE_CHANGED_EVENT = "cube:changed";
+export { CUBE_CHANGED_EVENT } from "@repo/server/events";
 
 function errorMessage(text: string): string {
   try {

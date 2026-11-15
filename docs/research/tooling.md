@@ -5,6 +5,9 @@ Set up 2026-11-08. The config is the source of truth: `package.json` files, `tur
 ## Layout
 
 - `apps/cli`: the `cube` CLI. Runs TS directly with `tsx`, no build step.
+- `apps/web`: the workbench (`pnpm dev`, and `build:desktop` for the desktop app) and the share doc (`build`).
+- `apps/desktop`: the Electron app ([desktop-shell.md](desktop-shell.md)).
+- `packages/server`: the workbench's `/api` routes as one `Request → Response` handler, mounted by the Vite plugin and by the desktop app.
 - `packages/scryfall`: typed Scryfall client. Responses are validated with zod, cached to `.cache/scryfall` for 24h, and throttled per endpoint.
 - `packages/{typescript,eslint,prettier,markdownlint}-config`: shared configs.
 - `scripts/`: zx orchestration (`check`, `fix`) and repo guards.

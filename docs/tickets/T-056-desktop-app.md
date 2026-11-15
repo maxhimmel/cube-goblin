@@ -1,7 +1,7 @@
 ---
 id: T-056
 title: Desktop app
-status: todo
+status: done
 ---
 
 The workbench runs as a desktop app, not only as `pnpm dev` (user, 2026-11-15). Electron, local unsigned macOS builds first; signing and auto-update come later. Research: [desktop-shell.md](../research/desktop-shell.md).
@@ -18,6 +18,14 @@ The workbench runs as a desktop app, not only as `pnpm dev` (user, 2026-11-15). 
 - The client listens for `cube:changed` through the preload bridge or `import.meta.hot`, whichever exists.
 - Security baseline from the research note: Electron's defaults kept, CSP, deny-all permissions, locked-down navigation, a sender check on every IPC handler.
 - `pnpm desktop` runs it in dev; `pnpm desktop:build` makes the unsigned app.
+
+## Built (2026-11-15)
+
+- **Shared handler**: `packages/server` (`createWorkbenchServer`) holds every route and the image cache. `apps/web/server/workbench-plugin.ts` is now a thin Node-to-`Request` adapter.
+- **App**: `apps/desktop` (electron-vite 6, Electron 45, electron-builder 26). Main serves `app://bundle` and pushes `cube:changed` from `fs.watch`. The preload exposes only `onCubeChanged`, typed by `DesktopBridge` in `@repo/server/events`. Spike findings: [desktop-shell.md](../research/desktop-shell.md#spike-results-2026-11-15).
+- **Which cube**: `CUBE_REPO_ROOT`, else this repo in dev, else a folder picked once and kept in `userData/settings.json`. [T-057](T-057-multiple-cubes.md) replaces this. Scryfall caches live in `userData/cache` (`CUBE_CACHE_DIR` overrides).
+- **Commands**: `pnpm desktop` (dev) and `pnpm desktop:build` (unsigned arm64 `.app` in `apps/desktop/release`). `pnpm check` runs `e2e:desktop`.
+- **Gaps**: no app icon; no renderer HMR in the desktop app; the packaged `.app` isn't in automated e2e (its fuses block Playwright); macOS only.
 
 ## Done when
 

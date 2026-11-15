@@ -20,7 +20,7 @@ Speak concisely; sacrifice grammar.
 - `pnpm fix`: auto-fix what can be fixed, then re-run `pnpm check`.
 - `pnpm cube --help`: card data CLI (Scryfall). Use it for every card lookup and review import.
 - `pnpm skills:setup`: once per machine, registers the repo's plugin marketplace so the `cube:` skills load.
-- `pnpm export`: build the single-file share doc into `exports/`. `pnpm dev`: run the web app locally.
+- `pnpm export`: build the single-file share doc into `exports/`. `pnpm dev`: run the web app locally. `pnpm desktop` / `pnpm desktop:build`: run or package the desktop app.
 - Add cards with the workbench top bar's "+" panel, one at a time.
 
 ## Rules

@@ -1,0 +1,27 @@
+{
+  "name": "@repo/server",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./events": "./src/events.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@repo/cube": "workspace:*",
+    "@repo/scryfall": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "22.20.5",
+    "eslint": "10.14.0",
+    "jiti": "2.7.0",
+    "typescript": "6.0.3",
+    "vitest": "5.1.0"
+  }
+}

@@ -32,5 +32,5 @@ Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Researc
 
 ## Progress
 
-- **Format modules** (`packages/cube/src/formats/`): parsers and writers for every format, detection by content, and round-trip plus sample-file tests. Moxfield and Archidekt writers are flagged `verified: false` until checked against each site's import dialog; the user offered to copy those dialogs (2026-11-15).
+- **Format modules** (`packages/cube/src/formats/`): parsers and writers for every format, detection by content, and round-trip plus sample-file tests. Moxfield and Archidekt writers checked against real exports the user copied (2026-11-15). Moxfield's sideboard header is still unverified.
 - **Next**: resolve rows to Scryfall (printing id, `mtgo_id`, set and number, then name), then the CLI, then the workbench import preview and export menu, then Cube Cobra by URL.

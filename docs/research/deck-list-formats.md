@@ -2,7 +2,7 @@
 
 Researched 2026-11-15. Card model: `packages/cube/src/schema.ts`. Printing lookups: [scryfall-api.md](scryfall-api.md).
 
-**Source quality.** Official help pages for MTG Arena (`mtgarena-support.wizards.com`), MTGO (`help.mtgo.com`), Moxfield (`/help`), and MTGGoldfish (`/help`) returned 403 or 404 to our fetcher. Archidekt's FAQ only says the syntax sits in the Import modal under "Formatting Examples". So most facts below come from the source code of the open-source clients that read and write these formats: XMage (`magefree/mage@7da937c`) and Cockatrice (`Cockatrice/Cockatrice@50b0d2f`). Moxfield and Archidekt syntax comes from third-party sample exports and is marked **unverified**. Check those against the sites' own import dialogs before relying on them.
+**Source quality.** Official help pages for MTG Arena (`mtgarena-support.wizards.com`), MTGO (`help.mtgo.com`), Moxfield (`/help`), and MTGGoldfish (`/help`) returned 403 or 404 to our fetcher. Archidekt's FAQ only says the syntax sits in the Import modal under "Formatting Examples". So most facts below come from the source code of the open-source clients that read and write these formats: XMage (`magefree/mage@7da937c`) and Cockatrice (`Cockatrice/Cockatrice@50b0d2f`). Moxfield and Archidekt syntax first came from third-party sample exports. Real exports the user copied on 2026-11-15 confirmed most of it; what they didn't cover is marked **unverified**.
 
 XM = `https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cbe199`, CT = `https://github.com/Cockatrice/Cockatrice/blob/50b0d2ffdcac3cae7c51050e90834569383902ce`.
 
@@ -21,6 +21,8 @@ XM = `https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cb
 
 ## MTG Arena
 
+- **Real export** (user, 2026-11-15; [arena-export.txt](../../packages/cube/src/formats/fixtures/arena-export.txt)): names only, `N Name`, with no set, number, or `Deck` header. The site showed a blank line between cards. The user judged that to be page formatting, so the fixture keeps the lines tight.
+
 - **Official**: the support article "Importing a Deck" exists ([mtgarena-support](https://mtgarena-support.wizards.com/hc/en-us/articles/360049857771-Importing-a-Deck)) but returned 403. Everything below is from XMage's Arena reader and writer.
 - **Line**: `N Name (SET) num`. Set and number are optional: the pattern makes `(SET)` and `num` optional groups ([XM MtgaImporter.java#L26](https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cbe199/Mage/src/main/java/mage/cards/decks/importer/MtgaImporter.java#L26)). The collector number can carry letters (`6p`, `6s`) ([XM testdeck.mtga](https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cbe199/Mage.Tests/src/test/data/importer/testdeck.mtga)).
 - **Sections**: a line starting `Deck` or `Mainboard` opens the main deck. `Sideboard`, `Commander`, `Maybeboard`, or a blank line opens the sideboard ([XM MtgaImporter.java#L53](https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cbe199/Mage/src/main/java/mage/cards/decks/importer/MtgaImporter.java#L53)). XMage folds all of these into one sideboard, so that detail is XMage's, not Arena's.
@@ -33,7 +35,10 @@ XM = `https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cb
 1 Teferi, Hero of Dominaria (DAR) 207
 ```
 
-## Moxfield (unverified)
+## Moxfield
+
+- **Real export** (user, 2026-11-15; [moxfield-export.txt](../../packages/cube/src/formats/fixtures/moxfield-export.txt)): `N Name (SET) num`, with uppercase sets. Every multi-face name, split (`Cut / Ribbons`) and DFC (`Bloodline Recollector / Ancestral Craving`) alike, is written with a single spaced slash, not `//`. Foil is `*F*` after the number. The List cards are `(PLST) ODY-315`. Promo numbers carry letters (`(PFDN) 115p`). Our writer follows this.
+- **Still unverified**: the sideboard and maybeboard headers. The user found no export that has one, so the writer keeps `SIDEBOARD:` from the third-party sample below.
 
 - `moxfield.com/help*` returned 403. Third-party sample of a Moxfield export: `N Name (SET) num`, DFCs as the full `A // B` name, then a blank line and `SIDEBOARD:` ([silhouette-card-maker README](https://github.com/Alan-Cha/silhouette-card-maker/blob/0da09b729814aa5aafde024b5a6059624fa87951/plugins/mtg/README.md)).
 - Foil `*F*` after the number, and `#tag` hashtags at the end of a line, are described only by third parties. To confirm in Moxfield's import dialog: `*E*` (etched), `#!tag` (global tags), and the `Commander`/`Maybeboard`/`Companion` headers.
@@ -43,7 +48,10 @@ XM = `https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cb
 2 Witch Enchanter // Witch-Blessed Meadow (MH3) 239
 ```
 
-## Archidekt (unverified)
+## Archidekt
+
+- **Real export** (user, 2026-11-15; [archidekt-export.txt](../../packages/cube/src/formats/fixtures/archidekt-export.txt)): `Nx Name (set) num [Cat1,Cat2]`, matching the samples below. Flags sit on any category (`Counter Spells{noPrice}`), `Maybeboard{noDeck}{noPrice}` mixes with ordinary categories, and the commander is `Commander{top}`. DFCs are `A // B`. Accents are kept (`Lórien Revealed`). The List cards are `(plst) EMN-55`. This export had no `^label^`.
+- **On import**, `Commander` is read as the main deck (draft).
 
 - Archidekt's FAQ points to the Import modal's "Formatting Examples" and gives no syntax itself ([archidekt.com/faq](https://archidekt.com/faq)).
 - Sample exports: `1x Name (set) num *F* [Cat1,Cat2] ^Label,#hex^`. Set codes are lowercase. The number and foil are optional. `[...]` holds comma-separated categories. A special category takes flags, as in `Maybeboard{noDeck}{noPrice}`. `^Label,#color^` is a colored label, a single value per card ([magic-block archidekt-edh.txt](https://github.com/vtbassmatt/magic-block/blob/445061fc2cf53a67a88f90963bc6ae8b294c3981/examples/archidekt-edh.txt), [silhouette-card-maker README](https://github.com/Alan-Cha/silhouette-card-maker/blob/0da09b729814aa5aafde024b5a6059624fa87951/plugins/mtg/README.md)).
@@ -85,7 +93,7 @@ SB: 3 [ZNR:315] Archon of Emeria
 
 ## Sample files
 
-`packages/cube/src/formats/fixtures/` holds XMage's importer test files, copied verbatim from `Mage.Tests/src/test/data/importer/` at `7da937c`: `testdeck.dek` (MTGO), `testdeck.mtga` (Arena), `testdeck.dck` (XMage), and `testdeck.cod` (Cockatrice). They were written for XMage's tests, not saved by MTGO, Arena, or Cockatrice.
+`packages/cube/src/formats/fixtures/` holds XMage's importer test files, copied verbatim from `Mage.Tests/src/test/data/importer/` at `7da937c`: `testdeck.dek` (MTGO), `testdeck.mtga` (Arena), `testdeck.dck` (XMage), and `testdeck.cod` (Cockatrice). They were written for XMage's tests, not saved by MTGO, Arena, or Cockatrice. The `*-export.txt` files are real Moxfield, Archidekt, and Arena exports the user copied on 2026-11-15.
 
 ## Tolerant parser
 
@@ -143,4 +151,4 @@ Ambiguities:
 - **Cockatrice's set regex wants 3+ characters**: two-character codes in `(XX) 1` stay part of the name.
 - **Cockatrice drops the maybeboard on text export**. Use .cod to keep prospects.
 - **ASCII**: XMage's Arena pattern only accepts ASCII names, so accents (`Lim-Dûl`) and `Æ` must be normalized.
-- **Re-check**: Moxfield, Archidekt, and Arena syntax should be checked against each site's import dialog before shipping. Their help pages were not reachable for this research.
+- **Re-check**: Moxfield's sideboard and maybeboard headers, and Arena's set and number syntax, are still unconfirmed by a real export.

@@ -1,7 +1,7 @@
 ---
 id: T-059
 title: Import and export other sites' formats
-status: todo
+status: doing
 ---
 
 Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Research: [cube-formats.md](../research/cube-formats.md) (Cube Cobra, Draftmancer), [deck-list-formats.md](../research/deck-list-formats.md) (MTGO, Arena, Moxfield, Archidekt, MTGGoldfish, Cockatrice, XMage).
@@ -29,3 +29,8 @@ Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Researc
 
 - A cube exported to each format re-imports with the same cards, and the statuses, tags, and notes each format can carry, covered by round-trip tests. Each format has one real file, made by its site or client, that imports cleanly.
 - One real Cube Cobra cube imports by URL into a new cube, verified by running it.
+
+## Progress
+
+- **Format modules** (`packages/cube/src/formats/`): parsers and writers for every format, detection by content, and round-trip plus sample-file tests. Moxfield and Archidekt writers are flagged `verified: false` until checked against each site's import dialog; the user offered to copy those dialogs (2026-11-15).
+- **Next**: resolve rows to Scryfall (printing id, `mtgo_id`, set and number, then name), then the CLI, then the workbench import preview and export menu, then Cube Cobra by URL.

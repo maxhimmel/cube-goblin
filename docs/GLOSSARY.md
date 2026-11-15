@@ -93,6 +93,10 @@ A project-defined term with no outside source, replaced by [Forge](#forge): the 
 
 A project-defined term with no outside source: a named snapshot of [Forge](#forge)'s settings (dock blocks and their scopes, grouping, card layout, switches, and applied filters), saved to `cube/layouts.json` to switch between setups. Forge remembers its current settings without one ([T-031](tickets/T-031-lab-view.md)). Not an Insights dashboard layout, which stays in the browser ([T-015](tickets/T-015-insights-dashboard-layout.md)).
 
+## Board
+
+A named group of cards in another site's list, outside our own model. Cube Cobra names them freely, with `mainboard` and `maybeboard` as defaults ([Cube Cobra `Card.ts`](https://github.com/dekkerglen/CubeCobra/blob/3e1d63673a04229fc32a7c20ddac0983bbc0c021/packages/utils/src/datatypes/Card.ts)); deck sites and clients use main deck, sideboard, and maybeboard (Cockatrice calls them zones). On import, each board maps to a card status: main is draft, side and maybe are prospect, `cut` is cut, tokens are skipped. In code: `Board`, `normalizeBoard`, `DEFAULT_BOARD_STATUS` (`packages/cube/src/formats/types.ts`). Notes: [research/cube-formats.md](research/cube-formats.md), [research/deck-list-formats.md](research/deck-list-formats.md).
+
 ## Pending
 
 A project-defined term with no outside source: [Forge](#forge)'s queue of card moves (adds to the draft and cuts from it) that every Forge chart and the draft count show together as ghost deltas before any is saved. Apply saves them all as one undoable change; until then they live in the browser and survive a reload ([T-037](tickets/T-037-lab-scenario.md)). Not a [version](#version), which saves the whole cube.

@@ -28,6 +28,7 @@ const test = base.extend<{ desktop: Desktop }>({
         CUBE_REPO_ROOT: root,
         CUBE_USER_DATA: join(root, "user-data"),
         CUBE_CACHE_DIR: CACHE_DIR,
+        CUBE_DESKTOP_HIDDEN: "1",
       },
     });
     const page = await app.firstWindow();
@@ -94,6 +95,17 @@ test("notes typed right before a reload are saved", async ({ desktop }) => {
   await page.getByLabel("Notes").fill("typed then reloaded");
   await page.reload();
   await expect.poll(() => notes(cardsDir, "dream-harvest")).toBe("typed then reloaded");
+});
+
+test("test runs never show a window or take focus", async ({ desktop }) => {
+  await desktop.page.waitForURL("app://bundle/");
+  const windows = await desktop.app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows().map((window) => ({
+      visible: window.isVisible(),
+      focused: window.isFocused(),
+    })),
+  );
+  expect(windows).toEqual([{ visible: false, focused: false }]);
 });
 
 test("the renderer is sandboxed and gets only the desktop bridge", async ({ desktop }) => {

@@ -1,10 +1,19 @@
+import type { FSWatcher } from "node:fs";
 import { watch } from "node:fs";
-import { readFile, stat, writeFile, mkdir } from "node:fs/promises";
-import { dirname, join, resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { BrowserWindow, app, dialog, net, protocol, session, shell } from "electron";
-import { CHANGE_DEBOUNCE_MS, CUBE_CHANGED_EVENT, createWorkbenchServer } from "@repo/server";
-import type { WorkbenchServer } from "@repo/server";
+import type { IpcMainInvokeEvent } from "electron";
+import { BrowserWindow, app, dialog, ipcMain, net, protocol, session, shell } from "electron";
+import type { CubeFolder } from "@repo/cube";
+import { createCubeFolder, findCubeFolder } from "@repo/cube";
+import {
+  CHANGE_DEBOUNCE_MS,
+  CUBES_CHANNEL,
+  CUBE_CHANGED_EVENT,
+  createWorkbenchServer,
+} from "@repo/server";
+import type { CubeList, CubeRef, WorkbenchServer } from "@repo/server";
+import { RecentCubes } from "./recent-cubes.ts";
 
 const SCHEME = "app";
 const HOST = "bundle";
@@ -40,54 +49,67 @@ function rendererDir(): string {
     : resolve(app.getAppPath(), "..", "web", "dist-desktop");
 }
 
-function settingsFile(): string {
-  return join(app.getPath("userData"), "settings.json");
+function cubesHome(): string {
+  const fromEnv = process.env["CUBES_HOME"];
+  return fromEnv !== undefined && fromEnv !== ""
+    ? fromEnv
+    : join(app.getPath("documents"), "Cubes");
 }
 
-async function hasCube(root: string): Promise<boolean> {
-  try {
-    return (await stat(join(root, "cube"))).isDirectory();
-  } catch {
-    return false;
-  }
+function refOf(folder: CubeFolder): CubeRef {
+  return { dir: folder.dir, id: folder.config.id, name: folder.config.name };
 }
 
-async function rememberedRoot(): Promise<string | undefined> {
-  try {
-    const settings: unknown = JSON.parse(await readFile(settingsFile(), "utf8"));
-    if (typeof settings === "object" && settings !== null && "repoRoot" in settings) {
-      const { repoRoot } = settings;
-      return typeof repoRoot === "string" ? repoRoot : undefined;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
-
-async function chooseRoot(): Promise<string | undefined> {
-  const fromEnv = process.env["CUBE_REPO_ROOT"];
+async function firstCube(recent: RecentCubes): Promise<string | undefined> {
+  const fromEnv = process.env["CUBE_DIR"];
   if (fromEnv !== undefined && fromEnv !== "") {
     return fromEnv;
   }
+  const { cubes } = await recent.load();
+  for (const cube of cubes) {
+    if ((await findCubeFolder(cube.dir)) !== undefined) {
+      return cube.dir;
+    }
+  }
+  const legacy = await recent.legacyFolder();
+  if (legacy !== undefined && (await findCubeFolder(legacy)) !== undefined) {
+    return legacy;
+  }
   if (!app.isPackaged) {
-    return resolve(app.getAppPath(), "..", "..");
+    return resolve(app.getAppPath(), "..", "..", "cube");
   }
-  const remembered = await rememberedRoot();
-  if (remembered !== undefined && (await hasCube(remembered))) {
-    return remembered;
-  }
-  const picked = await dialog.showOpenDialog({
-    title: "Open the folder that holds your cube/ folder",
-    properties: ["openDirectory"],
+  const { response } = await dialog.showMessageBox({
+    message: "Start a cube",
+    detail: `A new cube is a folder in ${cubesHome()}. You can also open a cube folder you already have.`,
+    buttons: ["New cube", "Open folder…", "Quit"],
+    defaultId: 0,
+    cancelId: 2,
   });
-  const root = picked.filePaths[0];
-  if (picked.canceled || root === undefined || !(await hasCube(root))) {
+  if (response === 0) {
+    return (await createCubeFolder(cubesHome(), "My Cube")).dir;
+  }
+  return response === 1 ? pickFolder() : undefined;
+}
+
+async function pickFolder(): Promise<string | undefined> {
+  const picked = await dialog.showOpenDialog({
+    title: "Open a cube folder",
+    defaultPath: cubesHome(),
+    properties: ["openDirectory", "createDirectory"],
+  });
+  const dir = picked.filePaths[0];
+  if (picked.canceled || dir === undefined) {
     return undefined;
   }
-  await mkdir(dirname(settingsFile()), { recursive: true });
-  await writeFile(settingsFile(), `${JSON.stringify({ repoRoot: root }, null, 2)}\n`);
-  return root;
+  const found = await findCubeFolder(dir);
+  if (found === undefined) {
+    await dialog.showMessageBox({
+      type: "warning",
+      message: "That folder holds no cube",
+      detail: "A cube folder has a cube.config.json file or a cards/ folder.",
+    });
+  }
+  return found;
 }
 
 function notFound(): Response {
@@ -130,8 +152,9 @@ function serve(server: WorkbenchServer): void {
   });
 }
 
-function watchCube(server: WorkbenchServer): void {
+function watchCube(server: WorkbenchServer): () => void {
   let pending: ReturnType<typeof setTimeout> | undefined;
+  const watchers: FSWatcher[] = [];
   const changed = (file: string): void => {
     if (!server.isCubeFile(file)) {
       return;
@@ -143,25 +166,98 @@ function watchCube(server: WorkbenchServer): void {
       }
     }, CHANGE_DEBOUNCE_MS);
   };
-  for (const path of server.watched) {
-    void stat(path).then(
-      (info) => {
-        const directory = info.isDirectory() ? path : dirname(path);
-        const watcher = watch(directory, { recursive: info.isDirectory() }, (_event, name) => {
-          if (name !== null) {
-            changed(join(directory, name));
-          }
-        });
-        watcher.on("error", (error) => {
-          console.warn(`Stopped watching ${directory}: ${String(error)}`);
-          watcher.close();
-        });
-      },
-      (error: unknown) => {
-        console.warn(`Not watching ${path}: ${String(error)}`);
-      },
-    );
+  for (const directory of server.watched()) {
+    try {
+      const watcher = watch(directory, { recursive: true }, (_event, name) => {
+        if (name !== null) {
+          changed(join(directory, name));
+        }
+      });
+      watcher.on("error", (error) => {
+        console.warn(`Stopped watching ${directory}: ${String(error)}`);
+        watcher.close();
+      });
+      watchers.push(watcher);
+    } catch (error) {
+      console.warn(`Not watching ${directory}: ${String(error)}`);
+    }
   }
+  return () => {
+    clearTimeout(pending);
+    for (const watcher of watchers) {
+      watcher.close();
+    }
+  };
+}
+
+function isAppUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === `${SCHEME}:` && parsed.host === HOST;
+  } catch {
+    return false;
+  }
+}
+
+function fromApp(event: IpcMainInvokeEvent): boolean {
+  const url = event.senderFrame?.url;
+  return url !== undefined && isAppUrl(url);
+}
+
+function serveCubes(server: WorkbenchServer, recent: RecentCubes): void {
+  let unwatch = watchCube(server);
+  const switchTo = async (dir: string): Promise<CubeRef> => {
+    const folder = await server.open(dir);
+    unwatch();
+    unwatch = watchCube(server);
+    const ref = refOf(folder);
+    await recent.opened(ref);
+    return ref;
+  };
+  const list = async (): Promise<CubeList> => ({
+    current: refOf(server.cube()),
+    recent: (await recent.load()).cubes,
+  });
+  const handlers: Record<string, (...args: unknown[]) => Promise<unknown>> = {
+    [CUBES_CHANNEL.list]: list,
+    [CUBES_CHANNEL.create]: async (name) => {
+      if (typeof name !== "string") {
+        throw new TypeError("A cube needs a name");
+      }
+      const { format, size } = server.cube().config;
+      const folder = await createCubeFolder(cubesHome(), name, { format, size });
+      return switchTo(folder.dir);
+    },
+    [CUBES_CHANNEL.openFolder]: async () => {
+      const dir = await pickFolder();
+      return dir === undefined ? undefined : switchTo(dir);
+    },
+    [CUBES_CHANNEL.switchTo]: async (dir) => {
+      if (typeof dir !== "string") {
+        throw new TypeError("No cube folder given");
+      }
+      return switchTo(dir);
+    },
+    [CUBES_CHANNEL.remove]: async (dir) => {
+      if (typeof dir !== "string") {
+        throw new TypeError("No cube folder given");
+      }
+      if (dir === server.cube().dir) {
+        throw new Error("The open cube can't be removed from the list");
+      }
+      await recent.remove(dir);
+      return list();
+    },
+  };
+  for (const [channel, handler] of Object.entries(handlers)) {
+    ipcMain.handle(channel, (event, ...args: unknown[]) => {
+      if (!fromApp(event)) {
+        throw new Error("Not allowed");
+      }
+      return handler(...args);
+    });
+  }
+  void recent.opened(refOf(server.cube()));
 }
 
 function lockDown(): void {
@@ -171,7 +267,7 @@ function lockDown(): void {
   session.defaultSession.setPermissionCheckHandler(() => false);
   app.on("web-contents-created", (_event, contents) => {
     contents.on("will-navigate", (event, target) => {
-      if (new URL(target).origin !== ORIGIN) {
+      if (!isAppUrl(target)) {
         event.preventDefault();
       }
     });
@@ -218,19 +314,20 @@ async function start(): Promise<void> {
   }
   await app.whenReady();
   lockDown();
-  const repoRoot = await chooseRoot();
-  if (repoRoot === undefined) {
+  const recent = new RecentCubes(app.getPath("userData"));
+  const cubeDir = await firstCube(recent);
+  if (cubeDir === undefined) {
     app.quit();
     return;
   }
   const cacheDir = process.env["CUBE_CACHE_DIR"] ?? join(app.getPath("userData"), "cache");
-  const server = createWorkbenchServer({
-    repoRoot,
+  const server = await createWorkbenchServer({
+    cubeDir,
     cacheDir: join(cacheDir, "scryfall"),
     imageCacheDir: join(cacheDir, "scryfall-images"),
   });
   serve(server);
-  watchCube(server);
+  serveCubes(server, recent);
   openWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

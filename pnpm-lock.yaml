@@ -75,6 +75,9 @@ importers:
       '@playwright/test':
         specifier: 1.65.0
         version: 1.65.0
+      '@repo/cube':
+        specifier: workspace:*
+        version: link:../../packages/cube
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
@@ -319,6 +322,9 @@ importers:
 
   scripts:
     dependencies:
+      '@repo/cube':
+        specifier: workspace:*
+        version: link:../packages/cube
       zx:
         specifier: 8.8.5
         version: 8.8.5

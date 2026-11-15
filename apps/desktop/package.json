@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
+    "@repo/cube": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/server": "workspace:*",
     "@repo/typescript-config": "workspace:*",

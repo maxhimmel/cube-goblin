@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { DesktopBridge } from "@repo/server/events";
-import { CUBE_CHANGED_EVENT } from "@repo/server/events";
+import type { CubeList, CubeRef, DesktopBridge } from "@repo/server/events";
+import { CUBE_CHANGED_EVENT, CUBES_CHANNEL } from "@repo/server/events";
 
 const bridge: DesktopBridge = {
   onCubeChanged: (listener) => {
@@ -11,6 +11,13 @@ const bridge: DesktopBridge = {
     return () => {
       ipcRenderer.off(CUBE_CHANGED_EVENT, forward);
     };
+  },
+  cubes: {
+    list: () => ipcRenderer.invoke(CUBES_CHANNEL.list) as Promise<CubeList>,
+    create: (name) => ipcRenderer.invoke(CUBES_CHANNEL.create, name) as Promise<CubeRef>,
+    openFolder: () => ipcRenderer.invoke(CUBES_CHANNEL.openFolder) as Promise<CubeRef | undefined>,
+    switchTo: (dir) => ipcRenderer.invoke(CUBES_CHANNEL.switchTo, dir) as Promise<CubeRef>,
+    remove: (dir) => ipcRenderer.invoke(CUBES_CHANNEL.remove, dir) as Promise<CubeList>,
   },
 };
 

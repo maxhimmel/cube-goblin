@@ -30,6 +30,7 @@ export class ScryfallError extends Error {
 export type CardIdentifier =
   | { id: string }
   | { oracle_id: string }
+  | { mtgo_id: number }
   | { name: string }
   | { name: string; set: string }
   | { set: string; collector_number: string };

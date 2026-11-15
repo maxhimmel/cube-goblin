@@ -139,7 +139,7 @@ test("workbench shows live data from cube/cards", async ({ page, workbench }) =>
   await expect(page.getByLabel("Your name")).toHaveCount(0);
 });
 
-test("the top bar holds brand, views, save state, add, and settings only", async ({
+test("the top bar holds brand, views, save state, add, import and export, and settings only", async ({
   page,
   workbench,
 }) => {
@@ -155,8 +155,9 @@ test("the top bar holds brand, views, save state, add, and settings only", async
     "",
   ]);
   await expect(topbar.getByRole("link").last()).toHaveAccessibleName("Add card");
-  await expect(topbar.getByRole("button")).toHaveCount(1);
-  await expect(topbar.getByRole("button")).toHaveAccessibleName("Settings");
+  await expect(topbar.getByRole("button")).toHaveCount(2);
+  await expect(topbar.getByRole("button").first()).toHaveAccessibleName("Import and export");
+  await expect(topbar.getByRole("button").last()).toHaveAccessibleName("Settings");
   await expect(topbar).not.toContainText("live");
   await expect(topbar).not.toContainText("cards ·");
 });

@@ -66,6 +66,19 @@ From Electron's checklist ([security](https://www.electronjs.org/docs/latest/tut
 - **`keepalive` fetches** (`sendJson` in `api.ts`) through a custom scheme: no Electron docs on this. Test that a save on window close still lands.
 - **ESM main timing**: anything that must run before `ready` (`registerSchemesAsPrivileged`, `setName`, `setPath("sessionData")`) has to sit in the entry's static import graph ([ESM](https://www.electronjs.org/docs/latest/tutorial/esm)).
 
+## Spike results (2026-11-15)
+
+Built under [T-056](../tickets/T-056-desktop-app.md); `apps/desktop/e2e/desktop.spec.ts` covers the first four.
+
+- **One scheme works end to end**: `app://bundle` serves `apps/web/dist-desktop` and `@repo/server`'s handler (`apps/desktop/src/main/index.ts`). Relative `/api` fetches, `/api/image` images, and request bodies need no client changes.
+- **`keepalive` over the custom scheme works**: notes typed right before a reload land on disk.
+- **Dev origin, sidestepped**: `pnpm desktop` builds the renderer once and loads it over `app://` in dev too, so there is no localhost origin. Renderer HMR stays in the browser (`pnpm dev`).
+- **Playwright `_electron`** runs against `out/` (dev build) in `pnpm check`.
+- **electron-vite target**: its table stops at Electron 44 and falls back to `node24.18` for 45; harmless. It warns "renderer config is missing", which is expected.
+- **Preload**: `rolldownOptions.output.format: "cjs"` plus `entryFileNames: "[name].cjs"` keeps it one sandboxed CJS file inside a `"type": "module"` package.
+- **Packaging with no runtime `dependencies`** works: electron-builder finds no `node_modules` and needs no pnpm hoisting. The renderer ships as `extraResources`. The `.app` is 260 MB.
+- **Fuses on arm64** need `resetAdHocDarwinSignature: true` (electron-builder `electronFuses`) when unsigned, or the edited binary won't launch. With `enableNodeCliInspectArguments: false`, Playwright can't drive the packaged app; it was smoke-tested by hand before the fuses went on.
+
 ## Recommendation
 
 - **electron-vite 6 + electron-builder 26** in a new `apps/desktop` package. electron-vite is the only option that declares Vite 8 support, it's stable rather than experimental, and it builds main, preload, and renderer from one config. electron-builder doesn't force `node-linker=hoisted` on the monorepo.

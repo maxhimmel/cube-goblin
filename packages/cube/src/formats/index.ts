@@ -172,3 +172,4 @@ export {
   isCubeCobraSource,
 } from "./cubecobra-fetch.ts";
 export type { FetchCubeOptions } from "./cubecobra-fetch.ts";
+export { AI_IMPORT_EXAMPLE, AI_IMPORT_PROMPT } from "./ai-prompt.ts";

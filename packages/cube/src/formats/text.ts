@@ -7,6 +7,7 @@ const HEADER =
   /^(?:\/\/\s*|#\s*)?(deck|main(?:deck|board)?|sideboard|side|maybe(?:board)?|commanders?|companion|considering|tokens)\s*:?\s*$/iu;
 const HASH_BOARD = /^#\s*([a-z]+)$/u;
 const CUT_HEADER = /^cut\s*:\s*$/iu;
+const CODE_FENCE = /^`{3,}[\w-]*$/u;
 const META = /^(name|author|about)\s*:\s*(.*)$/iu;
 const COMMENT = /^(?:\/\/|#)(?!\d)/u;
 const SIDEBOARD_PREFIX = /^SB:\s*/iu;
@@ -162,7 +163,7 @@ export function parseText(text: string): ParsedList {
       }
       return;
     }
-    if (COMMENT.test(line) || /^LAYOUT\s/u.test(line)) {
+    if (COMMENT.test(line) || /^LAYOUT\s/u.test(line) || CODE_FENCE.test(line)) {
       return;
     }
     const parsed = parseCardLine(line);

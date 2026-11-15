@@ -1,5 +1,10 @@
 import type { BoardChoice, ImportPreview, ImportRequestInput } from "@repo/cube/browser";
-import { CARD_STATUS_LABELS, EXPORT_FORMATS, formatLosses } from "@repo/cube/browser";
+import {
+  AI_IMPORT_PROMPT,
+  CARD_STATUS_LABELS,
+  EXPORT_FORMATS,
+  formatLosses,
+} from "@repo/cube/browser";
 import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -227,6 +232,7 @@ function ImportPage({ onDone }: { onDone: () => void }): ReactNode {
           }}
         />
       )}
+      {kind === "paste" && <AiHelper />}
       {kind === "file" && (
         <label className="transfer-file">
           <input
@@ -577,5 +583,52 @@ function ExportPage(): ReactNode {
         {save.isPending ? "Exporting…" : "Download"}
       </button>
     </div>
+  );
+}
+
+function AiHelper(): ReactNode {
+  return (
+    <details className="transfer-ai">
+      <summary>Your own format? Let an AI convert it</summary>
+      <ol>
+        <li>
+          Copy this prompt.{" "}
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => {
+              void navigator.clipboard.writeText(AI_IMPORT_PROMPT).then(
+                () => {
+                  showToast({ message: "Prompt copied", tone: "info" });
+                },
+                () => {
+                  showToast({
+                    message: "Couldn't copy; select the prompt and copy it",
+                    tone: "error",
+                  });
+                },
+              );
+            }}
+          >
+            Copy prompt
+          </button>
+        </li>
+        <li>
+          Paste it into an AI chat (ChatGPT, Claude, Gemini, or any other), then paste your list
+          right after it and send.
+        </li>
+        <li>Copy the AI's answer, paste it in the Paste box above, and press Preview.</li>
+      </ol>
+      <textarea
+        aria-label="Prompt for an AI"
+        className="transfer-text"
+        readOnly
+        rows={6}
+        value={AI_IMPORT_PROMPT}
+        onFocus={(event) => {
+          event.target.select();
+        }}
+      />
+    </details>
   );
 }

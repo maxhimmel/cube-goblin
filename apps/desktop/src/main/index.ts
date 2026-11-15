@@ -95,12 +95,22 @@ function notFound(): Response {
 }
 
 async function serveFile(root: string, pathname: string): Promise<Response> {
-  const relative = decodeURIComponent(pathname === "/" ? "/index.html" : pathname);
+  let relative: string;
+  try {
+    relative = decodeURIComponent(pathname === "/" ? "/index.html" : pathname);
+  } catch {
+    return new Response("Bad request", { status: 400 });
+  }
   const file = resolve(root, `.${relative}`);
   if (!file.startsWith(root + sep)) {
     return new Response("Bad request", { status: 400 });
   }
-  const response = await net.fetch(pathToFileURL(file).toString());
+  let response: Response;
+  try {
+    response = await net.fetch(pathToFileURL(file).toString());
+  } catch {
+    return notFound();
+  }
   if (!file.endsWith(".html")) {
     return response;
   }
@@ -136,12 +146,20 @@ function watchCube(server: WorkbenchServer): void {
   for (const path of server.watched) {
     void stat(path).then(
       (info) => {
-        const directory = info.isDirectory();
-        watch(path, { recursive: directory }, (_event, name) => {
-          changed(directory && name !== null ? join(path, name) : path);
+        const directory = info.isDirectory() ? path : dirname(path);
+        const watcher = watch(directory, { recursive: info.isDirectory() }, (_event, name) => {
+          if (name !== null) {
+            changed(join(directory, name));
+          }
+        });
+        watcher.on("error", (error) => {
+          console.warn(`Stopped watching ${directory}: ${String(error)}`);
+          watcher.close();
         });
       },
-      () => undefined,
+      (error: unknown) => {
+        console.warn(`Not watching ${path}: ${String(error)}`);
+      },
     );
   }
 }
@@ -150,6 +168,7 @@ function lockDown(): void {
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => {
     callback(false);
   });
+  session.defaultSession.setPermissionCheckHandler(() => false);
   app.on("web-contents-created", (_event, contents) => {
     contents.on("will-navigate", (event, target) => {
       if (new URL(target).origin !== ORIGIN) {
@@ -178,6 +197,19 @@ function openWindow(): void {
 }
 
 async function start(): Promise<void> {
+  if (!app.requestSingleInstanceLock()) {
+    app.quit();
+    return;
+  }
+  app.on("second-instance", () => {
+    const [window] = BrowserWindow.getAllWindows();
+    if (window) {
+      if (window.isMinimized()) {
+        window.restore();
+      }
+      window.focus();
+    }
+  });
   await app.whenReady();
   lockDown();
   const repoRoot = await chooseRoot();

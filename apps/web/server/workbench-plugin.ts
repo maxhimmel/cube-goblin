@@ -9,6 +9,9 @@ const ORIGIN = "http://workbench.local";
 function toRequest(req: IncomingMessage): Request {
   const headers = new Headers();
   for (const [name, value] of Object.entries(req.headers)) {
+    if (name.startsWith(":")) {
+      continue;
+    }
     if (typeof value === "string") {
       headers.set(name, value);
     } else if (Array.isArray(value)) {
@@ -54,20 +57,24 @@ export function workbench(options: WorkbenchOptions): Plugin {
       });
 
       server.middlewares.use((req, res, next) => {
-        workbenchServer.handle(toRequest(req)).then(
-          async (response) => {
+        if (!(req.url ?? "").startsWith("/api/")) {
+          next();
+          return;
+        }
+        workbenchServer
+          .handle(toRequest(req))
+          .then(async (response) => {
             if (response === undefined) {
               next();
               return;
             }
             await sendResponse(res, response);
-          },
-          (error: unknown) => {
+          })
+          .catch((error: unknown) => {
             res.statusCode = 500;
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ error: String(error) }));
-          },
-        );
+          });
       });
     },
   };

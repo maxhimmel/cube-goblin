@@ -1,10 +1,10 @@
+import type { CubePaths } from "@repo/cube";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Review } from "@repo/cube";
 import { extractReview, reviewSchema, slugify } from "@repo/cube";
 import lzString from "lz-string";
 import { chalk } from "zx";
-import { REVIEWS_DIR } from "../paths.ts";
 
 export function decodeReview(input: string): Review {
   const trimmed = input.trim();
@@ -32,9 +32,9 @@ async function readInput(source: string): Promise<string> {
   }
 }
 
-export async function importReview(source: string): Promise<number> {
+export async function importReview(paths: CubePaths, source: string): Promise<number> {
   const review = decodeReview(await readInput(source));
-  const dir = join(REVIEWS_DIR, slugify(review.reviewer) || "anonymous");
+  const dir = join(paths.root, "reviews", slugify(review.reviewer) || "anonymous");
   await mkdir(dir, { recursive: true });
   const path = join(dir, `${review.updatedAt.replace(/[:.]/gu, "-")}.json`);
   await writeFile(path, `${JSON.stringify(review, null, 2)}\n`);

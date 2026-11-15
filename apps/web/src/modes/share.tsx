@@ -13,11 +13,13 @@ import {
   useMoves,
   useReview,
 } from "../review-store.ts";
+import { setCubeIdentity } from "../cube-identity.ts";
 import { scopeStorage } from "../storage-scope.ts";
 import type { CubeView, Mode } from "./mode.ts";
 import { ShareSettings } from "./share-settings.tsx";
 
-scopeStorage(snapshot.id);
+scopeStorage(snapshot.id, snapshot.id);
+setCubeIdentity({ id: snapshot.id, name: snapshot.name });
 
 const view: CubeView = {
   cards: snapshot.cards,
@@ -130,6 +132,8 @@ export const mode: Mode = {
   useFilters: () => snapshot.filters,
   useLayouts: () => undefined,
   name: "share",
+  boot: () => Promise.resolve(),
+  CubeSwitcher: () => null,
   useCube: () => view,
   useTileMark: (slug) => ({ "data-vote": useReview().cards[slug]?.vote ?? undefined }),
   Toolbar,

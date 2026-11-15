@@ -1,20 +1,24 @@
+import type { CubePaths } from "@repo/cube";
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import type { CardEntry } from "@repo/cube";
 import { parseBatch, readCards, writeCard } from "@repo/cube";
 import { chalk } from "zx";
 import { createClient } from "../client.ts";
-import { CUBE_PATHS } from "../paths.ts";
 import { normalizeName, resolveEntries } from "../resolve.ts";
 
 export interface AddOptions {
   dryRun: boolean;
 }
 
-export async function addBatch(file: string, options: AddOptions): Promise<number> {
+export async function addBatch(
+  paths: CubePaths,
+  file: string,
+  options: AddOptions,
+): Promise<number> {
   const batch = basename(file, extname(file));
   const lines = parseBatch(await readFile(file, "utf8"));
-  const existing = new Map((await readCards(CUBE_PATHS)).map((card) => [card.oracleId, card]));
+  const existing = new Map((await readCards(paths)).map((card) => [card.oracleId, card]));
   const { resolved, unresolved } = await resolveEntries(createClient(), lines, (done, total) => {
     process.stderr.write(`\rResolving ${String(done)}/${String(total)}`);
   });
@@ -46,7 +50,7 @@ export async function addBatch(file: string, options: AddOptions): Promise<numbe
     existing.set(oracleId, cardEntry);
     written.push(cardEntry);
     if (!options.dryRun) {
-      await writeCard(CUBE_PATHS, cardEntry);
+      await writeCard(paths, cardEntry);
     }
     if (how === "fuzzy" && normalizeName(entry.name) !== normalizeName(card.name)) {
       console.log(`${chalk.yellow("~")} ${entry.name} ${chalk.dim("->")} ${chalk.bold(card.name)}`);

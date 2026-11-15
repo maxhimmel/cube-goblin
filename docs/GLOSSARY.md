@@ -4,7 +4,11 @@ Canonical terms for this project. One entry per term, each with a source. How to
 
 ## Cube
 
-A custom draft environment built from existing Magic cards and curated by its designer. Size and format: `cube.config.json`. ([Draftsim](https://draftsim.com/mtg-cube/))
+A custom draft environment built from existing Magic cards and curated by its designer. Name, size, and format: the `cube.config.json` in its [cube folder](#cube-folder). ([Draftsim](https://draftsim.com/mtg-cube/))
+
+## Cube folder
+
+A project-defined term with no outside source: a plain folder that holds one [Cube](#cube) as files: `cube.config.json` (a stable id, the name, format, and size), `cards/`, `tags.json`, and the rest. The workbench opens one cube folder at a time; this repo's is `cube/`, and the desktop app's "New cube" makes one in `~/Documents/Cubes/` ([T-057](tickets/T-057-multiple-cubes.md)). The id scopes the workbench's remembered view choices, so renaming a cube keeps them.
 
 ## Singleton
 

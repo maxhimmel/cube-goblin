@@ -8,6 +8,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@repo/cube": "workspace:*",
     "zx": "8.8.5"
   },
   "devDependencies": {

@@ -136,6 +136,8 @@ export const versionSummarySchema = versionSchema
   .extend({ counts: statusCountsSchema });
 
 export const cubeConfigSchema = z.strictObject({
+  id: z.string().min(1),
+  name: z.string().trim().min(1),
   format: z.enum(["winston"]),
   size: z
     .strictObject({ min: z.int().positive(), max: z.int().positive() })

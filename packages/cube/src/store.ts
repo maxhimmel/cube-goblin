@@ -34,18 +34,20 @@ export interface CubePaths {
   workbenchBatch: string;
 }
 
-export function cubePaths(repoRoot: string): CubePaths {
+export const CONFIG_FILE = "cube.config.json";
+
+export function cubePaths(cubeDir: string): CubePaths {
   return {
-    root: join(repoRoot, "cube"),
-    cardsDir: join(repoRoot, "cube", "cards"),
-    tagsFile: join(repoRoot, "cube", "tags.json"),
-    boardFile: join(repoRoot, "cube", "board.json"),
-    filtersFile: join(repoRoot, "cube", "filters.json"),
-    layoutsFile: join(repoRoot, "cube", "layouts.json"),
-    versionsDir: join(repoRoot, "cube", "versions"),
-    logFile: join(repoRoot, "cube", "log.jsonl"),
-    configFile: join(repoRoot, "cube.config.json"),
-    workbenchBatch: join(repoRoot, "cube", "inbox", `${WORKBENCH_BATCH}.txt`),
+    root: cubeDir,
+    cardsDir: join(cubeDir, "cards"),
+    tagsFile: join(cubeDir, "tags.json"),
+    boardFile: join(cubeDir, "board.json"),
+    filtersFile: join(cubeDir, "filters.json"),
+    layoutsFile: join(cubeDir, "layouts.json"),
+    versionsDir: join(cubeDir, "versions"),
+    logFile: join(cubeDir, "log.jsonl"),
+    configFile: join(cubeDir, CONFIG_FILE),
+    workbenchBatch: join(cubeDir, "inbox", `${WORKBENCH_BATCH}.txt`),
   };
 }
 

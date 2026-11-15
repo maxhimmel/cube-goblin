@@ -14,14 +14,13 @@ const FIXTURE = fileURLToPath(new URL("fixture", import.meta.url));
 
 interface Workbench {
   url: string;
-  root: string;
+  cubeDir: string;
   cardsDir: string;
 }
 
-async function resetCube(root: string): Promise<void> {
-  await rm(join(root, "cube"), { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
-  await cp(join(FIXTURE, "cube"), join(root, "cube"), { recursive: true });
-  await cp(join(FIXTURE, "cube.config.json"), join(root, "cube.config.json"));
+async function resetCube(cubeDir: string): Promise<void> {
+  await rm(cubeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+  await cp(join(FIXTURE, "cube"), cubeDir, { recursive: true });
 }
 
 const test = base.extend<{ freshCube: undefined }, { workbench: Workbench }>({
@@ -30,7 +29,8 @@ const test = base.extend<{ freshCube: undefined }, { workbench: Workbench }>({
     async ({}, use, workerInfo) => {
       const root = await mkdtemp(join(tmpdir(), "workbench-"));
       await cp(FIXTURE, root, { recursive: true });
-      process.env["CUBE_REPO_ROOT"] = root;
+      const cubeDir = join(root, "cube");
+      process.env["CUBE_DIR"] = cubeDir;
       const server = await createServer({
         root: WEB_ROOT,
         configLoader: "runner",
@@ -43,7 +43,7 @@ const test = base.extend<{ freshCube: undefined }, { workbench: Workbench }>({
       if (url === undefined) {
         throw new Error("workbench server has no URL");
       }
-      await use({ url, root, cardsDir: join(root, "cube", "cards") });
+      await use({ url, cubeDir, cardsDir: join(cubeDir, "cards") });
       await server.close();
       await rm(root, { recursive: true, force: true });
     },
@@ -51,7 +51,7 @@ const test = base.extend<{ freshCube: undefined }, { workbench: Workbench }>({
   ],
   freshCube: [
     async ({ workbench }, use) => {
-      await resetCube(workbench.root);
+      await resetCube(workbench.cubeDir);
       await use(undefined);
     },
     { auto: true },
@@ -208,7 +208,7 @@ test("settings save the cube's format and target size to cube.config.json", asyn
   page,
   workbench,
 }) => {
-  const configFile = join(workbench.root, "cube.config.json");
+  const configFile = join(workbench.cubeDir, "cube.config.json");
   await page.goto(`${workbench.url}#/`);
   await expect(page.getByText("target 90–90")).toBeVisible();
   await page.getByRole("button", { name: "Settings" }).click();
@@ -227,7 +227,12 @@ test("settings save the cube's format and target size to cube.config.json", asyn
   await expect(page.getByRole("status")).toContainText("Saved cube settings");
   await expect
     .poll(async () => JSON.parse(await readFile(configFile, "utf8")) as unknown)
-    .toEqual({ format: "winston", size: { min: 40, max: 45 } });
+    .toEqual({
+      id: "fixture-cube",
+      name: "Max's Cube",
+      format: "winston",
+      size: { min: 40, max: 45 },
+    });
   await panel.getByRole("button", { name: "Close" }).click();
   await expect(page.getByText("target 40–45")).toBeVisible();
 });

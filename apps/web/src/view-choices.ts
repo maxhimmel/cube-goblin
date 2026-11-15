@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { scoped } from "./storage-scope.ts";
+import { STORAGE_NAMES, storageKey } from "./storage-scope.ts";
 
 export const REMEMBERED = {
   "/insights": [["scope"]],
@@ -16,9 +16,6 @@ export type RememberedPath = keyof typeof REMEMBERED;
 const FOLDED: Partial<Record<RememberedPath, readonly string[]>> = {
   "/tags": ["/board"],
 };
-
-const SEARCH_KEY = "maxs-cube:view-search:v1";
-const STATE_KEY = "maxs-cube:view-state:v1";
 
 type Choices = Record<string, string>;
 
@@ -86,8 +83,8 @@ export function rememberSearch(
   search: Record<string, unknown>,
   store: KeyValueStore | undefined = browserStore(),
 ): void {
-  const all = read(store, scoped(SEARCH_KEY), storedSchema) ?? {};
-  write(store, scoped(SEARCH_KEY), { ...all, [path]: pickChoices(path, search) });
+  const all = read(store, storageKey(STORAGE_NAMES.viewSearch), storedSchema) ?? {};
+  write(store, storageKey(STORAGE_NAMES.viewSearch), { ...all, [path]: pickChoices(path, search) });
 }
 
 export function recallSearch(
@@ -95,7 +92,7 @@ export function recallSearch(
   search: Record<string, unknown>,
   store: KeyValueStore | undefined = browserStore(),
 ): Choices | undefined {
-  const all = read(store, scoped(SEARCH_KEY), storedSchema) ?? {};
+  const all = read(store, storageKey(STORAGE_NAMES.viewSearch), storedSchema) ?? {};
   const folded = all[path] ? [] : (FOLDED[path] ?? []).map((old) => all[old] ?? {});
   const merged: Choices = Object.assign({}, ...folded, all[path] ?? {}) as Choices;
   const saved = pickChoices(path, merged);
@@ -109,7 +106,9 @@ export function recallState<T>(
   schema: z.ZodType<T>,
   store: KeyValueStore | undefined = browserStore(),
 ): T | undefined {
-  const parsed = schema.safeParse(read(store, scoped(STATE_KEY), stateSchema)?.[key]);
+  const parsed = schema.safeParse(
+    read(store, storageKey(STORAGE_NAMES.viewState), stateSchema)?.[key],
+  );
   return parsed.success ? parsed.data : undefined;
 }
 
@@ -120,8 +119,8 @@ export function rememberState(
   value: unknown,
   store: KeyValueStore | undefined = browserStore(),
 ): void {
-  const all = read(store, scoped(STATE_KEY), stateSchema) ?? {};
-  write(store, scoped(STATE_KEY), { ...all, [key]: value });
+  const all = read(store, storageKey(STORAGE_NAMES.viewState), stateSchema) ?? {};
+  write(store, storageKey(STORAGE_NAMES.viewState), { ...all, [key]: value });
   for (const listener of stateListeners.get(key) ?? []) {
     listener(value);
   }
@@ -161,7 +160,9 @@ export function recallStates(
   store: KeyValueStore | undefined = browserStore(),
 ): Record<string, unknown> {
   return Object.fromEntries(
-    Object.entries(read(store, scoped(STATE_KEY), stateSchema) ?? {}).filter(([key]) => match(key)),
+    Object.entries(read(store, storageKey(STORAGE_NAMES.viewState), stateSchema) ?? {}).filter(
+      ([key]) => match(key),
+    ),
   );
 }
 
@@ -170,9 +171,9 @@ export function replaceStates(
   values: Record<string, unknown>,
   store: KeyValueStore | undefined = browserStore(),
 ): void {
-  const kept = Object.entries(read(store, scoped(STATE_KEY), stateSchema) ?? {}).filter(
-    ([key]) => !match(key),
-  );
+  const kept = Object.entries(
+    read(store, storageKey(STORAGE_NAMES.viewState), stateSchema) ?? {},
+  ).filter(([key]) => !match(key));
   const added = Object.entries(values).filter(([key]) => match(key));
-  write(store, scoped(STATE_KEY), Object.fromEntries([...kept, ...added]));
+  write(store, storageKey(STORAGE_NAMES.viewState), Object.fromEntries([...kept, ...added]));
 }

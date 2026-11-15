@@ -13,6 +13,7 @@ export { parseBatch } from "./parse.ts";
 export type { BatchLine } from "./parse.ts";
 export { cardStatusSchema } from "./schema.ts";
 export {
+  CONFIG_FILE,
   WORKBENCH_BATCH,
   appendLog,
   cubePaths,
@@ -61,4 +62,12 @@ export { readLogState, recordEdit, revertEntries, revertRequestSchema } from "./
 export { backfill, commitMessage, gitSha, withoutLogged } from "./backfill.ts";
 export type { Backfill, Commit } from "./backfill.ts";
 export { migrateLegacyCube } from "./legacy.ts";
+export {
+  NotACubeFolder,
+  STARTER_CONFIG,
+  createCubeFolder,
+  findCubeFolder,
+  openCubeFolder,
+} from "./cube-folder.ts";
+export type { CubeFolder } from "./cube-folder.ts";
 export type { RecordOptions, RevertResult, StatsOf } from "./save-log.ts";

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { z } from "zod";
-import { scoped } from "../storage-scope.ts";
+import { STORAGE_NAMES, storageKey } from "../storage-scope.ts";
 
 export interface BlockSpec {
   id: string;
@@ -35,7 +35,6 @@ export type Breakpoint = keyof typeof BREAKPOINTS;
 
 export const ROW_HEIGHT = 24;
 export const COLLAPSED_H = 2;
-const STORAGE_KEY = "maxs-cube:insights-layout:v1";
 
 const itemSchema = z.object({
   i: z.string(),
@@ -102,7 +101,7 @@ interface Stored {
 function load(): Stored {
   try {
     const parsed = storedSchema.parse(
-      JSON.parse(localStorage.getItem(scoped(STORAGE_KEY)) ?? "null"),
+      JSON.parse(localStorage.getItem(storageKey(STORAGE_NAMES.insightsLayout)) ?? "null"),
     );
     const layouts = Object.fromEntries(
       BREAKPOINT_IDS.map((bp) => [bp, parsed.layouts[bp] ?? []]),
@@ -115,7 +114,7 @@ function load(): Stored {
 
 function save(stored: Stored): void {
   try {
-    localStorage.setItem(scoped(STORAGE_KEY), JSON.stringify(stored));
+    localStorage.setItem(storageKey(STORAGE_NAMES.insightsLayout), JSON.stringify(stored));
   } catch {
     return;
   }

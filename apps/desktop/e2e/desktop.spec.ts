@@ -2,7 +2,7 @@ import { cp, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ElectronApplication, Page } from "@playwright/test";
+import type { ElectronApplication, Locator, Page } from "@playwright/test";
 import { _electron as electron, test as base, expect } from "@playwright/test";
 
 const DESKTOP_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -13,26 +13,51 @@ interface Desktop {
   app: ElectronApplication;
   page: Page;
   root: string;
+  cubeDir: string;
   cardsDir: string;
+  cubesHome: string;
+  relaunch: (options?: { cubeDir?: string }) => Promise<Page>;
+}
+
+function launch(root: string, cubeDir: string | undefined): Promise<ElectronApplication> {
+  const env = { ...process.env };
+  delete env["CUBE_DIR"];
+  return electron.launch({
+    args: [DESKTOP_ROOT],
+    env: {
+      ...env,
+      ...(cubeDir === undefined ? {} : { CUBE_DIR: cubeDir }),
+      CUBE_USER_DATA: join(root, "user-data"),
+      CUBES_HOME: join(root, "cubes"),
+      CUBE_CACHE_DIR: CACHE_DIR,
+      CUBE_DESKTOP_HIDDEN: "1",
+    },
+  });
 }
 
 const test = base.extend<{ desktop: Desktop }>({
   // eslint-disable-next-line no-empty-pattern
   desktop: async ({}, provide) => {
     const root = await mkdtemp(join(tmpdir(), "desktop-"));
-    await cp(FIXTURE, root, { recursive: true });
-    const app = await electron.launch({
-      args: [DESKTOP_ROOT],
-      env: {
-        ...process.env,
-        CUBE_REPO_ROOT: root,
-        CUBE_USER_DATA: join(root, "user-data"),
-        CUBE_CACHE_DIR: CACHE_DIR,
-        CUBE_DESKTOP_HIDDEN: "1",
+    const cubeDir = join(root, "cube");
+    await cp(join(FIXTURE, "cube"), cubeDir, { recursive: true });
+    let app = await launch(root, cubeDir);
+    const desktop: Desktop = {
+      app,
+      page: await app.firstWindow(),
+      root,
+      cubeDir,
+      cardsDir: join(cubeDir, "cards"),
+      cubesHome: join(root, "cubes"),
+      relaunch: async (options = {}) => {
+        await app.close();
+        app = await launch(root, options.cubeDir);
+        desktop.app = app;
+        desktop.page = await app.firstWindow();
+        return desktop.page;
       },
-    });
-    const page = await app.firstWindow();
-    await provide({ app, page, root, cardsDir: join(root, "cube", "cards") });
+    };
+    await provide(desktop);
     await app.close();
     await rm(root, { recursive: true, force: true });
   },
@@ -73,10 +98,15 @@ test("an edit on disk shows up without a reload", async ({ desktop }) => {
 });
 
 test("config saved by rename keeps updating the app", async ({ desktop }) => {
-  const { page, root } = desktop;
-  const file = join(root, "cube.config.json");
+  const { page, cubeDir } = desktop;
+  const file = join(cubeDir, "cube.config.json");
   const replace = async (max: number): Promise<void> => {
-    const config = { format: "winston", size: { min: 90, max } };
+    const config = {
+      id: "fixture-cube",
+      name: "Max's Cube",
+      format: "winston",
+      size: { min: 90, max },
+    };
     await writeFile(`${file}.tmp`, `${JSON.stringify(config, null, 2)}\n`);
     await rename(`${file}.tmp`, file);
   };
@@ -116,7 +146,7 @@ test("the renderer is sandboxed and gets only the desktop bridge", async ({ desk
     process: typeof (window as { process?: unknown }).process,
   }));
   expect(exposed).toEqual({
-    bridge: ["onCubeChanged"],
+    bridge: ["onCubeChanged", "cubes"],
     require: "undefined",
     process: "undefined",
   });
@@ -131,4 +161,85 @@ test("the renderer is sandboxed and gets only the desktop bridge", async ({ desk
   await page.waitForTimeout(1000);
   expect(page.url()).toBe("app://bundle/");
   expect(await page.evaluate(() => (window as { stayed?: boolean }).stayed)).toBe(true);
+});
+
+async function switcher(page: Page): Promise<Locator> {
+  await page.getByRole("button", { name: "Switch cube" }).click();
+  const menu = page.getByRole("group", { name: "Cubes" });
+  await expect(menu).toBeVisible();
+  return menu;
+}
+
+async function settingsTab(page: Page): Promise<string | null> {
+  await page.getByRole("button", { name: "Settings" }).click();
+  const selected = page
+    .getByRole("dialog", { name: "Settings" })
+    .getByRole("tab", { selected: true });
+  const name = await selected.textContent();
+  await page
+    .getByRole("dialog", { name: "Settings" })
+    .getByRole("button", { name: "Close" })
+    .click();
+  return name;
+}
+
+test("two cubes keep their own cards, history, and view choices, and the app reopens the last", async ({
+  desktop,
+}) => {
+  let page = desktop.page;
+  const brand = (): Locator => page.locator(".brand");
+  const tiles = (): Locator => page.locator(".lab-image img");
+  await expect(brand()).toHaveText("Max's Cube");
+  await page.evaluate(() => {
+    window.location.hash = "#/card/abrade";
+  });
+  await page.getByLabel("Notes").fill("only in the first cube");
+  await page.getByLabel("Notes").blur();
+  await expect.poll(() => notes(desktop.cardsDir, "abrade")).toBe("only in the first cube");
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("tab", { name: "Forge" }).click();
+  await page
+    .getByRole("dialog", { name: "Settings" })
+    .getByRole("button", { name: "Close" })
+    .click();
+  await page.evaluate(() => {
+    window.location.hash = "#/cards";
+  });
+  const firstCount = await tiles().count();
+  expect(firstCount).toBeGreaterThan(0);
+
+  const menu = await switcher(page);
+  await menu.getByLabel("New cube name").fill("Second Cube");
+  await menu.getByRole("button", { name: "New cube" }).click();
+  await expect(brand()).toHaveText("Second Cube");
+  const secondDir = join(desktop.cubesHome, "second-cube");
+  const secondConfig: unknown = JSON.parse(
+    await readFile(join(secondDir, "cube.config.json"), "utf8"),
+  );
+  expect(secondConfig).toMatchObject({ name: "Second Cube", format: "winston" });
+  await expect(tiles()).toHaveCount(0);
+  expect(await settingsTab(page)).toBe("Cube");
+  await page.evaluate(() => {
+    window.location.hash = "#/history";
+  });
+  await expect(page.getByTestId("log-entry")).toHaveCount(0);
+
+  await (await switcher(page)).getByRole("button", { name: "Max's Cube", exact: true }).click();
+  await expect(brand()).toHaveText("Max's Cube");
+  await expect(page.getByTestId("log-entry").first()).toBeVisible();
+  expect(await settingsTab(page)).toBe("Forge");
+  await page.evaluate(() => {
+    window.location.hash = "#/cards";
+  });
+  await expect(tiles()).toHaveCount(firstCount);
+
+  await (await switcher(page)).getByRole("button", { name: "Second Cube", exact: true }).click();
+  await expect(brand()).toHaveText("Second Cube");
+  page = await desktop.relaunch();
+  await expect(brand()).toHaveText("Second Cube");
+
+  const recents = await switcher(page);
+  await recents.getByRole("button", { name: "Remove Max's Cube from the list" }).click();
+  await expect(recents.getByRole("button", { name: "Max's Cube", exact: true })).toHaveCount(0);
+  expect(await notes(desktop.cardsDir, "abrade")).toBe("only in the first cube");
 });

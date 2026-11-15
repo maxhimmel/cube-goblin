@@ -1,4 +1,6 @@
 {
+  "id": "fixture-cube",
+  "name": "Max's Cube",
   "format": "winston",
   "size": {
     "min": 90,

@@ -5,7 +5,7 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 import { manaFontWoff2Only } from "./server/mana-font-plugin.ts";
 import { workbench } from "./server/workbench-plugin.ts";
 
-const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
+const REPO_CUBE = fileURLToPath(new URL("../../cube", import.meta.url));
 
 export default defineConfig(({ command, mode }) => {
   const desktop = mode === "desktop";
@@ -15,7 +15,7 @@ export default defineConfig(({ command, mode }) => {
       react(),
       ...(desktop ? [] : [viteSingleFile()]),
       workbench({
-        repoRoot: process.env["CUBE_REPO_ROOT"] ?? REPO_ROOT,
+        cubeDir: process.env["CUBE_DIR"] ?? REPO_CUBE,
         cacheDir: fileURLToPath(new URL("../../.cache/scryfall", import.meta.url)),
         imageCacheDir: fileURLToPath(new URL("../../.cache/scryfall-images", import.meta.url)),
       }),

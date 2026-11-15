@@ -1,5 +1,7 @@
 #!/usr/bin/env tsx
 import { parseArgs } from "node:util";
+import type { CubePaths } from "@repo/cube";
+import { NotACubeFolder, openCubeFolder } from "@repo/cube";
 import { ScryfallError } from "@repo/scryfall";
 import { chalk } from "zx";
 import { createClient } from "./client.ts";
@@ -12,6 +14,7 @@ import { snapshot } from "./commands/snapshot.ts";
 import { tagFunctions } from "./commands/tag-functions.ts";
 import { validate } from "./commands/validate.ts";
 import { formatCard, formatCardLine } from "./format.ts";
+import { REPO_CUBE } from "./paths.ts";
 
 const USAGE = `Usage: cube <command> [options]
 
@@ -19,7 +22,7 @@ Commands:
   card <name>          Look up one card (exact name; --fuzzy for partial)
   cards <name...>      Look up many cards at once
   search <query>       Scryfall search syntax, e.g. "o:graveyard t:sorcery"
-  add <batch-file>     Parse a batch list, resolve on Scryfall, write cube/cards/*.json
+  add <batch-file>     Parse a batch list, resolve on Scryfall, write <cube>/cards/*.json
   validate             Check cube files: schema, singleton, tags, board, size
   pin-printings        Save each card's current printing so Scryfall can't change it
   tag-functions        Add Scryfall function tags (removal, ramp, …) to every card, once
@@ -29,6 +32,7 @@ Commands:
   review import <src>  Import a friend's review (saved .html, code, or .json)
 
 Options:
+  --cube <dir>         Cube folder to work on (default: this repo's cube/)
   --fuzzy              Fuzzy name match (card)
   --limit <n>          Max results (search, default 20)
   --json               Print raw JSON
@@ -38,6 +42,7 @@ Options:
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
+    cube: { type: "string", default: REPO_CUBE },
     fuzzy: { type: "boolean", default: false },
     limit: { type: "string", default: "20" },
     json: { type: "boolean", default: false },
@@ -52,6 +57,10 @@ function print(data: unknown, pretty: () => string): void {
   console.log(values.json ? JSON.stringify(data, null, 2) : pretty());
 }
 
+async function cube(): Promise<CubePaths> {
+  return (await openCubeFolder(values.cube)).paths;
+}
+
 async function run(): Promise<number> {
   if (values.help || command === undefined) {
     console.log(USAGE);
@@ -64,25 +73,25 @@ async function run(): Promise<number> {
         console.error("add: batch file required");
         return 1;
       }
-      return addBatch(file, { dryRun: values["dry-run"] });
+      return addBatch(await cube(), file, { dryRun: values["dry-run"] });
     }
     case "validate": {
-      return validate();
+      return validate(await cube());
     }
     case "pin-printings": {
-      return pinPrintings(values["dry-run"]);
+      return pinPrintings(await cube(), values["dry-run"]);
     }
     case "tag-functions": {
-      return tagFunctions(values["dry-run"]);
+      return tagFunctions(await cube(), values["dry-run"]);
     }
     case "backfill-log": {
-      return backfillLog(values["dry-run"]);
+      return backfillLog(await cube(), values["dry-run"]);
     }
     case "snapshot": {
-      return snapshot();
+      return snapshot(await cube());
     }
     case "share-version": {
-      return shareVersion();
+      return shareVersion(await cube());
     }
     case "review": {
       const [action, source] = rest;
@@ -90,7 +99,7 @@ async function run(): Promise<number> {
         console.error("review: usage: review import <file|code>");
         return 1;
       }
-      return importReview(source);
+      return importReview(await cube(), source);
     }
     case "card": {
       const name = rest.join(" ");
@@ -139,6 +148,9 @@ try {
 } catch (error) {
   if (error instanceof ScryfallError) {
     console.error(chalk.red(`Scryfall ${String(error.status)} ${error.code}: ${error.message}`));
+    process.exitCode = 1;
+  } else if (error instanceof NotACubeFolder) {
+    console.error(chalk.red(error.message));
     process.exitCode = 1;
   } else {
     throw error;

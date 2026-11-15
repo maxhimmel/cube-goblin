@@ -532,3 +532,64 @@ textarea {
   border: 0;
   clip-path: inset(50%);
 }
+
+.brand-group {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.brand-group .menu > button {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+}
+
+.cube-menu {
+  display: grid;
+  gap: 8px;
+  width: 280px;
+}
+
+.cube-recents {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cube-recent {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cube-open {
+  flex: 1;
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cube-recent[data-current="true"] .cube-open {
+  font-weight: 700;
+}
+
+.cube-remove {
+  font-size: var(--fs-xs);
+}
+
+.cube-new {
+  display: flex;
+  gap: 6px;
+}
+
+.cube-new input {
+  flex: 1;
+  min-width: 0;
+}

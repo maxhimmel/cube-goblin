@@ -6,6 +6,7 @@ import { CardPane } from "./card-pane.tsx";
 import type { ViewIconName } from "./icons.tsx";
 import { ViewIcon } from "./icons.tsx";
 import { TopbarSlot } from "./topbar-slot.tsx";
+import { useCubeName } from "./cube-identity.ts";
 
 const TypeScalePanel = import.meta.env.DEV ? lazy(() => import("./type-scale.tsx")) : null;
 
@@ -23,6 +24,7 @@ const VIEWS: readonly {
 
 export function Shell({ children }: { children: ReactNode }): ReactNode {
   const { card, add, replaces } = useSearch({ strict: false });
+  const cubeName = useCubeName();
   const topbar = useRef<HTMLElement>(null);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
 
@@ -52,9 +54,12 @@ export function Shell({ children }: { children: ReactNode }): ReactNode {
   return (
     <div className="shell" data-pane={card !== undefined}>
       <header className="topbar" ref={topbar}>
-        <Link to="/" className="brand">
-          Max&apos;s Cube
-        </Link>
+        <div className="brand-group">
+          <Link to="/" className="brand">
+            {cubeName}
+          </Link>
+          <mode.CubeSwitcher />
+        </div>
         <nav className="views" aria-label="Views">
           {VIEWS.filter((view) => !view.workbench || mode.name === "workbench").map((view) => (
             <Link

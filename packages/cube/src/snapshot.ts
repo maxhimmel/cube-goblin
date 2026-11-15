@@ -23,6 +23,7 @@ export const snapshotCardSchema = z.strictObject({
 
 export const snapshotSchema = z.strictObject({
   id: z.string(),
+  name: z.string().min(1),
   createdAt: z.string(),
   cards: z.array(snapshotCardSchema),
   vocabulary: z.array(tagSchema),

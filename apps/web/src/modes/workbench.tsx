@@ -29,8 +29,12 @@ import {
   FILTERS_QUERY_KEY,
   LAYOUTS_QUERY_KEY,
   CUBE_QUERY_KEY,
+  fetchConfig,
   fetchCube,
 } from "../workbench/api.ts";
+import { setCubeIdentity } from "../cube-identity.ts";
+import { scopeStorage } from "../storage-scope.ts";
+import { CubeSwitcher } from "../workbench/cube-switcher.tsx";
 import { boardSavesPending } from "../workbench/board.ts";
 import { AddPanel } from "../workbench/add-panel.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
@@ -144,6 +148,15 @@ export const mode: Mode = {
   putLayout,
   deleteLayout,
   name: "workbench",
+  boot: async () => {
+    const config = await queryClient.query({
+      queryKey: CONFIG_QUERY_KEY,
+      queryFn: fetchConfig,
+    });
+    scopeStorage(config.id, "");
+    setCubeIdentity(config);
+  },
+  CubeSwitcher,
   moveCard: (card, status) => {
     if (card.status === status) {
       return;

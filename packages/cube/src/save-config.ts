@@ -1,7 +1,7 @@
 import type { CubeConfig } from "./schema.ts";
 import { cubeConfigSchema } from "./schema.ts";
 import type { CubePaths } from "./store.ts";
-import { writeConfig } from "./store.ts";
+import { readConfig, writeConfig } from "./store.ts";
 
 export type ConfigResult =
   { ok: true; config: CubeConfig } | { ok: false; status: 400; error: string };
@@ -14,6 +14,10 @@ export async function saveConfig(paths: CubePaths, input: unknown): Promise<Conf
       status: 400,
       error: parsed.error.issues.map((issue) => issue.message).join("\n"),
     };
+  }
+  const { id } = await readConfig(paths);
+  if (parsed.data.id !== id) {
+    return { ok: false, status: 400, error: "A cube's id can't change" };
   }
   await writeConfig(paths, parsed.data);
   return { ok: true, config: parsed.data };

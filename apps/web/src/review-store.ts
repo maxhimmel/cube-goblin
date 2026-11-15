@@ -2,11 +2,14 @@ import type { CardReview, PendingMoveEntry, Review, Vote } from "@repo/cube/brow
 import { REVIEW_SCRIPT_ID, embedReview, reviewSchema } from "@repo/cube/browser";
 import lzString from "lz-string";
 import { useSyncExternalStore } from "react";
+import { cubeFileName } from "./cube-identity.ts";
 import { snapshot } from "./data.ts";
+import { adoptLegacyKey } from "./storage-scope.ts";
 
 export const PRISTINE_HTML = `<!doctype html>\n${document.documentElement.outerHTML}`;
 
-const STORAGE_KEY = `maxs-cube:review:${snapshot.id}`;
+const STORAGE_KEY = `cube:review@${snapshot.id}`;
+adoptLegacyKey(`maxs-cube:review:${snapshot.id}`, STORAGE_KEY);
 
 function emptyReview(): Review {
   return {
@@ -121,7 +124,7 @@ export function downloadSavedDocument(): void {
       .toLowerCase()
       .replace(/[^a-z0-9]+/gu, "-") || "review";
   link.href = url;
-  link.download = `maxs-cube-${who}.html`;
+  link.download = cubeFileName(who);
   link.click();
   setTimeout(() => {
     URL.revokeObjectURL(url);

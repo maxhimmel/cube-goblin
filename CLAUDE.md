@@ -11,7 +11,7 @@ Speak concisely; sacrifice grammar.
 - `docs/VISION.md`: what we're building and why. Read before planning features or UX.
 - `docs/design/views.md`: workbench views and which job each serves. Read before UI work.
 - `docs/GLOSSARY.md`: canonical terms. Read before naming things in code, docs, or UI.
-- `cube.config.json`: cube parameters (format, size). Read values from here; never hardcode them.
+- `cube/cube.config.json`: this repo's cube parameters (id, name, format, size). Read values from here; never hardcode them.
 - `docs/research/`: findings with sources. Check before researching a topic; save new findings here.
 
 ## Commands

@@ -111,6 +111,11 @@ export class OracleTagStore {
     return stored;
   }
 
+  async has(roots: readonly string[]): Promise<boolean> {
+    const stored = await this.#read();
+    return stored !== undefined && sameRoots(stored, roots);
+  }
+
   async load(roots: readonly string[]): Promise<OracleTagLoad> {
     const stored = await this.#read();
     const usable = stored && sameRoots(stored, roots) ? stored : undefined;

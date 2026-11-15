@@ -9,6 +9,7 @@ export const COLLECTION_MAX_IDENTIFIERS = 75;
 export const CARD_ENDPOINT_INTERVAL_MS = 500;
 export const DEFAULT_INTERVAL_MS = 100;
 export const BULK_HOST = "data.scryfall.io";
+export const REQUEST_TIMEOUT_MS = 15_000;
 
 export class ScryfallError extends Error {
   readonly status: number;
@@ -52,6 +53,18 @@ function oracleKey(oracleId: string): string {
 
 function printKey(id: string): string {
   return `print:${id}`;
+}
+
+function printingsKey(oracleId: string): string {
+  return `printings:${oracleId}`;
+}
+
+const printingsSchema = cardSchema.array();
+
+export interface CachedEntry {
+  card: Card | undefined;
+  bytes: number;
+  missing: string[];
 }
 
 export function isUnreachable(error: unknown): boolean {
@@ -124,6 +137,7 @@ export class ScryfallClient {
     await this.#throttle(spec.path);
     const init: RequestInit = {
       method: spec.body === undefined ? "GET" : "POST",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: {
         "User-Agent": this.#userAgent,
         Accept: "application/json",
@@ -296,7 +310,7 @@ export class ScryfallClient {
     await this.#cache.set(printKey(card.id), card);
   }
 
-  async printings(oracleId: string): Promise<Card[]> {
+  async #fetchPrintings(oracleId: string): Promise<Card[]> {
     const cards: Card[] = [];
     let page = 1;
     let hasMore = true;
@@ -329,6 +343,43 @@ export class ScryfallClient {
       page += 1;
     }
     return cards;
+  }
+
+  async printings(oracleId: string): Promise<Card[]> {
+    try {
+      const cards = await this.#fetchPrintings(oracleId);
+      await this.#cache.set(printingsKey(oracleId), cards);
+      return cards;
+    } catch (error) {
+      const stale = isUnreachable(error) ? await this.cachedPrintings(oracleId) : undefined;
+      if (stale === undefined) {
+        throw error;
+      }
+      return stale;
+    }
+  }
+
+  async cachedPrintings(oracleId: string): Promise<Card[] | undefined> {
+    const stale = printingsSchema.safeParse(await this.#cache.peek(printingsKey(oracleId)));
+    return stale.success ? stale.data : undefined;
+  }
+
+  async cachedEntry(entry: PrintedEntry): Promise<CachedEntry> {
+    const keys = [
+      oracleKey(entry.oracleId),
+      printingsKey(entry.oracleId),
+      ...(entry.printing === undefined ? [] : [printKey(entry.printing)]),
+    ];
+    const sizes = await Promise.all(keys.map((key) => this.#cache.size(key)));
+    const shownKey = entry.printing === undefined ? keys[0] : keys[2];
+    const shown = cardSchema.safeParse(
+      shownKey === undefined ? undefined : await this.#cache.peek(shownKey),
+    );
+    return {
+      card: shown.success ? shown.data : undefined,
+      bytes: sizes.reduce<number>((sum, size) => sum + (size ?? 0), 0),
+      missing: keys.filter((_key, index) => sizes[index] === undefined),
+    };
   }
 
   bulkData(type: string): Promise<BulkData> {

@@ -5,12 +5,13 @@ export {
   BULK_HOST,
   CARD_ENDPOINT_INTERVAL_MS,
   COLLECTION_MAX_IDENTIFIERS,
+  REQUEST_TIMEOUT_MS,
   ScryfallClient,
   ScryfallError,
   chunk,
   isUnreachable,
 } from "./client.ts";
-export type { CardIdentifier, PrintedEntry, ScryfallClientOptions } from "./client.ts";
+export type { CachedEntry, CardIdentifier, PrintedEntry, ScryfallClientOptions } from "./client.ts";
 export { cardFaces, displayFields, imageUrl, printingLabels, printingSummary } from "./card.ts";
 export type { DisplayFields, Printing } from "./card.ts";
 export type { BulkData, Card, CardFace, CardList, ImageUris, ScryfallTag } from "./schemas.ts";

@@ -8,12 +8,16 @@ This file is the order of work and the session handoff. Each ticket is a file in
 - **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: **History** at `#/history` merges the change log and versions: one-line entries, versions as markers on the stats timeline, and a compare pane between any two points, before or after any entry ([T-048](tickets/T-048-history.md)). Commits run fast staged-file checks and merges run the full `pnpm check` ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
 - **Polish pass done** ([T-043](tickets/T-043-polish-pass.md)): papercuts ([T-044](tickets/T-044-papercuts.md)), top bar and settings ([T-045](tickets/T-045-top-bar-and-settings.md)), **Forge** at `#/` ([T-046](tickets/T-046-wall-and-lab.md), [T-052](tickets/T-052-forge-polish.md), [T-053](tickets/T-053-forge-charts-polish.md)), one **Tags** view ([T-047](tickets/T-047-tag-workspace.md)), History ([T-048](tickets/T-048-history.md)), Insights cut to the deep charts ([T-049](tickets/T-049-insights-trim.md)), favicon, Forge's look shared by every view (drag stipple and tile actions included), and a dev-only type scale panel ("Aa", bottom left in `pnpm dev`) ([T-050](tickets/T-050-visual-system.md)).
 - **Review round trip** ([T-051](tickets/T-051-share-doc-suggestions.md)): reviews carry pending moves; each export saves a version as their base; share top bar has one Review menu.
-- **Next step**: the user sends `exports/maxs-cube-f4cf50841c15.html` to a friend. Then [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md). Type scale CSS: [T-050](tickets/T-050-visual-system.md).
+- **Next step**: [T-056](tickets/T-056-desktop-app.md) to [T-059](tickets/T-059-import-export-formats.md) in order, Electron spike first. Then [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md). Pending: the user sends `exports/maxs-cube-f4cf50841c15.html` to a friend.
 
 ## Now
 
 ## Next
 
+- [T-056: Desktop app](tickets/T-056-desktop-app.md)
+- [T-057: Multiple cubes](tickets/T-057-multiple-cubes.md)
+- [T-058: Make a cube available offline](tickets/T-058-offline.md)
+- [T-059: Import and export other sites' formats](tickets/T-059-import-export-formats.md)
 - [T-054: Reviews view](tickets/T-054-reviews-view.md)
 - [T-055: Forge overlay](tickets/T-055-forge-overlay.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)

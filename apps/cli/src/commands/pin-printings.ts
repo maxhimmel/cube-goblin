@@ -1,10 +1,10 @@
+import type { CubePaths } from "@repo/cube";
 import { readCards, writeCard } from "@repo/cube";
 import { chalk } from "zx";
 import { createClient } from "../client.ts";
-import { CUBE_PATHS } from "../paths.ts";
 
-export async function pinPrintings(dryRun: boolean): Promise<number> {
-  const entries = await readCards(CUBE_PATHS);
+export async function pinPrintings(paths: CubePaths, dryRun: boolean): Promise<number> {
+  const entries = await readCards(paths);
   const loose = entries.filter((entry) => entry.printing === undefined);
   const { cards, missing } = await createClient().byOracleIds(loose.map((entry) => entry.oracleId));
   if (missing.length > 0) {
@@ -15,7 +15,7 @@ export async function pinPrintings(dryRun: boolean): Promise<number> {
   for (const entry of loose) {
     const card = byOracle.get(entry.oracleId);
     if (card && !dryRun) {
-      await writeCard(CUBE_PATHS, { ...entry, printing: card.id });
+      await writeCard(paths, { ...entry, printing: card.id });
     }
   }
   const verb = dryRun ? "Would pin" : "Pinned";

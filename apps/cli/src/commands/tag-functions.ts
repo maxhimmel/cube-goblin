@@ -1,3 +1,4 @@
+import type { CubePaths } from "@repo/cube";
 import {
   FUNCTION_ORACLE_TAG_IDS,
   functionTags,
@@ -9,10 +10,9 @@ import {
 } from "@repo/cube";
 import { chalk } from "zx";
 import { createClient, createOracleTagStore } from "../client.ts";
-import { CUBE_PATHS } from "../paths.ts";
 
-export async function tagFunctions(dryRun: boolean): Promise<number> {
-  const [entries, vocabulary] = await Promise.all([readCards(CUBE_PATHS), readTags(CUBE_PATHS)]);
+export async function tagFunctions(paths: CubePaths, dryRun: boolean): Promise<number> {
+  const [entries, vocabulary] = await Promise.all([readCards(paths), readTags(paths)]);
   const client = createClient();
   const [{ cards, missing }, oracleTags] = await Promise.all([
     client.byOracleIds(entries.map((entry) => entry.oracleId)),
@@ -41,12 +41,12 @@ export async function tagFunctions(dryRun: boolean): Promise<number> {
     if (tags.length !== entry.tags.length) {
       changed += 1;
       if (!dryRun) {
-        await writeCard(CUBE_PATHS, { ...entry, tags });
+        await writeCard(paths, { ...entry, tags });
       }
     }
   }
   if (!dryRun && added > 0) {
-    await writeTags(CUBE_PATHS, nextVocabulary);
+    await writeTags(paths, nextVocabulary);
   }
   const verb = dryRun ? "Would add" : "Added";
   console.log(

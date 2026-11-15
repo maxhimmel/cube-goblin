@@ -1,3 +1,4 @@
+import type { CubePaths } from "@repo/cube";
 import {
   readBoard,
   readCards,
@@ -12,17 +13,16 @@ import {
   versionProblems,
 } from "@repo/cube";
 import { chalk } from "zx";
-import { CUBE_PATHS } from "../paths.ts";
 
-export async function validate(): Promise<number> {
+export async function validate(paths: CubePaths): Promise<number> {
   const [cards, tags, config, board, versions, filters, layouts] = await Promise.all([
-    readCards(CUBE_PATHS),
-    readTags(CUBE_PATHS),
-    readConfig(CUBE_PATHS),
-    readBoard(CUBE_PATHS).catch((error: unknown) => new Error(String(error))),
-    readVersionFiles(CUBE_PATHS),
-    readFilters(CUBE_PATHS).catch((error: unknown) => new Error(String(error))),
-    readLayouts(CUBE_PATHS).catch((error: unknown) => new Error(String(error))),
+    readCards(paths),
+    readTags(paths),
+    readConfig(paths),
+    readBoard(paths).catch((error: unknown) => new Error(String(error))),
+    readVersionFiles(paths),
+    readFilters(paths).catch((error: unknown) => new Error(String(error))),
+    readLayouts(paths).catch((error: unknown) => new Error(String(error))),
   ]);
   const problems = [
     ...validateCube(cards, tags),

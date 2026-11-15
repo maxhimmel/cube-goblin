@@ -1,3 +1,4 @@
+import type { CubePaths } from "@repo/cube";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,9 +15,9 @@ import {
   writeLog,
 } from "@repo/cube";
 import { displayFields } from "@repo/scryfall";
+import type { Shell } from "zx";
 import { $, chalk } from "zx";
 import { createClient } from "../client.ts";
-import { CUBE_PATHS, REPO_ROOT } from "../paths.ts";
 
 interface Checkout {
   state: LogState;
@@ -28,17 +29,32 @@ const EMPTY: Checkout = {
   logged: [],
 };
 
-const git = $({ cwd: REPO_ROOT, quiet: true });
+interface Repo {
+  git: Shell;
+  prefix: string;
+}
 
-async function checkout(sha: string): Promise<Checkout> {
-  const hasCube = await git`git cat-file -e ${`${sha}:cube`}`.nothrow();
+async function repoOf(cubeDir: string): Promise<Repo | undefined> {
+  const found = await $({
+    cwd: cubeDir,
+    quiet: true,
+  })`git rev-parse --show-toplevel --show-prefix`.nothrow();
+  if (found.exitCode !== 0) {
+    return undefined;
+  }
+  const [top = cubeDir, prefix = ""] = found.stdout.split("\n").map((line) => line.trim());
+  return { git: $({ cwd: top, quiet: true }), prefix: prefix === "" ? "." : prefix };
+}
+
+async function checkout({ git, prefix }: Repo, sha: string): Promise<Checkout> {
+  const hasCube = await git`git cat-file -e ${`${sha}:${prefix === "." ? "" : prefix}`}`.nothrow();
   if (hasCube.exitCode !== 0) {
     return EMPTY;
   }
   const dir = await mkdtemp(join(tmpdir(), "cube-backfill-"));
   try {
-    await git`git archive ${sha} cube | tar -x -C ${dir}`;
-    const paths = cubePaths(dir);
+    await git`git archive ${sha} ${prefix} | tar -x -C ${dir}`;
+    const paths = cubePaths(join(dir, prefix));
     await migrateLegacyCube(paths);
     const [state, log] = await Promise.all([readLogState(paths), readLog(paths)]);
     return { state, logged: log.map((entry) => entry.id) };
@@ -47,14 +63,14 @@ async function checkout(sha: string): Promise<Checkout> {
   }
 }
 
-async function parentOf(sha: string): Promise<string | undefined> {
+async function parentOf({ git }: Repo, sha: string): Promise<string | undefined> {
   const parent = await git`git rev-parse --verify --quiet ${`${sha}^`}`.nothrow();
   return parent.exitCode === 0 ? parent.stdout.trim() : undefined;
 }
 
-async function cubeCommits(): Promise<Commit[]> {
+async function cubeCommits(repo: Repo): Promise<Commit[]> {
   const out =
-    await git`git log --reverse --topo-order --no-merges --format=%H%x1f%aI%x1f%B%x1e -- cube/`;
+    await repo.git`git log --reverse --topo-order --no-merges --format=%H%x1f%aI%x1f%B%x1e -- ${repo.prefix}`;
   const records = out.stdout
     .split("\x1e")
     .map((record) => record.trim())
@@ -64,7 +80,7 @@ async function cubeCommits(): Promise<Commit[]> {
     if (sha === undefined) {
       return Promise.resolve(EMPTY);
     }
-    const known = states.get(sha) ?? checkout(sha);
+    const known = states.get(sha) ?? checkout(repo, sha);
     states.set(sha, known);
     return known;
   };
@@ -72,7 +88,7 @@ async function cubeCommits(): Promise<Commit[]> {
   for (const record of records) {
     const [sha = "", at = "", message = ""] = record.split("\x1f");
     process.stderr.write(`\rReading ${String(commits.length + 1)}/${String(records.length)}`);
-    const [before, after] = await Promise.all([cached(await parentOf(sha)), cached(sha)]);
+    const [before, after] = await Promise.all([cached(await parentOf(repo, sha)), cached(sha)]);
     commits.push({
       sha,
       at,
@@ -86,8 +102,13 @@ async function cubeCommits(): Promise<Commit[]> {
   return commits;
 }
 
-export async function backfillLog(dryRun: boolean): Promise<number> {
-  const [commits, log] = await Promise.all([cubeCommits(), readLog(CUBE_PATHS)]);
+export async function backfillLog(paths: CubePaths, dryRun: boolean): Promise<number> {
+  const repo = await repoOf(paths.root);
+  if (repo === undefined) {
+    console.log(chalk.yellow(`${paths.root} is not in a git repo; nothing to backfill.`));
+    return 0;
+  }
+  const [commits, log] = await Promise.all([cubeCommits(repo), readLog(paths)]);
   const oracleIds = new Set(
     commits.flatMap((commit) =>
       [...commit.before.cards, ...commit.after.cards].map((card) => card.oracleId),
@@ -118,9 +139,9 @@ export async function backfillLog(dryRun: boolean): Promise<number> {
     console.log(chalk.yellow(`Dry run: ${String(result.added.length)} entries not written.`));
     return 0;
   }
-  await writeLog(CUBE_PATHS, result.log);
+  await writeLog(paths, result.log);
   console.log(
-    chalk.green(`Backfilled ${String(result.added.length)} entries into ${CUBE_PATHS.logFile}`),
+    chalk.green(`Backfilled ${String(result.added.length)} entries into ${paths.logFile}`),
   );
   return 0;
 }

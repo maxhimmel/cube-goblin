@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import type { IpcMainInvokeEvent } from "electron";
 import { BrowserWindow, app, dialog, ipcMain, net, protocol, session, shell } from "electron";
 import type { CubeFolder } from "@repo/cube";
-import { createCubeFolder, findCubeFolder } from "@repo/cube";
+import { createCubeFolder, findCubeFolder, openCubeFolder } from "@repo/cube";
 import {
   CHANGE_DEBOUNCE_MS,
   CUBES_CHANNEL,
@@ -60,23 +60,32 @@ function refOf(folder: CubeFolder): CubeRef {
   return { dir: folder.dir, id: folder.config.id, name: folder.config.name };
 }
 
+async function opens(dir: string): Promise<boolean> {
+  try {
+    await openCubeFolder(dir);
+    return true;
+  } catch (error) {
+    console.warn(`Skipping ${dir}: ${String(error)}`);
+    return false;
+  }
+}
+
 async function firstCube(recent: RecentCubes): Promise<string | undefined> {
   const fromEnv = process.env["CUBE_DIR"];
   if (fromEnv !== undefined && fromEnv !== "") {
     return fromEnv;
   }
   const { cubes } = await recent.load();
-  for (const cube of cubes) {
-    if ((await findCubeFolder(cube.dir)) !== undefined) {
-      return cube.dir;
-    }
-  }
   const legacy = await recent.legacyFolder();
-  if (legacy !== undefined && (await findCubeFolder(legacy)) !== undefined) {
-    return legacy;
-  }
-  if (!app.isPackaged) {
-    return resolve(app.getAppPath(), "..", "..", "cube");
+  const candidates = [
+    ...cubes.map((cube) => cube.dir),
+    ...(legacy === undefined ? [] : [legacy]),
+    ...(app.isPackaged ? [] : [resolve(app.getAppPath(), "..", "..", "cube")]),
+  ];
+  for (const dir of candidates) {
+    if (await opens(dir)) {
+      return dir;
+    }
   }
   const { response } = await dialog.showMessageBox({
     message: "Start a cube",
@@ -233,8 +242,9 @@ function serveCubes(server: WorkbenchServer, recent: RecentCubes): void {
       return dir === undefined ? undefined : switchTo(dir);
     },
     [CUBES_CHANNEL.switchTo]: async (dir) => {
-      if (typeof dir !== "string") {
-        throw new TypeError("No cube folder given");
+      const known = (await recent.load()).cubes.some((cube) => cube.dir === dir);
+      if (typeof dir !== "string" || !known) {
+        throw new TypeError("Only a cube from the recent list can be opened this way");
       }
       return switchTo(dir);
     },
@@ -321,11 +331,18 @@ async function start(): Promise<void> {
     return;
   }
   const cacheDir = process.env["CUBE_CACHE_DIR"] ?? join(app.getPath("userData"), "cache");
-  const server = await createWorkbenchServer({
-    cubeDir,
-    cacheDir: join(cacheDir, "scryfall"),
-    imageCacheDir: join(cacheDir, "scryfall-images"),
-  });
+  let server: WorkbenchServer;
+  try {
+    server = await createWorkbenchServer({
+      cubeDir,
+      cacheDir: join(cacheDir, "scryfall"),
+      imageCacheDir: join(cacheDir, "scryfall-images"),
+    });
+  } catch (error) {
+    dialog.showErrorBox("Could not open the cube", `${cubeDir}\n\n${String(error)}`);
+    app.quit();
+    return;
+  }
   serve(server);
   serveCubes(server, recent);
   openWindow();

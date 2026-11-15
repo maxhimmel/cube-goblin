@@ -23,7 +23,6 @@ export interface CubeFormat {
   label: string;
   extension: string;
   carries: Carries;
-  verified: boolean;
   write: (cards: readonly ExportCard[], meta: ExportMeta) => string;
 }
 
@@ -33,7 +32,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "Cube Cobra (CSV)",
     extension: "csv",
     carries: { prospect: true, cut: true, tags: true, notes: true, printing: "set-number" },
-    verified: true,
     write: writeCubeCobraCsv,
   },
   {
@@ -41,7 +39,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "Draftmancer",
     extension: "txt",
     carries: { prospect: false, cut: false, tags: false, notes: false, printing: "set-number" },
-    verified: true,
     write: writeDraftmancer,
   },
   {
@@ -49,7 +46,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "MTG Arena / MTGGoldfish",
     extension: "txt",
     carries: { prospect: true, cut: false, tags: false, notes: false, printing: "set-number" },
-    verified: true,
     write: writeArena,
   },
   {
@@ -57,7 +53,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "MTGO (text)",
     extension: "txt",
     carries: { prospect: true, cut: false, tags: false, notes: false, printing: "none" },
-    verified: true,
     write: writeMtgoText,
   },
   {
@@ -65,7 +60,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "MTGO (.dek)",
     extension: "dek",
     carries: { prospect: true, cut: false, tags: false, notes: false, printing: "id" },
-    verified: true,
     write: writeMtgoDek,
   },
   {
@@ -73,7 +67,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "Moxfield",
     extension: "txt",
     carries: { prospect: true, cut: false, tags: false, notes: false, printing: "set-number" },
-    verified: false,
     write: writeMoxfield,
   },
   {
@@ -81,7 +74,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "Archidekt",
     extension: "txt",
     carries: { prospect: true, cut: true, tags: true, notes: false, printing: "set-number" },
-    verified: false,
     write: writeArchidekt,
   },
   {
@@ -89,7 +81,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "Cockatrice (.cod)",
     extension: "cod",
     carries: { prospect: true, cut: false, tags: false, notes: false, printing: "id" },
-    verified: true,
     write: writeCockatrice,
   },
   {
@@ -97,7 +88,6 @@ export const EXPORT_FORMATS: readonly CubeFormat[] = [
     label: "XMage (.dck)",
     extension: "dck",
     carries: { prospect: true, cut: false, tags: false, notes: false, printing: "set-number" },
-    verified: true,
     write: writeXmage,
   },
 ];

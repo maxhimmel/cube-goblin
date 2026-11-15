@@ -34,7 +34,7 @@ const CATEGORY_BOARDS: Record<string, Board> = {
   maybeboard: "maybe",
   sideboard: "side",
   cut: "cut",
-  commander: "side",
+  commander: "main",
   tokens: "tokens",
 };
 

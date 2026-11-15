@@ -1,6 +1,6 @@
 import type { ExportCard } from "./types.ts";
 
-export type NameStyle = "full" | "front-except-split" | "cockatrice" | "mtgo";
+export type NameStyle = "full" | "spaced-slash" | "front-except-split" | "cockatrice" | "mtgo";
 
 const SEPARATOR = " // ";
 
@@ -11,6 +11,9 @@ function frontFace(name: string): string {
 export function exportName(card: Pick<ExportCard, "name" | "layout">, style: NameStyle): string {
   if (!card.name.includes(SEPARATOR) || style === "full") {
     return card.name;
+  }
+  if (style === "spaced-slash") {
+    return card.name.split(SEPARATOR).join(" / ");
   }
   if (style === "mtgo") {
     return card.layout === "split" ? card.name.split(SEPARATOR).join("/") : frontFace(card.name);

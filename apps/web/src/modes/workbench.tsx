@@ -35,6 +35,7 @@ import {
 import { setCubeIdentity } from "../cube-identity.ts";
 import { scopeStorage } from "../storage-scope.ts";
 import { CubeSwitcher } from "../workbench/cube-switcher.tsx";
+import { OFFLINE_REASON, useOnline } from "../workbench/connection.ts";
 import { boardSavesPending } from "../workbench/board.ts";
 import { AddPanel } from "../workbench/add-panel.tsx";
 import { BulkBar, SelectCard, SelectPile } from "../workbench/bulk.tsx";
@@ -78,8 +79,18 @@ function Toolbar(): ReactNode {
   const { error } = useQuery({ queryKey: CUBE_QUERY_KEY, queryFn: fetchCube });
   const saving = useIsMutating() > 0;
   const [settings, setSettings] = useState(false);
+  const online = useOnline();
   return (
     <div className="topbar-actions">
+      {!online && (
+        <span
+          className="offline-state"
+          role="status"
+          title={`${OFFLINE_REASON}. Cached cards and edits keep working; search, adding cards, and printings not yet saved need a connection.`}
+        >
+          Offline
+        </span>
+      )}
       {error ? (
         <span role="alert" className="error save-state" data-testid="save-state">
           {error.message}

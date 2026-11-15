@@ -1,14 +1,114 @@
+import type { OfflineStatus } from "@repo/cube/browser";
 import type { CubeList, CubeRef, CubesBridge } from "@repo/server/events";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { ChevronDownIcon } from "../icons.tsx";
 import { Menu } from "../menu.tsx";
 import { queryClient } from "../query-client.ts";
 import { showToast } from "./toast.tsx";
+import {
+  OFFLINE_QUERY_KEY,
+  OFFLINE_REASON,
+  fetchOffline,
+  makeOffline,
+  useOnline,
+} from "./connection.ts";
 
 const CUBES_QUERY_KEY = ["desktop", "cubes"] as const;
 const SETTLE_POLL_MS = 50;
+const RUN_POLL_MS = 500;
+const BYTE_UNITS = ["B", "KB", "MB", "GB"] as const;
+
+function formatBytes(bytes: number): string {
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1000 && unit < BYTE_UNITS.length - 1) {
+    value /= 1000;
+    unit += 1;
+  }
+  const digits = unit === 0 || value >= 10 ? 0 : 1;
+  return `${value.toFixed(digits)} ${BYTE_UNITS[unit] ?? "B"}`;
+}
+
+function offlineText(status: OfflineStatus): string {
+  const size = formatBytes(status.bytes);
+  const { run } = status;
+  if (run?.running === true) {
+    return `Saving for offline… ${String(run.done)} of ${String(run.total)}`;
+  }
+  if (status.complete) {
+    return `Available offline · ${size}`;
+  }
+  return `${String(status.cached)} of ${String(status.cards)} cards saved offline · ${size}`;
+}
+
+function OfflineLine({ status }: { status: OfflineStatus | undefined }): ReactNode {
+  return (
+    <span className="cube-offline muted" data-complete={status?.complete}>
+      {status ? offlineText(status) : "Checking offline copy…"}
+    </span>
+  );
+}
+
+function CurrentOffline(): ReactNode {
+  const online = useOnline();
+  const { data: status } = useQuery({
+    queryKey: OFFLINE_QUERY_KEY,
+    queryFn: fetchOffline,
+    staleTime: 0,
+    refetchInterval: (query) => (query.state.data?.run?.running === true ? RUN_POLL_MS : false),
+  });
+  const start = useMutation({
+    mutationFn: makeOffline,
+    onSuccess: (next) => {
+      queryClient.setQueryData(OFFLINE_QUERY_KEY, next);
+    },
+    onError: (error: Error) => {
+      showToast({ message: error.message, tone: "error" });
+    },
+  });
+  const run = status?.run;
+  const running = run?.running === true;
+  return (
+    <>
+      <OfflineLine status={status} />
+      {run !== undefined && !running && run.failed > 0 && (
+        <span className="cube-offline error" role="alert">
+          {String(run.failed)} card(s) not saved{run.error === undefined ? "" : `: ${run.error}`}
+        </span>
+      )}
+      {run?.running === false && run.failed === 0 && run.error !== undefined && (
+        <span className="cube-offline error" role="alert">
+          {run.error}
+        </span>
+      )}
+      {status !== undefined && (!status.complete || running) && (
+        <button
+          type="button"
+          className="cube-make-offline"
+          disabled={running || start.isPending || !online}
+          title={online ? "Save every card's data and images on this computer" : OFFLINE_REASON}
+          onClick={() => {
+            start.mutate();
+          }}
+        >
+          {running ? "Saving…" : "Make available offline"}
+        </button>
+      )}
+    </>
+  );
+}
+
+function OtherOffline({ cube, cubes }: { cube: CubeRef; cubes: CubesBridge }): ReactNode {
+  const { data: status } = useQuery({
+    queryKey: [...CUBES_QUERY_KEY, "offline", cube.dir],
+    queryFn: () => cubes.offlineStatus(cube.dir),
+    staleTime: 0,
+    retry: false,
+  });
+  return <OfflineLine status={status} />;
+}
 
 function cubesBridge(): CubesBridge | undefined {
   return window.desktop?.cubes;
@@ -107,6 +207,7 @@ function RecentCube({
           Remove
         </button>
       )}
+      {current ? <CurrentOffline /> : <OtherOffline cube={cube} cubes={cubes} />}
     </li>
   );
 }

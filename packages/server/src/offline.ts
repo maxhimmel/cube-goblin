@@ -51,6 +51,7 @@ export class Reachability {
 
   async online(): Promise<boolean> {
     if (!this.#online && this.#now() - this.#checkedAt >= PROBE_EVERY_MS) {
+      this.#checkedAt = this.#now();
       await this.fetch(PROBE_URL, {
         method: "HEAD",
         headers: { "User-Agent": this.#userAgent, Accept: "application/json" },
@@ -108,29 +109,31 @@ async function prefetch(paths: CubePaths, deps: OfflineDeps, run: OfflineRun): P
     throw new Error(`Oracle tags: ${tags.error}`);
   }
   const { cards } = await deps.client.forEntries(entries);
-  await Promise.all(
-    entries.map(async (entry) => {
-      try {
-        const card = cards.get(entry.oracleId);
-        const fields = card ? displayFields(card) : undefined;
-        if (!fields) {
-          throw new Error(`No card data for ${entry.name}`);
-        }
-        await Promise.all([
-          deps.client
-            .cachedPrintings(entry.oracleId)
-            .then((cached) => cached ?? deps.client.printings(entry.oracleId)),
-          deps.images.get(fields.image),
-          deps.images.get(fields.imageLarge),
-        ]);
-      } catch (error) {
-        run.failed += 1;
-        run.error ??= errorText(error);
-      } finally {
-        run.done += 1;
+  const fail = (error: unknown): void => {
+    run.failed += 1;
+    run.error ??= errorText(error);
+  };
+  for (const entry of entries) {
+    const card = cards.get(entry.oracleId);
+    const fields = card ? displayFields(card) : undefined;
+    if (!fields) {
+      fail(new Error(`No card data for ${entry.name}`));
+      run.done += 1;
+      continue;
+    }
+    const images = Promise.all([deps.images.get(fields.image), deps.images.get(fields.imageLarge)]);
+    try {
+      if ((await deps.client.cachedPrintings(entry.oracleId)) === undefined) {
+        await deps.client.printings(entry.oracleId);
       }
-    }),
-  );
+      await images;
+    } catch (error) {
+      await images.catch(() => undefined);
+      fail(error);
+    } finally {
+      run.done += 1;
+    }
+  }
 }
 
 export class OfflineRuns {

@@ -273,13 +273,12 @@ test("a cube made available offline loads every view and saves edits with Scryfa
   await expect(current.getByText(/^Available offline · /u)).toBeVisible({ timeout: 280_000 });
   await page.keyboard.press("Escape");
 
-  await app.evaluate(({ session }) => {
-    session.defaultSession.webRequest.onBeforeRequest(
-      { urls: ["*://*.scryfall.com/*", "*://*.scryfall.io/*"] },
-      (_details, callback) => {
-        callback({ cancel: true });
-      },
-    );
+  await app.evaluate(() => {
+    const network = (globalThis as { cubeTestNetwork?: { cut: boolean } }).cubeTestNetwork;
+    if (!network) {
+      throw new Error("The hidden test launch has no network switch");
+    }
+    network.cut = true;
   });
   await page.reload();
 
@@ -307,4 +306,20 @@ test("a cube made available offline loads every view and saves edits with Scryfa
   await page.getByRole("searchbox", { name: "Search Scryfall" }).fill("lightning bolt");
   await expect(page.getByRole("status").filter({ hasText: "Offline" })).toBeVisible();
   await expect(page.getByRole("searchbox", { name: "Search Scryfall" })).toBeDisabled();
+});
+
+test("printing thumbnails load through the app", async ({ desktop }) => {
+  const { page } = desktop;
+  await page.waitForURL("app://bundle/");
+  await page.evaluate(() => {
+    window.location.hash = "#/card/shock";
+  });
+  await page.getByRole("button", { name: "Change printing…" }).click();
+  const browser = page.getByRole("dialog", { name: "Printings of Shock" });
+  const thumb = browser.locator(".printing:not(.printing-default) img").first();
+  await expect(thumb).toBeVisible({ timeout: 20_000 });
+  expect(await thumb.getAttribute("src")).toMatch(/^\/api\/image\?u=/u);
+  await expect
+    .poll(() => thumb.evaluate((element: HTMLImageElement) => element.naturalWidth))
+    .toBeGreaterThan(0);
 });

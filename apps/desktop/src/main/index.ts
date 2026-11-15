@@ -300,6 +300,20 @@ function lockDown(): void {
 
 const hidden = process.env["CUBE_DESKTOP_HIDDEN"] === "1";
 
+interface TestNetwork {
+  cut: boolean;
+}
+
+function scryfallFetch(): typeof fetch {
+  if (!hidden) {
+    return fetch;
+  }
+  const network: TestNetwork = { cut: false };
+  (globalThis as { cubeTestNetwork?: TestNetwork }).cubeTestNetwork = network;
+  return (input, init) =>
+    network.cut ? Promise.reject(new TypeError("fetch failed")) : fetch(input, init);
+}
+
 function openWindow(): void {
   const window = new BrowserWindow({
     width: 1440,
@@ -344,7 +358,7 @@ async function start(): Promise<void> {
       cubeDir,
       cacheDir: join(cacheDir, "scryfall"),
       imageCacheDir: join(cacheDir, "scryfall-images"),
-      fetch: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init),
+      fetch: scryfallFetch(),
     });
   } catch (error) {
     dialog.showErrorBox("Could not open the cube", `${cubeDir}\n\n${String(error)}`);

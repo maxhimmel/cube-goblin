@@ -666,11 +666,80 @@
   grid-template-columns: auto 12em minmax(0, 1fr);
 }
 
-.transfer-ai ol {
-  margin: 8px 0;
+.transfer-ai {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--accent) 22%, var(--panel)),
+    color-mix(in oklab, var(--accent) 6%, var(--panel))
+  );
+  border: 1px solid color-mix(in oklab, var(--accent) 60%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px color-mix(in oklab, var(--accent) 18%, transparent);
+}
+
+.transfer-ai h3,
+.transfer-ai p {
+  margin: 0;
+}
+
+.transfer-ai h3 {
+  font-size: var(--fs-lg);
+}
+
+.transfer-ai-steps {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
   padding-left: 1.4em;
 }
 
-.transfer-ai li {
-  margin: 4px 0;
+.transfer-ai-steps li {
+  padding-left: 4px;
+}
+
+.transfer-ai-copy-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.transfer-ai-copy {
+  padding: 7px 16px;
+  color: var(--on-accent);
+  font-weight: 700;
+  background: var(--accent);
+  border-color: var(--accent);
+  transition:
+    transform 0.15s,
+    background 0.15s;
+}
+
+.transfer-ai-copy:hover {
+  color: var(--on-accent);
+  transform: translateY(-1px);
+}
+
+.transfer-ai-copy[data-state="copied"] {
+  background: color-mix(in oklab, var(--accent) 70%, #2a9d5c);
+  border-color: transparent;
+}
+
+.transfer-ai details textarea {
+  margin-top: 6px;
+}
+
+.transfer-added li {
+  break-inside: avoid;
+}
+
+.transfer-tags {
+  display: block;
+  color: var(--accent);
+  font-size: var(--fs-xs);
 }

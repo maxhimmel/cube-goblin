@@ -354,3 +354,21 @@ test("an import can land in a new cube", async ({ desktop }) => {
   expect(shock).toMatchObject({ status: "prospect" });
   expect(await notes(desktop.cardsDir, "shock")).toBe("");
 });
+
+test("the import helper copies its AI prompt to the clipboard", async ({ desktop }) => {
+  const { page, app } = desktop;
+  const saved = await app.evaluate(({ clipboard }) => clipboard.readText());
+  try {
+    await page.getByRole("button", { name: "Import and export" }).click();
+    const panel = page.getByRole("dialog", { name: "Import and export" });
+    await panel.getByRole("tab", { name: "Import" }).click();
+    await panel.getByRole("button", { name: "Copy AI prompt" }).click();
+    await expect(panel.getByRole("button", { name: "Copied ✓" })).toBeVisible();
+    const copied = await app.evaluate(({ clipboard }) => clipboard.readText());
+    expect(copied).toContain("Convert my Magic: The Gathering cube list");
+  } finally {
+    await app.evaluate(({ clipboard }, text) => {
+      void clipboard.writeText(text);
+    }, saved);
+  }
+});

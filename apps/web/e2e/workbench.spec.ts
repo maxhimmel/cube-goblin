@@ -659,12 +659,15 @@ test("imports a pasted list after fixing its lines and exports the cube", async 
   await panel.getByRole("button", { name: "Import 2 cards" }).click();
   await expect(page.getByRole("status")).toContainText("Imported 2 cards");
 
-  expect(await readEntry(workbench.cardsDir, "lightning-bolt")).toMatchObject({
+  const bolt = await readEntry(workbench.cardsDir, "lightning-bolt");
+  expect(bolt).toMatchObject({
     status: "draft",
-    tags: ["burn"],
     source: { line: 2, input: "1 Lightning Bolt [Burn]" },
   });
-  expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({ status: "draft" });
+  expect(bolt.tags).toEqual(expect.arrayContaining(["burn", "removal"]));
+  const counterspell = await readEntry(workbench.cardsDir, "counterspell");
+  expect(counterspell.status).toBe("draft");
+  expect(counterspell.tags).toContain("counterspell");
   const log = await readLogFile(workbench.cardsDir);
   expect(log).toHaveLength(logBefore + 1);
   expect(parseMessage(log.at(-1)?.message ?? "").subject).toBe("Import 2 cards from a deck list");
@@ -692,14 +695,18 @@ test("the import helper hands out a prompt for an AI to convert a list", async (
   await page.getByRole("button", { name: "Import and export" }).click();
   const panel = page.getByRole("dialog", { name: "Import and export" });
   await panel.getByRole("tab", { name: "Import" }).click();
-  await panel.getByText("Your own format? Let an AI convert it").click();
-  const prompt = await panel.getByLabel("Prompt for an AI").inputValue();
+  const helper = panel.getByRole("region", {
+    name: "Typed your list yourself? Let an AI tidy it up",
+  });
+  await expect(helper).toBeVisible();
+  await helper.getByText("See the prompt").click();
+  const prompt = await helper.getByLabel("Prompt for an AI").inputValue();
   expect(prompt).toContain("Convert my Magic: The Gathering cube list");
-  await panel.getByRole("button", { name: "Copy prompt" }).click();
-  await expect(page.getByRole("status")).toContainText("Prompt copied");
+  await helper.getByRole("button", { name: "Copy AI prompt" }).click();
+  await expect(helper.getByRole("button", { name: "Copied ✓" })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(prompt);
   await panel.getByRole("button", { name: "File" }).click();
-  await expect(panel.getByText("Your own format? Let an AI convert it")).toBeHidden();
+  await expect(helper).toBeHidden();
 });
 
 test("swapping keeps the old card as cut and can carry its tags", async ({ page, workbench }) => {

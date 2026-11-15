@@ -278,10 +278,12 @@ function serveCubes(server: WorkbenchServer, recent: RecentCubes): void {
 }
 
 function lockDown(): void {
-  session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => {
-    callback(false);
+  session.defaultSession.setPermissionRequestHandler((_contents, permission, callback) => {
+    callback(permission === "clipboard-sanitized-write");
   });
-  session.defaultSession.setPermissionCheckHandler(() => false);
+  session.defaultSession.setPermissionCheckHandler(
+    (_contents, permission) => permission === "clipboard-sanitized-write",
+  );
   app.on("web-contents-created", (_event, contents) => {
     contents.on("will-navigate", (event, target) => {
       if (!isAppUrl(target)) {

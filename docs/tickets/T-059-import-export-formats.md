@@ -9,6 +9,8 @@ Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Researc
 ## Decisions (user, 2026-11-15)
 
 - Formats: Cube Cobra, Draftmancer, deck text lists (MTGO, Arena, Moxfield, Archidekt, MTGGoldfish), Cockatrice, and XMage.
+- Imports add [function](../GLOSSARY.md#function) tags like the add panel (user, 2026-11-15).
+- The AI helper is the featured way in: a highlighted card at the top of the Import tab (user, 2026-11-15).
 - A list typed by hand in no known format: the Import tab hands out a prompt (`AI_IMPORT_PROMPT`, `packages/cube/src/formats/ai-prompt.ts`) to paste with the list into any AI chat, and the AI's answer pastes back in. A test keeps the prompt's example readable by the importer. Checked on 2026-11-15: a messy hand-typed list run through `claude -p --model sonnet` imported all 13 cards with none missed.
 
 ## Scope
@@ -37,4 +39,4 @@ Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Researc
 - **Resolve and CLI**: `resolveRows` (`packages/cube/src/formats/resolve.ts`) matches by printing id, then `mtgo_id`, set and number, name, and fuzzy name. `planImport` and `applyImport` (`packages/cube/src/import.ts`) map boards to statuses, make missing tags, and skip repeats. `pnpm cube import <file|url> [--new <dir>] [--board b=status]` and `pnpm cube export --format <id> [--out]` work. A merge logs one change log entry.
 - **Verified by running** (2026-11-15): Cube Cobra's `thepaupercube` imported by URL into a new cube, 455 cards with none missed. That cube exported to every format re-imports all of its cards, except Draftmancer, which drops prospects by design. The Moxfield and Archidekt samples resolve with no misses.
 - **Workbench** (2026-11-15): the top bar's import and export button opens a sheet. Import takes pasted text, a file, or a Cube Cobra link, then previews it: each board's status (changeable), lines to check (not found or guessed, each editable or skippable), warnings, skips, and the cards to add. It imports into this cube, or a new one in the desktop app. Export lists every format with what it drops and downloads the file. Routes: `POST /api/import/preview`, `POST /api/import`, `GET /api/export?format=`. Covered by a workbench e2e test and a desktop e2e test (new cube).
-- **Left for done**: a real file saved by Cube Cobra (CSV), Draftmancer, MTGO, and Cockatrice; the XMage samples were written for its tests. Imported cards don't get [function](../GLOSSARY.md#function) tags yet, unlike the add panel.
+- **Left for done**: a real file saved by Cube Cobra (CSV), Draftmancer, MTGO, and Cockatrice; the XMage samples were written for its tests.

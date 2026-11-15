@@ -83,6 +83,10 @@ XM = `https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cb
 SB: 3 [ZNR:315] Archon of Emeria
 ```
 
+## Sample files
+
+`packages/cube/src/formats/fixtures/` holds XMage's importer test files, copied verbatim from `Mage.Tests/src/test/data/importer/` at `7da937c`: `testdeck.dek` (MTGO), `testdeck.mtga` (Arena), `testdeck.dck` (XMage), and `testdeck.cod` (Cockatrice). They were written for XMage's tests, not saved by MTGO, Arena, or Cockatrice.
+
 ## Tolerant parser
 
 Process one line at a time, in this order. Each step strips what it matches from the line.

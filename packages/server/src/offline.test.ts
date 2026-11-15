@@ -122,7 +122,9 @@ describe("offline", () => {
 
     network.up = false;
     expect((await call("/api/cube")).status).toBe(200);
-    expect((await call("/api/cards/shock/printings")).status).toBe(200);
+    const printings = await call("/api/cards/shock/printings");
+    expect(printings.status).toBe(503);
+    expect(printings.body["error"]).toMatch(/printings need a connection/u);
     const search = await call("/api/search?q=bolt");
     expect(search.status).toBe(503);
     expect(search.body["error"]).toMatch(/Scryfall can't be reached/u);

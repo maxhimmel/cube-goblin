@@ -398,19 +398,18 @@ export class ScryfallClient {
   }
 
   async cachedEntry(entry: PrintedEntry): Promise<CachedEntry> {
-    const keys = [
-      oracleKey(entry.oracleId),
-      printingsKey(entry.oracleId),
-      ...(entry.printing === undefined ? [] : [printKey(entry.printing)]),
-    ];
-    const sizes = await Promise.all(keys.map((key) => this.#cache.size(key)));
-    const shownKey = entry.printing === undefined ? keys[0] : keys[2];
-    const shown = cardSchema.safeParse(
-      shownKey === undefined ? undefined : await this.#cache.peek(shownKey),
-    );
+    const shownKey =
+      entry.printing === undefined ? oracleKey(entry.oracleId) : printKey(entry.printing);
+    const keys = [...new Set([oracleKey(entry.oracleId), shownKey])];
+    const [sizes, listSize, stored] = await Promise.all([
+      Promise.all(keys.map((key) => this.#cache.size(key))),
+      this.#cache.size(printingsKey(entry.oracleId)),
+      this.#cache.peek(shownKey),
+    ]);
+    const shown = cardSchema.safeParse(stored);
     return {
       card: shown.success ? shown.data : undefined,
-      bytes: sizes.reduce<number>((sum, size) => sum + (size ?? 0), 0),
+      bytes: [...sizes, listSize].reduce<number>((sum, size) => sum + (size ?? 0), 0),
       missing: keys.filter((_key, index) => sizes[index] === undefined),
     };
   }

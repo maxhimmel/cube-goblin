@@ -574,7 +574,7 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
         return answer(
           explained(
             listPrintings(paths, client, printingsOf, remembered),
-            "this card's printings aren't saved for offline use",
+            "printings need a connection",
           ),
           (printings) =>
             printings === undefined

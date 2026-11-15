@@ -294,12 +294,12 @@ describe("ScryfallClient", () => {
     await cache.set("print:p1", { ...card, id: "p1" });
     const chosen = await client.cachedEntry({ oracleId: "a", printing: "p1" });
     expect(chosen.card?.id).toBe("p1");
-    expect(chosen.missing).toEqual(["printings:a"]);
+    expect(chosen.missing).toEqual([]);
     expect(chosen.bytes).toBeGreaterThan(0);
     const plain = await client.cachedEntry({ oracleId: "a" });
     expect(plain.card?.id).toBe("1");
     const none = await client.cachedEntry({ oracleId: "b" });
-    expect(none).toEqual({ card: undefined, bytes: 0, missing: ["oracle:b", "printings:b"] });
+    expect(none).toEqual({ card: undefined, bytes: 0, missing: ["oracle:b"] });
   });
 
   it("returns no printings when Scryfall finds none", async () => {

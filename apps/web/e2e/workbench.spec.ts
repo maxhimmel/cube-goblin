@@ -682,6 +682,26 @@ test("imports a pasted list after fixing its lines and exports the cube", async 
   expect(csv).toContain('"Lightning Bolt"');
 });
 
+test("the import helper hands out a prompt for an AI to convert a list", async ({
+  page,
+  workbench,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto(`${workbench.url}#/`);
+  await page.getByRole("button", { name: "Import and export" }).click();
+  const panel = page.getByRole("dialog", { name: "Import and export" });
+  await panel.getByRole("tab", { name: "Import" }).click();
+  await panel.getByText("Your own format? Let an AI convert it").click();
+  const prompt = await panel.getByLabel("Prompt for an AI").inputValue();
+  expect(prompt).toContain("Convert my Magic: The Gathering cube list");
+  await panel.getByRole("button", { name: "Copy prompt" }).click();
+  await expect(page.getByRole("status")).toContainText("Prompt copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(prompt);
+  await panel.getByRole("button", { name: "File" }).click();
+  await expect(panel.getByText("Your own format? Let an AI convert it")).toBeHidden();
+});
+
 test("swapping keeps the old card as cut and can carry its tags", async ({ page, workbench }) => {
   const slug = "daring-saboteur";
   const patched = await page.request.patch(`${workbench.url}api/cards`, {

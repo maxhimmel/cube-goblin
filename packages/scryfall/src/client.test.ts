@@ -3,7 +3,13 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FileCache, MemoryCache } from "./cache.ts";
-import { CARD_ENDPOINT_INTERVAL_MS, ScryfallClient, ScryfallError, chunk } from "./client.ts";
+import {
+  CARD_ENDPOINT_INTERVAL_MS,
+  RATE_LIMIT_COOLDOWN_MS,
+  ScryfallClient,
+  ScryfallError,
+  chunk,
+} from "./client.ts";
 
 const card = {
   object: "card",
@@ -104,7 +110,34 @@ describe("ScryfallClient", () => {
       },
     });
     await Promise.all([client.named("Entomb"), client.named("Reanimate"), client.named("Exhume")]);
-    expect(sleeps).toEqual([CARD_ENDPOINT_INTERVAL_MS, 2 * CARD_ENDPOINT_INTERVAL_MS]);
+    expect(sleeps).toEqual([CARD_ENDPOINT_INTERVAL_MS, CARD_ENDPOINT_INTERVAL_MS]);
+  });
+
+  it("stops calling Scryfall for a minute after a 429", async () => {
+    const calls: Call[] = [];
+    let clock = 0;
+    const limited = { object: "error", status: 429, code: "rate_limited", details: "Slow down" };
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      fetch: fakeFetch(
+        [
+          { status: 429, body: limited },
+          { status: 200, body: card },
+        ],
+        calls,
+      ),
+      now: () => clock,
+      sleep: (ms) => {
+        clock += ms;
+        return Promise.resolve();
+      },
+    });
+    await expect(client.named("Entomb")).rejects.toThrow("Slow down");
+    await expect(client.named("Entomb")).rejects.toThrow("try again in a minute");
+    expect(calls).toHaveLength(1);
+    clock += RATE_LIMIT_COOLDOWN_MS;
+    expect((await client.named("Entomb")).name).toBe("Entomb");
+    expect(calls).toHaveLength(2);
   });
 
   it("caches cards per oracle id, so an added card costs one small request", async () => {

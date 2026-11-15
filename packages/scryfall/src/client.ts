@@ -10,6 +10,7 @@ export const CARD_ENDPOINT_INTERVAL_MS = 500;
 export const DEFAULT_INTERVAL_MS = 100;
 export const BULK_HOST = "data.scryfall.io";
 export const REQUEST_TIMEOUT_MS = 15_000;
+export const RATE_LIMIT_COOLDOWN_MS = 60_000;
 
 export class ScryfallError extends Error {
   readonly status: number;
@@ -101,7 +102,9 @@ export class ScryfallClient {
   readonly #fetch: typeof fetch;
   readonly #sleep: (ms: number) => Promise<void>;
   readonly #now: () => number;
-  readonly #lastRequestAt = new Map<number, number>();
+  readonly #lanes = new Map<number, Promise<unknown>>();
+  readonly #doneAt = new Map<number, number>();
+  #coolUntil = 0;
 
   constructor(options: ScryfallClientOptions) {
     this.#userAgent = options.userAgent;
@@ -111,15 +114,32 @@ export class ScryfallClient {
     this.#now = options.now ?? Date.now;
   }
 
-  async #throttle(path: string): Promise<void> {
+  #paced<T>(path: string, send: () => Promise<T>): Promise<T> {
     const interval = intervalFor(path);
-    const last = this.#lastRequestAt.get(interval);
-    const now = this.#now();
-    const slot = last === undefined ? now : Math.max(now, last + interval);
-    this.#lastRequestAt.set(interval, slot);
-    if (slot > now) {
-      await this.#sleep(slot - now);
-    }
+    const turn = (this.#lanes.get(interval) ?? Promise.resolve()).then(async () => {
+      const last = this.#doneAt.get(interval);
+      const wait = last === undefined ? 0 : last + interval - this.#now();
+      if (wait > 0) {
+        await this.#sleep(wait);
+      }
+      if (this.#now() < this.#coolUntil) {
+        throw new ScryfallError(
+          429,
+          "cooling_down",
+          "Scryfall asked for fewer requests; try again in a minute",
+        );
+      }
+      try {
+        return await send();
+      } finally {
+        this.#doneAt.set(interval, this.#now());
+      }
+    });
+    this.#lanes.set(
+      interval,
+      turn.catch(() => undefined),
+    );
+    return turn;
   }
 
   async #request<S extends z.ZodType>(spec: RequestSpec, schema: S): Promise<z.infer<S>> {
@@ -134,10 +154,8 @@ export class ScryfallClient {
       return schema.parse(cached);
     }
 
-    await this.#throttle(spec.path);
     const init: RequestInit = {
       method: spec.body === undefined ? "GET" : "POST",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: {
         "User-Agent": this.#userAgent,
         Accept: "application/json",
@@ -147,8 +165,16 @@ export class ScryfallClient {
     if (spec.body !== undefined) {
       init.body = JSON.stringify(spec.body);
     }
-    const response = await this.#fetch(url, init);
-    const json: unknown = await response.json();
+    const { response, json } = await this.#paced(spec.path, async () => {
+      const sent = await this.#fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (sent.status === 429) {
+        this.#coolUntil = this.#now() + RATE_LIMIT_COOLDOWN_MS;
+      }
+      return { response: sent, json: await sent.json() };
+    });
 
     if (!response.ok) {
       const error = errorSchema.safeParse(json);

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const IMAGE_ROUTE = "/api/image";
@@ -51,10 +51,23 @@ export class ImageCache {
     return pending;
   }
 
-  async #load(remote: string): Promise<CachedImage> {
+  #paths(remote: string): { bodyPath: string; typePath: string } {
     const key = createHash("sha256").update(remote).digest("hex");
-    const bodyPath = join(this.#dir, `${key}.bin`);
-    const typePath = join(this.#dir, `${key}.type`);
+    return { bodyPath: join(this.#dir, `${key}.bin`), typePath: join(this.#dir, `${key}.type`) };
+  }
+
+  async size(remote: string): Promise<number | undefined> {
+    const { bodyPath, typePath } = this.#paths(remote);
+    try {
+      const [body] = await Promise.all([stat(bodyPath), stat(typePath)]);
+      return body.size;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async #load(remote: string): Promise<CachedImage> {
+    const { bodyPath, typePath } = this.#paths(remote);
     try {
       const [body, type] = await Promise.all([readFile(bodyPath), readFile(typePath, "utf8")]);
       return { body, type };

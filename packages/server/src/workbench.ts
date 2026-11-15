@@ -12,6 +12,7 @@ import type {
   CubeFolder,
   CubePaths,
   FoundCard,
+  OfflineStatus,
   Printing,
   SearchResult,
   TagResult,
@@ -59,10 +60,13 @@ import {
   ScryfallClient,
   ScryfallError,
   displayFields,
+  isUnreachable,
   printingSummary,
 } from "@repo/scryfall";
 import type { Card } from "@repo/scryfall";
 import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
+import type { OfflineDeps } from "./offline.ts";
+import { OfflineRuns, Reachability, cacheStatus } from "./offline.ts";
 
 const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
 const CARD_ROUTE = /^\/api\/cards\/([a-z0-9-]+)$/u;
@@ -75,6 +79,7 @@ export interface WorkbenchOptions {
   cubeDir: string;
   cacheDir: string;
   imageCacheDir: string;
+  fetch?: typeof fetch;
 }
 
 function json(status: number, body: unknown): Response {
@@ -212,6 +217,10 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
     return result.entry;
   }
   return "cards" in result ? result.cards : result.tag;
+}
+
+function unreachableText(error: unknown, what: string): string | undefined {
+  return isUnreachable(error) ? `Scryfall can't be reached, so ${what}` : undefined;
 }
 
 function scryfallStatus(status: number): number {
@@ -377,6 +386,7 @@ function writeRoute(
 
 export interface WorkbenchServer {
   handle: (request: Request) => Promise<Response | undefined>;
+  offlineStatus: (dir: string) => Promise<OfflineStatus>;
   cube: () => CubeFolder;
   open: (dir: string) => Promise<CubeFolder>;
   watched: () => readonly string[];
@@ -396,7 +406,20 @@ async function answer<T>(
 }
 
 function scryfallFailure(error: unknown): number {
+  if (isUnreachable(error)) {
+    return 503;
+  }
   return error instanceof ScryfallError ? scryfallStatus(error.status) : 502;
+}
+
+function explained<T>(work: Promise<T>, what: string): Promise<T> {
+  return work.catch((error: unknown) => {
+    const text = unreachableText(error, what);
+    if (text === undefined) {
+      throw error;
+    }
+    throw new TypeError(text, { cause: error });
+  });
 }
 
 interface OpenCube {
@@ -407,15 +430,19 @@ interface OpenCube {
 }
 
 export async function createWorkbenchServer(options: WorkbenchOptions): Promise<WorkbenchServer> {
+  const reachability = new Reachability(options.fetch ?? fetch, USER_AGENT);
   const client = new ScryfallClient({
     userAgent: USER_AGENT,
     cache: new FileCache(options.cacheDir),
+    fetch: reachability.fetch,
   });
   const oracleTags = new OracleTagStore({
     client,
     file: join(options.cacheDir, "oracle-tags.json"),
   });
-  const images = new ImageCache(options.imageCacheDir, USER_AGENT);
+  const images = new ImageCache(options.imageCacheDir, USER_AGENT, reachability.fetch);
+  const offlineDeps: OfflineDeps = { client, oracleTags, images };
+  const runs = new OfflineRuns();
   const stats = statsOf(client);
   const remembered = new Map<string, Card[]>();
   let writes: Promise<unknown> = Promise.resolve();
@@ -448,7 +475,7 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
     }
     const message = logMessage(request);
     const before = matched.logged ? await readLogState(paths) : undefined;
-    const result = await matched.write(body.value);
+    const result = await explained(matched.write(body.value), "that needs a connection");
     if (!result.ok) {
       return json(result.status, { error: result.error });
     }
@@ -491,10 +518,20 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
         () => 502,
       );
     }
+    if (url === "/api/offline" && method === "POST") {
+      runs.start(current.folder.config.id, paths, offlineDeps);
+      return answer(offlineStatus(current.folder.dir), (status) => json(202, status));
+    }
     if (method === "GET") {
+      if (url === "/api/connection") {
+        return answer(reachability.online(), (online) => json(200, { online }));
+      }
+      if (url === "/api/offline") {
+        return answer(offlineStatus(current.folder.dir), (status) => json(200, status));
+      }
       if (url === "/api/search") {
         return answer(
-          search(paths, client, params.get("q") ?? ""),
+          explained(search(paths, client, params.get("q") ?? ""), "search is off"),
           (results) => json(200, results),
           scryfallFailure,
         );
@@ -524,7 +561,10 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
       const printingsOf = PRINTINGS_ROUTE.exec(url)?.[1];
       if (printingsOf !== undefined) {
         return answer(
-          listPrintings(paths, client, printingsOf, remembered),
+          explained(
+            listPrintings(paths, client, printingsOf, remembered),
+            "this card's printings aren't saved for offline use",
+          ),
           (printings) =>
             printings === undefined
               ? json(404, { error: `No card "${printingsOf}"` })
@@ -533,7 +573,14 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
         );
       }
       if (url === "/api/cube") {
-        return answer(loadWorkbench(paths, client), (data) => json(200, data));
+        return answer(
+          explained(
+            loadWorkbench(paths, client),
+            "some cards aren't saved for offline use. Make the cube available offline once you're back online",
+          ),
+          (data) => json(200, data),
+          (error) => (isUnreachable(error) ? 503 : 500),
+        );
       }
       if (url === "/api/log") {
         return answer(readLog(paths), (entries) => json(200, entries));
@@ -549,7 +596,9 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
       }
       const run = writes.then(() => runWrite(paths, request, matched));
       writes = run.catch(() => undefined);
-      return run.catch((error: unknown) => json(500, { error: String(error) }));
+      return run.catch((error: unknown) =>
+        json(isUnreachable(error) ? 503 : 500, { error: errorText(error) }),
+      );
     }
     if (url.startsWith("/api/")) {
       return json(404, { error: `No route ${method} ${url}` });
@@ -557,8 +606,16 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
     return undefined;
   }
 
+  async function offlineStatus(dir: string): Promise<OfflineStatus> {
+    const folder = dir === current.folder.dir ? current.folder : await openCubeFolder(dir);
+    const status = await cacheStatus(folder.paths, offlineDeps);
+    const run = runs.get(folder.config.id);
+    return run === undefined ? status : { ...status, run };
+  }
+
   return {
     handle,
+    offlineStatus,
     cube: () => current.folder,
     open,
     watched: () => [current.paths.root],

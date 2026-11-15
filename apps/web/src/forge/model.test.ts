@@ -8,6 +8,7 @@ import {
   pickKeys,
   project,
   resolvePill,
+  scaleTop,
   stackQuery,
 } from "./model.ts";
 
@@ -140,5 +141,28 @@ describe("matchups", () => {
     expect(after.dots.find((dot) => dot.tally.id === "body:2:2")?.kills).toBe(
       before.dots.find((dot) => dot.tally.id === "body:2:2")?.kills,
     );
+  });
+});
+
+describe("scaleTop", () => {
+  const row = (base: number, hit: number, ghost: number, baseGhost: number) => ({
+    id: "x",
+    label: "x",
+    base,
+    hit,
+    ghost,
+    baseGhost,
+  });
+
+  it("fits a bar whose cuts shrink it below the other rows", () => {
+    expect(scaleTop([row(32, 32, -6, -6), row(28, 28, 0, 0)], true)).toBe(32);
+  });
+
+  it("fits the base bar before its cuts", () => {
+    expect(scaleTop([row(30, 10, 0, -5)], true)).toBe(30);
+  });
+
+  it("ignores the base when not scaling to it", () => {
+    expect(scaleTop([row(30, 10, 2, 0)], false)).toBe(12);
   });
 });

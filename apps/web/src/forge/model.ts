@@ -286,6 +286,19 @@ export function usedIn(cards: readonly GridCard[]): Used {
   };
 }
 
+export function scaleTop(rows: readonly Tally[], toBase: boolean): number {
+  return Math.max(
+    1,
+    ...rows.map((row) =>
+      Math.max(
+        row.hit,
+        row.hit + row.ghost,
+        toBase ? Math.max(row.base, row.base + row.baseGhost) : 0,
+      ),
+    ),
+  );
+}
+
 export function ghostLabel(delta: number): string {
   return delta > 0 ? `+${String(delta)}` : String(delta);
 }

@@ -9,6 +9,7 @@ import { setCubeIdentity } from "../cube-identity.ts";
 import { queryClient } from "../query-client.ts";
 import { useRemembered } from "../view-choices.ts";
 import { CONFIG_QUERY_KEY, CUBE_QUERY_KEY, fetchConfig, saveConfigRequest } from "./api.ts";
+import { SheetTabs } from "./sheet-tabs.tsx";
 import { showToast } from "./toast.tsx";
 
 const FORMATS = cubeConfigSchema.shape.format.options;
@@ -48,41 +49,13 @@ export function SettingsPanel({ onClose }: { onClose: () => void }): ReactNode {
         </button>
       </header>
       <div className="settings-body">
-        <div
-          className="settings-tabs"
-          role="tablist"
-          aria-label="Settings"
-          aria-orientation="vertical"
-        >
-          {TABS.map((option, index) => (
-            <button
-              key={option.id}
-              id={`settings-tab-${option.id}`}
-              type="button"
-              role="tab"
-              aria-selected={option.id === tab}
-              aria-controls={`settings-page-${option.id}`}
-              tabIndex={option.id === tab ? 0 : -1}
-              onClick={() => {
-                setTab(option.id);
-              }}
-              onKeyDown={(event) => {
-                const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-                if (step === undefined) {
-                  return;
-                }
-                event.preventDefault();
-                const next = TABS[(index + step + TABS.length) % TABS.length];
-                if (next) {
-                  setTab(next.id);
-                  document.getElementById(`settings-tab-${next.id}`)?.focus();
-                }
-              }}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <SheetTabs
+          tabs={TABS}
+          current={tab}
+          label="Settings"
+          idPrefix="settings"
+          onChange={setTab}
+        />
         <div
           className="settings-page"
           role="tabpanel"

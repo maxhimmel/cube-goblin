@@ -277,7 +277,18 @@ async function listPrintings(
     cards = await client.printings(entry.oracleId);
     remembered.set(entry.oracleId, cards);
   }
-  return cards.flatMap((card) => printingSummary(card) ?? []);
+  return cards.flatMap((card) => {
+    const printing = printingSummary(card);
+    return printing
+      ? [
+          {
+            ...printing,
+            image: localImageUrl(printing.image),
+            imageLarge: localImageUrl(printing.imageLarge),
+          },
+        ]
+      : [];
+  });
 }
 
 function chosenPrintings(body: unknown): string[] {

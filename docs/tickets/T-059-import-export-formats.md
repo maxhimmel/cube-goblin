@@ -33,4 +33,6 @@ Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Researc
 ## Progress
 
 - **Format modules** (`packages/cube/src/formats/`): parsers and writers for every format, detection by content, and round-trip plus sample-file tests. Moxfield and Archidekt writers checked against real exports the user copied (2026-11-15). Moxfield's sideboard header is still unverified.
-- **Next**: resolve rows to Scryfall (printing id, `mtgo_id`, set and number, then name), then the CLI, then the workbench import preview and export menu, then Cube Cobra by URL.
+- **Resolve and CLI**: `resolveRows` (`packages/cube/src/formats/resolve.ts`) matches by printing id, then `mtgo_id`, set and number, name, and fuzzy name. `planImport` and `applyImport` (`packages/cube/src/import.ts`) map boards to statuses, make missing tags, and skip repeats. `pnpm cube import <file|url> [--new <dir>] [--board b=status]` and `pnpm cube export --format <id> [--out]` work. A merge logs one change log entry.
+- **Verified by running** (2026-11-15): Cube Cobra's `thepaupercube` imported by URL into a new cube, 455 cards with none missed. That cube exported to every format re-imports all of its cards, except Draftmancer, which drops prospects by design. The Moxfield and Archidekt samples resolve with no misses.
+- **Next**: the workbench import preview (matches, misses, board mapping, new cube or merge) and the export menu.

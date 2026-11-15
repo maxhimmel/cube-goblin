@@ -1,0 +1,66 @@
+{
+  "name": "@repo/desktop",
+  "version": "0.1.0",
+  "description": "Desktop workbench for designing Magic: The Gathering cubes",
+  "author": "Max Himmel",
+  "private": true,
+  "type": "module",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "package": "electron-builder --mac dir --arm64",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json",
+    "e2e:desktop": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/server": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "22.20.5",
+    "electron": "45.3.2",
+    "electron-builder": "26.18.0",
+    "electron-vite": "6.0.0",
+    "eslint": "10.14.0",
+    "jiti": "2.7.0",
+    "typescript": "6.0.3",
+    "vite": "8.3.6"
+  },
+  "productName": "Cube Workbench",
+  "build": {
+    "appId": "com.maxhimmel.cube-workbench",
+    "productName": "Cube Workbench",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/dist-desktop",
+        "to": "renderer"
+      }
+    ],
+    "mac": {
+      "identity": null,
+      "hardenedRuntime": false,
+      "target": [
+        "dir"
+      ],
+      "category": "public.app-category.games"
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "grantFileProtocolExtraPrivileges": false,
+      "onlyLoadAppFromAsar": true,
+      "enableCookieEncryption": true,
+      "resetAdHocDarwinSignature": true
+    }
+  }
+}

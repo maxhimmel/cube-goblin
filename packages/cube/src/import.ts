@@ -1,5 +1,6 @@
 import { boardStatus } from "./formats/types.ts";
 import type { Board, ImportRow } from "./formats/types.ts";
+import { FUNCTION_TAGS } from "./functions.ts";
 import type { CardEntry, CardStatus, Tag } from "./schema.ts";
 import { slugify } from "./slug.ts";
 import type { CubePaths } from "./store.ts";
@@ -12,6 +13,7 @@ export interface ImportMatch {
   oracleId: string;
   name: string;
   printing?: string;
+  functionTags?: readonly string[];
 }
 
 export type BoardStatuses = Readonly<Record<string, CardStatus | "skip">>;
@@ -52,6 +54,18 @@ export function planImport(input: PlanInput): ImportPlan {
     newTags.push(tag);
     return id;
   };
+  const functionTagId = (id: string): string | undefined => {
+    if (vocabulary.some((tag) => tag.id === id)) {
+      return id;
+    }
+    const known = FUNCTION_TAGS.find((tag) => tag.id === id);
+    if (known === undefined) {
+      return undefined;
+    }
+    vocabulary.push(known);
+    newTags.push(known);
+    return id;
+  };
   const inCube = new Map(input.existing.map((card) => [card.oracleId, card]));
   const taken = new Map<string, ImportMatch>();
   const plan: ImportPlan = { cards: [], newTags, skipped: [], warnings: [] };
@@ -82,7 +96,12 @@ export function planImport(input: PlanInput): ImportPlan {
         message: `${String(row.quantity)} copies of ${match.name}; a cube is singleton, so 1 is kept`,
       });
     }
-    const tags = [...new Set(row.tags.flatMap((label) => tagId(label) ?? []))];
+    const tags = [
+      ...new Set([
+        ...row.tags.flatMap((label) => tagId(label) ?? []),
+        ...(match.functionTags ?? []).flatMap((id) => functionTagId(id) ?? []),
+      ]),
+    ];
     const card: CardEntry = {
       name: match.name,
       oracleId: match.oracleId,

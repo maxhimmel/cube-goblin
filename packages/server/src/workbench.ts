@@ -465,7 +465,12 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
   const offlineDeps: OfflineDeps = { client, oracleTags, images };
   const runs = new OfflineRuns();
   const stats = statsOf(client);
-  const importDeps: ImportDeps = { client, userAgent: USER_AGENT, fetch: reachability.fetch };
+  const importDeps: ImportDeps = {
+    client,
+    oracleTags,
+    userAgent: USER_AGENT,
+    fetch: reachability.fetch,
+  };
   const remembered = new Map<string, Card[]>();
   let writes: Promise<unknown> = Promise.resolve();
 

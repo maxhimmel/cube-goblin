@@ -15,7 +15,9 @@ import {
   cubeCobraId,
   exportFormat,
   fetchCubeCobra,
+  FUNCTION_ORACLE_TAG_IDS,
   formatLosses,
+  functionTags,
   importRequestSchema,
   parseList,
   planImport,
@@ -26,11 +28,12 @@ import {
   statusForBoard,
   toExportCards,
 } from "@repo/cube";
-import type { Card, ScryfallClient } from "@repo/scryfall";
+import type { Card, OracleTagStore, ScryfallClient } from "@repo/scryfall";
 import { ScryfallError } from "@repo/scryfall";
 
 export interface ImportDeps {
   client: ScryfallClient;
+  oracleTags: OracleTagStore;
   userAgent: string;
   fetch?: typeof fetch;
 }
@@ -42,7 +45,7 @@ export interface SourceText {
 
 export async function readImportSource(
   source: ImportSource,
-  deps: Omit<ImportDeps, "client">,
+  deps: Pick<ImportDeps, "userAgent" | "fetch">,
 ): Promise<SourceText> {
   if ("text" in source) {
     return { text: source.text, batch: "import" };
@@ -90,7 +93,7 @@ function line(row: ImportRow): { line: number; input: string; name: string } {
 }
 
 export async function prepareImport(
-  client: ScryfallClient,
+  { client, oracleTags }: Pick<ImportDeps, "client" | "oracleTags">,
   source: SourceText,
   options: PrepareOptions,
 ): Promise<PreparedImport> {
@@ -106,13 +109,23 @@ export async function prepareImport(
         throw error;
       }),
   });
+  const { index } = await oracleTags.load(FUNCTION_ORACLE_TAG_IDS);
   const importMatches: ImportMatch[] = matches.flatMap(({ row, card, how }) => {
     if (card.oracle_id === undefined) {
       return [];
     }
     const pinned = how === "printing" || how === "mtgo" || how === "set-number";
     return [
-      { row, oracleId: card.oracle_id, name: card.name, ...(pinned ? { printing: card.id } : {}) },
+      {
+        row,
+        oracleId: card.oracle_id,
+        name: card.name,
+        functionTags: functionTags(
+          { oracleId: card.oracle_id, producedMana: card.produced_mana ?? [] },
+          index,
+        ),
+        ...(pinned ? { printing: card.id } : {}),
+      },
     ];
   });
   const plan = planImport({
@@ -189,7 +202,7 @@ async function requested(
   const [existing, tags] = fresh
     ? [[], []]
     : await Promise.all([readCards(paths), readTags(paths)]);
-  const prepared = await prepareImport(deps.client, source, {
+  const prepared = await prepareImport(deps, source, {
     existing,
     tags,
     boards: request.boards,

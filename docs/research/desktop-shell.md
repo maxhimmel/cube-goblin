@@ -86,3 +86,10 @@ Built under [T-056](../tickets/T-056-desktop-app.md); `apps/desktop/e2e/desktop.
 - **One custom scheme** (`app://bundle`) serves the renderer, `/api/*`, and `/api/image` through a shared `Request → Response` handler pulled out of `workbench-plugin.ts`. The browser dev server keeps working through the same handler.
 - **IPC only for native needs**: folder picker, recent folders and settings, `cube:changed` push. Each is a named `contextBridge` function, and every handler checks the sender.
 - **Spike first**: one window serving `GET /api/cube` over `app://`, watch → push working, an unsigned `--mac dir --arm64` build launched, and one Playwright `_electron` test. Then port the remaining routes.
+
+## Offline testing
+
+Read 2026-11-15 from [net](https://www.electronjs.org/docs/latest/api/net#netfetchinput-init).
+
+- `net.fetch` sends requests through Chromium's network stack from the default session, and they trigger that session's `webRequest` handlers. Node's `fetch` in main doesn't.
+- So the e2e cuts Scryfall with `session.defaultSession.webRequest.onBeforeRequest({ urls: ["*://*.scryfall.com/*", "*://*.scryfall.io/*"] }, … cancel)`, which leaves `app://` alone. Verified: the cancelled `net.fetch` rejects and the server goes offline.

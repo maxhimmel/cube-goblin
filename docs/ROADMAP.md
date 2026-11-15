@@ -5,14 +5,12 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Handoff
 
 - **Updated**: 2026-11-15
-- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: **multiple cubes** ([T-057](tickets/T-057-multiple-cubes.md)): each cube is a cube folder with its own `cube.config.json`; the desktop app ([T-056](tickets/T-056-desktop-app.md)) switches, creates, and reopens them; the CLI takes `--cube`. Agents drive the desktop app hidden (`cube:workbench-testing`). Commits run fast staged-file checks and merges run the full `pnpm check` ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
+- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: **offline** ([T-058](tickets/T-058-offline.md)): the desktop cube menu's "Make available offline" saves a cube's Scryfall data and images; the top bar shows "Offline". Before that: multiple cubes ([T-057](tickets/T-057-multiple-cubes.md)) in the desktop app ([T-056](tickets/T-056-desktop-app.md)). Agents drive the desktop app hidden (`cube:workbench-testing`). Commits run fast staged-file checks and merges run the full `pnpm check` ([session-timing.md](research/session-timing.md)). Known gaps: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
 - **Polish pass done** ([T-043](tickets/T-043-polish-pass.md)): papercuts ([T-044](tickets/T-044-papercuts.md)), top bar and settings ([T-045](tickets/T-045-top-bar-and-settings.md)), **Forge** at `#/` ([T-046](tickets/T-046-wall-and-lab.md), [T-052](tickets/T-052-forge-polish.md), [T-053](tickets/T-053-forge-charts-polish.md)), one **Tags** view ([T-047](tickets/T-047-tag-workspace.md)), History ([T-048](tickets/T-048-history.md)), Insights cut to the deep charts ([T-049](tickets/T-049-insights-trim.md)), favicon, Forge's look shared by every view (drag stipple and tile actions included), and a dev-only type scale panel ("Aa", bottom left in `pnpm dev`) ([T-050](tickets/T-050-visual-system.md)).
 - **Review round trip** ([T-051](tickets/T-051-share-doc-suggestions.md)): reviews carry pending moves; each export saves a version as their base; share top bar has one Review menu.
-- **Next step**: [T-058](tickets/T-058-offline.md), then [T-059](tickets/T-059-import-export-formats.md). Then [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md). Pending: the user sends `exports/maxs-cube-f4cf50841c15.html` to a friend.
+- **Next step**: [T-059](tickets/T-059-import-export-formats.md). Then [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md). Pending: the user sends `exports/maxs-cube-f4cf50841c15.html` to a friend.
 
 ## Now
-
-- [T-058: Make a cube available offline](tickets/T-058-offline.md)
 
 ## Next
 
@@ -30,6 +28,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-058: Make a cube available offline](tickets/T-058-offline.md)
 - [T-057: Multiple cubes](tickets/T-057-multiple-cubes.md)
 - [T-056: Desktop app](tickets/T-056-desktop-app.md)
 - [T-006: Share doc polish](tickets/T-006-share-doc-polish.md)

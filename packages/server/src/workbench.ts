@@ -183,7 +183,7 @@ function logMessage(request: Request): LogMessage {
   return { subject: header(request, SUBJECT_HEADER), body: header(request, BODY_HEADER) };
 }
 
-function statsOf(client: ScryfallClient) {
+export function statsOf(client: ScryfallClient) {
   return async (state: LogState): Promise<LogStats> => {
     const { cards } = await client.byOracleIds(state.cards.map((card) => card.oracleId));
     const byOracle = new Map(cards.map((card) => [card.oracle_id, card]));

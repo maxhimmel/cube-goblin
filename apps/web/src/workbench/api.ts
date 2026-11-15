@@ -14,6 +14,7 @@ import type {
   Tag,
   Workbench,
 } from "@repo/cube/browser";
+import { cubeId } from "../cube-identity.ts";
 import {
   boardSchema,
   filtersFileSchema,
@@ -82,7 +83,11 @@ async function sendJson(
   const response = await fetch(url, {
     method,
     keepalive,
-    headers: { "Content-Type": "application/json", ...logHeaders(note) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(cubeId() === "" ? {} : { "X-Cube-Id": cubeId() }),
+      ...logHeaders(note),
+    },
     body: JSON.stringify(body),
   });
   if (!response.ok) {

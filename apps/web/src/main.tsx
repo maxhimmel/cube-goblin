@@ -26,10 +26,17 @@ if (!root) {
 }
 document.documentElement.dataset["mode"] = mode.name;
 
-createRoot(root).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+void mode
+  .boot()
+  .catch((error: unknown) => {
+    console.warn(`Could not read the cube's name and id: ${String(error)}`);
+  })
+  .finally(() => {
+    createRoot(root).render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+  });

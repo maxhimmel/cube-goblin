@@ -249,7 +249,7 @@ test("share doc keeps its own state apart from other copies in the same browser"
   await page.goto(DOC_URL);
   await page.evaluate((slug) => {
     localStorage.setItem(
-      "maxs-cube:view-state:v1",
+      "cube:view-state:v1",
       JSON.stringify({ "pending.lab": [{ slug, to: "prospect" }], "lab.axis": "type" }),
     );
   }, card.slug);

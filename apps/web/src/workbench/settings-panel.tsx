@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { ForgeSettings } from "../forge/view-settings.tsx";
 import { z } from "zod";
+import { setCubeIdentity } from "../cube-identity.ts";
 import { queryClient } from "../query-client.ts";
 import { useRemembered } from "../view-choices.ts";
 import { CONFIG_QUERY_KEY, CUBE_QUERY_KEY, fetchConfig, saveConfigRequest } from "./api.ts";
@@ -111,10 +112,13 @@ export function SettingsPanel({ onClose }: { onClose: () => void }): ReactNode {
 }
 
 function CubeSettings({ saved }: { saved: CubeConfig }): ReactNode {
+  const [name, setName] = useState(saved.name);
   const [format, setFormat] = useState(saved.format);
   const [min, setMin] = useState(String(saved.size.min));
   const [max, setMax] = useState(String(saved.size.max));
   const draft = cubeConfigSchema.safeParse({
+    id: saved.id,
+    name: name.trim(),
     format,
     size: { min: Number(min), max: Number(max) },
   });
@@ -123,6 +127,7 @@ function CubeSettings({ saved }: { saved: CubeConfig }): ReactNode {
     mutationFn: saveConfigRequest,
     onSuccess: async (config) => {
       queryClient.setQueryData(CONFIG_QUERY_KEY, config);
+      setCubeIdentity(config);
       showToast({ message: "Saved cube settings", tone: "info" });
       await queryClient.invalidateQueries({ queryKey: CUBE_QUERY_KEY });
     },
@@ -144,8 +149,17 @@ function CubeSettings({ saved }: { saved: CubeConfig }): ReactNode {
     >
       <h3>Cube</h3>
       <p className="muted">
-        Saved to <code>cube.config.json</code>.
+        Saved to <code>cube.config.json</code> in the cube folder.
       </p>
+      <label className="field">
+        Name
+        <input
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+          }}
+        />
+      </label>
       <label className="field">
         Format
         <select
@@ -193,7 +207,8 @@ function CubeSettings({ saved }: { saved: CubeConfig }): ReactNode {
       </fieldset>
       {!draft.success && (
         <p role="alert" className="error">
-          Min and max are whole numbers above 0, and min is no higher than max.
+          The cube needs a name. Min and max are whole numbers above 0, and min is no higher than
+          max.
         </p>
       )}
       <button type="submit" disabled={!draft.success || !changed || save.isPending}>

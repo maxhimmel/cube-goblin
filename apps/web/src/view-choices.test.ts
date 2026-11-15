@@ -57,8 +57,8 @@ describe("view choices", () => {
 
   it("survives junk in storage", () => {
     const store = memory();
-    store.setItem("maxs-cube:view-search:v1", "{not json");
-    store.setItem("maxs-cube:view-state:v1", JSON.stringify({ "wall.trayOpen": "yes" }));
+    store.setItem("cube:view-search:v1", "{not json");
+    store.setItem("cube:view-state:v1", JSON.stringify({ "wall.trayOpen": "yes" }));
     expect(recallSearch("/tags", {}, store)).toBeUndefined();
     expect(recallState("wall.trayOpen", z.boolean(), store)).toBeUndefined();
   });
@@ -82,7 +82,7 @@ describe("view choices", () => {
 
   it("carries the old Board sort into the tags view", () => {
     const store = memory();
-    store.setItem("maxs-cube:view-search:v1", JSON.stringify({ "/board": { sort: "mv" } }));
+    store.setItem("cube:view-search:v1", JSON.stringify({ "/board": { sort: "mv" } }));
     expect(recallSearch("/tags", {}, store)).toEqual({ sort: "mv" });
     rememberSearch("/tags", { sort: "name" }, store);
     expect(recallSearch("/tags", {}, store)).toEqual({ sort: "name" });

@@ -18,6 +18,8 @@ export interface CubeView {
 
 export interface Mode {
   name: "share" | "workbench";
+  boot: () => Promise<void>;
+  CubeSwitcher: () => ReactNode;
   useCube: () => CubeView | undefined;
   useTileMark: (slug: string) => Record<string, string | undefined>;
   Toolbar: () => ReactNode;

@@ -24,6 +24,14 @@ export function PlusIcon(): ReactNode {
   );
 }
 
+export function ChevronDownIcon(): ReactNode {
+  return (
+    <Icon size={18}>
+      <path d="m6 9 6 6 6-6" />
+    </Icon>
+  );
+}
+
 export function SettingsIcon(): ReactNode {
   return (
     <Icon size={22}>

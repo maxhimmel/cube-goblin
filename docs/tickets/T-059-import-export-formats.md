@@ -9,6 +9,7 @@ Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Researc
 ## Decisions (user, 2026-11-15)
 
 - Formats: Cube Cobra, Draftmancer, deck text lists (MTGO, Arena, Moxfield, Archidekt, MTGGoldfish), Cockatrice, and XMage.
+- A list typed by hand in no known format: the Import tab hands out a prompt (`AI_IMPORT_PROMPT`, `packages/cube/src/formats/ai-prompt.ts`) to paste with the list into any AI chat, and the AI's answer pastes back in. A test keeps the prompt's example readable by the importer. Checked on 2026-11-15: a messy hand-typed list run through `claude -p --model sonnet` imported all 13 cards with none missed.
 
 ## Scope
 

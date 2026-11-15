@@ -50,4 +50,16 @@ describe("workbench server", () => {
     expect(await readConfig(first.paths)).toEqual(first.config);
     expect(await readConfig(second.paths)).toEqual(second.config);
   });
+
+  it("knows a cube's new name after Settings renames it", async () => {
+    const { config: saved } = server.cube();
+    const response = await server.handle(
+      new Request("http://test/api/config", {
+        method: "PUT",
+        body: JSON.stringify({ ...saved, name: "Renamed" }),
+      }),
+    );
+    expect(response?.status).toBe(200);
+    expect(server.cube().config.name).toBe("Renamed");
+  });
 });

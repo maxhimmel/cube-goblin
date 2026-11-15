@@ -433,9 +433,8 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
   let current = await load(options.cubeDir);
 
   async function open(dir: string): Promise<CubeFolder> {
-    const next = load(dir);
     const switched = writes.then(async () => {
-      current = await next;
+      current = await load(dir);
     });
     writes = switched.catch(() => undefined);
     await switched;
@@ -452,6 +451,9 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
     const result = await matched.write(body.value);
     if (!result.ok) {
       return json(result.status, { error: result.error });
+    }
+    if ("config" in result && current.paths === paths) {
+      current = { ...current, folder: { ...current.folder, config: result.config } };
     }
     if (before !== undefined) {
       await recordEdit(paths, before, stats, { message }).catch((error: unknown) => {

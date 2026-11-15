@@ -11,6 +11,7 @@ Small bugs and rough edges found while building, kept here so the roadmap's Hand
 - Tag-removal undo re-appends the tag at the end of the card's tags.
 - An edit queued behind a failed one keeps an undo built from the failed state.
 - A disk failure mid-write can leave a partial batch or an orphan batch line in `cube/inbox/workbench.txt`.
+- The share doc hotlinks large card images, so they need internet (from [T-006](T-006-share-doc-polish.md), 2026-11-15).
 - Change log gaps are in [T-038](T-038-change-log.md#built-2026-11-12).
 
 ## Done when

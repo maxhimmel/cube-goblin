@@ -1,7 +1,7 @@
 ---
 id: T-006
 title: Share doc polish
-status: todo
+status: done
 ---
 
 Deferred by the user (2026-11-08): editing comes first. Known gaps from the proof of concept ([rendering-and-sharing.md](../research/rendering-and-sharing.md)):
@@ -14,3 +14,7 @@ Deferred by the user (2026-11-08): editing comes first. Known gaps from the proo
 ## Done when
 
 - The user picks which gaps matter, and those are closed with e2e coverage.
+
+## Dropped (2026-11-15)
+
+Closed by the user: every gap moved elsewhere. The image gap moved to [T-042](T-042-known-gaps.md).

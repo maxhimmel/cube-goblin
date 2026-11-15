@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, stat } from "node:fs/promises";
+import { mkdir, readFile, rename, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import type { CubeConfig } from "./schema.ts";
 import { cubeConfigSchema } from "./schema.ts";
@@ -47,11 +47,22 @@ async function looksLikeCube(dir: string): Promise<boolean> {
 
 export async function findCubeFolder(dir: string): Promise<string | undefined> {
   const absolute = resolve(dir);
+  const nested = join(absolute, "cube");
+  if (!(await isDirectory(join(absolute, "cards"))) && (await isDirectory(join(nested, "cards")))) {
+    return nested;
+  }
   if (await looksLikeCube(absolute)) {
     return absolute;
   }
-  const nested = join(absolute, "cube");
   return (await looksLikeCube(nested)) ? nested : undefined;
+}
+
+async function adoptRepoConfig(found: string, given: string): Promise<void> {
+  const inside = join(found, CONFIG_FILE);
+  const outside = join(given, CONFIG_FILE);
+  if (found !== given && !(await isFile(inside)) && (await isFile(outside))) {
+    await rename(outside, inside);
+  }
 }
 
 async function rawConfig(file: string): Promise<Record<string, unknown>> {
@@ -78,6 +89,7 @@ export async function openCubeFolder(dir: string): Promise<CubeFolder> {
   if (found === undefined) {
     throw new NotACubeFolder(dir);
   }
+  await adoptRepoConfig(found, resolve(dir));
   const paths = cubePaths(found);
   const raw = await rawConfig(paths.configFile);
   const filled = {

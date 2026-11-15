@@ -57,6 +57,19 @@ describe("openCubeFolder", () => {
     expect(opened.config.name).toBe("my-repo");
   });
 
+  it("opens a repo's cube/ folder from the old layout and moves the root config into it", async () => {
+    const repo = join(parent, "old-repo");
+    await mkdir(join(repo, "cube", "cards"), { recursive: true });
+    await writeFile(
+      join(repo, "cube.config.json"),
+      JSON.stringify({ format: "winston", size: { min: 40, max: 45 } }),
+    );
+    const opened = await openCubeFolder(repo);
+    expect(opened.dir).toBe(join(repo, "cube"));
+    expect(opened.config).toMatchObject({ name: "old-repo", size: { min: 40, max: 45 } });
+    expect(await findCubeFolder(repo)).toBe(join(repo, "cube"));
+  });
+
   it("refuses a folder that holds no cube", async () => {
     expect(await findCubeFolder(parent)).toBeUndefined();
     await expect(openCubeFolder(parent)).rejects.toThrow(/not a cube folder/u);

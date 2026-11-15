@@ -52,10 +52,10 @@ export function boardStatus(board: Board): CardStatus | "skip" {
 
 export function normalizeBoard(raw: string): Board {
   const key = raw.toLowerCase().replace(/\s+/gu, "");
-  if (["main", "mainboard", "maindeck", "deck"].includes(key)) {
+  if (["main", "mainboard", "maindeck", "deck", "commander", "commanders"].includes(key)) {
     return "main";
   }
-  if (["side", "sideboard", "commander", "commanders", "companion"].includes(key)) {
+  if (["side", "sideboard", "companion"].includes(key)) {
     return "side";
   }
   if (["maybe", "maybeboard", "considering"].includes(key)) {

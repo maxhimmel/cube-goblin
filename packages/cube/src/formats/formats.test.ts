@@ -306,6 +306,58 @@ describe("tolerant line parser", () => {
 });
 
 describe("real files", () => {
+  it("imports a Moxfield export", () => {
+    const parsed = parseList(fixture("moxfield-export.txt"));
+    expect(parsed.format).toBe("text");
+    expect(parsed.rows).toHaveLength(79);
+    expect(parsed.rows.every((row) => row.board === "main")).toBe(true);
+    const byName = new Map(parsed.rows.map((row) => [row.name, row]));
+    expect(byName.get("Rowan, Scion of War")).toMatchObject({ set: "woe", collectorNumber: "300" });
+    expect(byName.get("Alesha, Who Laughs at Fate")).toMatchObject({
+      set: "pfdn",
+      collectorNumber: "115p",
+    });
+    expect(byName.get("Cabal Pit")).toMatchObject({ set: "plst", collectorNumber: "ODY-315" });
+    expect(byName.get("Herald of Slaanesh")).toMatchObject({ set: "40k", collectorNumber: "77" });
+    expect(byName.get("Swamp")?.quantity).toBe(17);
+    expect(nameCandidates("Cut / Ribbons")).toContain("Cut // Ribbons");
+    expect(nameCandidates("Bloodline Recollector / Ancestral Craving")).toContain(
+      "Bloodline Recollector // Ancestral Craving",
+    );
+  });
+
+  it("writes multi-face names the way Moxfield exports them", () => {
+    const text = exportFormat("moxfield")?.write(CARDS, META) ?? "";
+    expect(text).toContain("1 Fire / Ice (MH2) 290\n");
+    expect(text).toContain("1 Bonecrusher Giant / Stomp\n");
+  });
+
+  it("imports an Archidekt export with categories, flags, and boards", () => {
+    const parsed = parseList(fixture("archidekt-export.txt"));
+    expect(parsed.rows).toHaveLength(81);
+    const byName = new Map(parsed.rows.map((row) => [row.name, row]));
+    expect(byName.get("An Offer You Can't Refuse")).toMatchObject({
+      board: "main",
+      set: "fic",
+      collectorNumber: "267",
+      tags: ["Counter Spells", "Removal"],
+    });
+    expect(byName.get("Eluge, the Shoreless Sea")).toMatchObject({ board: "main", tags: [] });
+    expect(byName.get("Merchant Scroll")).toMatchObject({ board: "maybe", tags: ["Tutor"] });
+    expect(byName.get("Displace")).toMatchObject({ set: "plst", collectorNumber: "EMN-55" });
+    expect(byName.get("Force of Negation")).toMatchObject({ set: "2x2", collectorNumber: "50" });
+    expect(byName.get("Island")?.quantity).toBe(22);
+    expect(byName.has("Lórien Revealed")).toBe(true);
+    expect(byName.has("Hydroelectric Specimen // Hydroelectric Laboratory")).toBe(true);
+  });
+
+  it("imports an Arena export of names only", () => {
+    const parsed = parseList(fixture("arena-export.txt"));
+    expect(parsed.rows).toHaveLength(16);
+    expect(parsed.rows.every((row) => row.board === "main" && row.set === undefined)).toBe(true);
+    expect(parsed.rows.at(-1)).toMatchObject({ name: "Swamp", quantity: 25 });
+  });
+
   it("imports XMage's MTGO .dek sample", () => {
     const parsed = parseList(fixture("testdeck.dek"));
     expect(parsed.format).toBe("mtgo-dek");

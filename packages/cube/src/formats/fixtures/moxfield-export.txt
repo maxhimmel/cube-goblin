@@ -1,0 +1,79 @@
+1 Rowan, Scion of War (WOE) 300 *F*
+1 Abrade (CMR) 410
+1 Alesha, Who Laughs at Fate (PFDN) 115p
+1 Ambition's Cost (SCD) 66
+1 Ancient Cellarspawn (DSC) 16
+1 Arcane Signet (CMR) 297
+1 Archfiend of Depravity (FIC) 273
+1 Archfiend of Despair (FRC) 46
+1 Ardyn, the Usurper (FIN) 444
+1 Balor (CLB) 162
+1 Barbarian Ring (MH3) 299
+1 Battle at the Bridge (AER) 53
+1 Bitterbloom Bearer (ECL) 88
+1 Blackcleave Cliffs (ONE) 248
+1 Blade of the Oni (NEO) 89
+1 Blood Crypt (ECL) 262
+1 Bloodgift Demon (SCD) 69
+1 Bloodline Recollector / Ancestral Craving (FRA) 49
+1 Boggart Trawler / Boggart Bog (MH3) 243
+1 Bolt Bend (WAR) 115
+1 Cabal Pit (PLST) ODY-315
+1 Command Tower (MKC) 256
+1 Cut / Ribbons (AKH) 223
+1 Dark Ritual (3ED) 99
+1 Demon's Disciple (ZNR) 97
+1 Demonic Counsel (DSK) 92
+1 Demonic Embrace (GN3) 46
+1 Doom Whisperer (PLST) MKC-128
+1 Dragonskull Summit (M12) 225
+1 Erebos's Intervention (THB) 94
+1 Exotic Orchard (NCC) 400
+1 Exsanguinate (FDN) 173
+1 Fire Covenant (ECC) 54
+1 Foreboding Ruins (WHO) 279
+1 Herald of Slaanesh (40K) 77
+1 Herald of Torment (BNG) 75
+1 Horizon of Progress (M3C) 130
+1 Ifnir Deadlands (ECC) 153
+1 Inner Demon (BBD) 48
+1 Invasion of Fiora / Marchesa, Resolute Monarch (MOM) 114
+1 K'rrik, Son of Yawgmoth (MH3) 274
+1 Kardur, Doomscourge (DSC) 223
+1 Keen Duelist (SOC) 218
+1 Lightning Greaves (DDE) 19
+1 March of Wretched Sorrow (NEO) 380
+6 Mountain (WOE) 265
+1 Night's Whisper (ECC) 81
+1 Obsessive Pursuit (TLA) 340
+1 Pact Weapon (CLB) 139 *F*
+1 Phyrexian Arena (DDE) 27
+1 Pinnacle Monk / Mystic Peak (MH3) 246
+1 Plaguecrafter (GRN) 82
+1 Power Word Kill (PLST) AFR-114
+1 Priest of Gix (J25) 121
+1 Profane Transfusion (CMR) 653
+1 Rakdos Charm (RTR) 184
+1 Ramunap Ruins (PLST) HOU-181
+1 Raphael, Fiendish Savior (CLB) 438
+1 Reign of the Pit (SCD) 102
+1 Repay in Kind (ROE) 125
+1 Rising of the Day (LTR) 145
+1 Rune-Scarred Demon (FDN) 184
+1 Rush of Dread (OTJ) 104
+1 Samut, Hazoret's Champion (FRA) 311
+1 Scheming Silvertongue / Sign in Blood (SOS) 99
+1 Sign in Blood (STA) 95
+1 Smoldering Marsh (OTC) 321
+1 Snuff Out (FIC) 285
+1 Sol Ring (CMM) 410
+1 Stensian Sanguinist / Exsanguinate (SOC) 78
+1 Stormfist Crusader (ELD) 203
+1 Sulfurous Springs (FIC) 427
+17 Swamp (WOE) 264
+1 Tainted Peak (PIP) 300
+1 Talisman of Indulgence (WHO) 252
+1 Torment of Hailfire (HOU) 77
+1 Vampire Lacerator (MM2) 101
+1 Vandalblast (RTR) 111
+1 Vilis, Broker of Blood (M20) 122

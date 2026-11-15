@@ -248,6 +248,13 @@ function serveCubes(server: WorkbenchServer, recent: RecentCubes): void {
       }
       return switchTo(dir);
     },
+    [CUBES_CHANNEL.offlineStatus]: async (dir) => {
+      const known = (await recent.load()).cubes.some((cube) => cube.dir === dir);
+      if (typeof dir !== "string" || (!known && dir !== server.cube().dir)) {
+        throw new TypeError("Only a cube from the recent list has an offline status");
+      }
+      return server.offlineStatus(dir);
+    },
     [CUBES_CHANNEL.remove]: async (dir) => {
       if (typeof dir !== "string") {
         throw new TypeError("No cube folder given");
@@ -337,6 +344,7 @@ async function start(): Promise<void> {
       cubeDir,
       cacheDir: join(cacheDir, "scryfall"),
       imageCacheDir: join(cacheDir, "scryfall-images"),
+      fetch: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init),
     });
   } catch (error) {
     dialog.showErrorBox("Could not open the cube", `${cubeDir}\n\n${String(error)}`);

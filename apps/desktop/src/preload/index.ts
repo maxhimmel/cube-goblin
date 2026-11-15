@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { OfflineStatus } from "@repo/cube/browser";
 import type { CubeList, CubeRef, DesktopBridge } from "@repo/server/events";
 import { CUBE_CHANGED_EVENT, CUBES_CHANNEL } from "@repo/server/events";
 
@@ -18,6 +19,8 @@ const bridge: DesktopBridge = {
     openFolder: () => ipcRenderer.invoke(CUBES_CHANNEL.openFolder) as Promise<CubeRef | undefined>,
     switchTo: (dir) => ipcRenderer.invoke(CUBES_CHANNEL.switchTo, dir) as Promise<CubeRef>,
     remove: (dir) => ipcRenderer.invoke(CUBES_CHANNEL.remove, dir) as Promise<CubeList>,
+    offlineStatus: (dir) =>
+      ipcRenderer.invoke(CUBES_CHANNEL.offlineStatus, dir) as Promise<OfflineStatus>,
   },
 };
 

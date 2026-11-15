@@ -86,7 +86,7 @@ function Toolbar(): ReactNode {
         <span
           className="offline-state"
           role="status"
-          title={`${OFFLINE_REASON}. Cached cards and edits keep working; search, adding cards, and printings not yet saved need a connection.`}
+          title={`${OFFLINE_REASON}. Cached cards and edits keep working; search, adding cards, and printings need a connection.`}
         >
           Offline
         </span>

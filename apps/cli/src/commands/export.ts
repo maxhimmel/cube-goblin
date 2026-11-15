@@ -1,14 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import type { CubePaths } from "@repo/cube";
-import {
-  EXPORT_FORMATS,
-  exportFormat,
-  formatLosses,
-  readCards,
-  readConfig,
-  readTags,
-  toExportCards,
-} from "@repo/cube";
+import { EXPORT_FORMATS } from "@repo/cube";
+import { exportCube as exportText } from "@repo/server";
 import { chalk } from "zx";
 import { createClient } from "../client.ts";
 
@@ -17,31 +10,20 @@ export async function exportCube(
   formatId: string | undefined,
   out: string | undefined,
 ): Promise<number> {
-  const format = formatId === undefined ? undefined : exportFormat(formatId);
-  if (format === undefined) {
+  const result = await exportText(paths, createClient(), formatId ?? "");
+  if (!result.ok) {
     console.error(
       `export: --format must be one of ${EXPORT_FORMATS.map((entry) => entry.id).join(", ")}`,
     );
     return 1;
   }
-  const [cards, tags, config] = await Promise.all([
-    readCards(paths),
-    readTags(paths),
-    readConfig(paths),
-  ]);
-  const { cards: printings } = await createClient().forEntries(cards);
-  const text = format.write(
-    toExportCards(cards, tags, (entry) => printings.get(entry.oracleId)),
-    { name: config.name, size: config.size },
-  );
-  const losses = formatLosses(format);
-  if (losses.length > 0) {
-    console.error(chalk.yellow(`${format.label} can't carry ${losses.join(", ")}`));
+  if (result.losses.length > 0) {
+    console.error(chalk.yellow(`This format can't carry ${result.losses.join(", ")}`));
   }
   if (out === undefined) {
-    process.stdout.write(text);
+    process.stdout.write(result.text);
   } else {
-    await writeFile(out, text);
+    await writeFile(out, result.text);
     console.error(chalk.green(`Wrote ${out}`));
   }
   return 0;

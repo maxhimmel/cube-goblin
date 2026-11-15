@@ -65,6 +65,8 @@ import {
 } from "@repo/scryfall";
 import type { Card } from "@repo/scryfall";
 import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
+import type { ImportDeps, ImportResult } from "./importer.ts";
+import { exportCube, previewImport, runImport } from "./importer.ts";
 import type { OfflineDeps } from "./offline.ts";
 import { OfflineRuns, Reachability, cacheStatus } from "./offline.ts";
 
@@ -155,7 +157,8 @@ type WriteResult =
   | LayoutsResult
   | ConfigResult
   | VersionResult
-  | RevertResult;
+  | RevertResult
+  | ImportResult;
 type Write = (body: unknown) => Promise<WriteResult>;
 
 interface Route {
@@ -215,6 +218,9 @@ function written(result: Extract<WriteResult, { ok: true }>): unknown {
   }
   if ("entry" in result) {
     return result.entry;
+  }
+  if ("imported" in result) {
+    return result.imported;
   }
   return "cards" in result ? result.cards : result.tag;
 }
@@ -338,6 +344,7 @@ function writeRoute(
   client: ScryfallClient,
   oracleTags: OracleTagStore,
   stats: (state: LogState) => Promise<LogStats>,
+  importDeps: ImportDeps,
 ) {
   const lookup = async (oracleId: string): Promise<FoundCard | undefined> => {
     const [{ cards }, tags] = await Promise.all([
@@ -358,6 +365,9 @@ function writeRoute(
   return (url: string, method: string | undefined, message: LogMessage): Route | undefined => {
     if (url === "/api/log/revert" && method === "POST") {
       return { write: (body) => revertEntries(paths, body, stats, message), logged: false };
+    }
+    if (url === "/api/import" && method === "POST") {
+      return { write: (body) => runImport(paths, body, importDeps), logged: true };
     }
     if (url === "/api/cards" && method === "POST") {
       return { write: (body) => addCard(paths, body, lookup), logged: true };
@@ -455,6 +465,7 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
   const offlineDeps: OfflineDeps = { client, oracleTags, images };
   const runs = new OfflineRuns();
   const stats = statsOf(client);
+  const importDeps: ImportDeps = { client, userAgent: USER_AGENT, fetch: reachability.fetch };
   const remembered = new Map<string, Card[]>();
   let writes: Promise<unknown> = Promise.resolve();
 
@@ -463,7 +474,7 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
     return {
       folder,
       paths: folder.paths,
-      route: writeRoute(folder.paths, client, oracleTags, stats),
+      route: writeRoute(folder.paths, client, oracleTags, stats, importDeps),
       cubeRoot: resolve(folder.dir) + sep,
     };
   }
@@ -527,6 +538,38 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
             },
           }),
         () => 502,
+      );
+    }
+    if (url === "/api/import/preview" && method === "POST") {
+      const body = parseJson(await request.text());
+      if (!body.ok) {
+        return json(400, { error: "Body is not valid JSON" });
+      }
+      return answer(
+        explained(previewImport(paths, body.value, importDeps), "importing needs a connection"),
+        (result) =>
+          result.ok ? json(200, result.preview) : json(result.status, { error: result.error }),
+        scryfallFailure,
+      );
+    }
+    if (url === "/api/export" && method === "GET") {
+      return answer(
+        explained(
+          exportCube(paths, client, params.get("format") ?? ""),
+          "export needs a connection",
+        ),
+        (result) =>
+          result.ok
+            ? new Response(result.text, {
+                status: 200,
+                headers: {
+                  "Content-Type": "text/plain; charset=utf-8",
+                  "Content-Disposition": `attachment; filename="${result.filename}"`,
+                  "X-Export-Losses": result.losses.join(","),
+                },
+              })
+            : json(result.status, { error: result.error }),
+        scryfallFailure,
       );
     }
     if (url === "/api/offline" && method === "POST") {

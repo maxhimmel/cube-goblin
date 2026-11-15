@@ -41,7 +41,8 @@
       "outputs": ["out/**"]
     },
     "e2e:desktop": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/web/e2e/fixture/**"]
     }
   }
 }

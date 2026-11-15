@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ const CACHE_DIR = fileURLToPath(new URL("../../../.cache", import.meta.url));
 interface Desktop {
   app: ElectronApplication;
   page: Page;
+  root: string;
   cardsDir: string;
 }
 
@@ -30,7 +31,7 @@ const test = base.extend<{ desktop: Desktop }>({
       },
     });
     const page = await app.firstWindow();
-    await provide({ app, page, cardsDir: join(root, "cube", "cards") });
+    await provide({ app, page, root, cardsDir: join(root, "cube", "cards") });
     await app.close();
     await rm(root, { recursive: true, force: true });
   },
@@ -43,7 +44,7 @@ async function notes(cardsDir: string, slug: string): Promise<unknown> {
 
 test("the app serves the workbench and its card images over app://", async ({ desktop }) => {
   const { page } = desktop;
-  expect(page.url()).toBe("app://bundle/");
+  await page.waitForURL("app://bundle/");
   await page.evaluate(() => {
     window.location.hash = "#/cards";
   });
@@ -68,6 +69,21 @@ test("an edit on disk shows up without a reload", async ({ desktop }) => {
     `${JSON.stringify({ ...(entry as object), notes: "edited on disk" }, null, 2)}\n`,
   );
   await expect(page.getByLabel("Notes")).toHaveValue("edited on disk");
+});
+
+test("config saved by rename keeps updating the app", async ({ desktop }) => {
+  const { page, root } = desktop;
+  const file = join(root, "cube.config.json");
+  const replace = async (max: number): Promise<void> => {
+    const config = { format: "winston", size: { min: 90, max } };
+    await writeFile(`${file}.tmp`, `${JSON.stringify(config, null, 2)}\n`);
+    await rename(`${file}.tmp`, file);
+  };
+  await expect(page.getByText("target 90–90")).toBeVisible();
+  await replace(95);
+  await expect(page.getByText("target 90–95")).toBeVisible();
+  await replace(99);
+  await expect(page.getByText("target 90–99")).toBeVisible();
 });
 
 test("notes typed right before a reload are saved", async ({ desktop }) => {
@@ -97,7 +113,10 @@ test("the renderer is sandboxed and gets only the desktop bridge", async ({ desk
   );
   expect(csp).toContain("default-src 'self'");
   await page.evaluate(() => {
+    (window as { stayed?: boolean }).stayed = true;
     window.location.href = "https://example.com/";
   });
-  await expect.poll(() => page.url()).toBe("app://bundle/");
+  await page.waitForTimeout(1000);
+  expect(page.url()).toBe("app://bundle/");
+  expect(await page.evaluate(() => (window as { stayed?: boolean }).stayed)).toBe(true);
 });

@@ -32,6 +32,14 @@ export function ChevronDownIcon(): ReactNode {
   );
 }
 
+export function TransferIcon(): ReactNode {
+  return (
+    <Icon size={22}>
+      <path d="M7 4v13M3 13l4 4 4-4M17 20V7M13 11l4-4 4 4" />
+    </Icon>
+  );
+}
+
 export function SettingsIcon(): ReactNode {
   return (
     <Icon size={22}>

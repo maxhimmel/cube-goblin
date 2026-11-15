@@ -570,3 +570,98 @@
   padding: 0;
   font-weight: 600;
 }
+
+.transfer-panel {
+  width: min(720px, 92vw);
+}
+
+.transfer-import {
+  align-items: stretch;
+}
+
+.transfer-import > button,
+.transfer-import > .segmented {
+  align-self: start;
+}
+
+.transfer-text,
+.transfer-url {
+  box-sizing: border-box;
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: var(--fs-sm);
+}
+
+.transfer-file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transfer-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.transfer-review[aria-busy="true"] {
+  opacity: 0.6;
+}
+
+.transfer-review p,
+.transfer-review h3 {
+  margin: 0;
+}
+
+.transfer-boards {
+  border-collapse: collapse;
+}
+
+.transfer-boards caption {
+  text-align: left;
+  padding-bottom: 4px;
+}
+
+.transfer-boards th {
+  text-align: left;
+  font-weight: 500;
+}
+
+.transfer-boards th,
+.transfer-boards td {
+  padding: 3px 14px 3px 0;
+}
+
+.transfer-fixes ul,
+.transfer-review details ul {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transfer-fixes li {
+  display: grid;
+  grid-template-columns: 5em minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.transfer-fixes li[data-skipped="true"] input {
+  text-decoration: line-through;
+}
+
+.transfer-fixes > button {
+  margin-top: 8px;
+}
+
+.transfer-added {
+  columns: 2;
+  max-height: 14em;
+  overflow: auto;
+}
+
+.transfer-formats label {
+  display: grid;
+  grid-template-columns: auto 12em minmax(0, 1fr);
+}

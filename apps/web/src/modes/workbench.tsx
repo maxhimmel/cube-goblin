@@ -18,7 +18,7 @@ import { useIsMutating, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { PlusIcon, SettingsIcon } from "../icons.tsx";
+import { PlusIcon, SettingsIcon, TransferIcon } from "../icons.tsx";
 import { onCubeChanged } from "../desktop-bridge.ts";
 import { queryClient } from "../query-client.ts";
 import {
@@ -43,6 +43,7 @@ import { CardEditor, CardPrinting } from "../workbench/card-editor.tsx";
 import { CardHistory } from "../workbench/card-history.tsx";
 import { editsPending, runCardEdit } from "../workbench/edits.ts";
 import { clearSelection, useSelection } from "../workbench/selection.ts";
+import { ImportExportPanel } from "../workbench/import-export-panel.tsx";
 import { SettingsPanel } from "../workbench/settings-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { WorkbenchHistoryPage } from "../workbench/history-page.tsx";
@@ -77,8 +78,9 @@ function useWorkbenchCard(slug: string): WorkbenchCard | undefined {
 
 function Toolbar(): ReactNode {
   const { error } = useQuery({ queryKey: CUBE_QUERY_KEY, queryFn: fetchCube });
-  const saving = useIsMutating() > 0;
+  const saving = useIsMutating({ predicate: (mutation) => mutation.meta?.["saves"] !== false }) > 0;
   const [settings, setSettings] = useState(false);
+  const [transfer, setTransfer] = useState(false);
   const online = useOnline();
   return (
     <div className="topbar-actions">
@@ -110,6 +112,25 @@ function Toolbar(): ReactNode {
       >
         <PlusIcon />
       </Link>
+      <button
+        type="button"
+        className="icon-button"
+        aria-label="Import and export"
+        title="Import and export"
+        aria-expanded={transfer}
+        onClick={() => {
+          setTransfer(true);
+        }}
+      >
+        <TransferIcon />
+      </button>
+      {transfer && (
+        <ImportExportPanel
+          onClose={() => {
+            setTransfer(false);
+          }}
+        />
+      )}
       <button
         type="button"
         className="icon-button"

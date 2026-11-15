@@ -631,6 +631,56 @@ test("adding a card from Scryfall writes it with its function tags and a batch l
   await expect(bolt.getByRole("button")).toHaveCount(0);
 });
 
+test("imports a pasted list after fixing its lines and exports the cube", async ({
+  page,
+  workbench,
+}) => {
+  const logBefore = (await readLogFile(workbench.cardsDir)).length;
+  await page.goto(`${workbench.url}#/`);
+  await page.getByRole("button", { name: "Import and export" }).click();
+  const panel = page.getByRole("dialog", { name: "Import and export" });
+  await panel.getByRole("tab", { name: "Import" }).click();
+  await panel
+    .getByLabel("List to import")
+    .fill(
+      "Deck\n1 Lightning Bolt [Burn]\n1 Notacard Whatsoever\n1 Abrade\n\nSideboard\n1 Counterspel\n",
+    );
+  await panel.getByRole("button", { name: "Preview" }).click();
+  await expect(panel.getByText("Read as a deck list")).toBeVisible({ timeout: 30000 });
+  await expect(panel.getByText("not found")).toBeVisible();
+  await expect(panel.getByText("guessed Counterspell")).toBeVisible();
+
+  await panel.getByRole("button", { name: "Skip" }).first().click();
+  await panel.getByLabel("Sideboard becomes").selectOption("draft");
+  await expect(panel.getByText("Adds 2 cards: 2 draft, 0 prospect, 0 cut.")).toBeVisible({
+    timeout: 30000,
+  });
+  await panel.getByRole("button", { name: "Import 2 cards" }).click();
+  await expect(page.getByRole("status")).toContainText("Imported 2 cards");
+
+  expect(await readEntry(workbench.cardsDir, "lightning-bolt")).toMatchObject({
+    status: "draft",
+    tags: ["burn"],
+    source: { line: 2, input: "1 Lightning Bolt [Burn]" },
+  });
+  expect(await readEntry(workbench.cardsDir, "counterspell")).toMatchObject({ status: "draft" });
+  const log = await readLogFile(workbench.cardsDir);
+  expect(log).toHaveLength(logBefore + 1);
+  expect(parseMessage(log.at(-1)?.message ?? "").subject).toBe("Import 2 cards from a deck list");
+
+  await page.getByRole("button", { name: "Import and export" }).click();
+  await panel.getByRole("tab", { name: "Export" }).click();
+  await expect(panel.getByText("drops cuts, tags, notes, printings")).toBeVisible();
+  await panel.getByLabel("Cube Cobra (CSV)").check();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    panel.getByRole("button", { name: "Download" }).click(),
+  ]);
+  const csv = await readFile(await download.path(), "utf8");
+  expect(csv.split("\r\n")[0]).toContain('"name","CMC","Type"');
+  expect(csv).toContain('"Lightning Bolt"');
+});
+
 test("swapping keeps the old card as cut and can carry its tags", async ({ page, workbench }) => {
   const slug = "daring-saboteur";
   const patched = await page.request.patch(`${workbench.url}api/cards`, {

@@ -275,6 +275,18 @@ describe("ScryfallClient", () => {
     await expect(offline.printings("other")).rejects.toThrow("fetch failed");
   });
 
+  it("serves stale cards when Scryfall answers with an HTML error page", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-html-"));
+    await new FileCache(dir).set("oracle:a", card);
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new FileCache(dir, 1000, () => Date.now() + 10_000),
+      sleep: () => Promise.resolve(),
+      fetch: () => Promise.resolve(new Response("<html>down</html>", { status: 503 })),
+    });
+    expect((await client.byOracleIds(["a"])).cards.map((found) => found.id)).toEqual(["1"]);
+  });
+
   it("reports what the cache holds for an entry", async () => {
     const cache = new MemoryCache();
     const client = new ScryfallClient({ userAgent: "Test/1.0", cache });

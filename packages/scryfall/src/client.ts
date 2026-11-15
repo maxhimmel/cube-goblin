@@ -11,6 +11,7 @@ export const DEFAULT_INTERVAL_MS = 100;
 export const BULK_HOST = "data.scryfall.io";
 export const REQUEST_TIMEOUT_MS = 15_000;
 export const RATE_LIMIT_COOLDOWN_MS = 60_000;
+const DOWNLOAD_TIMEOUT_MS = 180_000;
 
 export class ScryfallError extends Error {
   readonly status: number;
@@ -173,7 +174,13 @@ export class ScryfallClient {
       if (sent.status === 429) {
         this.#coolUntil = this.#now() + RATE_LIMIT_COOLDOWN_MS;
       }
-      return { response: sent, json: await sent.json() };
+      let body: unknown;
+      try {
+        body = await sent.json();
+      } catch {
+        throw new ScryfallError(sent.status, "unreadable", sent.statusText);
+      }
+      return { response: sent, json: body };
     });
 
     if (!response.ok) {
@@ -417,7 +424,10 @@ export class ScryfallClient {
     if (url.protocol !== "https:" || url.hostname !== BULK_HOST) {
       throw new Error(`Refusing to download from ${url.hostname}`);
     }
-    const response = await this.#fetch(url, { headers: { "User-Agent": this.#userAgent } });
+    const response = await this.#fetch(url, {
+      headers: { "User-Agent": this.#userAgent },
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    });
     if (!response.ok) {
       throw new ScryfallError(response.status, "download", response.statusText);
     }

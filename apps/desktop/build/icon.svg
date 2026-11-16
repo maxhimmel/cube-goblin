@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#0f0b1f"/>
-  <path d="M32 8 53 20v24L32 56 11 44V20z" fill="#1d1638" stroke="#6b4fd8" stroke-width="3" stroke-linejoin="round"/>
-  <path d="M11 20l21 12 21-12M32 32v24" stroke="#6b4fd8" stroke-width="3" fill="none" stroke-linejoin="round"/>
-  <path d="M17 38q4-5 9-1q-5 4-9 1zM47 38q-4-5-9-1q5 4 9 1z" fill="#ffd23f"/>
-  <circle cx="21.5" cy="37.6" r="1.4" fill="#0f0b1f"/>
-  <circle cx="42.5" cy="37.6" r="1.4" fill="#0f0b1f"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="b" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#3a2580"/><stop offset="1" stop-color="#0f0b1f"/></radialGradient><filter id="g" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter></defs><rect width="64" height="64" fill="url(#b)"/><g><path d="M32 8 53 20v24L32 56 11 44V20z" fill="#1d1638"/><path d="M32 8 53 20v24L32 56 11 44V20z" fill="none" stroke="#8a6cff" stroke-width="3" stroke-linejoin="round"/><path d="M11 20l21 12 21-12M32 32v24" stroke="#8a6cff" stroke-width="3" fill="none" stroke-linejoin="round"/><path d="M17 38q4-5 9-1q-5 4-9 1zM47 38q-4-5-9-1q5 4 9 1z" fill="#ffd23f" filter="url(#g)"/><path d="M17 38q4-5 9-1q-5 4-9 1zM47 38q-4-5-9-1q5 4 9 1z" fill="#ffd23f"/><circle cx="21.5" cy="37.6" r="1.4" fill="#0f0b1f"/><circle cx="42.5" cy="37.6" r="1.4" fill="#0f0b1f"/></g></svg>

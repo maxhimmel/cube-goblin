@@ -9,11 +9,11 @@ import {
   CHANGE_DEBOUNCE_MS,
   CUBE_CHANGED_EVENT,
   OPEN_FOLDER_CHANNEL,
-  RecentCubes,
+  recentCubesFor,
   createCubeHostServer,
   startingCube,
 } from "@repo/server";
-import type { CubeHostServer, CubeLibrary, WorkbenchServer } from "@repo/server";
+import type { CubeHostServer, CubeLibrary, RecentCubes, WorkbenchServer } from "@repo/server";
 
 const SCHEME = "app";
 const HOST = "bundle";
@@ -277,7 +277,8 @@ async function start(): Promise<void> {
   }
   await app.whenReady();
   lockDown();
-  const recent = new RecentCubes(app.getPath("userData"));
+  const pinned = (process.env["CUBE_DIR"] ?? "") !== "" && (userDataOverride ?? "") === "";
+  const recent = recentCubesFor(app.getPath("userData"), pinned);
   const cubeDir = await firstCube(recent);
   if (cubeDir === undefined) {
     app.quit();

@@ -1,11 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
-import type { WorkbenchOptions } from "@repo/server";
+import type { RecentCubes, WorkbenchOptions } from "@repo/server";
 import {
   CHANGE_DEBOUNCE_MS,
   CUBE_CHANGED_EVENT,
-  RecentCubes,
   createCubeHostServer,
+  recentCubesFor,
   startingCube,
 } from "@repo/server";
 import type { Plugin } from "vite";
@@ -47,6 +47,7 @@ export interface WorkbenchPluginOptions extends Omit<WorkbenchOptions, "cubeDir"
   cubeDir: string | undefined;
   fallbackCubeDir: string;
   userData: string;
+  userDataFromEnv: boolean;
   home: string;
 }
 
@@ -66,7 +67,8 @@ export function workbench(options: WorkbenchPluginOptions): Plugin {
     name: "repo:workbench",
     apply: "serve",
     async configureServer(server) {
-      const recent = new RecentCubes(options.userData);
+      const pinned = (options.cubeDir ?? "") !== "" && !options.userDataFromEnv;
+      const recent = recentCubesFor(options.userData, pinned);
       const host = await createCubeHostServer({
         ...options,
         cubeDir: await firstCube(options, recent),

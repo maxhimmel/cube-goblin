@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { CubeHostServer } from "./cubes.ts";
 import { createCubeHostServer } from "./cubes.ts";
 import { RecentCubes } from "./recent-cubes.ts";
+import { API_PREFIX } from "./routes.ts";
 
 let host: CubeHostServer;
 
@@ -64,6 +65,17 @@ async function status(made: Request): Promise<number | undefined> {
 describe("cross-origin gate", () => {
   it("covers every route in the table", () => {
     expect(host.routes.length).toBeGreaterThan(20);
+    for (const row of host.routes) {
+      const label = `${row.method} ${String(row.path)}`;
+      const example = new URL(row.example, SELF).pathname;
+      if (typeof row.path === "string") {
+        expect(row.path.startsWith(API_PREFIX), label).toBe(true);
+        expect(example, label).toBe(row.path);
+      } else {
+        expect(row.path.source.startsWith("^\\/api\\/"), label).toBe(true);
+        expect(row.path.test(example), label).toBe(true);
+      }
+    }
   });
 
   for (const [who, options] of Object.entries(HOSTILE)) {

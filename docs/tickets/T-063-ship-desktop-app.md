@@ -26,6 +26,7 @@ The user wants to hand the desktop app ([T-056](T-056-desktop-app.md)) to a frie
 
 - **Rename** (2026-11-16): `Cube Goblin`, `com.maxhimmel.cube-goblin`. Electron creates an empty data folder before main runs, so `adoptFormerUserData` (`apps/desktop/src/main/index.ts`) treats an empty folder as missing, then moves `~/Library/Application Support/Cube Workbench` in. Verified on the user's real data folder (24 entries moved).
 - **Icon** (2026-11-16): `apps/desktop/build/icon.svg` is full-bleed square art; electron-builder rasterizes it into `icon.icns` (checked at 1024 in the packaged app). The favicon in `apps/web/index.html` is the same art with rounded corners.
+- **Seal** (2026-11-16): `mac.identity: "-"`, `resetAdHocDarwinSignature` dropped (signing reseals after the fuses). `pnpm desktop:build` now makes an ad-hoc arm64 `dmg` + `zip` in `apps/desktop/release`. Checked: `codesign --verify --deep --strict` passes, fuses read as configured, `hdiutil verify` valid, packaged app launches. Not yet tested from a real download on a second Mac.
 
 ## Done when
 

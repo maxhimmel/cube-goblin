@@ -31,6 +31,8 @@ const test = base.extend<{ freshCube: undefined }, { workbench: Workbench }>({
       await cp(FIXTURE, root, { recursive: true });
       const cubeDir = join(root, "cube");
       process.env["CUBE_DIR"] = cubeDir;
+      process.env["CUBE_USER_DATA"] = join(root, "user-data");
+      process.env["CUBES_HOME"] = join(root, "cubes");
       const server = await createServer({
         root: WEB_ROOT,
         configLoader: "runner",
@@ -139,7 +141,7 @@ test("workbench shows live data from cube/cards", async ({ page, workbench }) =>
   await expect(page.getByLabel("Your name")).toHaveCount(0);
 });
 
-test("the top bar holds brand, views, save state, add, import and export, and settings only", async ({
+test("the top bar holds brand, cube switcher, views, save state, add, import and export, and settings only", async ({
   page,
   workbench,
 }) => {
@@ -155,8 +157,9 @@ test("the top bar holds brand, views, save state, add, import and export, and se
     "",
   ]);
   await expect(topbar.getByRole("link").last()).toHaveAccessibleName("Add card");
-  await expect(topbar.getByRole("button")).toHaveCount(2);
-  await expect(topbar.getByRole("button").first()).toHaveAccessibleName("Import and export");
+  await expect(topbar.getByRole("button")).toHaveCount(3);
+  await expect(topbar.getByRole("button").first()).toHaveAccessibleName("Switch cube");
+  await expect(topbar.getByRole("button").nth(1)).toHaveAccessibleName("Import and export");
   await expect(topbar.getByRole("button").last()).toHaveAccessibleName("Settings");
   await expect(topbar).not.toContainText("live");
   await expect(topbar).not.toContainText("cards ·");
@@ -1875,7 +1878,7 @@ test("every Forge chart previews a hovered card's move and peeks at a hovered ba
   await page.setViewportSize({ width: 1600, height: 1100 });
   await page.goto(`${workbench.url}#/`);
   await chartsOn(page, "left");
-  const menu = page.locator(".menu").first();
+  const menu = page.locator("main .menu").first();
   await menu.getByRole("button", { name: /^Blocks/u }).click();
   for (const box of await menu.locator("input[type=checkbox]").all()) {
     await box.check();
@@ -1916,7 +1919,7 @@ test("Forge creature charts peek, pick, and preview a move in a top and a side d
 }) => {
   await page.setViewportSize({ width: 1600, height: 1100 });
   await page.goto(`${workbench.url}#/`);
-  const menu = page.locator(".menu").first();
+  const menu = page.locator("main .menu").first();
   await menu.getByRole("button", { name: /^Blocks/u }).click();
   for (const box of await menu.locator("input[type=checkbox]").all()) {
     await box.check();

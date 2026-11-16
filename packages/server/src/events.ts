@@ -1,15 +1,8 @@
 import type { OfflineStatus } from "@repo/cube/browser";
 
 export const CUBE_CHANGED_EVENT = "cube:changed";
-
-export const CUBES_CHANNEL = {
-  list: "cubes:list",
-  create: "cubes:create",
-  openFolder: "cubes:open-folder",
-  switchTo: "cubes:switch",
-  remove: "cubes:remove",
-  offlineStatus: "cubes:offline-status",
-} as const;
+export const CUBES_ROUTE = "/api/cubes";
+export const OPEN_FOLDER_CHANNEL = "cubes:open-folder";
 
 export interface CubeRef {
   dir: string;
@@ -22,10 +15,9 @@ export interface CubeList {
   recent: CubeRef[];
 }
 
-export interface CubesBridge {
+export interface CubesApi {
   list: () => Promise<CubeList>;
   create: (name: string) => Promise<CubeRef>;
-  openFolder: () => Promise<CubeRef | undefined>;
   switchTo: (dir: string) => Promise<CubeRef>;
   remove: (dir: string) => Promise<CubeList>;
   offlineStatus: (dir: string) => Promise<OfflineStatus>;
@@ -33,5 +25,5 @@ export interface CubesBridge {
 
 export interface DesktopBridge {
   onCubeChanged: (listener: () => void) => () => void;
-  cubes: CubesBridge;
+  openFolder: () => Promise<CubeRef | undefined>;
 }

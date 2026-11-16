@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
@@ -15,11 +17,18 @@ export default defineConfig(({ command, mode }) => {
       react(),
       ...(desktop ? [] : [viteSingleFile()]),
       workbench({
-        cubeDir: process.env["CUBE_DIR"] ?? REPO_CUBE,
+        cubeDir: process.env["CUBE_DIR"],
+        fallbackCubeDir: REPO_CUBE,
+        userData:
+          process.env["CUBE_USER_DATA"] ??
+          fileURLToPath(new URL("../../.cache/workbench", import.meta.url)),
+        userDataFromEnv: (process.env["CUBE_USER_DATA"] ?? "") !== "",
+        home: process.env["CUBES_HOME"] ?? join(homedir(), "Documents", "Cubes"),
         cacheDir: fileURLToPath(new URL("../../.cache/scryfall", import.meta.url)),
         imageCacheDir: fileURLToPath(new URL("../../.cache/scryfall-images", import.meta.url)),
       }),
     ],
+    server: { cors: false },
     resolve: {
       alias: {
         "#mode": fileURLToPath(

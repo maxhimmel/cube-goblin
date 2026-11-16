@@ -10,7 +10,7 @@ Prove a change by looking at it, on a **copy** of the cube. The user's own serve
 ## Run a dev server on a copy
 
 1. `mkdir -p /tmp/<slug> && cp -R cube /tmp/<slug>/` (the cube folder holds its own `cube.config.json`)
-2. From `apps/web`, start it in the background: `CUBE_DIR=/tmp/<slug>/cube pnpm exec vite --configLoader runner --port <free port> --strictPort`.
+2. From `apps/web`, start it in the background: `CUBE_DIR=/tmp/<slug>/cube CUBE_USER_DATA=/tmp/<slug>/user-data CUBES_HOME=/tmp/<slug>/cubes pnpm exec vite --configLoader runner --port <free port> --strictPort`. The last two keep the user's recent-cubes list and `~/Documents/Cubes` untouched.
 3. Seed through the HTTP API, never by editing files under the copy while the server runs:
    - Card edits: `PATCH /api/cards` with `{"changes":[{"slug":"shock","patch":{"status":"prospect"}}]}`.
    - A log entry gets its subject and why from the `X-Log-Subject` and `X-Log-Body` headers (URI-encoded).

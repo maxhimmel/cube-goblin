@@ -1,5 +1,5 @@
 import type { OfflineStatus } from "@repo/cube/browser";
-import type { CubeList, CubeRef, CubesBridge } from "@repo/server/events";
+import type { CubeList, CubeRef, CubesApi } from "@repo/server/events";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -8,6 +8,8 @@ import { Menu } from "../menu.tsx";
 import { queryClient } from "../query-client.ts";
 import { showToast } from "./toast.tsx";
 import { cubeId } from "../cube-identity.ts";
+import type { FolderOpener } from "../host/index.ts";
+import { host } from "../host/index.ts";
 import {
   OFFLINE_QUERY_KEY,
   OFFLINE_REASON,
@@ -16,7 +18,7 @@ import {
   useOnline,
 } from "./connection.ts";
 
-const CUBES_QUERY_KEY = ["desktop", "cubes"] as const;
+const CUBES_QUERY_KEY = ["cubes"] as const;
 const SETTLE_POLL_MS = 50;
 const RUN_POLL_MS = 500;
 const BYTE_UNITS = ["B", "KB", "MB", "GB"] as const;
@@ -108,7 +110,7 @@ function CurrentOffline(): ReactNode {
   );
 }
 
-function OtherOffline({ cube, cubes }: { cube: CubeRef; cubes: CubesBridge }): ReactNode {
+function OtherOffline({ cube, cubes }: { cube: CubeRef; cubes: CubesApi }): ReactNode {
   const { data: status, isError } = useQuery({
     queryKey: [...CUBES_QUERY_KEY, "offline", cube.dir],
     queryFn: () => cubes.offlineStatus(cube.dir),
@@ -116,10 +118,6 @@ function OtherOffline({ cube, cubes }: { cube: CubeRef; cubes: CubesBridge }): R
     retry: false,
   });
   return <OfflineLine status={status} failed={isError} />;
-}
-
-function cubesBridge(): CubesBridge | undefined {
-  return window.desktop?.cubes;
 }
 
 export async function settled(): Promise<void> {
@@ -143,7 +141,7 @@ async function leaveFor(open: () => Promise<CubeRef | undefined>): Promise<void>
   }
 }
 
-function NewCubeForm({ cubes }: { cubes: CubesBridge }): ReactNode {
+function NewCubeForm({ cubes }: { cubes: CubesApi }): ReactNode {
   const [name, setName] = useState("");
   const trimmed = name.trim();
   return (
@@ -177,7 +175,7 @@ function RecentCube({
   list,
 }: {
   cube: CubeRef;
-  cubes: CubesBridge;
+  cubes: CubesApi;
   list: CubeList;
 }): ReactNode {
   const current = cube.dir === list.current.dir;
@@ -220,7 +218,51 @@ function RecentCube({
   );
 }
 
-function CubeMenu({ cubes }: { cubes: CubesBridge }): ReactNode {
+function OpenPathForm({ open }: { open: (dir: string) => Promise<CubeRef> }): ReactNode {
+  const [dir, setDir] = useState("");
+  const trimmed = dir.trim();
+  return (
+    <form
+      className="cube-new"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (trimmed !== "") {
+          void leaveFor(() => open(trimmed));
+        }
+      }}
+    >
+      <input
+        aria-label="Cube folder path"
+        placeholder="/path/to/cube folder"
+        value={dir}
+        onChange={(event) => {
+          setDir(event.target.value);
+        }}
+      />
+      <button type="submit" disabled={trimmed === ""}>
+        Open folder
+      </button>
+    </form>
+  );
+}
+
+function OpenFolder({ opener }: { opener: FolderOpener }): ReactNode {
+  if (opener.kind === "path") {
+    return <OpenPathForm open={opener.open} />;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void leaveFor(() => opener.open());
+      }}
+    >
+      Open folder…
+    </button>
+  );
+}
+
+function CubeMenu({ cubes }: { cubes: CubesApi }): ReactNode {
   const { data: list } = useQuery({ queryKey: CUBES_QUERY_KEY, queryFn: () => cubes.list() });
   return (
     <div className="cube-menu">
@@ -232,23 +274,13 @@ function CubeMenu({ cubes }: { cubes: CubesBridge }): ReactNode {
         </ul>
       )}
       <NewCubeForm cubes={cubes} />
-      <button
-        type="button"
-        onClick={() => {
-          void leaveFor(() => cubes.openFolder());
-        }}
-      >
-        Open folder…
-      </button>
+      <OpenFolder opener={host.openFolder} />
     </div>
   );
 }
 
 export function CubeSwitcher(): ReactNode {
-  const cubes = cubesBridge();
-  if (cubes === undefined) {
-    return null;
-  }
+  const { cubes } = host;
   return (
     <Menu
       label={

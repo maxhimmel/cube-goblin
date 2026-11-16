@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import type { CubeRef } from "@repo/server";
+import type { CubeRef } from "./events.ts";
 
 export interface Recent {
   cubes: CubeRef[];
@@ -31,9 +32,16 @@ async function legacyRepoRoot(userData: string): Promise<string | undefined> {
   return undefined;
 }
 
+export function recentCubesFor(userData: string, pinnedByEnv: boolean): RecentCubes {
+  return new RecentCubes(
+    pinnedByEnv ? join(tmpdir(), `cube-recent-${String(process.pid)}`) : userData,
+  );
+}
+
 export class RecentCubes {
   readonly #file: string;
   readonly #userData: string;
+  #writes: Promise<unknown> = Promise.resolve();
 
   constructor(userData: string) {
     this.#userData = userData;
@@ -61,15 +69,19 @@ export class RecentCubes {
     return recent;
   }
 
-  async opened(cube: CubeRef): Promise<Recent> {
-    const { cubes } = await this.load();
-    return this.#save({
-      cubes: [cube, ...cubes.filter((known) => known.dir !== cube.dir)],
-    });
+  #update(change: (cubes: CubeRef[]) => CubeRef[]): Promise<Recent> {
+    const next = this.#writes.then(async () =>
+      this.#save({ cubes: change((await this.load()).cubes) }),
+    );
+    this.#writes = next.catch(() => undefined);
+    return next;
   }
 
-  async remove(dir: string): Promise<Recent> {
-    const { cubes } = await this.load();
-    return this.#save({ cubes: cubes.filter((known) => known.dir !== dir) });
+  opened(cube: CubeRef): Promise<Recent> {
+    return this.#update((cubes) => [cube, ...cubes.filter((known) => known.dir !== cube.dir)]);
+  }
+
+  remove(dir: string): Promise<Recent> {
+    return this.#update((cubes) => cubes.filter((known) => known.dir !== dir));
   }
 }

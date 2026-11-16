@@ -1,0 +1,29 @@
+---
+id: T-061
+title: Host parity
+status: todo
+---
+
+The desktop app and the web app have drifted apart: managing cubes and saving them offline exist only on desktop ([T-057](T-057-multiple-cubes.md), [T-058](T-058-offline.md) gaps). The user wants both [hosts](../GLOSSARY.md#host) to stay in step as far as each platform allows, and the web app to be the quick way to check a feature (user, 2026-11-16). Principle: [VISION](../VISION.md#apps).
+
+## Why they drifted
+
+- The routes were shared (`packages/server`), but cube management went over Electron IPC as `DesktopBridge.cubes`, with no web version.
+- Views read `window.desktop?.cubes` directly (`cube-switcher.tsx`, `import-export-panel.tsx`); being optional, its absence compiles and the feature hides itself.
+- Each ticket's e2e covered desktop only.
+
+## Scope
+
+- **`CubeHost` interface**, required: list, create, open, switch, remove, offline status, `onCubeChanged`, plus typed capabilities (e.g. `pickFolder: "native" | "path"`). Provided once at boot through React context; views never touch `window.desktop` or `import.meta.hot`.
+- **Desktop adapter**: wraps today's preload bridge.
+- **Web adapter**: new `/api/cubes/*` routes on the shared handler, backed by the same recent-cubes store and `createWorkbenchServer().open(dir)` the desktop main uses. Move that store from `apps/desktop` into `packages/server` so both hosts share it. "Open folder…" on web takes a typed path. The web dev server gets the cube switcher, New cube, and "Make available offline".
+- **Guards**: a lint rule bans `window.desktop` outside the desktop adapter; a contract test runs the same cases against both adapters; the cube create, switch, reopen, and offline flows run in both e2e suites.
+- A feature one host can't have is declared as a capability, and the UI shows its equivalent or nothing on purpose.
+
+## Not in scope
+
+- Hosting, accounts, a database. The boundary above is what makes them addable later.
+
+## Done when
+
+- In `pnpm dev`, a cube can be created, switched to, reopened, and made available offline, as in the desktop app. e2e covers it on both hosts, and `pnpm check` fails if a view reads `window.desktop`.

@@ -10,6 +10,10 @@ A custom draft environment built from existing Magic cards and curated by its de
 
 A project-defined term with no outside source: a plain folder that holds one [Cube](#cube) as files: `cube.config.json` (a stable id, the name, format, and size), `cards/`, `tags.json`, and the rest. The workbench opens one cube folder at a time; this repo's is `cube/`, and the desktop app's "New cube" makes one in `~/Documents/Cubes/` ([T-057](tickets/T-057-multiple-cubes.md)). The id scopes the workbench's remembered view choices, so renaming a cube keeps them.
 
+## Host
+
+A project-defined term with no outside source: what runs the workbench and gives it a server and its platform features. Two hosts today: the desktop app (Electron) and the web app (`pnpm dev`). The views reach their host only through `/api` and the `CubeHost` interface, with one adapter per host ([VISION](VISION.md#apps), [T-061](tickets/T-061-host-parity.md)).
+
 ## Singleton
 
 The cube has one copy of each card, with no exceptions. ([Riptide Lab](https://riptidelab.com/cube-academy/breaking-singleton/))

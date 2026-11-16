@@ -66,5 +66,4 @@ Researched 2026-11-16 for [T-064](../tickets/T-064-public-repo-and-releases.md).
 - **Immutable releases**: turn them on? They block re-running a failed tag build into a published release.
 - **pnpm 11**: upgrade, so the workflow can use `pnpm/setup`?
 - **Bundling electron-updater**: `build.files` ships only `out/**`, so does electron-vite bundle it into the main process, or does it need to be a runtime `dependency`? Unchecked.
-- **`appId` `com.maxhimmel.cube-goblin`**: keep it in the public repo? Changing it later moves the user-data folder again ([T-063](../tickets/T-063-ship-desktop-app.md)).
 - **First run on the hosted runner**: does the ad-hoc deep-seal check from desktop-delivery.md pass on `macos-26` too?

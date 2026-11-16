@@ -625,15 +625,13 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
       path: "/api/import/preview",
       example: "/api/import/preview",
       handle: async ({ request }) => {
+        const { paths } = current;
         const body = parseJson(await request.text());
         if (!body.ok) {
           return json(400, { error: "Body is not valid JSON" });
         }
         return answer(
-          explained(
-            previewImport(current.paths, body.value, importDeps),
-            "importing needs a connection",
-          ),
+          explained(previewImport(paths, body.value, importDeps), "importing needs a connection"),
           (result) =>
             result.ok ? json(200, result.preview) : json(result.status, { error: result.error }),
           scryfallFailure,

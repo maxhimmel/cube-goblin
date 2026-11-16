@@ -1,0 +1,58 @@
+# Cross-origin request protection: research
+
+Researched 2026-11-16. Context: one `(Request) => Response` handler serves `/api/*` from the Vite 8 dev server and from Electron 45's `protocol.handle` on `app://bundle`. Only `/api/cubes/*` is guarded today (`fromWorkbench` in `packages/server/src/cubes.ts`). This note covers one default-on gate for every route.
+
+## Current guidance
+
+- **Go 1.25 `CrossOriginProtection`** ([csrf.go](https://github.com/golang/go/blob/release-branch.go1.25/src/net/http/csrf.go)). `Check`, in order:
+  1. `case "GET", "HEAD", "OPTIONS": // Safe methods are always allowed.`
+  2. `Sec-Fetch-Site` is `"same-origin"` or `"none"`: allow. Any other non-empty value: allow only if exempt, else `errCrossOriginRequest`.
+  3. Header empty, and `Origin` also empty: allow ("Either the request is same-origin or not a browser request").
+  4. `o.Host == req.Host`: allow. The comment notes Host has no scheme, so HTTP to HTTPS passes: "We fail open, since all modern browsers support Sec-Fetch-Site since 2023."
+  5. Otherwise allow only if exempt, else `errCrossOriginRequestFromOldBrowser`.
+  - **Exemptions** (`isRequestExempt`): a path matching `AddInsecureBypassPattern` (ServeMux syntax, direct matches only, no redirects), or an `Origin` that exactly equals an `AddTrustedOrigin` entry (`scheme://host[:port]`, no path). Rejections return 403 unless `SetDenyHandler` is set.
+- **Design write-up**: Filippo Valsorda's [CSRF article](https://words.filippo.io/csrf/) gives the same algorithm. It doesn't trust `same-site` because "different origins in the same site can actually sit at very different trust levels". It treats `Origin: null` as cross-origin. The proposal, [golang/go#73626](https://github.com/golang/go/issues/73626) ("I propose we add a handler to net/http which rejects cross-origin non-safe browser requests using primarily Fetch metadata"), doesn't link the article; usage is `NewCrossOriginProtection().Handler(mux)`.
+- **W3C Fetch Metadata** ([spec §2.3](https://w3c.github.io/webappsec-fetch-metadata/#sec-fetch-site-header)): the values are `cross-site`, `same-origin`, `same-site`, `none`. `none` is set when the request "was explicitly caused by a user's interaction with the user agent" (address bar, bookmark). Step 1 asserts the URL is potentially trustworthy, so the header is sent only to such URLs. After redirects it reports `cross-site` if any hop was ([§4.1](https://w3c.github.io/webappsec-fetch-metadata/#redirects)).
+- **web.dev resource isolation policy** ([article](https://web.dev/articles/fetch-metadata)): allows a missing header, plus `same-origin`, `same-site`, `none`, and `GET` navigations whose `Sec-Fetch-Dest` isn't `object`/`embed`. It allows optional exempt paths and rejects the rest. It applies to all methods, not just writes, and targets CSRF, XSSI, timing attacks, and cross-origin leaks.
+- **OWASP** ([CSRF cheat sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)): `Sec-Fetch-Site` is "the primary signal". Allow `same-origin`. Treat `same-site` as allowed "only if your threat model trusts sibling subdomains". It says "fallback to standard origin verification headers is a mandatory requirement" and "Missing headers and `Origin: null` are not evidence of a same-origin request … do not allowlist the literal `null` value."
+
+## Which requests to allow
+
+- **`same-origin`, `none`**: allow. Every source above agrees.
+- **`same-site` is unsafe on localhost**: a site is a scheme-and-host, and for same site "the port and domain components are ignored" ([HTML §7.1.1.1](https://html.spec.whatwg.org/multipage/browsers.html#sites)). So a page from any other dev server on `http://localhost:<port>` is `same-site` with ours. `localhost`, `*.localhost`, `127.0.0.0/8`, and `::1` count as potentially trustworthy ([Secure Contexts §3.1](https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy)), so Fetch Metadata is sent over plain HTTP here.
+- **Missing header**: modern browsers always send it. MDN lists `Sec-Fetch-Site` as Baseline, "available across browsers since March 2023" ([MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Site)). curl, Node `fetch`, and tests send neither header. Go allows them, and so must we.
+- **`Origin` fallback**: for non-GET/HEAD no-cors requests, browsers send `Origin`, set to `null` under some referrer policies. CORS-tainted requests always carry it ([Fetch §3.2](https://fetch.spec.whatwg.org/#append-a-request-origin-header)). Compare the full origin, not the host, so a scheme mismatch can't fail open the way Go's does.
+
+## Reads (GET)
+
+- **CORS blocks reading, not sending**: a cross-origin `fetch` reaches the handler. Without `Access-Control-Allow-Origin` the page can't read the body. GET side effects still run, and `<img>`/`<script>` loads still reveal timing and success or failure. That's why web.dev's policy covers all methods.
+- **Vite `server.cors`**: defaults to `{ origin: /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/ }`. That lets every localhost port read responses ([vite.dev](https://vite.dev/config/server-options#server-cors)). This repo sets `cors: false`, so Vite adds no CORS middleware (Vite 8.3.6 `dist/node/chunks/node.js`: `if (cors !== false) middlewares.use(...)`).
+- **DNS rebinding**: the attacker's hostname resolves to 127.0.0.1, so the browser sees the attacker page as same-origin and Fetch Metadata says `same-origin`. Only a Host check stops it. `server.allowedHosts` defaults to `[]`: "`localhost` and domains under `.localhost` and all IP addresses are allowed by default"; setting it to `true` "allows any website to send requests to your dev server through DNS rebinding attacks" ([vite.dev](https://vite.dev/config/server-options#server-allowedhosts)). In Vite 8.3.6 the host check is registered before `configureServer` hooks run, so it covers our middleware. It is skipped when `server.https` is set (`if (allowedHosts !== true && !serverConfig.https)`).
+
+## Electron
+
+- **`request.initiatorOrigin`**: set "to the origin that issued the request (for example `https://example.com`, or `null` for an opaque origin) when web content made it; it is absent for requests the browser started itself … prefer it when deciding whether to serve a request" ([protocol.md, 45-x-y](https://github.com/electron/electron/blob/45-x-y/docs/api/protocol.md)). Electron attaches it as an own property on the `Request` ([protocol.ts](https://github.com/electron/electron/blob/45-x-y/lib/browser/api/protocol.ts)).
+- **`Origin: null` is stripped**: `protocol.ts` runs `if (headers.get('origin') === 'null') headers.delete('origin')`. An opaque-origin request therefore looks like a header-less curl request to an Origin-only check. Use `initiatorOrigin` instead.
+- **Cross-origin reads blocked by the scheme**: per-scheme factories bypass `CorsURLLoaderFactory`. Electron fails cross-origin CORS requests to schemes without `corsEnabled`, and marks cross-origin no-cors responses as opaque ([electron_url_loader_factory.cc](https://github.com/electron/electron/blob/45-x-y/shell/browser/net/electron_url_loader_factory.cc)). Our scheme doesn't set `corsEnabled`. No-cors writes (form POST) still reach the handler.
+- **Measured (2026-11-16, Electron 45.3.2)**: a hidden launch logged the headers `protocol.handle` received for the renderer's own `fetch` calls. GET and PUT `/api/*` both carried only `accept`, `user-agent`, and (on PUT) `content-type`: no `Sec-Fetch-Site`, no `Origin`. So Chromium adds no Fetch Metadata here, as the loader analysis above suggests ([sec_header_helpers.cc](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/services/network/sec_header_helpers.cc)), and a header-only check passes every desktop request. `initiatorOrigin` was not logged; it is a property, not a header.
+
+## Default-on in frameworks
+
+- **Go**: wrap the mux once (`.Handler(mux)`). Opt-outs are explicit: `AddInsecureBypassPattern`, `AddTrustedOrigin` ([csrf.go](https://github.com/golang/go/blob/release-branch.go1.25/src/net/http/csrf.go)).
+- **Django**: "The CSRF middleware is activated by default in the MIDDLEWARE setting" ([howto](https://docs.djangoproject.com/en/dev/howto/csrf/)). It verifies Origin "against the current host and the `CSRF_TRUSTED_ORIGINS` setting", in addition to its token, and skips RFC 9110 safe methods. `@csrf_exempt` "marks a view as being exempt" ([ref](https://docs.djangoproject.com/en/dev/ref/csrf/)). Django `main` doesn't read `Sec-Fetch-Site` (no hits in [csrf.py](https://github.com/django/django/blob/main/django/middleware/csrf.py)).
+- **SvelteKit**: `csrf.checkOrigin` (default `true`) is deprecated, "removed in 3.0. Use `trustedOrigins: ['*']` instead". `trustedOrigins` defaults to `[]`. It checks only POST/PUT/PATCH/DELETE form content types, and "CSRF checks only apply in production" ([config](https://svelte.dev/docs/kit/configuration#csrf)).
+- **Next.js Server Actions**: compares the `Origin` host with `x-forwarded-host` or `host` and rejects on mismatch. `allowedOrigins` adds hosts. "A request that carries no `Origin` header at all is allowed through with a warning" ([serverActions](https://nextjs.org/docs/app/api-reference/config/next-config-js/serverActions)).
+- **Rails**: `protect_from_forgery` ("GET and HEAD requests are not checked"), with `skip_forgery_protection` as the opt-out ([API](https://api.rubyonrails.org/classes/ActionController/RequestForgeryProtection/ClassMethods.html)). On `main` (unreleased; latest release 8.1.4.1), `using: :header_only` is the default. It allows `same-origin`/`same-site`, allows `cross-site` only for `trusted_origins`, allows a missing header only over non-SSL, rejects `none`, and adds `Vary: Sec-Fetch-Site` ([source](https://github.com/rails/rails/blob/main/actionpack/lib/action_controller/metal/request_forgery_protection.rb)).
+
+## Recommendation for this repo
+
+- **Where**: one `crossOriginGate(request): Response | undefined` in `packages/server`, called first in `createCubeHostServer`'s `handle` (`cubes.ts`, the `library.handle ?? server.handle` line). Both hosts call that function, so every current and future route inherits the gate. Delete `fromWorkbench`. Add a test that walks the route list and expects 403 on each for a cross-site request.
+- **Scope**: all methods, not just unsafe ones. The API has no cross-origin consumers, so web.dev's all-method policy costs nothing and closes the GET read and timing leaks.
+- **Rules**, with `self = new URL(request.url).origin`:
+  1. `initiatorOrigin` own property present (Electron): allow only if it equals `self`. Reject if it is `"null"` or anything else.
+  2. `Sec-Fetch-Site` present: allow `same-origin` and `none`. Reject `same-site`, `cross-site`, and unknown values.
+  3. `Origin` present: allow only if it exactly equals `self`. Reject `null`.
+  4. Neither header: allow (curl, tests, browser-initiated loads).
+  5. Host: allow only if the request URL's hostname is `localhost`, `127.0.0.1`, `[::1]`, or the app's own host. This backs up Vite's `allowedHosts`, which is off under `server.https`. It assumes the Vite adapter builds the URL from `Host`.
+- **Opt-out**: none today. If one is ever needed, add an explicit exempt-path list inside the gate (like Go's bypass patterns), never a per-route skip.
+- **Keep** `server.cors: false` and the default `allowedHosts`. Check rule 1 against Electron empirically: confirm `initiatorOrigin` is `app://bundle` for renderer `fetch`; the headers are settled above.

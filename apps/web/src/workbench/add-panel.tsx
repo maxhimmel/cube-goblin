@@ -3,6 +3,7 @@ import { CARD_STATUSES, slugify } from "@repo/cube/browser";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import type { RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { CardImage } from "../card-image.tsx";
 import { ManaCost } from "../mana.tsx";
@@ -74,12 +75,14 @@ export function AddPanel({
   replaces: string | undefined;
 }): ReactNode {
   const dialog = useRef<HTMLDialogElement>(null);
+  const search = useRef<HTMLInputElement>(null);
   const close = useCloseAdd();
   const outgoing = cube?.cards.find((card) => card.slug === replaces);
   const title = outgoing ? `Swap out ${outgoing.name}` : "Add a card";
 
   useEffect(() => {
     dialog.current?.showModal();
+    search.current?.focus();
   }, []);
 
   return (
@@ -101,13 +104,19 @@ export function AddPanel({
       ) : replaces !== undefined && !outgoing ? (
         <p>Unknown card to swap.</p>
       ) : (
-        <AddForm outgoing={outgoing} />
+        <AddForm outgoing={outgoing} search={search} />
       )}
     </dialog>
   );
 }
 
-function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNode {
+function AddForm({
+  outgoing,
+  search,
+}: {
+  outgoing: WorkbenchCard | undefined;
+  search: RefObject<HTMLInputElement | null>;
+}): ReactNode {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CardStatus>(outgoing?.status ?? "prospect");
   const [copyTags, setCopyTags] = useState(true);
@@ -196,8 +205,8 @@ function AddForm({ outgoing }: { outgoing: WorkbenchCard | undefined }): ReactNo
           aria-label="Search Scryfall"
           placeholder="card name or Scryfall syntax, e.g. o:flying t:dragon"
           value={query}
+          ref={search}
           disabled={!online}
-          autoFocus
           onChange={(event) => {
             setQuery(event.target.value);
           }}

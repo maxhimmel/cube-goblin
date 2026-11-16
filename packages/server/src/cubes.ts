@@ -3,7 +3,10 @@ import { createCubeFolder, findCubeFolder, openCubeFolder } from "@repo/cube";
 import type { OfflineStatus } from "@repo/cube/browser";
 import type { CubeList, CubeRef } from "./events.ts";
 import { CUBES_ROUTE } from "./events.ts";
+import { crossOriginGate } from "./gate.ts";
 import type { RecentCubes } from "./recent-cubes.ts";
+import type { RouteContext, RouteRow } from "./routes.ts";
+import { dispatch, json } from "./routes.ts";
 import type { WorkbenchOptions, WorkbenchServer } from "./workbench.ts";
 import { createWorkbenchServer } from "./workbench.ts";
 
@@ -20,13 +23,6 @@ function refOf(folder: CubeFolder): CubeRef {
   return { dir: folder.dir, id: folder.config.id, name: folder.config.name };
 }
 
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
 function stringField(body: unknown, field: string): string {
   const value =
     typeof body === "object" && body !== null
@@ -38,18 +34,19 @@ function stringField(body: unknown, field: string): string {
   return value;
 }
 
-const TRUSTED_FETCH_SITES = new Set(["same-origin", "none"]);
-
-function fromWorkbench(request: Request): boolean {
-  const site = request.headers.get("Sec-Fetch-Site");
-  if (site !== null) {
-    return TRUSTED_FETCH_SITES.has(site);
-  }
-  return request.headers.get("Origin") === null;
+async function bodyOf(request: Request): Promise<unknown> {
+  return request.json().catch(() => undefined);
 }
 
-function sentJson(request: Request): boolean {
-  return (request.headers.get("Content-Type") ?? "").startsWith("application/json");
+function answering(work: (context: RouteContext) => Promise<unknown>) {
+  return async (context: RouteContext): Promise<Response> => {
+    try {
+      return json(200, await work(context));
+    } catch (error) {
+      const status = error instanceof CubeError ? 400 : 500;
+      return json(status, { error: error instanceof Error ? error.message : String(error) });
+    }
+  };
 }
 
 export class CubeLibrary {
@@ -123,43 +120,33 @@ export class CubeLibrary {
     return this.#server.offlineStatus(dir);
   }
 
-  async handle(request: Request): Promise<Response | undefined> {
-    const url = new URL(request.url);
-    const path = url.pathname;
-    if (path !== CUBES_ROUTE && !path.startsWith(`${CUBES_ROUTE}/`)) {
-      return undefined;
-    }
-    const method = request.method;
-    if (!fromWorkbench(request) || (method === "POST" && !sentJson(request))) {
-      return json(403, { error: "Cube routes take JSON from the workbench only" });
-    }
-    try {
-      if (method === "GET" && path === CUBES_ROUTE) {
-        return json(200, await this.list());
-      }
-      if (method === "GET" && path === `${CUBES_ROUTE}/offline`) {
-        return json(200, await this.offlineStatus(url.searchParams.get("dir") ?? ""));
-      }
-      if (method === "POST") {
-        const body: unknown = await request.json().catch(() => undefined);
-        if (path === CUBES_ROUTE) {
-          return json(200, await this.create(stringField(body, "name").trim()));
-        }
-        if (path === `${CUBES_ROUTE}/switch`) {
-          return json(200, await this.switchTo(stringField(body, "dir")));
-        }
-        if (path === `${CUBES_ROUTE}/remove`) {
-          return json(200, await this.remove(stringField(body, "dir")));
-        }
-        if (path === `${CUBES_ROUTE}/open` && this.#openByPath) {
-          return json(200, await this.open(stringField(body, "dir")));
-        }
-      }
-    } catch (error) {
-      const status = error instanceof CubeError ? 400 : 500;
-      return json(status, { error: error instanceof Error ? error.message : String(error) });
-    }
-    return json(404, { error: `No route ${method} ${path}` });
+  get routes(): RouteRow[] {
+    const post = (path: string, work: (body: unknown) => Promise<unknown>): RouteRow => ({
+      method: "POST",
+      path,
+      example: path,
+      handle: answering(async ({ request }) => work(await bodyOf(request))),
+    });
+    return [
+      {
+        method: "GET",
+        path: CUBES_ROUTE,
+        example: CUBES_ROUTE,
+        handle: answering(() => this.list()),
+      },
+      {
+        method: "GET",
+        path: `${CUBES_ROUTE}/offline`,
+        example: `${CUBES_ROUTE}/offline?dir=x`,
+        handle: answering(({ url }) => this.offlineStatus(url.searchParams.get("dir") ?? "")),
+      },
+      post(CUBES_ROUTE, (body) => this.create(stringField(body, "name").trim())),
+      post(`${CUBES_ROUTE}/switch`, (body) => this.switchTo(stringField(body, "dir"))),
+      post(`${CUBES_ROUTE}/remove`, (body) => this.remove(stringField(body, "dir"))),
+      ...(this.#openByPath
+        ? [post(`${CUBES_ROUTE}/open`, (body) => this.open(stringField(body, "dir")))]
+        : []),
+    ];
   }
 
   async #known(dir: string): Promise<boolean> {
@@ -209,11 +196,13 @@ export interface CubeHostServerOptions extends WorkbenchOptions {
   home: string;
   recent: RecentCubes;
   openByPath: boolean;
+  hosts: readonly string[];
 }
 
 export interface CubeHostServer {
-  server: WorkbenchServer;
+  server: Pick<WorkbenchServer, "cube" | "watched" | "isCubeFile">;
   library: CubeLibrary;
+  routes: readonly RouteRow[];
   handle: (request: Request) => Promise<Response | undefined>;
 }
 
@@ -228,9 +217,12 @@ export async function createCubeHostServer(
     openByPath: options.openByPath,
   });
   await library.remember();
+  const routes = [...library.routes, ...server.routes];
   return {
     server,
     library,
-    handle: async (request) => (await library.handle(request)) ?? server.handle(request),
+    routes,
+    handle: async (request) =>
+      crossOriginGate(request, { hosts: options.hosts }) ?? dispatch(routes, request),
   };
 }

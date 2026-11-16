@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { $, cd, chalk } from "zx";
 import { REPO_ROOT } from "./repo.ts";
 import { isDataOnly, loadRoadmap, validateRoadmap } from "./roadmap.ts";
+import { planTidy } from "./tidy-plan.ts";
 
 cd(REPO_ROOT);
 const git = async (...args: string[]): Promise<string> =>
@@ -22,6 +23,13 @@ if (branch !== "main") {
 const unmerged = await git("branch", "--no-merged", "main");
 if (unmerged) {
   problems.push(`Branches not merged into main: ${unmerged.replace(/\s+/gu, " ").trim()}`);
+}
+
+const leftovers = await planTidy(git);
+if (leftovers.branches.length > 0 || leftovers.blocked.length > 0) {
+  problems.push(
+    `Merged branches or worktrees left over (run pnpm tidy): ${[...leftovers.branches, ...leftovers.blocked].join(", ")}`,
+  );
 }
 
 const stashes = await git("stash", "list");

@@ -38,8 +38,14 @@ function stringField(body: unknown, field: string): string {
   return value;
 }
 
-function crossSite(request: Request): boolean {
-  return request.headers.get("Sec-Fetch-Site") === "cross-site";
+const TRUSTED_FETCH_SITES = new Set(["same-origin", "none"]);
+
+function fromWorkbench(request: Request): boolean {
+  const site = request.headers.get("Sec-Fetch-Site");
+  if (site !== null) {
+    return TRUSTED_FETCH_SITES.has(site);
+  }
+  return request.headers.get("Origin") === null;
 }
 
 function sentJson(request: Request): boolean {
@@ -124,7 +130,7 @@ export class CubeLibrary {
       return undefined;
     }
     const method = request.method;
-    if (method === "POST" && (crossSite(request) || !sentJson(request))) {
+    if (!fromWorkbench(request) || (method === "POST" && !sentJson(request))) {
       return json(403, { error: "Cube routes take JSON from the workbench only" });
     }
     try {

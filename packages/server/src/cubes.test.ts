@@ -5,7 +5,7 @@ import { createCubeFolder } from "@repo/cube";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { CubeHostServer } from "./cubes.ts";
 import { createCubeHostServer, startingCube } from "./cubes.ts";
-import { RecentCubes } from "./recent-cubes.ts";
+import { RecentCubes, recentCubesFor } from "./recent-cubes.ts";
 
 let root: string;
 let host: CubeHostServer;
@@ -113,16 +113,39 @@ describe("cube routes", () => {
     expect(refused.status).toBe(400);
   });
 
-  it("refuses writes that aren't JSON or come from another site", async () => {
+  it("refuses writes that aren't JSON or don't come from the workbench itself", async () => {
     const plain = await call("POST", "/api/cubes", { name: "X" }, { "Content-Type": "text/plain" });
     expect(plain.status).toBe(403);
-    const foreign = await call(
+    for (const site of ["cross-site", "same-site"]) {
+      const foreign = await call(
+        "POST",
+        "/api/cubes/open",
+        { dir: firstDir },
+        { "Content-Type": "application/json", "Sec-Fetch-Site": site },
+      );
+      expect(foreign.status).toBe(403);
+    }
+    const originOnly = await call(
       "POST",
       "/api/cubes",
       { name: "X" },
-      { "Content-Type": "application/json", "Sec-Fetch-Site": "cross-site" },
+      { "Content-Type": "application/json", Origin: "http://localhost:3000" },
     );
-    expect(foreign.status).toBe(403);
+    expect(originOnly.status).toBe(403);
+    const ownPage = await call(
+      "POST",
+      "/api/cubes",
+      { name: "Mine" },
+      { "Content-Type": "application/json", "Sec-Fetch-Site": "same-origin" },
+    );
+    expect(ownPage.status).toBe(200);
+  });
+
+  it("hides the list from another site's page", async () => {
+    const response = await host.handle(
+      new Request("http://test/api/cubes", { headers: { "Sec-Fetch-Site": "same-site" } }),
+    );
+    expect(response?.status).toBe(403);
   });
 
   it("leaves other routes to the workbench server", async () => {
@@ -137,5 +160,23 @@ describe("starting cube", () => {
     const empty = new RecentCubes(join(root, "none"));
     expect(await startingCube(empty, [join(root, "missing"), firstDir])).toBe(firstDir);
     expect(await startingCube(empty, [])).toBeUndefined();
+  });
+});
+
+describe("recent cubes", () => {
+  it("keeps every entry when switches land at once", async () => {
+    const refs = ["a", "b", "c", "d", "e"].map((id) => ({ dir: join(root, id), id, name: id }));
+    await Promise.all(refs.map((ref) => recent.opened(ref)));
+    expect((await recent.load()).cubes.map((cube) => cube.id).sort()).toEqual(
+      expect.arrayContaining(["a", "b", "c", "d", "e"]),
+    );
+  });
+
+  it("keeps a CUBE_DIR run out of the user's list", async () => {
+    const userData = join(root, "real-user-data");
+    await recentCubesFor(userData, true).opened({ dir: join(root, "tmp"), id: "t", name: "Temp" });
+    expect((await new RecentCubes(userData).load()).cubes).toEqual([]);
+    await recentCubesFor(userData, false).opened({ dir: firstDir, id: "f", name: "First" });
+    expect((await new RecentCubes(userData).load()).cubes).toHaveLength(1);
   });
 });

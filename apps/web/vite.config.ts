@@ -22,11 +22,13 @@ export default defineConfig(({ command, mode }) => {
         userData:
           process.env["CUBE_USER_DATA"] ??
           fileURLToPath(new URL("../../.cache/workbench", import.meta.url)),
+        userDataFromEnv: (process.env["CUBE_USER_DATA"] ?? "") !== "",
         home: process.env["CUBES_HOME"] ?? join(homedir(), "Documents", "Cubes"),
         cacheDir: fileURLToPath(new URL("../../.cache/scryfall", import.meta.url)),
         imageCacheDir: fileURLToPath(new URL("../../.cache/scryfall-images", import.meta.url)),
       }),
     ],
+    server: { cors: false },
     resolve: {
       alias: {
         "#mode": fileURLToPath(

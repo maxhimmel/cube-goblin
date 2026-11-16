@@ -18,6 +18,15 @@ interface Workbench {
   cardsDir: string;
 }
 
+async function drag(source: Locator, target: Locator): Promise<void> {
+  const mouse = source.page().mouse;
+  await source.hover();
+  await mouse.down();
+  await target.hover();
+  await target.hover();
+  await mouse.up();
+}
+
 async function resetCube(cubeDir: string): Promise<void> {
   await rm(cubeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   await cp(join(FIXTURE, "cube"), cubeDir, { recursive: true });
@@ -1012,21 +1021,21 @@ test("board sections hold dragged cards and survive a reload", async ({ page, wo
   await page.getByLabel("Section name").press("Enter");
   const burn = page.getByRole("region", { name: "Section Burn" });
 
-  await strip(pool, "Shock").dragTo(burn);
+  await drag(strip(pool, "Shock"), burn);
   await expect(strip(burn, "Shock")).toBeVisible();
   await burn.getByLabel("Add card to Burn").fill("Lasting Tarfire");
   await burn.getByLabel("Add card to Burn").press("Enter");
   await expect(strip(burn, "Lasting Tarfire")).toBeVisible();
 
-  await strip(pool, "Murder").dragTo(page.getByRole("button", { name: /New section/u }));
+  await drag(strip(pool, "Murder"), page.getByRole("button", { name: /New section/u }));
   const second = page.getByRole("region", { name: "Section Section 2" });
   await expect(strip(second, "Murder")).toBeVisible();
-  await strip(burn, "Shock").dragTo(second);
+  await drag(strip(burn, "Shock"), second);
   await expect(strip(second, "Shock")).toBeVisible();
   await expect(strip(burn, "Shock")).toHaveCount(0);
-  await strip(second, "Shock").dragTo(pool);
+  await drag(strip(second, "Shock"), pool);
   await expect(strip(second, "Shock")).toHaveCount(0);
-  await strip(pool, "Shock").dragTo(burn);
+  await drag(strip(pool, "Shock"), burn);
   await expect(strip(burn, "Shock")).toBeVisible();
 
   await expect
@@ -1673,7 +1682,7 @@ test("Forge moves cards by drag and filters them with typed, applied, and peeked
   const named = (pile: Locator, name: string): Locator =>
     pile.locator(`.lab-strip:has(.lab-strip-name:text-is(${JSON.stringify(name)}))`);
 
-  await named(prospects, prospect.name).dragTo(draft);
+  await drag(named(prospects, prospect.name), draft);
   await expect(named(draft, prospect.name)).toBeVisible();
   await expect(count).toHaveText(String(drafted + 1));
   await expect
@@ -2126,7 +2135,7 @@ test("Forge Pending queues adds and cuts, previews them together, and applies as
 
   await pending.getByRole("button", { name: "Expand Pending" }).click();
   await expect(pending).toContainText("-click a card");
-  await add.locator(".lab-strip").dragTo(pending);
+  await drag(add.locator(".lab-strip"), pending);
   await expect(prospects.locator(`.lab-cell[data-pending="add"]`)).toHaveCount(1);
   await cutA.locator(".lab-strip").click({ modifiers: ["Alt"] });
   await cutB.locator(".lab-strip").click({ modifiers: ["Alt"] });

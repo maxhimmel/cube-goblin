@@ -49,6 +49,19 @@ export function createConfig(tsconfigRootDir: string): Linter.Config[] {
         "@typescript-eslint/no-floating-promises": "error",
       },
     },
+    {
+      files: ["**/e2e/**/*.ts"],
+      rules: {
+        "no-restricted-syntax": [
+          "error",
+          {
+            selector: "CallExpression[callee.property.name='dragTo']",
+            message:
+              "dragTo moves over the drop target once, so dragover can miss under load. Hover the target twice (https://playwright.dev/docs/input#drag-and-drop): use the e2e drag helper.",
+          },
+        ],
+      },
+    },
     prettier,
   );
 }

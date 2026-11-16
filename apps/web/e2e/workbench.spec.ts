@@ -2195,10 +2195,11 @@ test("the change log survives a reload and reverts entries singly and in bulk", 
 }) => {
   const entries = page.getByTestId("log-entry");
   const openFolds = async (): Promise<void> => {
-    const closed = page.locator('[data-testid="log-fold"] details:not([open]) > summary');
-    while ((await closed.count()) > 0) {
-      await closed.first().click();
-    }
+    await page.locator('[data-testid="log-fold"] details:not([open])').evaluateAll((folds) => {
+      for (const fold of folds) {
+        (fold as HTMLDetailsElement).open = true;
+      }
+    });
   };
   const entry = (subject: string): Locator =>
     entries.filter({

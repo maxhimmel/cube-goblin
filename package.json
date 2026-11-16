@@ -21,6 +21,7 @@
     "desktop": "turbo run build:desktop --filter=@repo/web && pnpm --filter @repo/desktop dev",
     "desktop:build": "turbo run build --filter=@repo/desktop && pnpm --filter @repo/desktop package",
     "handoff": "tsx scripts/src/handoff.ts",
+    "tidy": "tsx scripts/src/tidy.ts",
     "skills:setup": "claude plugin marketplace add ./ --scope local",
     "skills:eval": "claude plugin eval packages/skills"
   },

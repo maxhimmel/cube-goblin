@@ -1,7 +1,7 @@
 ---
 id: T-062
 title: Cross-origin gate on every route
-status: todo
+status: doing
 ---
 
 Only `/api/cubes/*` refuses requests from other sites today ([T-061](T-061-host-parity.md) gaps). Every other route, writes included, answers any local page, e.g. one served by another dev server on a different localhost port. The user wants one protection built into the server so no route needs its own check (user, 2026-11-16). Research: [cross-origin-protection.md](../research/cross-origin-protection.md).

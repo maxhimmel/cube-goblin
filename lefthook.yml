@@ -66,3 +66,8 @@ pre-merge-commit:
   jobs:
     - name: check
       run: pnpm check
+
+post-merge:
+  jobs:
+    - name: tidy merged branches
+      run: pnpm -s tidy

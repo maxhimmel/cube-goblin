@@ -16,7 +16,7 @@ The hooks in `lefthook.yml` do the checking; let them.
 
 ## Merge
 
-1. On `main`: `git merge --no-ff <branch> -m "Merge branch '<branch>'"`. The `pre-merge-commit` hook runs the full `pnpm check`, e2e included; a failure stops the merge, so fix it on the branch.
+1. On `main`: `git merge --no-ff <branch> -m "Merge branch '<branch>'"`. The `pre-merge-commit` hook runs the full `pnpm check`, e2e included; a failure stops the merge, so fix it on the branch. After the merge, the `post-merge` hook runs `pnpm tidy`, which deletes every branch a merge brought into `main` and removes its worktree if clean; `pnpm tidy --dry-run` previews.
 2. The branch updates the Handoff in `docs/ROADMAP.md` before merging: current state and next step only, under 200 words, details in tickets. Merges of `cube/` data alone skip this.
 
 ## The user's cube data

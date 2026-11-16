@@ -306,6 +306,31 @@ describe("tolerant line parser", () => {
 });
 
 describe("real files", () => {
+  it("imports a real MTGO export with CRLF lines and a double blank before the sideboard", () => {
+    const text = fixture("mtgo-export.txt");
+    expect(text).toContain("\r\n\r\n\r\n");
+    const parsed = parseList(text);
+    expect(parsed.format).toBe("text");
+    expect(parsed.rows.filter((row) => row.board === "main")).toHaveLength(19);
+    expect(parsed.rows.filter((row) => row.board === "side")).toHaveLength(9);
+    expect(parsed.rows[0]).toMatchObject({ name: "Abandoned Air Temple", quantity: 2 });
+    expect(parsed.rows.at(-1)).toMatchObject({ name: "Surrak, Elusive Hunter", board: "side" });
+  });
+
+  it("imports a real Cube Cobra CSV export with its MTGO ids and a custom board", () => {
+    const parsed = parseList(fixture("cubecobra-export.csv"));
+    expect(parsed.format).toBe("cubecobra-csv");
+    expect(parsed.rows).toHaveLength(545);
+    expect(parsed.rows.filter((row) => row.board === "basics")).toHaveLength(5);
+    expect(parsed.rows[0]).toMatchObject({
+      name: "Esper Sentinel",
+      board: "main",
+      set: "mh2",
+      collectorNumber: "12",
+      mtgoId: 90_393,
+    });
+  });
+
   it("imports a Moxfield export", () => {
     const parsed = parseList(fixture("moxfield-export.txt"));
     expect(parsed.format).toBe("text");

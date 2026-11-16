@@ -1,7 +1,7 @@
 ---
 id: T-061
 title: Host parity
-status: todo
+status: doing
 ---
 
 The desktop app and the web app have drifted apart: managing cubes and saving them offline exist only on desktop ([T-057](T-057-multiple-cubes.md), [T-058](T-058-offline.md) gaps). The user wants both [hosts](../GLOSSARY.md#host) to stay in step as far as each platform allows, and the web app to be the quick way to check a feature (user, 2026-11-16). Principle: [VISION](../VISION.md#apps).

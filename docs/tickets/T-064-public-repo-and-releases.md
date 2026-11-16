@@ -1,7 +1,7 @@
 ---
 id: T-064
 title: Public repo, releases, and README
-status: todo
+status: doing
 ---
 
 Put the repo on GitHub as a public repo under `maxhimmel` (`himmelmax@gmail.com`), release the desktop app from it, hand out one share link, and write a clean README (user, 2026-11-16). Unblocks delivery in [T-063](T-063-ship-desktop-app.md), whose open questions were hosting and updates.

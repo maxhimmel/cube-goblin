@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { createCubeFolder, readCards, readLog, readTags } from "@repo/cube";
 import { describe, expect, it } from "vitest";
+import { dispatch } from "./routes.ts";
 import { createWorkbenchServer } from "./workbench.ts";
 
 const SHOCK = {
@@ -98,7 +99,7 @@ async function setup() {
     fetch: network(seen),
   });
   const call = async (path: string, init?: RequestInit) => {
-    const response = await server.handle(new Request(`http://test${path}`, init));
+    const response = await dispatch(server.routes, new Request(`http://test${path}`, init));
     if (!response) {
       throw new Error(`No response for ${path}`);
     }

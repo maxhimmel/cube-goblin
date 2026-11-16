@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { createCubeFolder } from "@repo/cube";
 import { describe, expect, it } from "vitest";
+import { dispatch } from "./routes.ts";
 import { createWorkbenchServer } from "./workbench.ts";
 
 const ORACLE_ID = "11111111-1111-4111-8111-111111111111";
@@ -79,7 +80,7 @@ async function setup() {
     fetch: scryfall(network),
   });
   const call = async (path: string, init?: RequestInit) => {
-    const response = await server.handle(new Request(`http://test${path}`, init));
+    const response = await dispatch(server.routes, new Request(`http://test${path}`, init));
     if (!response) {
       throw new Error(`No response for ${path}`);
     }

@@ -10,8 +10,6 @@ import {
 } from "@repo/server";
 import type { Plugin } from "vite";
 
-const ORIGIN = "http://workbench.local";
-
 function toRequest(req: IncomingMessage): Request {
   const headers = new Headers();
   for (const [name, value] of Object.entries(req.headers)) {
@@ -28,7 +26,7 @@ function toRequest(req: IncomingMessage): Request {
   }
   const method = req.method ?? "GET";
   const hasBody = method !== "GET" && method !== "HEAD";
-  return new Request(new URL(req.url ?? "/", ORIGIN), {
+  return new Request(new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`), {
     method,
     headers,
     ...(hasBody ? { body: Readable.toWeb(req) as ReadableStream<Uint8Array>, duplex: "half" } : {}),
@@ -74,6 +72,7 @@ export function workbench(options: WorkbenchPluginOptions): Plugin {
         cubeDir: await firstCube(options, recent),
         recent,
         openByPath: true,
+        hosts: [],
       });
       const workbenchServer = host.server;
       let pending: ReturnType<typeof setTimeout> | undefined;

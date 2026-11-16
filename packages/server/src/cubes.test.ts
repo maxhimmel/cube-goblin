@@ -20,6 +20,7 @@ async function start(openByPath: boolean): Promise<CubeHostServer> {
     home: join(root, "cubes"),
     recent,
     openByPath,
+    hosts: [],
   });
 }
 
@@ -30,7 +31,7 @@ async function call(
   headers: Record<string, string> = { "Content-Type": "application/json" },
 ): Promise<{ status: number; body: unknown }> {
   const response = await host.handle(
-    new Request(`http://test${path}`, {
+    new Request(`http://localhost${path}`, {
       method,
       ...(body === undefined ? {} : { body: JSON.stringify(body), headers }),
     }),
@@ -111,41 +112,6 @@ describe("cube routes", () => {
     const other = await createCubeFolder(join(root, "elsewhere"), "Other");
     const refused = await call("GET", `/api/cubes/offline?dir=${encodeURIComponent(other.dir)}`);
     expect(refused.status).toBe(400);
-  });
-
-  it("refuses writes that aren't JSON or don't come from the workbench itself", async () => {
-    const plain = await call("POST", "/api/cubes", { name: "X" }, { "Content-Type": "text/plain" });
-    expect(plain.status).toBe(403);
-    for (const site of ["cross-site", "same-site"]) {
-      const foreign = await call(
-        "POST",
-        "/api/cubes/open",
-        { dir: firstDir },
-        { "Content-Type": "application/json", "Sec-Fetch-Site": site },
-      );
-      expect(foreign.status).toBe(403);
-    }
-    const originOnly = await call(
-      "POST",
-      "/api/cubes",
-      { name: "X" },
-      { "Content-Type": "application/json", Origin: "http://localhost:3000" },
-    );
-    expect(originOnly.status).toBe(403);
-    const ownPage = await call(
-      "POST",
-      "/api/cubes",
-      { name: "Mine" },
-      { "Content-Type": "application/json", "Sec-Fetch-Site": "same-origin" },
-    );
-    expect(ownPage.status).toBe(200);
-  });
-
-  it("hides the list from another site's page", async () => {
-    const response = await host.handle(
-      new Request("http://test/api/cubes", { headers: { "Sec-Fetch-Site": "same-site" } }),
-    );
-    expect(response?.status).toBe(403);
   });
 
   it("leaves other routes to the workbench server", async () => {

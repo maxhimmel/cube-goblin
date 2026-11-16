@@ -4,13 +4,14 @@ import { join } from "node:path";
 import { createCubeFolder, readConfig } from "@repo/cube";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { WorkbenchServer } from "./workbench.ts";
+import { dispatch } from "./routes.ts";
 import { createWorkbenchServer } from "./workbench.ts";
 
 let root: string;
 let server: WorkbenchServer;
 
 async function config(): Promise<unknown> {
-  const response = await server.handle(new Request("http://test/api/config"));
+  const response = await dispatch(server.routes, new Request("http://test/api/config"));
   return response?.json();
 }
 
@@ -39,7 +40,8 @@ describe("workbench server", () => {
     const first = server.cube();
     const second = await createCubeFolder(join(root, "cubes"), "Second");
     await server.open(second.dir);
-    const stale = await server.handle(
+    const stale = await dispatch(
+      server.routes,
       new Request("http://test/api/config", {
         method: "PUT",
         headers: { "X-Cube-Id": first.config.id },
@@ -53,7 +55,8 @@ describe("workbench server", () => {
 
   it("knows a cube's new name after Settings renames it", async () => {
     const { config: saved } = server.cube();
-    const response = await server.handle(
+    const response = await dispatch(
+      server.routes,
       new Request("http://test/api/config", {
         method: "PUT",
         body: JSON.stringify({ ...saved, name: "Renamed" }),

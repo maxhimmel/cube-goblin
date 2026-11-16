@@ -13,7 +13,7 @@ import {
   createCubeHostServer,
   startingCube,
 } from "@repo/server";
-import type { CubeHostServer, CubeLibrary, RecentCubes, WorkbenchServer } from "@repo/server";
+import type { CubeHostServer, CubeLibrary, RecentCubes } from "@repo/server";
 
 const SCHEME = "app";
 const HOST = "bundle";
@@ -140,7 +140,7 @@ function serve(host: CubeHostServer): void {
   });
 }
 
-function watchCube(server: WorkbenchServer): () => void {
+function watchCube(server: CubeHostServer["server"]): () => void {
   let pending: ReturnType<typeof setTimeout> | undefined;
   const watchers: FSWatcher[] = [];
   const changed = (file: string): void => {
@@ -192,7 +192,7 @@ function fromApp(event: IpcMainInvokeEvent): boolean {
   return url !== undefined && isAppUrl(url);
 }
 
-function serveCubes(server: WorkbenchServer, library: CubeLibrary): void {
+function serveCubes(server: CubeHostServer["server"], library: CubeLibrary): void {
   let unwatch = watchCube(server);
   library.onSwitch(() => {
     unwatch();
@@ -295,6 +295,7 @@ async function start(): Promise<void> {
       home: cubesHome(),
       recent,
       openByPath: false,
+      hosts: [HOST],
     });
   } catch (error) {
     dialog.showErrorBox("Could not open the cube", `${cubeDir}\n\n${String(error)}`);

@@ -69,6 +69,8 @@ import type { ImportDeps, ImportResult } from "./importer.ts";
 import { exportCube, previewImport, runImport } from "./importer.ts";
 import type { OfflineDeps } from "./offline.ts";
 import { OfflineRuns, Reachability, cacheStatus } from "./offline.ts";
+import type { RouteContext, RouteRow } from "./routes.ts";
+import { json } from "./routes.ts";
 
 const USER_AGENT = "MaxsCubeWorkbench/0.1.0";
 const CARD_ROUTE = /^\/api\/cards\/([a-z0-9-]+)$/u;
@@ -82,13 +84,6 @@ export interface WorkbenchOptions {
   cacheDir: string;
   imageCacheDir: string;
   fetch?: typeof fetch;
-}
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
 }
 
 function errorText(error: unknown): string {
@@ -339,13 +334,20 @@ function warmImages(cards: readonly Card[], images: ImageCache): void {
   }
 }
 
-function writeRoute(
-  paths: CubePaths,
+interface WriteRow {
+  method: string;
+  path: string | RegExp;
+  example: string;
+  logged: boolean;
+  write: (paths: CubePaths, params: readonly string[], message: LogMessage) => Write;
+}
+
+function writeRows(
   client: ScryfallClient,
   oracleTags: OracleTagStore,
   stats: (state: LogState) => Promise<LogStats>,
   importDeps: ImportDeps,
-) {
+): WriteRow[] {
   const lookup = async (oracleId: string): Promise<FoundCard | undefined> => {
     const [{ cards }, tags] = await Promise.all([
       client.byOracleIds([oracleId]),
@@ -362,51 +364,97 @@ function writeRoute(
         }
       : undefined;
   };
-  return (url: string, method: string | undefined, message: LogMessage): Route | undefined => {
-    if (url === "/api/log/revert" && method === "POST") {
-      return { write: (body) => revertEntries(paths, body, stats, message), logged: false };
-    }
-    if (url === "/api/import" && method === "POST") {
-      return { write: (body) => runImport(paths, body, importDeps), logged: true };
-    }
-    if (url === "/api/cards" && method === "POST") {
-      return { write: (body) => addCard(paths, body, lookup), logged: true };
-    }
-    if (url === "/api/cards" && method === "PATCH") {
-      return { write: (body) => patchCards(paths, body), logged: true };
-    }
-    const card = CARD_ROUTE.exec(url)?.[1];
-    if (card !== undefined && method === "PATCH") {
-      return { write: (body) => patchCard(paths, card, body), logged: true };
-    }
-    const tag = TAG_ROUTE.exec(url)?.[1];
-    if (tag !== undefined && method === "PATCH") {
-      return { write: (body) => changeTag(paths, tag, body), logged: true };
-    }
-    if (url === "/api/board" && method === "PUT") {
-      return { write: (body) => saveBoard(paths, body), logged: true };
-    }
-    if (url === "/api/filters" && method === "PUT") {
-      return { write: (body) => saveFilters(paths, body), logged: true };
-    }
-    if (url === "/api/layouts" && method === "PUT") {
-      return { write: (body) => saveLayouts(paths, body), logged: false };
-    }
-    if (url === "/api/config" && method === "PUT") {
-      return { write: (body) => saveConfig(paths, body), logged: false };
-    }
-    if (url === "/api/tags" && method === "POST") {
-      return { write: (body) => createTag(paths, body), logged: true };
-    }
-    if (url === "/api/versions" && method === "POST") {
-      return { write: (body) => saveVersion(paths, body), logged: false };
-    }
-    return undefined;
-  };
+  const first = (params: readonly string[]): string => params[0] ?? "";
+  return [
+    {
+      method: "POST",
+      path: "/api/log/revert",
+      example: "/api/log/revert",
+      logged: false,
+      write: (paths, _params, message) => (body) => revertEntries(paths, body, stats, message),
+    },
+    {
+      method: "POST",
+      path: "/api/import",
+      example: "/api/import",
+      logged: true,
+      write: (paths) => (body) => runImport(paths, body, importDeps),
+    },
+    {
+      method: "POST",
+      path: "/api/cards",
+      example: "/api/cards",
+      logged: true,
+      write: (paths) => (body) => addCard(paths, body, lookup),
+    },
+    {
+      method: "PATCH",
+      path: "/api/cards",
+      example: "/api/cards",
+      logged: true,
+      write: (paths) => (body) => patchCards(paths, body),
+    },
+    {
+      method: "PATCH",
+      path: CARD_ROUTE,
+      example: "/api/cards/shock",
+      logged: true,
+      write: (paths, params) => (body) => patchCard(paths, first(params), body),
+    },
+    {
+      method: "PATCH",
+      path: TAG_ROUTE,
+      example: "/api/tags/removal",
+      logged: true,
+      write: (paths, params) => (body) => changeTag(paths, first(params), body),
+    },
+    {
+      method: "PUT",
+      path: "/api/board",
+      example: "/api/board",
+      logged: true,
+      write: (paths) => (body) => saveBoard(paths, body),
+    },
+    {
+      method: "PUT",
+      path: "/api/filters",
+      example: "/api/filters",
+      logged: true,
+      write: (paths) => (body) => saveFilters(paths, body),
+    },
+    {
+      method: "PUT",
+      path: "/api/layouts",
+      example: "/api/layouts",
+      logged: false,
+      write: (paths) => (body) => saveLayouts(paths, body),
+    },
+    {
+      method: "PUT",
+      path: "/api/config",
+      example: "/api/config",
+      logged: false,
+      write: (paths) => (body) => saveConfig(paths, body),
+    },
+    {
+      method: "POST",
+      path: "/api/tags",
+      example: "/api/tags",
+      logged: true,
+      write: (paths) => (body) => createTag(paths, body),
+    },
+    {
+      method: "POST",
+      path: "/api/versions",
+      example: "/api/versions",
+      logged: false,
+      write: (paths) => (body) => saveVersion(paths, body),
+    },
+  ];
 }
 
 export interface WorkbenchServer {
-  handle: (request: Request) => Promise<Response | undefined>;
+  routes: readonly RouteRow[];
   offlineStatus: (dir: string) => Promise<OfflineStatus>;
   cube: () => CubeFolder;
   open: (dir: string) => Promise<CubeFolder>;
@@ -446,7 +494,6 @@ function explained<T>(work: Promise<T>, what: string): Promise<T> {
 interface OpenCube {
   folder: CubeFolder;
   paths: CubePaths;
-  route: ReturnType<typeof writeRoute>;
   cubeRoot: string;
 }
 
@@ -479,7 +526,6 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
     return {
       folder,
       paths: folder.paths,
-      route: writeRoute(folder.paths, client, oracleTags, stats, importDeps),
       cubeRoot: resolve(folder.dir) + sep,
     };
   }
@@ -521,46 +567,83 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
     return json(200, written(result));
   }
 
-  async function handle(request: Request): Promise<Response | undefined> {
-    const requestUrl = new URL(request.url);
-    const url = requestUrl.pathname;
-    const method = request.method;
-    const params = requestUrl.searchParams;
-    const { paths, route } = current;
-    if (url === IMAGE_ROUTE && method === "GET") {
-      const remote = params.get("u") ?? "";
-      if (!isAllowedImage(remote)) {
-        return json(400, { error: "Only Scryfall card images are served" });
+  const get = (
+    path: string | RegExp,
+    example: string,
+    handle: (context: RouteContext) => Promise<Response>,
+  ): RouteRow => ({ method: "GET", path, example, handle });
+
+  const writeRow = (row: WriteRow): RouteRow => ({
+    method: row.method,
+    path: row.path,
+    example: row.example,
+    handle: async ({ request, params }) => {
+      const { paths } = current;
+      const sentFor = request.headers.get(CUBE_HEADER);
+      if (sentFor !== null && sentFor !== current.folder.config.id) {
+        return json(409, {
+          error: `This edit was for another cube; ${current.folder.config.name} is open now`,
+        });
       }
-      return answer(
-        images.get(remote),
-        (image) =>
-          new Response(new Uint8Array(image.body), {
-            status: 200,
-            headers: {
-              "Content-Type": image.type,
-              "Cache-Control": "public, max-age=31536000, immutable",
-            },
-          }),
-        () => 502,
+      const matched: Route = {
+        write: row.write(paths, params, logMessage(request)),
+        logged: row.logged,
+      };
+      const run = writes.then(() => runWrite(paths, request, matched));
+      writes = run.catch(() => undefined);
+      return run.catch((error: unknown) =>
+        json(isUnreachable(error) ? 503 : 500, { error: errorText(error) }),
       );
-    }
-    if (url === "/api/import/preview" && method === "POST") {
-      const body = parseJson(await request.text());
-      if (!body.ok) {
-        return json(400, { error: "Body is not valid JSON" });
-      }
-      return answer(
-        explained(previewImport(paths, body.value, importDeps), "importing needs a connection"),
-        (result) =>
-          result.ok ? json(200, result.preview) : json(result.status, { error: result.error }),
-        scryfallFailure,
-      );
-    }
-    if (url === "/api/export" && method === "GET") {
-      return answer(
+    },
+  });
+
+  const routes: RouteRow[] = [
+    get(
+      IMAGE_ROUTE,
+      `${IMAGE_ROUTE}?u=https%3A%2F%2Fcards.scryfall.io%2Fsmall%2Ffront%2Fx.jpg`,
+      async ({ url }) => {
+        const remote = url.searchParams.get("u") ?? "";
+        if (!isAllowedImage(remote)) {
+          return json(400, { error: "Only Scryfall card images are served" });
+        }
+        return answer(
+          images.get(remote),
+          (image) =>
+            new Response(new Uint8Array(image.body), {
+              status: 200,
+              headers: {
+                "Content-Type": image.type,
+                "Cache-Control": "public, max-age=31536000, immutable",
+              },
+            }),
+          () => 502,
+        );
+      },
+    ),
+    {
+      method: "POST",
+      path: "/api/import/preview",
+      example: "/api/import/preview",
+      handle: async ({ request }) => {
+        const body = parseJson(await request.text());
+        if (!body.ok) {
+          return json(400, { error: "Body is not valid JSON" });
+        }
+        return answer(
+          explained(
+            previewImport(current.paths, body.value, importDeps),
+            "importing needs a connection",
+          ),
+          (result) =>
+            result.ok ? json(200, result.preview) : json(result.status, { error: result.error }),
+          scryfallFailure,
+        );
+      },
+    },
+    get("/api/export", "/api/export?format=csv", ({ url }) =>
+      answer(
         explained(
-          exportCube(paths, client, params.get("format") ?? ""),
+          exportCube(current.paths, client, url.searchParams.get("format") ?? ""),
           "export needs a connection",
         ),
         (result) =>
@@ -575,95 +658,85 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
               })
             : json(result.status, { error: result.error }),
         scryfallFailure,
+      ),
+    ),
+    {
+      method: "POST",
+      path: "/api/offline",
+      example: "/api/offline",
+      handle: () => {
+        runs.start(current.folder.config.id, current.paths, offlineDeps);
+        return answer(offlineStatus(current.folder.dir), (status) => json(202, status));
+      },
+    },
+    get("/api/connection", "/api/connection", () =>
+      answer(reachability.online(), (online) => json(200, { online })),
+    ),
+    get("/api/offline", "/api/offline", () =>
+      answer(offlineStatus(current.folder.dir), (status) => json(200, status)),
+    ),
+    get("/api/search", "/api/search?q=bolt", ({ url }) =>
+      answer(
+        explained(search(current.paths, client, url.searchParams.get("q") ?? ""), "search is off"),
+        (results) => json(200, results),
+        scryfallFailure,
+      ),
+    ),
+    get("/api/versions", "/api/versions", () =>
+      answer(listVersions(current.paths), (versions) => json(200, versions)),
+    ),
+    get("/api/versions/compare", "/api/versions/compare", ({ url }) =>
+      answer(
+        compareVersions(
+          current.paths,
+          url.searchParams.get("from") ?? CURRENT,
+          url.searchParams.get("to") ?? CURRENT,
+        ),
+        (result) =>
+          result.ok ? json(200, result.diff) : json(result.status, { error: result.error }),
+      ),
+    ),
+    get("/api/config", "/api/config", () =>
+      answer(readConfig(current.paths), (config) => json(200, config)),
+    ),
+    get("/api/layouts", "/api/layouts", () =>
+      answer(loadLayouts(current.paths), (layouts) => json(200, layouts)),
+    ),
+    get("/api/filters", "/api/filters", () =>
+      answer(loadFilters(current.paths), (filters) => json(200, filters)),
+    ),
+    get("/api/board", "/api/board", () =>
+      answer(loadBoard(current.paths), (board) => json(200, board)),
+    ),
+    get(PRINTINGS_ROUTE, "/api/cards/shock/printings", ({ params }) => {
+      const slug = params[0] ?? "";
+      return answer(
+        explained(
+          listPrintings(current.paths, client, slug, remembered),
+          "printings need a connection",
+        ),
+        (printings) =>
+          printings === undefined
+            ? json(404, { error: `No card "${slug}"` })
+            : json(200, printings),
+        scryfallFailure,
       );
-    }
-    if (url === "/api/offline" && method === "POST") {
-      runs.start(current.folder.config.id, paths, offlineDeps);
-      return answer(offlineStatus(current.folder.dir), (status) => json(202, status));
-    }
-    if (method === "GET") {
-      if (url === "/api/connection") {
-        return answer(reachability.online(), (online) => json(200, { online }));
-      }
-      if (url === "/api/offline") {
-        return answer(offlineStatus(current.folder.dir), (status) => json(200, status));
-      }
-      if (url === "/api/search") {
-        return answer(
-          explained(search(paths, client, params.get("q") ?? ""), "search is off"),
-          (results) => json(200, results),
-          scryfallFailure,
-        );
-      }
-      if (url === "/api/versions") {
-        return answer(listVersions(paths), (versions) => json(200, versions));
-      }
-      if (url === "/api/versions/compare") {
-        return answer(
-          compareVersions(paths, params.get("from") ?? CURRENT, params.get("to") ?? CURRENT),
-          (result) =>
-            result.ok ? json(200, result.diff) : json(result.status, { error: result.error }),
-        );
-      }
-      if (url === "/api/config") {
-        return answer(readConfig(paths), (config) => json(200, config));
-      }
-      if (url === "/api/layouts") {
-        return answer(loadLayouts(paths), (layouts) => json(200, layouts));
-      }
-      if (url === "/api/filters") {
-        return answer(loadFilters(paths), (filters) => json(200, filters));
-      }
-      if (url === "/api/board") {
-        return answer(loadBoard(paths), (board) => json(200, board));
-      }
-      const printingsOf = PRINTINGS_ROUTE.exec(url)?.[1];
-      if (printingsOf !== undefined) {
-        return answer(
-          explained(
-            listPrintings(paths, client, printingsOf, remembered),
-            "printings need a connection",
-          ),
-          (printings) =>
-            printings === undefined
-              ? json(404, { error: `No card "${printingsOf}"` })
-              : json(200, printings),
-          scryfallFailure,
-        );
-      }
-      if (url === "/api/cube") {
-        return answer(
-          explained(
-            loadWorkbench(paths, client),
-            "some cards aren't saved for offline use. Make the cube available offline once you're back online",
-          ),
-          (data) => json(200, data),
-          (error) => (isUnreachable(error) ? 503 : 500),
-        );
-      }
-      if (url === "/api/log") {
-        return answer(readLog(paths), (entries) => json(200, entries));
-      }
-    }
-    const matched = route(url, method, logMessage(request));
-    if (matched !== undefined) {
-      const sentFor = request.headers.get(CUBE_HEADER);
-      if (sentFor !== null && sentFor !== current.folder.config.id) {
-        return json(409, {
-          error: `This edit was for another cube; ${current.folder.config.name} is open now`,
-        });
-      }
-      const run = writes.then(() => runWrite(paths, request, matched));
-      writes = run.catch(() => undefined);
-      return run.catch((error: unknown) =>
-        json(isUnreachable(error) ? 503 : 500, { error: errorText(error) }),
-      );
-    }
-    if (url.startsWith("/api/")) {
-      return json(404, { error: `No route ${method} ${url}` });
-    }
-    return undefined;
-  }
+    }),
+    get("/api/cube", "/api/cube", () =>
+      answer(
+        explained(
+          loadWorkbench(current.paths, client),
+          "some cards aren't saved for offline use. Make the cube available offline once you're back online",
+        ),
+        (data) => json(200, data),
+        (error) => (isUnreachable(error) ? 503 : 500),
+      ),
+    ),
+    get("/api/log", "/api/log", () =>
+      answer(readLog(current.paths), (entries) => json(200, entries)),
+    ),
+    ...writeRows(client, oracleTags, stats, importDeps).map(writeRow),
+  ];
 
   async function offlineStatus(dir: string): Promise<OfflineStatus> {
     const folder = dir === current.folder.dir ? current.folder : await openCubeFolder(dir);
@@ -673,7 +746,7 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
   }
 
   return {
-    handle,
+    routes,
     offlineStatus,
     cube: () => current.folder,
     open,

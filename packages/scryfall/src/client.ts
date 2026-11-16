@@ -254,14 +254,15 @@ export class ScryfallClient {
     const unique = [...new Set(ids)];
     const found = new Map<string, Card>();
     const toFetch: string[] = [];
-    for (const id of unique) {
-      const cached = cardSchema.safeParse(await this.#cache.get(keyOf(id)));
+    const cachedEntries = await Promise.all(unique.map((id) => this.#cache.get(keyOf(id))));
+    unique.forEach((id, index) => {
+      const cached = cardSchema.safeParse(cachedEntries[index]);
       if (cached.success) {
         found.set(id, cached.data);
       } else {
         toFetch.push(id);
       }
-    }
+    });
     try {
       for (const batch of chunk(toFetch, COLLECTION_MAX_IDENTIFIERS)) {
         const list = await this.#request(

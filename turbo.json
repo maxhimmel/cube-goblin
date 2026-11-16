@@ -42,7 +42,11 @@
     },
     "e2e:desktop": {
       "dependsOn": ["build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/web/e2e/fixture/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/web/e2e/fixture/**",
+        "$TURBO_ROOT$/apps/web/e2e/flows/**"
+      ]
     }
   }
 }

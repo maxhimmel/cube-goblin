@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "package": "electron-builder --mac dir --arm64",
+    "package": "electron-builder --mac --arm64",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json",
     "e2e:desktop": "playwright test"
@@ -47,10 +47,11 @@
       }
     ],
     "mac": {
-      "identity": null,
+      "identity": "-",
       "hardenedRuntime": false,
       "target": [
-        "dir"
+        "dmg",
+        "zip"
       ],
       "category": "public.app-category.games"
     },
@@ -60,8 +61,7 @@
       "enableNodeCliInspectArguments": false,
       "grantFileProtocolExtraPrivileges": false,
       "onlyLoadAppFromAsar": true,
-      "enableCookieEncryption": true,
-      "resetAdHocDarwinSignature": true
+      "enableCookieEncryption": true
     }
   }
 }

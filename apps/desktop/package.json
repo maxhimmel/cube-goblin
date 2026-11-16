@@ -29,10 +29,10 @@
     "typescript": "6.0.3",
     "vite": "8.3.6"
   },
-  "productName": "Cube Workbench",
+  "productName": "Cube Goblin",
   "build": {
-    "appId": "com.maxhimmel.cube-workbench",
-    "productName": "Cube Workbench",
+    "appId": "com.maxhimmel.cube-goblin",
+    "productName": "Cube Goblin",
     "directories": {
       "output": "release"
     },

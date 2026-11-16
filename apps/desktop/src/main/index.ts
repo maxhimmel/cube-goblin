@@ -1,5 +1,5 @@
 import type { FSWatcher } from "node:fs";
-import { watch } from "node:fs";
+import { existsSync, readdirSync, renameSync, rmSync, watch } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { IpcMainInvokeEvent } from "electron";
@@ -31,9 +31,27 @@ const CSP = [
   "frame-ancestors 'none'",
 ].join("; ");
 
+const FORMER_APP_NAMES = ["Cube Workbench"];
+
 const userDataOverride = process.env["CUBE_USER_DATA"];
 if (userDataOverride !== undefined && userDataOverride !== "") {
   app.setPath("userData", userDataOverride);
+} else {
+  adoptFormerUserData();
+}
+
+function adoptFormerUserData(): void {
+  const current = app.getPath("userData");
+  if (existsSync(current) && readdirSync(current).length > 0) {
+    return;
+  }
+  const former = FORMER_APP_NAMES.map((name) => join(app.getPath("appData"), name)).find((dir) =>
+    existsSync(dir),
+  );
+  if (former !== undefined) {
+    rmSync(current, { recursive: true, force: true });
+    renameSync(former, current);
+  }
 }
 
 protocol.registerSchemesAsPrivileged([

@@ -1,7 +1,7 @@
 ---
 id: T-059
 title: Import and export other sites' formats
-status: doing
+status: done
 ---
 
 Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Research: [cube-formats.md](../research/cube-formats.md) (Cube Cobra, Draftmancer), [deck-list-formats.md](../research/deck-list-formats.md) (MTGO, Arena, Moxfield, Archidekt, MTGGoldfish, Cockatrice, XMage).
@@ -33,10 +33,11 @@ Cubes move in and out of other MTG sites and clients (user, 2026-11-15). Researc
 - A cube exported to each format re-imports with the same cards, and the statuses, tags, and notes each format can carry, covered by round-trip tests. Each format has one real file, made by its site or client, that imports cleanly.
 - One real Cube Cobra cube imports by URL into a new cube, verified by running it.
 
-## Progress
+## Built (2026-11-16)
 
 - **Format modules** (`packages/cube/src/formats/`): parsers and writers for every format, detection by content, and round-trip plus sample-file tests. Moxfield and Archidekt writers checked against real exports the user copied (2026-11-15). Moxfield's sideboard header is still unverified.
 - **Resolve and CLI**: `resolveRows` (`packages/cube/src/formats/resolve.ts`) matches by printing id, then `mtgo_id`, set and number, name, and fuzzy name. `planImport` and `applyImport` (`packages/cube/src/import.ts`) map boards to statuses, make missing tags, and skip repeats. `pnpm cube import <file|url> [--new <dir>] [--board b=status]` and `pnpm cube export --format <id> [--out]` work. A merge logs one change log entry.
 - **Verified by running** (2026-11-15): Cube Cobra's `thepaupercube` imported by URL into a new cube, 455 cards with none missed. That cube exported to every format re-imports all of its cards, except Draftmancer, which drops prospects by design. The Moxfield and Archidekt samples resolve with no misses.
 - **Workbench** (2026-11-15): the top bar's import and export button opens a sheet. Import takes pasted text, a file, or a Cube Cobra link, then previews it: each board's status (changeable), lines to check (not found or guessed, each editable or skippable), warnings, skips, and the cards to add. It imports into this cube, or a new one in the desktop app. Export lists every format with what it drops and downloads the file. Routes: `POST /api/import/preview`, `POST /api/import`, `GET /api/export?format=`. Covered by a workbench e2e test and a desktop e2e test (new cube).
-- **Left for done**: a real file saved by Cube Cobra (CSV), Draftmancer, MTGO, and Cockatrice; the XMage samples were written for its tests.
+- **Real files** (2026-11-16): a Cube Cobra CSV export (545 cards) and an MTGO text export from the user resolve with none missed, and are fixtures. Draftmancer and Cockatrice have no export of their own; they import Cube Cobra lists (user, 2026-11-16). XMage is covered by its own test files only.
+- **Gaps**: Moxfield's sideboard and maybeboard headers are unverified; a cube with many new cards takes a few seconds to show after import, with no loading state.

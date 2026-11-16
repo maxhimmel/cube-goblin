@@ -19,6 +19,8 @@ XM = `https://github.com/magefree/mage/blob/7da937cf57cc4dedbd93ff381e0b11c180cb
 <Cards CatID="64832" Quantity="1" Sideboard="false" Name="Refuse/Cooperate" Annotation="0" />
 ```
 
+- **Real export** (user, 2026-11-15; [mtgo-export.txt](../../packages/cube/src/formats/fixtures/mtgo-export.txt)): `N Name`, CRLF line endings, and two blank lines before the sideboard. The first blank line switches to the sideboard; the second is ignored.
+
 ## MTG Arena
 
 - **Real export** (user, 2026-11-15; [arena-export.txt](../../packages/cube/src/formats/fixtures/arena-export.txt)): names only, `N Name`, with no set, number, or `Deck` header. The site showed a blank line between cards. The user judged that to be page formatting, so the fixture keeps the lines tight.

@@ -18,7 +18,7 @@ Researched 2026-11-15 from source: Cube Cobra at commit [`3e1d636`][cc] and Draf
 
 - **Header**, verbatim ([cube.ts L20][cc-csvheader]):
   `name,CMC,Type,Color,Set,Collector Number,Rarity,Color Category,status,Finish,board,maybeboard,image URL,image Back URL,tags,Notes,MTGO ID,Custom,Voucher,Artist,Voucher Cards`
-- **Writer**: every cell is wrapped in `"`, with embedded `"` doubled (RFC 4180). A text cell starting with `= + - @ \t \r` gets a `'` prefix against spreadsheet formulas, and the importer strips it again ([csv.ts][cc-csv]).
+- **Writer**: every data cell is wrapped in `"`, with embedded `"` doubled (RFC 4180). The header row is not quoted in a real export (user's `ArenaPoweredCube70.csv`, 2026-11-16; fixture `packages/cube/src/formats/fixtures/cubecobra-export.csv`). A text cell starting with `= + - @ \t \r` gets a `'` prefix against spreadsheet formulas, and the importer strips it again ([csv.ts][cc-csv]).
 - **Fields written** ([`writeCard`][cc-writecard]):
   - name: as above.
   - CMC: override, else Scryfall `cmc`.

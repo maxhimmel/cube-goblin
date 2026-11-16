@@ -23,6 +23,7 @@ Workbench e2e tests that pass alone but fail in the merge hook's `pnpm check`. T
 
 ## Open
 
+- The merge hook's run after these fixes still failed twice: the change-log test hit its 30 s timeout again, and "the add panel opens over any view and the old /add link opens it too" failed its `toBeFocused` check on the Search Scryfall field (line 210). Neither has been investigated.
 - Saved-filter and change-log failures: not reproduced. Both passed 40 of 40 runs at 8 workers when run alone, and weren't traced. Slow logged writes are the likely cause, but this isn't proven.
 - One round of the board test had 10 failures after the drag fix, during heavy machine load. Their output wasn't kept.
 - Ideas, not tried: keep parsed cards in memory in front of `FileCache`; reuse the previous entry's after-stats as the next edit's before-stats; give e2e a seeded cache that doesn't expire; have disk assertions wait for the top bar's "Saved" state first.

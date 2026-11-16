@@ -930,10 +930,10 @@ test("forge strips show names and costs, preview on hover, and open the pane", a
 });
 
 test("opening and closing a card keeps the pile's scroll position", async ({ page, workbench }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.setViewportSize({ width: 1280, height: 480 });
   await openImages(page, workbench.url);
   const draft = page.getByRole("region", { name: "Draft", exact: true });
-  const tile = draft.locator("a.tile").nth(40);
+  const tile = draft.locator("a.tile").last();
   await tile.scrollIntoViewIfNeeded();
   const scrolled = (): Promise<number> => draft.evaluate((element) => element.scrollTop);
   const before = await scrolled();

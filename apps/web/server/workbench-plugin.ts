@@ -1,7 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { WorkbenchOptions } from "@repo/server";
-import { CHANGE_DEBOUNCE_MS, CUBE_CHANGED_EVENT, createWorkbenchServer } from "@repo/server";
+import {
+  CHANGE_DEBOUNCE_MS,
+  CUBE_CHANGED_EVENT,
+  RecentCubes,
+  createCubeHostServer,
+  startingCube,
+} from "@repo/server";
 import type { Plugin } from "vite";
 
 const ORIGIN = "http://workbench.local";
@@ -37,15 +43,46 @@ async function sendResponse(res: ServerResponse, response: Response): Promise<vo
   res.end(Buffer.from(await response.arrayBuffer()));
 }
 
-export function workbench(options: WorkbenchOptions): Plugin {
+export interface WorkbenchPluginOptions extends Omit<WorkbenchOptions, "cubeDir"> {
+  cubeDir: string | undefined;
+  fallbackCubeDir: string;
+  userData: string;
+  home: string;
+}
+
+async function firstCube(options: WorkbenchPluginOptions, recent: RecentCubes): Promise<string> {
+  if (options.cubeDir !== undefined && options.cubeDir !== "") {
+    return options.cubeDir;
+  }
+  const found = await startingCube(recent, [options.fallbackCubeDir]);
+  if (found === undefined) {
+    throw new Error(`No cube opens; set CUBE_DIR or restore ${options.fallbackCubeDir}`);
+  }
+  return found;
+}
+
+export function workbench(options: WorkbenchPluginOptions): Plugin {
   return {
     name: "repo:workbench",
     apply: "serve",
     async configureServer(server) {
-      const workbenchServer = await createWorkbenchServer(options);
+      const recent = new RecentCubes(options.userData);
+      const host = await createCubeHostServer({
+        ...options,
+        cubeDir: await firstCube(options, recent),
+        recent,
+        openByPath: true,
+      });
+      const workbenchServer = host.server;
       let pending: ReturnType<typeof setTimeout> | undefined;
 
-      server.watcher.add([...workbenchServer.watched()]);
+      let watching = [...workbenchServer.watched()];
+      server.watcher.add(watching);
+      host.library.onSwitch(() => {
+        void server.watcher.unwatch(watching);
+        watching = [...workbenchServer.watched()];
+        server.watcher.add(watching);
+      });
       server.watcher.on("all", (_event, file) => {
         if (!workbenchServer.isCubeFile(file)) {
           return;
@@ -61,7 +98,7 @@ export function workbench(options: WorkbenchOptions): Plugin {
           next();
           return;
         }
-        workbenchServer
+        host
           .handle(toRequest(req))
           .then(async (response) => {
             if (response === undefined) {

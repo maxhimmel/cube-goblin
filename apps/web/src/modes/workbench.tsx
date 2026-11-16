@@ -19,7 +19,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { PlusIcon, SettingsIcon, TransferIcon } from "../icons.tsx";
-import { onCubeChanged } from "../desktop-bridge.ts";
+import { host } from "../host/index.ts";
 import { queryClient } from "../query-client.ts";
 import {
   BOARD_QUERY_KEY,
@@ -58,7 +58,7 @@ async function refetch(key: readonly string[], pending: () => boolean): Promise<
   await queryClient.invalidateQueries({ queryKey: key });
 }
 
-onCubeChanged(() => {
+host.onCubeChanged(() => {
   void refetch(CUBE_QUERY_KEY, editsPending);
   void refetch(BOARD_QUERY_KEY, boardSavesPending);
   void refetch(FILTERS_QUERY_KEY, filterSavesPending);

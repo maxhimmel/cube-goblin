@@ -4,16 +4,16 @@ import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { IpcMainInvokeEvent } from "electron";
 import { BrowserWindow, app, dialog, ipcMain, net, protocol, session, shell } from "electron";
-import type { CubeFolder } from "@repo/cube";
-import { createCubeFolder, findCubeFolder, openCubeFolder } from "@repo/cube";
+import { createCubeFolder, findCubeFolder } from "@repo/cube";
 import {
   CHANGE_DEBOUNCE_MS,
-  CUBES_CHANNEL,
   CUBE_CHANGED_EVENT,
-  createWorkbenchServer,
+  OPEN_FOLDER_CHANNEL,
+  RecentCubes,
+  createCubeHostServer,
+  startingCube,
 } from "@repo/server";
-import type { CubeList, CubeRef, WorkbenchServer } from "@repo/server";
-import { RecentCubes } from "./recent-cubes.ts";
+import type { CubeHostServer, CubeLibrary, WorkbenchServer } from "@repo/server";
 
 const SCHEME = "app";
 const HOST = "bundle";
@@ -56,36 +56,15 @@ function cubesHome(): string {
     : join(app.getPath("documents"), "Cubes");
 }
 
-function refOf(folder: CubeFolder): CubeRef {
-  return { dir: folder.dir, id: folder.config.id, name: folder.config.name };
-}
-
-async function opens(dir: string): Promise<boolean> {
-  try {
-    await openCubeFolder(dir);
-    return true;
-  } catch (error) {
-    console.warn(`Skipping ${dir}: ${String(error)}`);
-    return false;
-  }
-}
-
 async function firstCube(recent: RecentCubes): Promise<string | undefined> {
   const fromEnv = process.env["CUBE_DIR"];
   if (fromEnv !== undefined && fromEnv !== "") {
     return fromEnv;
   }
-  const { cubes } = await recent.load();
-  const legacy = await recent.legacyFolder();
-  const candidates = [
-    ...cubes.map((cube) => cube.dir),
-    ...(legacy === undefined ? [] : [legacy]),
-    ...(app.isPackaged ? [] : [resolve(app.getAppPath(), "..", "..", "cube")]),
-  ];
-  for (const dir of candidates) {
-    if (await opens(dir)) {
-      return dir;
-    }
+  const devCube = resolve(app.getAppPath(), "..", "..", "cube");
+  const found = await startingCube(recent, app.isPackaged ? [] : [devCube]);
+  if (found !== undefined) {
+    return found;
   }
   const { response } = await dialog.showMessageBox({
     message: "Start a cube",
@@ -150,14 +129,14 @@ async function serveFile(root: string, pathname: string): Promise<Response> {
   return new Response(response.body, { status: response.status, headers });
 }
 
-function serve(server: WorkbenchServer): void {
+function serve(host: CubeHostServer): void {
   const root = rendererDir();
   protocol.handle(SCHEME, async (request) => {
     const url = new URL(request.url);
     if (url.host !== HOST) {
       return notFound();
     }
-    return (await server.handle(request)) ?? serveFile(root, url.pathname);
+    return (await host.handle(request)) ?? serveFile(root, url.pathname);
   });
 }
 
@@ -213,68 +192,19 @@ function fromApp(event: IpcMainInvokeEvent): boolean {
   return url !== undefined && isAppUrl(url);
 }
 
-function serveCubes(server: WorkbenchServer, recent: RecentCubes): void {
+function serveCubes(server: WorkbenchServer, library: CubeLibrary): void {
   let unwatch = watchCube(server);
-  const switchTo = async (dir: string): Promise<CubeRef> => {
-    const folder = await server.open(dir);
+  library.onSwitch(() => {
     unwatch();
     unwatch = watchCube(server);
-    const ref = refOf(folder);
-    await recent.opened(ref);
-    return ref;
-  };
-  const list = async (): Promise<CubeList> => ({
-    current: refOf(server.cube()),
-    recent: (await recent.load()).cubes,
   });
-  const handlers: Record<string, (...args: unknown[]) => Promise<unknown>> = {
-    [CUBES_CHANNEL.list]: list,
-    [CUBES_CHANNEL.create]: async (name) => {
-      if (typeof name !== "string") {
-        throw new TypeError("A cube needs a name");
-      }
-      const { format, size } = server.cube().config;
-      const folder = await createCubeFolder(cubesHome(), name, { format, size });
-      return switchTo(folder.dir);
-    },
-    [CUBES_CHANNEL.openFolder]: async () => {
-      const dir = await pickFolder();
-      return dir === undefined ? undefined : switchTo(dir);
-    },
-    [CUBES_CHANNEL.switchTo]: async (dir) => {
-      const known = (await recent.load()).cubes.some((cube) => cube.dir === dir);
-      if (typeof dir !== "string" || !known) {
-        throw new TypeError("Only a cube from the recent list can be opened this way");
-      }
-      return switchTo(dir);
-    },
-    [CUBES_CHANNEL.offlineStatus]: async (dir) => {
-      const known = (await recent.load()).cubes.some((cube) => cube.dir === dir);
-      if (typeof dir !== "string" || (!known && dir !== server.cube().dir)) {
-        throw new TypeError("Only a cube from the recent list has an offline status");
-      }
-      return server.offlineStatus(dir);
-    },
-    [CUBES_CHANNEL.remove]: async (dir) => {
-      if (typeof dir !== "string") {
-        throw new TypeError("No cube folder given");
-      }
-      if (dir === server.cube().dir) {
-        throw new Error("The open cube can't be removed from the list");
-      }
-      await recent.remove(dir);
-      return list();
-    },
-  };
-  for (const [channel, handler] of Object.entries(handlers)) {
-    ipcMain.handle(channel, (event, ...args: unknown[]) => {
-      if (!fromApp(event)) {
-        throw new Error("Not allowed");
-      }
-      return handler(...args);
-    });
-  }
-  void recent.opened(refOf(server.cube()));
+  ipcMain.handle(OPEN_FOLDER_CHANNEL, async (event) => {
+    if (!fromApp(event)) {
+      throw new Error("Not allowed");
+    }
+    const dir = await pickFolder();
+    return dir === undefined ? undefined : library.open(dir);
+  });
 }
 
 function lockDown(): void {
@@ -354,21 +284,24 @@ async function start(): Promise<void> {
     return;
   }
   const cacheDir = process.env["CUBE_CACHE_DIR"] ?? join(app.getPath("userData"), "cache");
-  let server: WorkbenchServer;
+  let host: CubeHostServer;
   try {
-    server = await createWorkbenchServer({
+    host = await createCubeHostServer({
       cubeDir,
       cacheDir: join(cacheDir, "scryfall"),
       imageCacheDir: join(cacheDir, "scryfall-images"),
       fetch: scryfallFetch(),
+      home: cubesHome(),
+      recent,
+      openByPath: false,
     });
   } catch (error) {
     dialog.showErrorBox("Could not open the cube", `${cubeDir}\n\n${String(error)}`);
     app.quit();
     return;
   }
-  serve(server);
-  serveCubes(server, recent);
+  serve(host);
+  serveCubes(host.server, host.library);
   openWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

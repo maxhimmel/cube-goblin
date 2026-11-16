@@ -78,7 +78,7 @@ function logHeaders(note: LogNote): Record<string, string> {
   };
 }
 
-async function sendJson(
+export async function sendJson(
   method: string,
   url: string,
   body: unknown,
@@ -189,7 +189,7 @@ export async function fetchPrintings(slug: string): Promise<Printing[]> {
   return printingSchema.array().parse(await response.json());
 }
 
-async function getJson(url: string): Promise<unknown> {
+export async function getJson(url: string): Promise<unknown> {
   const response = await fetch(url);
   if (!response.ok) {
     throw await failure("GET", url, response);

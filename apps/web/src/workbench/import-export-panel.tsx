@@ -13,6 +13,7 @@ import { setCubeIdentity } from "../cube-identity.ts";
 import { queryClient } from "../query-client.ts";
 import { useRemembered } from "../view-choices.ts";
 import { exportRequest, importRequest, previewImportRequest } from "./api.ts";
+import { host } from "../host/index.ts";
 import { settled } from "./cube-switcher.tsx";
 import { SheetTabs } from "./sheet-tabs.tsx";
 import { showToast } from "./toast.tsx";
@@ -136,7 +137,6 @@ function ImportPage({ onDone }: { onDone: () => void }): ReactNode {
   const [into, setInto] = useState<"current" | "new">("current");
   const [newName, setNewName] = useState("");
   const [checked, setChecked] = useState<Record<string, string>>({});
-  const cubes = window.desktop?.cubes;
 
   const source = kind === "cubecobra" ? { url: url.trim() } : { text };
   const ready = kind === "cubecobra" ? url.trim() !== "" : text.trim() !== "";
@@ -176,8 +176,8 @@ function ImportPage({ onDone }: { onDone: () => void }): ReactNode {
     mutationFn: async (result: ImportPreview) => {
       const title = result.title ?? READ_AS[result.format] ?? "import";
       const subject = `Import ${plural(result.added.length, "card")} from ${title}`;
-      if (into === "new" && cubes !== undefined) {
-        const created = await cubes.create(newName.trim() || title);
+      if (into === "new") {
+        const created = await host.cubes.create(newName.trim() || title);
         setCubeIdentity(created);
         await importRequest({ ...request(), into: "current" }, { subject });
         window.location.reload();
@@ -304,7 +304,7 @@ function ImportPage({ onDone }: { onDone: () => void }): ReactNode {
           }}
         />
       )}
-      {result && cubes !== undefined && (
+      {result && (
         <fieldset className="settings-choice">
           <legend>Import into</legend>
           <label className="settings-check">

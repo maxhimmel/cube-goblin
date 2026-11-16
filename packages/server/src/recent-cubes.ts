@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { CubeRef } from "@repo/server";
+import type { CubeRef } from "./events.ts";
 
 export interface Recent {
   cubes: CubeRef[];

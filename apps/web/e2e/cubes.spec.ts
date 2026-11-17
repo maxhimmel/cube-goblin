@@ -169,6 +169,11 @@ test("the Cubes view compares picked cubes with their average", async ({ web }) 
     summary.getByRole("list", { name: "What stands out" }).getByRole("listitem").first(),
   ).toContainText(/pts$/u);
   const types = page.getByRole("region", { name: "Card types" });
+  await expect(types.getByRole("listitem", { name: /^Creature:/u })).toHaveAttribute(
+    "aria-label",
+    "Creature: Max's Cube 52%, Rival Cube 42%; average 47%",
+  );
+  await types.getByRole("button", { name: "Table" }).click();
   const creatures = types.getByRole("row", { name: /Creature/u });
   await expect(types).toContainText("Rival Cube runs more instants (42% vs 35%)");
   await expect(creatures.getByRole("cell")).toHaveText([/^52%\+5 pts$/u, /^42%-5 pts$/u, "47%"]);
@@ -178,6 +183,7 @@ test("the Cubes view compares picked cubes with their average", async ({ web }) 
     .click();
   await expect(creatures.getByRole("cell")).toHaveText([/^15/u, /^5/u, "10"]);
   const tags = page.getByRole("region", { name: "Tags" });
+  await tags.getByRole("button", { name: "Table" }).click();
   await expect(tags.getByRole("rowheader")).toHaveText(["#Removal", "#Burn", "#Ramp"]);
   await page.getByRole("checkbox", { name: "Rival Cube" }).uncheck();
   await expect(page.getByText("Pick two or more cubes.")).toBeVisible();

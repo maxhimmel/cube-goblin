@@ -5,14 +5,13 @@ This file is the order of work and the session handoff. Each ticket is a file in
 ## Handoff
 
 - **Updated**: 2026-11-16
-- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: **one cross-origin gate** in front of every `/api` route ([T-062](tickets/T-062-cross-origin-gate.md)), after **host parity** ([T-061](tickets/T-061-host-parity.md), [VISION](VISION.md#apps)). Before that: import and export ([T-059](tickets/T-059-import-export-formats.md)), offline ([T-058](tickets/T-058-offline.md)), multiple cubes ([T-057](tickets/T-057-multiple-cubes.md)) in the desktop app ([T-056](tickets/T-056-desktop-app.md)). Agents drive the desktop app hidden (`cube:workbench-testing`). Merges run the full `pnpm check`, then `pnpm tidy` ([session-timing.md](research/session-timing.md)). Gaps, incl. e2e flakes: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
+- **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: **compare cubes** ([T-065](tickets/T-065-compare-cubes.md)): another cube as Forge.s reference; a Cubes view against the group average. Before that: cross-origin gate ([T-062](tickets/T-062-cross-origin-gate.md)), host parity ([T-061](tickets/T-061-host-parity.md)), import and export ([T-059](tickets/T-059-import-export-formats.md)), offline ([T-058](tickets/T-058-offline.md)), multiple cubes ([T-057](tickets/T-057-multiple-cubes.md)) in the desktop app ([T-056](tickets/T-056-desktop-app.md)). Agents drive the desktop app hidden (`cube:workbench-testing`). Merges run the full `pnpm check`, then `pnpm tidy` ([session-timing.md](research/session-timing.md)). Gaps, incl. e2e flakes: [T-042](tickets/T-042-known-gaps.md). Repeated lessons are skills in the `cube` plugin ([packages/skills](../packages/skills), evals via `pnpm skills:eval`).
 - **Polish pass done** ([T-043](tickets/T-043-polish-pass.md)): papercuts ([T-044](tickets/T-044-papercuts.md)), top bar and settings ([T-045](tickets/T-045-top-bar-and-settings.md)), **Forge** at `#/` ([T-046](tickets/T-046-wall-and-lab.md), [T-052](tickets/T-052-forge-polish.md), [T-053](tickets/T-053-forge-charts-polish.md)), one **Tags** view ([T-047](tickets/T-047-tag-workspace.md)), History ([T-048](tickets/T-048-history.md)), Insights cut to the deep charts ([T-049](tickets/T-049-insights-trim.md)), favicon, Forge's look shared by every view (drag stipple and tile actions included), and a dev-only type scale panel ("Aa", bottom left in `pnpm dev`) ([T-050](tickets/T-050-visual-system.md)).
 - **Review round trip** ([T-051](tickets/T-051-share-doc-suggestions.md)): reviews carry pending moves; each export saves a version as their base; share top bar has one Review menu.
-- **Next step**: [T-065](tickets/T-065-compare-cubes.md) compare cubes (decided). Also open: [T-064](tickets/T-064-public-repo-and-releases.md) public repo, releases, README; [T-063](tickets/T-063-ship-desktop-app.md), [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md).
+- **Next step**: [T-064](tickets/T-064-public-repo-and-releases.md) public repo, releases, README; [T-063](tickets/T-063-ship-desktop-app.md), [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md).
 
 ## Now
 
-- [T-065: Compare cubes](tickets/T-065-compare-cubes.md)
 - [T-063: Ship the desktop app to a friend](tickets/T-063-ship-desktop-app.md)
 - [T-064: Public repo, releases, and README](tickets/T-064-public-repo-and-releases.md)
 
@@ -32,6 +31,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-065: Compare cubes](tickets/T-065-compare-cubes.md)
 - [T-062: Cross-origin gate on every route](tickets/T-062-cross-origin-gate.md)
 - [T-061: Host parity](tickets/T-061-host-parity.md)
 - [T-059: Import and export other sites' formats](tickets/T-059-import-export-formats.md)

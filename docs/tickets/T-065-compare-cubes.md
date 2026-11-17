@@ -1,7 +1,7 @@
 ---
 id: T-065
 title: Compare cubes
-status: doing
+status: done
 ---
 
 Compare the open cube with other cubes, such as ones imported from Cube Cobra ([T-059](T-059-import-export-formats.md)) into their own [cube folders](../GLOSSARY.md#cube-folder) ([T-057](T-057-multiple-cubes.md)) (user, 2026-11-16).
@@ -30,3 +30,12 @@ Compare the open cube with other cubes, such as ones imported from Cube Cobra ([
 - Forge draws another cube on the recent list as its baseline on every chart and tag count, in shares or counts, with the scope toggle, with e2e coverage.
 - A many-cube view compares each picked cube with the group's average.
 - Shared and unique cards between two cubes are listed.
+
+## Built (2026-11-16)
+
+- **Logic** (`packages/cube/src/compare.ts`): tags match by label or id, ignoring case and separators (`matchTags`, `translateTags`); unmatched ones are counted per cube. `cardOverlap` splits cards by Oracle id. `scaled` sizes another cube's count to this one. `poolTags` and `groupAverage` give each cube's share of a row and its distance from the mean share.
+- **Server**: `GET /api/cubes/cards?dir=` reads a cube on the recent list without opening it (`CubeLibrary.cards`, `WorkbenchServer.peek`).
+- **Forge**: a Compare menu beside Blocks picks a cube, its cards (draft, or plus prospects and cut), and Scaled or Counts. Every chart marks the other cube's number (a teal tick on bars, "vs N" on values, arrows on Color × mana value), and the creature balance rows tick its median. Tags list the other cube's unmatched tags. A Shared cards block lists cards in both and only in one. The choice is remembered per cube (`forge.compare`). Workbench only.
+- **Cubes view** (`#/cubes`, workbench only): picks any cubes from the switcher's list and shows Summary, Curve, Color, Card types, Heavy pips, and pooled Tags as tables, one column per cube plus the average, each cell tinted by its distance from the average share.
+- **Fixture**: `apps/web/e2e/fixture/rival`, a 14-card cube that shares 6 cards with the main fixture and uses its own tag ids. e2e: both views in `cubes.spec.ts`.
+- **Gaps**: Power × toughness has no compare mark (its dots are cards). Mapping one cube's tag to another's is not built. The other cube's cards are cached for a minute, so edits made to it from another window show late.

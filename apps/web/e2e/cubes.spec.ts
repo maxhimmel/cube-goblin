@@ -90,7 +90,9 @@ test("a cube folder opens by its path", async ({ web }) => {
   await menu.getByRole("button", { name: "Open folder", exact: true }).click();
   await expect(page.getByRole("alert").filter({ hasText: "holds no cube" })).toBeVisible();
   await menu.getByLabel("Cube folder path").fill(otherDir);
+  const reloaded = page.waitForEvent("load");
   await menu.getByRole("button", { name: "Open folder", exact: true }).click();
+  await reloaded;
   await expect(page.locator(".brand")).toHaveText("Max's Cube");
   const recents = await switcher(page);
   await expect(recents.locator(".cube-open")).toHaveCount(2);

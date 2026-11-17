@@ -109,7 +109,7 @@ test("an import can land in a new cube", async ({ web }) => {
   await importIntoNewCube(web);
 });
 
-test("Forge compares the open cube with another cube on the recent list", async ({ web }) => {
+async function addRival(web: WebHost): Promise<void> {
   const { page } = web;
   const rivalDir = join(web.root, "rival");
   await cp(join(FIXTURE, "rival"), rivalDir, { recursive: true });
@@ -119,6 +119,11 @@ test("Forge compares the open cube with another cube on the recent list", async 
   await expect(page.locator(".brand")).toHaveText("Rival Cube");
   await (await switcher(page)).getByRole("button", { name: "Max's Cube", exact: true }).click();
   await expect(page.locator(".brand")).toHaveText("Max's Cube");
+}
+
+test("Forge compares the open cube with another cube on the recent list", async ({ web }) => {
+  const { page } = web;
+  await addRival(web);
 
   await page.getByRole("button", { name: "Compare", exact: true }).click();
   const compare = page.getByRole("group", { name: "Compare with another cube" });
@@ -148,4 +153,22 @@ test("Forge compares the open cube with another cube on the recent list", async 
   await page.getByRole("group", { name: "Compare with another cube" }).getByLabel("None").check();
   await expect(page.getByRole("region", { name: "Shared cards", exact: true })).toHaveCount(0);
   await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15");
+});
+
+test("the Cubes view compares picked cubes with their average", async ({ web }) => {
+  const { page } = web;
+  await addRival(web);
+  await page.getByRole("link", { name: "Cubes" }).click();
+  const summary = page.getByRole("region", { name: "Summary" });
+  const creatures = summary.getByRole("row", { name: /^Creatures/u });
+  await expect(creatures.getByRole("cell")).toHaveText(["52%", "42%", "47%"]);
+  await page
+    .getByRole("group", { name: "Numbers" })
+    .getByRole("button", { name: "Counts" })
+    .click();
+  await expect(creatures.getByRole("cell")).toHaveText(["15", "5", "10"]);
+  const tags = page.getByRole("region", { name: "Tags" });
+  await expect(tags.getByRole("rowheader")).toHaveText(["Removal", "Burn", "Ramp"]);
+  await page.getByLabel("Rival Cube").uncheck();
+  await expect(page.getByText("Pick two or more cubes.")).toBeVisible();
 });

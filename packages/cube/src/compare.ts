@@ -182,3 +182,38 @@ export function poolTags<T extends { tags: string[] }>(
   const tags = [...labels].map(([id, label]) => ({ id, label }));
   return { tags, cubes: pooled };
 }
+
+export interface Standout {
+  id: string;
+  cube: number;
+  share: number;
+  mean: number;
+  delta: number;
+}
+
+export function standouts(rows: readonly GroupRow[], atLeast = 0): Standout[] {
+  return rows
+    .flatMap((row) => {
+      const best = row.cells.reduce<{ cube: number; delta: number } | undefined>(
+        (found, cell, cube) =>
+          found === undefined ||
+          Math.abs(cell.delta) > Math.abs(found.delta) ||
+          (Math.abs(cell.delta) === Math.abs(found.delta) && cell.delta > found.delta)
+            ? { cube, delta: cell.delta }
+            : found,
+        undefined,
+      );
+      const cell = best && row.cells[best.cube];
+      return best && cell && Math.abs(best.delta) >= atLeast && best.delta !== 0
+        ? [{ id: row.id, cube: best.cube, share: cell.share, mean: row.mean, delta: best.delta }]
+        : [];
+    })
+    .toSorted((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+}
+
+export function averageManaValue(cards: readonly StatCard[]): number | undefined {
+  const spells = cards.filter((card) => !isLand(card));
+  return spells.length === 0
+    ? undefined
+    : spells.reduce((sum, card) => sum + card.cmc, 0) / spells.length;
+}

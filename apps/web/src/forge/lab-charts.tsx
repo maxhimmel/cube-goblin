@@ -1,3 +1,4 @@
+import type { CompareUnit } from "@repo/cube/browser";
 import { colorKey } from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
 import { colorLabel, ptLabel } from "../insights/labels.tsx";
@@ -20,6 +21,7 @@ export interface ChartEvents {
   filtered: boolean;
   picked: ReadonlySet<string>;
   against?: string | undefined;
+  againstUnit?: CompareUnit | undefined;
 }
 
 const MANA_VAR: Record<string, string> = {
@@ -84,13 +86,13 @@ function refDirection(row: Tally): RefDirection | undefined {
 function refSpoken(row: Tally, events: ChartEvents): string {
   return row.ref === undefined || events.against === undefined
     ? ""
-    : `, ${events.against} ${refLabel(row.ref)}`;
+    : `, ${events.against} ${refLabel(row.ref)}${events.againstUnit === "share" ? " scaled" : ""}`;
 }
 
 function refTitle(row: Tally, events: ChartEvents): string | undefined {
   return row.ref === undefined || events.against === undefined
     ? undefined
-    : `${row.label}: ${String(row.hit)} here, ${refLabel(row.ref)} in ${events.against}`;
+    : `${row.label}: ${String(row.hit)} here, ${refLabel(row.ref)} in ${events.against}${events.againstUnit === "share" ? ", scaled to this cube's size" : ""}`;
 }
 
 function RefNote({ row }: { row: Tally }): ReactNode {

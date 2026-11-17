@@ -1,13 +1,6 @@
 import { mode } from "#mode";
-import type { CompareScope, CompareUnit, Tag, TagCount } from "@repo/cube/browser";
-import {
-  COMPARE_SCOPES,
-  COMPARE_UNITS,
-  inCompareScope,
-  matchTags,
-  translateTags,
-  unmatchedTagCounts,
-} from "@repo/cube/browser";
+import type { CompareUnit, Tag, TagMatch } from "@repo/cube/browser";
+import { COMPARE_UNITS, matchTags, translateTags } from "@repo/cube/browser";
 import type { CubeRef } from "@repo/server/events";
 import { useMemo } from "react";
 import { z } from "zod";
@@ -16,15 +9,13 @@ import { useRemembered } from "../view-choices.ts";
 
 export interface CompareChoice {
   dir: string | null;
-  scope: CompareScope;
   unit: CompareUnit;
 }
 
-const NO_CHOICE: CompareChoice = { dir: null, scope: "draft", unit: "share" };
+const NO_CHOICE: CompareChoice = { dir: null, unit: "share" };
 
 const choiceSchema: z.ZodType<CompareChoice> = z.object({
   dir: z.string().nullable().catch(null),
-  scope: z.enum(COMPARE_SCOPES).catch("draft"),
   unit: z.enum(COMPARE_UNITS).catch("share"),
 });
 
@@ -32,7 +23,7 @@ export interface Against {
   name: string;
   cards: GridCard[];
   unit: CompareUnit;
-  unmatched: TagCount[];
+  match: TagMatch;
 }
 
 export type CompareStatus =
@@ -56,11 +47,7 @@ function against(
   choice: CompareChoice,
 ): Against {
   const match = matchTags(vocabulary, cube.vocabulary);
-  const cards = translateTags(
-    cube.cards.filter((card) => inCompareScope(card, choice.scope)),
-    match,
-  );
-  return { name, cards, unit: choice.unit, unmatched: unmatchedTagCounts(cards, match) };
+  return { name, cards: translateTags(cube.cards, match), unit: choice.unit, match };
 }
 
 export function useCompare(vocabulary: readonly Tag[]): Compare {

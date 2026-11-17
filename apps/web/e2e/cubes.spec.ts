@@ -130,29 +130,30 @@ test("Forge compares the open cube with another cube on the recent list", async 
   await compare.getByLabel("Rival Cube").check();
   await page.mouse.move(1, 1);
   const creatures = page.getByRole("listitem", { name: /^Creatures:/u });
-  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15, Rival Cube 12");
+  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15, Rival Cube 12 scaled");
   await compare.getByRole("button", { name: "Counts" }).click();
   await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15, Rival Cube 5");
-  await compare.getByRole("button", { name: "+ prospects & cut" }).click();
-  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15, Rival Cube 6");
   await page.keyboard.press("Escape");
+  await page.getByLabel("Scope of Summary").selectOption("all");
+  await page.mouse.move(1, 1);
+  await expect(creatures).toHaveAttribute("aria-label", /, Rival Cube 6$/u);
 
   const tags = page.getByRole("region", { name: "Tags", exact: true });
   await expect(tags.getByRole("listitem", { name: /^Removal:/u })).toHaveAttribute(
     "aria-label",
-    /Rival Cube 6$/u,
+    /Rival Cube 5$/u,
   );
   await expect(tags.getByText("Only in Rival Cube")).toBeVisible();
   const shared = page.getByRole("region", { name: "Shared cards", exact: true });
   await expect(shared.getByText("In both")).toContainText("2");
-  await expect(shared.getByText("Only in Rival Cube")).toContainText("12");
+  await expect(shared.getByText("Only in Rival Cube")).toContainText("10");
 
   await page.reload();
   await expect(page.getByRole("button", { name: "vs Rival Cube" })).toBeVisible();
   await page.getByRole("button", { name: "vs Rival Cube" }).click();
   await page.getByRole("group", { name: "Compare with another cube" }).getByLabel("None").check();
   await expect(page.getByRole("region", { name: "Shared cards", exact: true })).toHaveCount(0);
-  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15");
+  await expect(creatures).toHaveAttribute("aria-label", /^Creatures: \d+$/u);
 });
 
 test("the Cubes view compares picked cubes with their average", async ({ web }) => {

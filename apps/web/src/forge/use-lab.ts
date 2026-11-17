@@ -331,6 +331,7 @@ export function useLab(): Lab | undefined {
       filtered: lens !== undefined,
       picked,
       against: against?.name,
+      againstUnit: against?.unit,
     },
     view: (pin, on) => {
       const follows = pin === "filter";
@@ -342,7 +343,10 @@ export function useLab(): Lab | undefined {
         next: blockNext,
         lens: blockLens,
         used: usedIn([...blockScope, ...blockNext]),
-        against,
+        against: against && {
+          ...against,
+          cards: against.cards.filter(PIN_INCLUDES[pin]),
+        },
         events: {
           onPeek: setPeek,
           onPick: pick,
@@ -350,6 +354,7 @@ export function useLab(): Lab | undefined {
           filtered: blockLens !== undefined,
           picked,
           against: against?.name,
+          againstUnit: against?.unit,
         },
       };
     },

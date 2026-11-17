@@ -1,15 +1,10 @@
-import { COMPARE_SCOPES, COMPARE_UNITS, cardOverlap } from "@repo/cube/browser";
-import type { CompareScope, CompareUnit } from "@repo/cube/browser";
+import { COMPARE_UNITS, cardOverlap, unmatchedTagCounts } from "@repo/cube/browser";
+import type { CompareUnit } from "@repo/cube/browser";
 import type { ReactNode } from "react";
 import { Menu } from "../menu.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import type { Against, Compare } from "./compare.ts";
 import { Segmented } from "./toolbar.tsx";
-
-const SCOPE_LABEL: Record<CompareScope, string> = {
-  draft: "Draft",
-  all: "+ prospects & cut",
-};
 
 const UNIT_LABEL: Record<CompareUnit, string> = {
   share: "Scaled",
@@ -53,16 +48,17 @@ export function SharedCards({
 }
 
 export function UnmatchedTags({ against }: { against: Against }): ReactNode {
-  if (against.unmatched.length === 0) {
+  const unmatched = unmatchedTagCounts(against.cards, against.match);
+  if (unmatched.length === 0) {
     return null;
   }
   return (
     <details className="lab-unmatched">
       <summary>
-        Only in {against.name} <span className="muted">{against.unmatched.length} tags</span>
+        Only in {against.name} <span className="muted">{unmatched.length} tags</span>
       </summary>
       <ul aria-label={`Tags only in ${against.name}`}>
-        {against.unmatched.map(({ tag, count }) => (
+        {unmatched.map(({ tag, count }) => (
           <li key={tag.id}>
             {tag.label} <span className="muted">{count}</span>
           </li>
@@ -127,14 +123,9 @@ export function CompareMenu({ compare }: { compare: Compare }): ReactNode {
           {note}
         </p>
       )}
-      <Segmented
-        label="Other cube's cards"
-        options={COMPARE_SCOPES.map((id) => ({ id, label: SCOPE_LABEL[id] }))}
-        value={choice.scope}
-        onChange={(scope) => {
-          setChoice({ ...choice, scope });
-        }}
-      />
+      <p className="muted lab-compare-hint">
+        Each block compares the same cards on both sides: its scope menu picks them.
+      </p>
       <p className="muted lab-compare-hint">
         {choice.unit === "share" ? "Their numbers, scaled to this cube's size" : "Their raw counts"}
       </p>

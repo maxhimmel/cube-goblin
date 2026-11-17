@@ -69,9 +69,9 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
         <h1 className="sr-only">Forge</h1>
         <QueryBar lab={lab} />
         <div className="lab-controls">
-          <CompareMenu compare={lab.compare} />
           <BlocksMenu dock={dock} />
           <LayoutsMenu onApply={onApply} />
+          <CompareMenu compare={lab.compare} />
         </div>
       </header>
       {open && (

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { Segmented } from "../forge/toolbar.tsx";
 import { useRemembered } from "../view-choices.ts";
+import { Radar } from "./radar.tsx";
 import { manaVar } from "../forge/lab-charts.tsx";
 import type { Matrix, StatRow } from "./rows.tsx";
 import { SHAPE_ROWS } from "./rows.tsx";
@@ -60,7 +61,7 @@ function StandoutLine({
   columns: readonly Column[];
 }): ReactNode {
   return (
-    <li data-dir={standout.delta > 0 ? "more" : "less"}>
+    <li data-dir={standout.delta > 0 ? "more" : "less"} data-cube={standout.cube}>
       <CubeChip columns={columns} index={standout.cube} />
       <span>
         {standout.delta > 0 ? "more" : "fewer"} {row.icon} <strong>{row.noun}</strong>:{" "}
@@ -97,7 +98,15 @@ function ColorStrip({ cards }: { cards: readonly StatCard[] }): ReactNode {
   );
 }
 
-function CubeCard({ column, index }: { column: Column; index: number }): ReactNode {
+function CubeCard({
+  column,
+  index,
+  onHotCube,
+}: {
+  column: Column;
+  index: number;
+  onHotCube: (cube: number | undefined) => void;
+}): ReactNode {
   const [creatures, lands] = groupAverage([column.cards], ["type:creature", "type:land"]);
   const mv = averageManaValue(column.cards);
   return (
@@ -105,6 +114,13 @@ function CubeCard({ column, index }: { column: Column; index: number }): ReactNo
       className="cubes-card"
       style={{ "--hue": hueOf(index) } as CSSProperties}
       aria-label={column.cube.name}
+      data-cube={index}
+      onPointerEnter={() => {
+        onHotCube(index);
+      }}
+      onPointerLeave={() => {
+        onHotCube(undefined);
+      }}
     >
       <header>
         <h3>{column.cube.name}</h3>
@@ -148,9 +164,11 @@ function lede(columns: readonly Column[], top: Standout | undefined, rows: StatR
 export function SummaryHero({
   columns,
   matrices,
+  onHotCube,
 }: {
   columns: readonly Column[];
   matrices: readonly Matrix[];
+  onHotCube: (cube: number | undefined) => void;
 }): ReactNode {
   const allRows = [...SHAPE_ROWS, ...matrices.flatMap((matrix) => matrix.rows)];
   const cubes = columns.map((column) => column.cards);
@@ -168,7 +186,7 @@ export function SummaryHero({
       <p className="cubes-lede">{lede(columns, found[0], allRows)}</p>
       <div className="cubes-cards">
         {columns.map((column, index) => (
-          <CubeCard key={column.cube.dir} column={column} index={index} />
+          <CubeCard key={column.cube.dir} column={column} index={index} onHotCube={onHotCube} />
         ))}
       </div>
       {found.length > 0 && (
@@ -226,121 +244,39 @@ interface MatrixBody {
   unit: CompareUnit;
 }
 
-function scaleOf(rows: readonly GroupRow[], unit: CompareUnit) {
-  const value = (cell: GroupRow["cells"][number]): number =>
-    unit === "share" ? cell.share : cell.count;
-  const mean = (row: GroupRow): number => (unit === "share" ? row.mean : meanCount(row));
-  const top = Math.max(...rows.flatMap((row) => row.cells.map(value)), unit === "share" ? 0.01 : 1);
-  const label = (amount: number): string =>
-    unit === "share" ? percent(amount) : countLabel(amount);
-  return { value, mean, top, label };
-}
-
-const TICK_STEPS = [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100];
-const MAX_TICKS = 5;
-
-function ticksFor(top: number): number[] {
-  const step = TICK_STEPS.find((candidate) => top / candidate <= MAX_TICKS) ?? top;
-  return Array.from({ length: Math.floor(top / step) + 1 }, (_, index) => index * step);
-}
-
-function Legend({ columns }: { columns: readonly Column[] }): ReactNode {
+export function CubeLegend({
+  columns,
+  onHotCube,
+}: {
+  columns: readonly Column[];
+  onHotCube: (cube: number | undefined) => void;
+}): ReactNode {
   return (
     <ul className="cubes-legend-keys" aria-label="Legend">
       {columns.map((column, index) => (
-        <li key={column.cube.dir}>
-          <i className="cubes-key-bar" style={{ "--hue": hueOf(index) } as CSSProperties} />
+        <li
+          key={column.cube.dir}
+          data-cube={index}
+          onPointerEnter={() => {
+            onHotCube(index);
+          }}
+          onPointerLeave={() => {
+            onHotCube(undefined);
+          }}
+        >
+          <i className="cubes-key-shape" style={{ "--hue": hueOf(index) } as CSSProperties} />
           {column.cube.name}
         </li>
       ))}
       <li>
         <i className="cubes-key-mean" />
-        Average
+        Average of picked cubes
       </li>
       <li>
-        <span className="cubes-delta" data-dir="more">
-          ▲
-        </span>
-        <span className="cubes-delta" data-dir="less">
-          ▼
-        </span>
+        <i className="cubes-key-dot" />
         {`${String(OUTLIER * PERCENT)}+ points from average`}
       </li>
     </ul>
-  );
-}
-
-function MatrixChart({ title, rows, rowOf, columns, unit }: MatrixBody): ReactNode {
-  const scale = scaleOf(rows, unit);
-  const at = (amount: number): string => String(amount / scale.top);
-  return (
-    <div className="cubes-chart" role="list" aria-label={`${title} by cube`}>
-      <div className="cubes-chart-grid" aria-hidden="true">
-        {ticksFor(scale.top).map((tick) => (
-          <span key={tick} style={{ "--at": at(tick) } as CSSProperties}>
-            {scale.label(tick)}
-          </span>
-        ))}
-      </div>
-      {rows.map((row) => {
-        const spec = rowOf.get(row.id);
-        const label = spec?.label ?? row.id;
-        const spoken = row.cells
-          .map(
-            (cell, index) => `${columns[index]?.cube.name ?? ""} ${scale.label(scale.value(cell))}`,
-          )
-          .join(", ");
-        return (
-          <div
-            key={row.id}
-            role="listitem"
-            className="cubes-chart-row"
-            aria-label={`${label}: ${spoken}; average ${scale.label(scale.mean(row))}`}
-          >
-            <span className="cubes-row-label">
-              {spec?.icon}
-              {label}
-            </span>
-            <div className="cubes-chart-plot">
-              {row.cells.map((cell, index) => {
-                const column = columns[index];
-                const dir = direction(cell.delta);
-                return (
-                  <div
-                    key={column?.cube.dir ?? index}
-                    className="cubes-chart-line"
-                    data-dir={dir}
-                    title={`${column?.cube.name ?? ""} · ${label}: ${String(cell.count)} cards, ${percent(cell.share)} (average ${percent(row.mean)})`}
-                  >
-                    <span
-                      className="cubes-chart-bar"
-                      data-zero={scale.value(cell) === 0 ? "" : undefined}
-                      style={
-                        {
-                          "--at": at(scale.value(cell)),
-                          "--hue": hueOf(index),
-                        } as CSSProperties
-                      }
-                    />
-                    <span className="cubes-chart-value">{scale.label(scale.value(cell))}</span>
-                    {dir && (
-                      <span className="cubes-delta" data-dir={dir}>
-                        {dir === "more" ? "▲" : "▼"} {points(cell.delta)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-              <span
-                className="cubes-chart-mean"
-                title={`Average: ${scale.label(scale.mean(row))}`}
-                style={{ "--at": at(scale.mean(row)) } as CSSProperties}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -416,14 +352,23 @@ function MatrixTable({ title, rows, rowOf, columns, unit }: MatrixBody): ReactNo
   );
 }
 
+const RADAR_AXES = 8;
+const MIN_AXES = 3;
+
+function spread(row: GroupRow): number {
+  return Math.max(...row.cells.map((cell) => Math.abs(cell.delta)));
+}
+
 export function MatrixSection({
   matrix,
   columns,
   unit,
+  onHotCube,
 }: {
   matrix: Matrix;
   columns: readonly Column[];
   unit: CompareUnit;
+  onHotCube: (cube: number | undefined) => void;
 }): ReactNode {
   const computed = groupAverage(
     columns.map((column) => column.cards),
@@ -435,7 +380,6 @@ export function MatrixSection({
     "chart",
     z.enum(["chart", "table"]),
   );
-  const asTable = view === "table";
   if (computed.length === 0) {
     return null;
   }
@@ -445,24 +389,33 @@ export function MatrixSection({
   const loud = new Set(found.map((standout) => standout.id));
   const folded = rows.filter((row, index) => index >= FOLD_AFTER && !loud.has(row.id));
   const shown = showAll ? rows : rows.filter((row) => !folded.includes(row));
+  const tooMany = rows.length > RADAR_AXES;
+  const picked = new Set(
+    rows
+      .toSorted((a, b) => spread(b) - spread(a))
+      .slice(0, RADAR_AXES)
+      .map((row) => row.id),
+  );
+  const radarRows = tooMany ? rows.filter((row) => picked.has(row.id)) : rows;
+  const radarable = radarRows.length >= MIN_AXES;
+  const asTable = view === "table" || !radarable;
   return (
     <section className="cubes-matrix" aria-label={matrix.title}>
       <header>
         <h2>{matrix.title}</h2>
         <p className="cubes-note">{matrixNote(found, rowOf, columns)}</p>
         <p className="cubes-blurb">{matrix.blurb}</p>
-        <div className="cubes-matrix-tools">
-          <Legend columns={columns} />
+        {radarable && (
           <Segmented
             label={`Show ${matrix.title} as`}
             options={[
-              { id: "chart", label: "Chart" },
+              { id: "chart", label: "Radar" },
               { id: "table", label: "Table" },
             ]}
             value={view}
             onChange={setView}
           />
-        </div>
+        )}
       </header>
       {asTable ? (
         <MatrixTable
@@ -473,15 +426,23 @@ export function MatrixSection({
           unit={unit}
         />
       ) : (
-        <MatrixChart
-          title={matrix.title}
-          rows={shown}
-          rowOf={rowOf}
-          columns={columns}
-          unit={unit}
-        />
+        <>
+          <Radar
+            title={matrix.title}
+            rows={radarRows}
+            specs={rowOf}
+            cubes={columns.map((column, index) => ({ name: column.cube.name, hue: hueOf(index) }))}
+            unit={unit}
+            onHotCube={onHotCube}
+          />
+          {tooMany && (
+            <p className="cubes-blurb">
+              {`The ${String(RADAR_AXES)} ${matrix.title.toLowerCase()} that differ most; the table lists all ${String(rows.length)}.`}
+            </p>
+          )}
+        </>
       )}
-      {folded.length > 0 && (
+      {asTable && folded.length > 0 && (
         <button
           type="button"
           className="cubes-more"

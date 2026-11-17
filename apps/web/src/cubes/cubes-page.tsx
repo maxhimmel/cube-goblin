@@ -102,12 +102,12 @@ function countLabel(value: number): string {
 function SectionTable({
   section,
   rows,
-  names,
+  cubes,
   unit,
 }: {
   section: Section;
   rows: GroupRow[];
-  names: string[];
+  cubes: CubeRef[];
   unit: CompareUnit;
 }): ReactNode {
   const labelOf = new Map(section.rows.map((row) => [row.id, row.label]));
@@ -124,9 +124,9 @@ function SectionTable({
             <th scope="col">
               <span className="sr-only">{section.title}</span>
             </th>
-            {names.map((name) => (
-              <th key={name} scope="col">
-                {name}
+            {cubes.map((cube) => (
+              <th key={cube.dir} scope="col">
+                {cube.name}
               </th>
             ))}
             <th scope="col">Average</th>
@@ -139,11 +139,12 @@ function SectionTable({
               <tr key={row.id}>
                 <th scope="row">{label}</th>
                 {row.cells.map((cell, index) => {
-                  const name = names[index] ?? "";
+                  const cube = cubes[index];
+                  const name = cube?.name ?? "";
                   const tint = Math.min(1, Math.abs(cell.delta) / FULL_TINT_AT);
                   return (
                     <td
-                      key={name}
+                      key={cube?.dir ?? index}
                       data-dir={cell.delta > 0 ? "more" : cell.delta < 0 ? "less" : undefined}
                       style={{ "--tint": String(tint) } as CSSProperties}
                       title={`${name} · ${label}: ${String(cell.count)} cards, ${percent(cell.share)} (average ${percent(row.mean)})`}
@@ -195,7 +196,7 @@ export function CubesPage(): ReactNode {
       vocabulary: view.vocabulary,
     })),
   );
-  const names = ready.map(({ cube }) => cube.name);
+  const columns = ready.map(({ cube }) => cube);
   const sections: Section[] = [
     ...FIXED_SECTIONS,
     { title: "Tags", rows: pooled.tags.map((tag) => ({ id: `tag:${tag.id}`, label: tag.label })) },
@@ -275,7 +276,7 @@ export function CubesPage(): ReactNode {
                   key={section.title}
                   section={section}
                   rows={sorted}
-                  names={names}
+                  cubes={columns}
                   unit={choice.unit}
                 />
               );

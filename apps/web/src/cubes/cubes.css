@@ -2,6 +2,12 @@
   --up: #00b39b;
   --down: #f2545b;
   --on-dir: #fff;
+  --cube-1: #2a78d6;
+  --cube-2: #eb6834;
+  --cube-3: #1baf7a;
+  --cube-4: #eda100;
+  --cube-5: #e87ba4;
+  --cube-6: #008300;
 
   display: grid;
   gap: 20px;
@@ -14,6 +20,12 @@
     --up: #2ee6c4;
     --down: #ff7a80;
     --on-dir: #0d1420;
+    --cube-1: #3987e5;
+    --cube-2: #d95926;
+    --cube-3: #199e70;
+    --cube-4: #c98500;
+    --cube-5: #d55181;
+    --cube-6: #008300;
   }
 }
 
@@ -118,7 +130,6 @@
 .cubes-card h3 {
   margin: 0;
   font-size: var(--fs-base);
-  color: var(--hue);
 }
 
 .cubes-open {
@@ -209,12 +220,21 @@
 }
 
 .cubes-chip {
-  display: inline-block;
-  padding: 1px 8px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
   font-weight: 700;
-  color: #fff;
+}
+
+.cubes-chip::before,
+.cubes-matrix thead th[style]::before {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 2px;
+  content: "";
   background: var(--hue);
-  border-radius: 999px;
+  border-radius: 3px;
 }
 
 .cubes-delta {
@@ -273,7 +293,7 @@
 .cubes-matrix thead th {
   padding: 0 8px 4px;
   font-size: var(--fs-sm);
-  color: var(--hue, var(--muted));
+  color: var(--fg);
   text-align: left;
 }
 
@@ -369,4 +389,169 @@
   background: none;
   border: 1px solid var(--line);
   border-radius: 999px;
+}
+
+.cubes-matrix-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.cubes-legend-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  font-size: var(--fs-sm);
+  list-style: none;
+}
+
+.cubes-legend-keys li {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cubes-key-bar {
+  width: 18px;
+  height: 8px;
+  background: var(--hue);
+  border-radius: 0 4px 4px 0;
+}
+
+.cubes-key-mean {
+  width: 2px;
+  height: 16px;
+  background: var(--fg);
+  border-radius: 1px;
+}
+
+.cubes-legend-keys .cubes-delta {
+  margin: 0;
+  padding: 0 5px;
+}
+
+.cubes-chart {
+  --room: 132px;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  row-gap: 10px;
+  column-gap: 16px;
+  padding-bottom: 22px;
+}
+
+.cubes-chart-grid {
+  position: absolute;
+  inset: 0;
+  grid-row: 1 / span 999;
+  grid-column: 2;
+  pointer-events: none;
+}
+
+.cubes-chart-grid span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((100% - var(--room)) * var(--at));
+  display: flex;
+  align-items: flex-end;
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  border-left: 1px solid color-mix(in oklab, var(--fg) 9%, transparent);
+  transform: translateY(18px);
+}
+
+.cubes-chart-row {
+  display: contents;
+}
+
+.cubes-chart-row .cubes-row-label {
+  grid-column: 1;
+  align-self: center;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cubes-chart-plot {
+  position: relative;
+  display: grid;
+  grid-column: 2;
+  gap: 2px;
+  padding: 3px 0;
+}
+
+.cubes-chart-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 12px;
+}
+
+.cubes-chart-bar {
+  flex: none;
+  width: calc((100% - var(--room)) * var(--at));
+  min-width: 2px;
+  height: 10px;
+  background: var(--hue);
+  border-radius: 0 4px 4px 0;
+}
+
+.cubes-chart-line[data-dir] .cubes-chart-bar:not([data-zero]) {
+  box-shadow:
+    0 0 0 2px var(--panel),
+    0 0 0 3.5px var(--dir-color);
+}
+
+.cubes-chart-line[data-dir="more"],
+.cubes-delta[data-dir="more"] {
+  --dir-color: var(--up);
+}
+
+.cubes-chart-line[data-dir="less"],
+.cubes-delta[data-dir="less"] {
+  --dir-color: var(--down);
+}
+
+.cubes-chart-value {
+  position: relative;
+  z-index: 1;
+  padding: 0 4px;
+  margin-left: -4px;
+  font-size: var(--fs-sm);
+  background: var(--panel);
+  border-radius: 4px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.cubes-chart-line[data-dir] .cubes-chart-value {
+  color: var(--fg);
+}
+
+.cubes-chart .cubes-delta {
+  position: relative;
+  z-index: 1;
+  margin-left: 0;
+  padding: 0 6px;
+  font-size: var(--fs-2xs);
+}
+
+.cubes-chart-mean {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((100% - var(--room)) * var(--at));
+  width: 2px;
+  background: var(--fg);
+  border-radius: 1px;
+  box-shadow: 0 0 0 1.5px var(--panel);
+  transform: translateX(-1px);
 }

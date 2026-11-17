@@ -3,6 +3,9 @@ import { COLOR_GROUPS, averageManaValue, groupAverage, standouts } from "@repo/c
 import type { CubeRef } from "@repo/server/events";
 import type { CSSProperties, ReactNode } from "react";
 import { useState } from "react";
+import { z } from "zod";
+import { Segmented } from "../forge/toolbar.tsx";
+import { useRemembered } from "../view-choices.ts";
 import { manaVar } from "../forge/lab-charts.tsx";
 import type { Matrix, StatRow } from "./rows.tsx";
 import { SHAPE_ROWS } from "./rows.tsx";
@@ -14,7 +17,7 @@ const STANDOUT_COUNT = 5;
 const MATRIX_NOTES = 2;
 const FOLD_AFTER = 10;
 
-const CUBE_HUES = ["#7c5cff", "#00b3d6", "#ff8a1f", "#ff4f9a", "#22c55e", "#f5c518"];
+const CUBE_HUE_COUNT = 6;
 
 export interface Column {
   cube: CubeRef;
@@ -23,7 +26,7 @@ export interface Column {
 }
 
 export function hueOf(index: number): string {
-  return CUBE_HUES[index % CUBE_HUES.length] ?? "#7c5cff";
+  return `var(--cube-${String((index % CUBE_HUE_COUNT) + 1)})`;
 }
 
 function percent(share: number): string {
@@ -215,6 +218,204 @@ function matrixNote(
   });
 }
 
+interface MatrixBody {
+  title: string;
+  rows: readonly GroupRow[];
+  rowOf: ReadonlyMap<string, StatRow>;
+  columns: readonly Column[];
+  unit: CompareUnit;
+}
+
+function scaleOf(rows: readonly GroupRow[], unit: CompareUnit) {
+  const value = (cell: GroupRow["cells"][number]): number =>
+    unit === "share" ? cell.share : cell.count;
+  const mean = (row: GroupRow): number => (unit === "share" ? row.mean : meanCount(row));
+  const top = Math.max(...rows.flatMap((row) => row.cells.map(value)), unit === "share" ? 0.01 : 1);
+  const label = (amount: number): string =>
+    unit === "share" ? percent(amount) : countLabel(amount);
+  return { value, mean, top, label };
+}
+
+const TICK_STEPS = [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 20, 25, 50, 100];
+const MAX_TICKS = 5;
+
+function ticksFor(top: number): number[] {
+  const step = TICK_STEPS.find((candidate) => top / candidate <= MAX_TICKS) ?? top;
+  return Array.from({ length: Math.floor(top / step) + 1 }, (_, index) => index * step);
+}
+
+function Legend({ columns }: { columns: readonly Column[] }): ReactNode {
+  return (
+    <ul className="cubes-legend-keys" aria-label="Legend">
+      {columns.map((column, index) => (
+        <li key={column.cube.dir}>
+          <i className="cubes-key-bar" style={{ "--hue": hueOf(index) } as CSSProperties} />
+          {column.cube.name}
+        </li>
+      ))}
+      <li>
+        <i className="cubes-key-mean" />
+        Average
+      </li>
+      <li>
+        <span className="cubes-delta" data-dir="more">
+          ▲
+        </span>
+        <span className="cubes-delta" data-dir="less">
+          ▼
+        </span>
+        {`${String(OUTLIER * PERCENT)}+ points from average`}
+      </li>
+    </ul>
+  );
+}
+
+function MatrixChart({ title, rows, rowOf, columns, unit }: MatrixBody): ReactNode {
+  const scale = scaleOf(rows, unit);
+  const at = (amount: number): string => String(amount / scale.top);
+  return (
+    <div className="cubes-chart" role="list" aria-label={`${title} by cube`}>
+      <div className="cubes-chart-grid" aria-hidden="true">
+        {ticksFor(scale.top).map((tick) => (
+          <span key={tick} style={{ "--at": at(tick) } as CSSProperties}>
+            {scale.label(tick)}
+          </span>
+        ))}
+      </div>
+      {rows.map((row) => {
+        const spec = rowOf.get(row.id);
+        const label = spec?.label ?? row.id;
+        const spoken = row.cells
+          .map(
+            (cell, index) => `${columns[index]?.cube.name ?? ""} ${scale.label(scale.value(cell))}`,
+          )
+          .join(", ");
+        return (
+          <div
+            key={row.id}
+            role="listitem"
+            className="cubes-chart-row"
+            aria-label={`${label}: ${spoken}; average ${scale.label(scale.mean(row))}`}
+          >
+            <span className="cubes-row-label">
+              {spec?.icon}
+              {label}
+            </span>
+            <div className="cubes-chart-plot">
+              {row.cells.map((cell, index) => {
+                const column = columns[index];
+                const dir = direction(cell.delta);
+                return (
+                  <div
+                    key={column?.cube.dir ?? index}
+                    className="cubes-chart-line"
+                    data-dir={dir}
+                    title={`${column?.cube.name ?? ""} · ${label}: ${String(cell.count)} cards, ${percent(cell.share)} (average ${percent(row.mean)})`}
+                  >
+                    <span
+                      className="cubes-chart-bar"
+                      data-zero={scale.value(cell) === 0 ? "" : undefined}
+                      style={
+                        {
+                          "--at": at(scale.value(cell)),
+                          "--hue": hueOf(index),
+                        } as CSSProperties
+                      }
+                    />
+                    <span className="cubes-chart-value">{scale.label(scale.value(cell))}</span>
+                    {dir && (
+                      <span className="cubes-delta" data-dir={dir}>
+                        {dir === "more" ? "▲" : "▼"} {points(cell.delta)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              <span
+                className="cubes-chart-mean"
+                title={`Average: ${scale.label(scale.mean(row))}`}
+                style={{ "--at": at(scale.mean(row)) } as CSSProperties}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MatrixTable({ title, rows, rowOf, columns, unit }: MatrixBody): ReactNode {
+  const top = Math.max(...rows.flatMap((row) => row.cells.map((cell) => cell.share)), 0.01);
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">
+            <span className="sr-only">{title}</span>
+          </th>
+          {columns.map((column, index) => (
+            <th
+              key={column.cube.dir}
+              scope="col"
+              style={{ "--hue": hueOf(index) } as CSSProperties}
+            >
+              {column.cube.name}
+            </th>
+          ))}
+          <th scope="col" className="cubes-avg">
+            Average
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => {
+          const spec = rowOf.get(row.id);
+          const label = spec?.label ?? row.id;
+          return (
+            <tr key={row.id}>
+              <th scope="row">
+                <span className="cubes-row-label">
+                  {spec?.icon}
+                  {label}
+                </span>
+              </th>
+              {row.cells.map((cell, index) => {
+                const column = columns[index];
+                const dir = direction(cell.delta);
+                return (
+                  <td
+                    key={column?.cube.dir ?? index}
+                    data-dir={dir}
+                    data-strong={Math.abs(cell.delta) >= STRONG ? "" : undefined}
+                    title={`${column?.cube.name ?? ""} · ${label}: ${String(cell.count)} cards, ${percent(cell.share)} (average ${percent(row.mean)})`}
+                    style={
+                      {
+                        "--fill": String(cell.share / top),
+                        "--bar": spec?.bar ?? "var(--accent)",
+                      } as CSSProperties
+                    }
+                  >
+                    <span className="cubes-cell">
+                      <span className="cubes-bar" aria-hidden="true" />
+                      <span className="cubes-value">
+                        {unit === "share" ? percent(cell.share) : cell.count}
+                      </span>
+                      {dir && <span className="cubes-delta">{points(cell.delta)}</span>}
+                    </span>
+                  </td>
+                );
+              })}
+              <td className="cubes-avg">
+                {unit === "share" ? percent(row.mean) : countLabel(meanCount(row))}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
 export function MatrixSection({
   matrix,
   columns,
@@ -229,6 +430,12 @@ export function MatrixSection({
     matrix.rows.map((row) => row.id),
   ).filter((row) => row.cells.some((cell) => cell.count > 0));
   const [showAll, setShowAll] = useState(false);
+  const [view, setView] = useRemembered<"chart" | "table">(
+    `cubes.view.${matrix.title}`,
+    "chart",
+    z.enum(["chart", "table"]),
+  );
+  const asTable = view === "table";
   if (computed.length === 0) {
     return null;
   }
@@ -238,80 +445,42 @@ export function MatrixSection({
   const loud = new Set(found.map((standout) => standout.id));
   const folded = rows.filter((row, index) => index >= FOLD_AFTER && !loud.has(row.id));
   const shown = showAll ? rows : rows.filter((row) => !folded.includes(row));
-  const top = Math.max(...rows.flatMap((row) => row.cells.map((cell) => cell.share)), 0.01);
   return (
     <section className="cubes-matrix" aria-label={matrix.title}>
       <header>
         <h2>{matrix.title}</h2>
         <p className="cubes-note">{matrixNote(found, rowOf, columns)}</p>
         <p className="cubes-blurb">{matrix.blurb}</p>
+        <div className="cubes-matrix-tools">
+          <Legend columns={columns} />
+          <Segmented
+            label={`Show ${matrix.title} as`}
+            options={[
+              { id: "chart", label: "Chart" },
+              { id: "table", label: "Table" },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+        </div>
       </header>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">
-              <span className="sr-only">{matrix.title}</span>
-            </th>
-            {columns.map((column, index) => (
-              <th
-                key={column.cube.dir}
-                scope="col"
-                style={{ "--hue": hueOf(index) } as CSSProperties}
-              >
-                {column.cube.name}
-              </th>
-            ))}
-            <th scope="col" className="cubes-avg">
-              Average
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map((row) => {
-            const spec = rowOf.get(row.id);
-            const label = spec?.label ?? row.id;
-            return (
-              <tr key={row.id}>
-                <th scope="row">
-                  <span className="cubes-row-label">
-                    {spec?.icon}
-                    {label}
-                  </span>
-                </th>
-                {row.cells.map((cell, index) => {
-                  const column = columns[index];
-                  const dir = direction(cell.delta);
-                  return (
-                    <td
-                      key={column?.cube.dir ?? index}
-                      data-dir={dir}
-                      data-strong={Math.abs(cell.delta) >= STRONG ? "" : undefined}
-                      title={`${column?.cube.name ?? ""} · ${label}: ${String(cell.count)} cards, ${percent(cell.share)} (average ${percent(row.mean)})`}
-                      style={
-                        {
-                          "--fill": String(cell.share / top),
-                          "--bar": spec?.bar ?? "var(--accent)",
-                        } as CSSProperties
-                      }
-                    >
-                      <span className="cubes-cell">
-                        <span className="cubes-bar" aria-hidden="true" />
-                        <span className="cubes-value">
-                          {unit === "share" ? percent(cell.share) : cell.count}
-                        </span>
-                        {dir && <span className="cubes-delta">{points(cell.delta)}</span>}
-                      </span>
-                    </td>
-                  );
-                })}
-                <td className="cubes-avg">
-                  {unit === "share" ? percent(row.mean) : countLabel(meanCount(row))}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {asTable ? (
+        <MatrixTable
+          title={matrix.title}
+          rows={shown}
+          rowOf={rowOf}
+          columns={columns}
+          unit={unit}
+        />
+      ) : (
+        <MatrixChart
+          title={matrix.title}
+          rows={shown}
+          rowOf={rowOf}
+          columns={columns}
+          unit={unit}
+        />
+      )}
       {folded.length > 0 && (
         <button
           type="button"

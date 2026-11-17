@@ -15,7 +15,7 @@ import {
   putLayout,
   useWorkbenchLayouts,
 } from "../workbench/layouts.ts";
-import { useIsMutating, useQuery } from "@tanstack/react-query";
+import { useIsMutating, useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useState } from "react";
@@ -80,21 +80,47 @@ function useOtherCubes(): CubeRef[] | undefined {
   return data?.recent.filter((cube) => cube.dir !== data.current.dir);
 }
 
-function useOtherCube(dir: string | undefined): OtherCube | undefined {
-  const { data, error } = useQuery({
+function otherCubeQuery(dir: string) {
+  return {
     queryKey: ["other-cube", dir],
-    queryFn: () => host.cubes.cards(dir ?? ""),
-    enabled: dir !== undefined,
+    queryFn: () => host.cubes.cards(dir),
     staleTime: OTHER_CUBE_STALE_MS,
     retry: false,
-  });
-  if (dir === undefined) {
-    return undefined;
-  }
+  };
+}
+
+function otherCube(data: Workbench | undefined, error: Error | null): OtherCube {
   if (data) {
     return { status: "ready", cube: data };
   }
   return error ? { status: "failed", error: error.message } : { status: "loading" };
+}
+
+function useOtherCube(dir: string | undefined): OtherCube | undefined {
+  const { data, error } = useQuery({
+    ...otherCubeQuery(dir ?? ""),
+    enabled: dir !== undefined,
+  });
+  return dir === undefined ? undefined : otherCube(data, error);
+}
+
+function useCubeList(): { current: CubeRef; recent: CubeRef[] } | undefined {
+  return useQuery({ queryKey: CUBES_QUERY_KEY, queryFn: () => host.cubes.list() }).data;
+}
+
+function useCubesAt(dirs: readonly string[]): OtherCube[] {
+  const current = useCubeList()?.current.dir;
+  const open = useWorkbench();
+  const others = useQueries({
+    queries: dirs.map((dir) => ({ ...otherCubeQuery(dir), enabled: dir !== current })),
+  });
+  return dirs.map((dir, index) => {
+    if (dir === current) {
+      return open ? { status: "ready", cube: open } : { status: "loading" };
+    }
+    const query = others[index];
+    return otherCube(query?.data, query?.error ?? null);
+  });
 }
 
 function useWorkbenchCard(slug: string): WorkbenchCard | undefined {
@@ -248,6 +274,8 @@ export const mode: Mode = {
   },
   useOtherCubes,
   useOtherCube,
+  useCubeList,
+  useCubesAt,
   useTileMark: (slug) => ({
     "data-status": useWorkbenchCard(slug)?.status,
     "data-selected": useSelection().has(slug) ? "true" : undefined,

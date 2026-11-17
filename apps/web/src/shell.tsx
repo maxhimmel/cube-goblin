@@ -11,7 +11,7 @@ import { useCubeName } from "./cube-identity.ts";
 const TypeScalePanel = import.meta.env.DEV ? lazy(() => import("./type-scale.tsx")) : null;
 
 const VIEWS: readonly {
-  to: "/" | "/tags" | "/insights" | "/history";
+  to: "/" | "/tags" | "/insights" | "/history" | "/cubes";
   label: string;
   icon: ViewIconName;
   workbench: boolean;
@@ -20,6 +20,7 @@ const VIEWS: readonly {
   { to: "/tags", label: "Tags", icon: "tags", workbench: false },
   { to: "/insights", label: "Insights", icon: "insights", workbench: false },
   { to: "/history", label: "History", icon: "history", workbench: false },
+  { to: "/cubes", label: "Cubes", icon: "cubes", workbench: true },
 ];
 
 export function Shell({ children }: { children: ReactNode }): ReactNode {

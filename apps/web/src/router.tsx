@@ -11,6 +11,7 @@ import {
 import { InsightsPage } from "./insights/insights-page.tsx";
 import type { TagMode } from "./overlaps/tags-view.tsx";
 import { isTagMode } from "./overlaps/tags-view.tsx";
+import { CubesPage } from "./cubes/cubes-page.tsx";
 import { ForgePage } from "./forge/forge-page.tsx";
 import { Shell } from "./shell.tsx";
 import type { RememberedPath } from "./view-choices.ts";
@@ -170,6 +171,12 @@ const historyRoute = createRoute({
   component: () => <mode.HistoryPage />,
 });
 
+const cubesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/cubes",
+  component: CubesPage,
+});
+
 const versionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/versions",
@@ -219,6 +226,7 @@ export const router = createRouter({
     tagsRoute,
     boardRoute,
     historyRoute,
+    cubesRoute,
     versionsRoute,
     logRoute,
     labRoute,

@@ -27,6 +27,8 @@ export interface Mode {
   useCube: () => CubeView | undefined;
   useOtherCubes?: () => CubeRef[] | undefined;
   useOtherCube?: (dir: string | undefined) => OtherCube | undefined;
+  useCubeList?: () => { current: CubeRef; recent: CubeRef[] } | undefined;
+  useCubesAt?: (dirs: readonly string[]) => OtherCube[];
   useTileMark: (slug: string) => Record<string, string | undefined>;
   Toolbar: () => ReactNode;
   CardPanel: (props: { slug: string }) => ReactNode;

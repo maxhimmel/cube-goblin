@@ -1,0 +1,105 @@
+.cubes {
+  display: grid;
+  gap: 16px;
+  padding: 16px 20px 40px;
+}
+
+.cubes-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+}
+
+.cubes-controls h1 {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.cubes-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.cubes-picker legend {
+  float: left;
+  margin-right: 8px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cubes-picker label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.cubes-legend {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.cubes-legend [data-dir],
+.cubes-table td[data-dir] {
+  --tint-color: var(--compare);
+}
+
+.cubes-legend [data-dir="less"],
+.cubes-table td[data-dir="less"] {
+  --tint-color: var(--cut);
+}
+
+.cubes-legend [data-dir] {
+  padding: 0 4px;
+  background: color-mix(in oklab, var(--tint-color) 30%, transparent);
+  border-radius: 4px;
+}
+
+.cubes-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.cubes-section {
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.cubes-section h2 {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cubes-table th,
+.cubes-table td {
+  padding: 3px 6px;
+}
+
+.cubes-table thead th {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  text-align: right;
+}
+
+.cubes-table td[data-dir] {
+  background: color-mix(in oklab, var(--tint-color) calc(var(--tint) * 32%), transparent);
+  border-radius: 4px;
+}
+
+.cubes-mean {
+  color: var(--muted);
+}

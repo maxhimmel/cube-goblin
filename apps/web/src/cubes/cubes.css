@@ -8,6 +8,7 @@
   --cube-4: #eda100;
   --cube-5: #e87ba4;
   --cube-6: #008300;
+  --radar-grid: color-mix(in oklab, var(--fg) 14%, transparent);
 
   display: grid;
   gap: 20px;
@@ -378,6 +379,171 @@
   font-variant-numeric: tabular-nums;
 }
 
+.cubes-matrix-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.cubes-legend-bar {
+  position: sticky;
+  top: calc(var(--topbar-height, 0px) + 8px);
+  z-index: 5;
+  justify-self: start;
+  padding: 8px 14px;
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 6px 20px color-mix(in oklab, var(--fg) 10%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.cubes-legend-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  font-size: var(--fs-sm);
+  list-style: none;
+}
+
+.cubes-legend-keys li {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.cubes-legend-keys li[data-cube] {
+  font-weight: 700;
+  cursor: default;
+}
+
+.cubes-key-shape {
+  width: 14px;
+  height: 14px;
+  background: color-mix(in oklab, var(--hue) 30%, transparent);
+  border: 2px solid var(--hue);
+  border-radius: 4px;
+}
+
+.cubes-key-mean {
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed var(--fg);
+}
+
+.cubes-key-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--fg);
+  border: 2px solid var(--panel);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--fg);
+}
+
+.cubes-radars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.cubes-radar {
+  position: relative;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.cubes-radar-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+  visibility: hidden;
+  list-style: none;
+}
+
+.cubes-radar-labels[data-ready] {
+  visibility: visible;
+}
+
+.cubes-radar-labels li {
+  position: absolute;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+.cubes-radar-labels li[data-side="right"] {
+  transform: translate(0, -50%);
+}
+
+.cubes-radar-labels li[data-side="left"] {
+  transform: translate(-100%, -50%);
+}
+
+.cubes-radar .radar-cube,
+.cubes-card,
+.cubes-standouts li[data-cube],
+.cubes-legend-keys li[data-cube] {
+  transition: opacity 0.18s ease;
+}
+
+.cubes[data-hot] .cubes-radar .radar-cube {
+  opacity: 0.12;
+}
+
+.cubes[data-hot] .cubes-card,
+.cubes[data-hot] .cubes-standouts li[data-cube],
+.cubes[data-hot] .cubes-legend-keys li[data-cube] {
+  opacity: 0.35;
+}
+
+.cubes[data-hot="0"] .cubes-radar .radar-cube-0,
+.cubes[data-hot="0"] [data-cube="0"] {
+  opacity: 1;
+}
+
+.cubes[data-hot="1"] .cubes-radar .radar-cube-1,
+.cubes[data-hot="1"] [data-cube="1"] {
+  opacity: 1;
+}
+
+.cubes[data-hot="2"] .cubes-radar .radar-cube-2,
+.cubes[data-hot="2"] [data-cube="2"] {
+  opacity: 1;
+}
+
+.cubes[data-hot="3"] .cubes-radar .radar-cube-3,
+.cubes[data-hot="3"] [data-cube="3"] {
+  opacity: 1;
+}
+
+.cubes[data-hot="4"] .cubes-radar .radar-cube-4,
+.cubes[data-hot="4"] [data-cube="4"] {
+  opacity: 1;
+}
+
+.cubes[data-hot="5"] .cubes-radar .radar-cube-5,
+.cubes[data-hot="5"] [data-cube="5"] {
+  opacity: 1;
+}
+
+.cubes[data-hot] .cubes-radar .radar-cube path {
+  transition: fill-opacity 0.18s ease;
+}
+
 .cubes-more {
   justify-self: start;
   padding: 4px 12px;
@@ -391,167 +557,16 @@
   border-radius: 999px;
 }
 
-.cubes-matrix-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 6px;
-}
-
-.cubes-legend-keys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  align-items: center;
-  padding: 0;
-  margin: 0;
+.cubes-tip {
+  padding: 8px 12px;
+  font: inherit;
   font-size: var(--fs-sm);
-  list-style: none;
-}
-
-.cubes-legend-keys li {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.cubes-key-bar {
-  width: 18px;
-  height: 8px;
-  background: var(--hue);
-  border-radius: 0 4px 4px 0;
-}
-
-.cubes-key-mean {
-  width: 2px;
-  height: 16px;
-  background: var(--fg);
-  border-radius: 1px;
-}
-
-.cubes-legend-keys .cubes-delta {
-  margin: 0;
-  padding: 0 5px;
-}
-
-.cubes-chart {
-  --room: 132px;
-
-  position: relative;
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  row-gap: 10px;
-  column-gap: 16px;
-  padding-bottom: 22px;
-}
-
-.cubes-chart-grid {
-  position: absolute;
-  inset: 0;
-  grid-row: 1 / span 999;
-  grid-column: 2;
-  pointer-events: none;
-}
-
-.cubes-chart-grid span {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc((100% - var(--room)) * var(--at));
-  display: flex;
-  align-items: flex-end;
-  font-size: var(--fs-2xs);
-  color: var(--muted);
-  border-left: 1px solid color-mix(in oklab, var(--fg) 9%, transparent);
-  transform: translateY(18px);
-}
-
-.cubes-chart-row {
-  display: contents;
-}
-
-.cubes-chart-row .cubes-row-label {
-  grid-column: 1;
-  align-self: center;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.cubes-chart-plot {
-  position: relative;
-  display: grid;
-  grid-column: 2;
-  gap: 2px;
-  padding: 3px 0;
-}
-
-.cubes-chart-line {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  min-height: 12px;
-}
-
-.cubes-chart-bar {
-  flex: none;
-  width: calc((100% - var(--room)) * var(--at));
-  min-width: 2px;
-  height: 10px;
-  background: var(--hue);
-  border-radius: 0 4px 4px 0;
-}
-
-.cubes-chart-line[data-dir] .cubes-chart-bar:not([data-zero]) {
-  box-shadow:
-    0 0 0 2px var(--panel),
-    0 0 0 3.5px var(--dir-color);
-}
-
-.cubes-chart-line[data-dir="more"],
-.cubes-delta[data-dir="more"] {
-  --dir-color: var(--up);
-}
-
-.cubes-chart-line[data-dir="less"],
-.cubes-delta[data-dir="less"] {
-  --dir-color: var(--down);
-}
-
-.cubes-chart-value {
-  position: relative;
-  z-index: 1;
-  padding: 0 4px;
-  margin-left: -4px;
-  font-size: var(--fs-sm);
-  background: var(--panel);
-  border-radius: 4px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-.cubes-chart-line[data-dir] .cubes-chart-value {
+  line-height: 1.5;
   color: var(--fg);
-}
-
-.cubes-chart .cubes-delta {
-  position: relative;
-  z-index: 1;
-  margin-left: 0;
-  padding: 0 6px;
-  font-size: var(--fs-2xs);
-}
-
-.cubes-chart-mean {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc((100% - var(--room)) * var(--at));
-  width: 2px;
-  background: var(--fg);
-  border-radius: 1px;
-  box-shadow: 0 0 0 1.5px var(--panel);
-  transform: translateX(-1px);
+  white-space: pre;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px color-mix(in oklab, #000 30%, transparent);
+  opacity: 1;
 }

@@ -169,10 +169,13 @@ test("the Cubes view compares picked cubes with their average", async ({ web }) 
     summary.getByRole("list", { name: "What stands out" }).getByRole("listitem").first(),
   ).toContainText(/pts$/u);
   const types = page.getByRole("region", { name: "Card types" });
-  await expect(types.getByRole("listitem", { name: /^Creature:/u })).toHaveAttribute(
-    "aria-label",
-    "Creature: Max's Cube 52%, Rival Cube 42%; average 47%",
-  );
+  await expect(
+    types.getByRole("img", { name: /^Card types: Max's Cube, Rival Cube/u }),
+  ).toBeVisible();
+  await page.getByRole("list", { name: "Legend" }).getByText("Rival Cube").hover();
+  await expect(page.locator(".cubes")).toHaveAttribute("data-hot", "1");
+  await page.mouse.move(1, 1);
+  await expect(page.locator(".cubes")).not.toHaveAttribute("data-hot");
   await types.getByRole("button", { name: "Table" }).click();
   const creatures = types.getByRole("row", { name: /Creature/u });
   await expect(types).toContainText("Rival Cube runs more instants (42% vs 35%)");

@@ -3,13 +3,14 @@ import type { CompareScope, CompareUnit } from "@repo/cube/browser";
 import { COMPARE_SCOPES, COMPARE_UNITS, inCompareScope, poolTags } from "@repo/cube/browser";
 import type { CubeRef } from "@repo/server/events";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { Segmented } from "../forge/toolbar.tsx";
 import type { OtherCube } from "../modes/mode.ts";
 import { useRemembered } from "../view-choices.ts";
 import { FIXED_MATRICES, tagMatrix } from "./rows.tsx";
 import type { Column } from "./story.tsx";
-import { MatrixSection, OUTLIER, SummaryHero } from "./story.tsx";
+import { CubeLegend, MatrixSection, SummaryHero } from "./story.tsx";
 
 interface Choice {
   off: string[];
@@ -50,6 +51,7 @@ export function CubesPage(): ReactNode {
     : [];
   const picked = all.filter((cube) => !choice.off.includes(cube.dir));
   const states = mode.useCubesAt?.(picked.map((cube) => cube.dir)) ?? [];
+  const [hot, setHot] = useState<number | undefined>(undefined);
   if (!mode.useCubeList) {
     return <p className="muted">Comparing cubes works in the workbench only.</p>;
   }
@@ -79,7 +81,7 @@ export function CubesPage(): ReactNode {
     });
   };
   return (
-    <div className="cubes">
+    <div className="cubes" data-hot={hot}>
       <header className="cubes-controls">
         <h1>Compare cubes</h1>
         <fieldset className="cubes-picker">
@@ -129,20 +131,24 @@ export function CubesPage(): ReactNode {
         <p className="muted">Pick two or more cubes.</p>
       ) : (
         <>
-          <SummaryHero columns={columns} matrices={matrices} />
+          <SummaryHero columns={columns} matrices={matrices} onHotCube={setHot} />
+          <div className="cubes-legend-bar">
+            <CubeLegend columns={columns} onHotCube={setHot} />
+          </div>
           <p className="cubes-legend">
-            {`Cells show each cube's ${choice.unit === "share" ? "share of" : "count in"} its ${choice.scope === "draft" ? "draft" : "cards"}. Cells `}
-            <span data-dir="more">{OUTLIER * 100}+ points above</span> or{" "}
-            <span data-dir="less">below</span> the average stand out.
+            {`Each spoke shows a cube's ${choice.unit === "share" ? "share of" : "count in"} its ${choice.scope === "draft" ? "draft" : "cards"}; the dashed outline is the average. Hover a cube, or a point on any radar, to follow that cube everywhere.`}
           </p>
-          {matrices.map((matrix) => (
-            <MatrixSection
-              key={matrix.title}
-              matrix={matrix}
-              columns={columns}
-              unit={choice.unit}
-            />
-          ))}
+          <div className="cubes-radars">
+            {matrices.map((matrix) => (
+              <MatrixSection
+                key={matrix.title}
+                onHotCube={setHot}
+                matrix={matrix}
+                columns={columns}
+                unit={choice.unit}
+              />
+            ))}
+          </div>
         </>
       )}
     </div>

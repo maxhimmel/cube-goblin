@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  averageManaValue,
   cardOverlap,
   groupAverage,
   inCompareScope,
   matchTags,
   poolTags,
   scaled,
+  standouts,
   statTest,
   translateTags,
   unmatchedTagCounts,
@@ -171,5 +173,28 @@ describe("poolTags", () => {
     ]);
     expect(pooled.tags).toEqual([{ id: "removal", label: "Removal" }]);
     expect(pooled.cubes[1]?.[0]?.tags).toEqual(["removal"]);
+  });
+});
+
+describe("standouts", () => {
+  it("keeps each row's furthest cube, prefers the cube above average on a tie, and sorts by distance", () => {
+    const rows = groupAverage([mine, theirs.slice(0, 2)], ["color:R", "color:G", "color:U"]);
+    expect(standouts(rows)).toEqual([
+      { id: "color:R", cube: 1, share: 1, mean: 0.625, delta: 0.375 },
+      { id: "color:G", cube: 0, share: 0.25, mean: 0.125, delta: 0.125 },
+      { id: "color:U", cube: 0, share: 0.25, mean: 0.125, delta: 0.125 },
+    ]);
+    expect(standouts(rows, 0.2).map((entry) => entry.id)).toEqual(["color:R"]);
+  });
+
+  it("drops rows where every cube is at the average", () => {
+    expect(standouts(groupAverage([mine, mine], ["cards"]))).toEqual([]);
+  });
+});
+
+describe("averageManaValue", () => {
+  it("averages nonland mana values", () => {
+    expect(averageManaValue(mine)).toBeCloseTo(4 / 3);
+    expect(averageManaValue([])).toBeUndefined();
   });
 });

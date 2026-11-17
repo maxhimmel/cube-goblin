@@ -108,3 +108,44 @@ test("a cube can be made available offline from the cube menu", async ({ web }) 
 test("an import can land in a new cube", async ({ web }) => {
   await importIntoNewCube(web);
 });
+
+test("Forge compares the open cube with another cube on the recent list", async ({ web }) => {
+  const { page } = web;
+  const rivalDir = join(web.root, "rival");
+  await cp(join(FIXTURE, "rival"), rivalDir, { recursive: true });
+  const menu = await switcher(page);
+  await menu.getByLabel("Cube folder path").fill(rivalDir);
+  await menu.getByRole("button", { name: "Open folder", exact: true }).click();
+  await expect(page.locator(".brand")).toHaveText("Rival Cube");
+  await (await switcher(page)).getByRole("button", { name: "Max's Cube", exact: true }).click();
+  await expect(page.locator(".brand")).toHaveText("Max's Cube");
+
+  await page.getByRole("button", { name: "Compare", exact: true }).click();
+  const compare = page.getByRole("group", { name: "Compare with another cube" });
+  await compare.getByLabel("Rival Cube").check();
+  await page.mouse.move(1, 1);
+  const creatures = page.getByRole("listitem", { name: /^Creatures:/u });
+  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15, Rival Cube 12");
+  await compare.getByRole("button", { name: "Counts" }).click();
+  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15, Rival Cube 5");
+  await compare.getByRole("button", { name: "+ prospects & cut" }).click();
+  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15, Rival Cube 6");
+  await page.keyboard.press("Escape");
+
+  const tags = page.getByRole("region", { name: "Tags", exact: true });
+  await expect(tags.getByRole("listitem", { name: /^Removal:/u })).toHaveAttribute(
+    "aria-label",
+    /Rival Cube 6$/u,
+  );
+  await expect(tags.getByText("Only in Rival Cube")).toBeVisible();
+  const shared = page.getByRole("region", { name: "Shared cards", exact: true });
+  await expect(shared.getByText("In both")).toContainText("2");
+  await expect(shared.getByText("Only in Rival Cube")).toContainText("12");
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "vs Rival Cube" })).toBeVisible();
+  await page.getByRole("button", { name: "vs Rival Cube" }).click();
+  await page.getByRole("group", { name: "Compare with another cube" }).getByLabel("None").check();
+  await expect(page.getByRole("region", { name: "Shared cards", exact: true })).toHaveCount(0);
+  await expect(creatures).toHaveAttribute("aria-label", "Creatures: 15");
+});

@@ -1,0 +1,16 @@
+{
+  "tags": [
+    {
+      "id": "kill",
+      "label": "Removal"
+    },
+    {
+      "id": "burn",
+      "label": "Burn"
+    },
+    {
+      "id": "ramp",
+      "label": "Ramp"
+    }
+  ]
+}

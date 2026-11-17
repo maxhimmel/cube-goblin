@@ -1,7 +1,7 @@
 ---
 id: T-065
 title: Compare cubes
-status: todo
+status: doing
 ---
 
 Compare the open cube with other cubes, such as ones imported from Cube Cobra ([T-059](T-059-import-export-formats.md)) into their own [cube folders](../GLOSSARY.md#cube-folder) ([T-057](T-057-multiple-cubes.md)) (user, 2026-11-16).

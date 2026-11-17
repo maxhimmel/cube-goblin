@@ -12,12 +12,12 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Now
 
+- [T-065: Compare cubes](tickets/T-065-compare-cubes.md)
 - [T-063: Ship the desktop app to a friend](tickets/T-063-ship-desktop-app.md)
 - [T-064: Public repo, releases, and README](tickets/T-064-public-repo-and-releases.md)
 
 ## Next
 
-- [T-065: Compare cubes](tickets/T-065-compare-cubes.md)
 - [T-054: Reviews view](tickets/T-054-reviews-view.md)
 - [T-055: Forge overlay](tickets/T-055-forge-overlay.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)

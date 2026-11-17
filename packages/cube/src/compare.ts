@@ -14,11 +14,11 @@ export function inCompareScope(card: { status: CardStatus }, scope: CompareScope
   return scope === "all" || card.status === "draft";
 }
 
-function normal(text: string): string {
+export function tagKey(text: string): string {
   return text
     .trim()
     .toLowerCase()
-    .replace(/[\s_-]+/gu, " ");
+    .replace(/[\s_:-]+/gu, " ");
 }
 
 export interface TagMatch {
@@ -29,13 +29,13 @@ export interface TagMatch {
 export function matchTags(mine: readonly Tag[], theirs: readonly Tag[]): TagMatch {
   const byKey = new Map<string, string>();
   for (const tag of mine) {
-    byKey.set(normal(tag.id), tag.id);
-    byKey.set(normal(tag.label), tag.id);
+    byKey.set(tagKey(tag.id), tag.id);
+    byKey.set(tagKey(tag.label), tag.id);
   }
   const ids = new Map<string, string>();
   const unmatched: Tag[] = [];
   for (const tag of theirs) {
-    const found = byKey.get(normal(tag.label)) ?? byKey.get(normal(tag.id));
+    const found = byKey.get(tagKey(tag.label)) ?? byKey.get(tagKey(tag.id));
     if (found === undefined) {
       unmatched.push(tag);
     } else {
@@ -149,4 +149,30 @@ export function groupAverage(
       },
     ];
   });
+}
+
+export interface PooledTags<T> {
+  tags: Tag[];
+  cubes: T[][];
+}
+
+export function poolTags<T extends { tags: string[] }>(
+  cubes: readonly { cards: readonly T[]; vocabulary: readonly Tag[] }[],
+): PooledTags<T> {
+  const labels = new Map<string, string>();
+  const pooled = cubes.map(({ cards, vocabulary }) => {
+    const keyOf = new Map(vocabulary.map((tag) => [tag.id, tagKey(tag.label)]));
+    for (const tag of vocabulary) {
+      const key = tagKey(tag.label);
+      if (!labels.has(key)) {
+        labels.set(key, tag.label);
+      }
+    }
+    return cards.map((card) => ({
+      ...card,
+      tags: card.tags.flatMap((tag) => keyOf.get(tag) ?? []),
+    }));
+  });
+  const tags = [...labels].map(([id, label]) => ({ id, label }));
+  return { tags, cubes: pooled };
 }

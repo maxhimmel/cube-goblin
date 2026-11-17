@@ -231,8 +231,10 @@ export {
   groupAverage,
   inCompareScope,
   matchTags,
+  poolTags,
   scaled,
   statTest,
+  tagKey,
   translateTags,
   unmatchedTagCounts,
 } from "./compare.ts";
@@ -242,6 +244,7 @@ export type {
   CompareUnit,
   GroupCell,
   GroupRow,
+  PooledTags,
   TagCount,
   TagMatch,
 } from "./compare.ts";

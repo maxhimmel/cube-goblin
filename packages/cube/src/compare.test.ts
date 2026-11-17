@@ -4,6 +4,7 @@ import {
   groupAverage,
   inCompareScope,
   matchTags,
+  poolTags,
   scaled,
   statTest,
   translateTags,
@@ -132,5 +133,31 @@ describe("groupAverage", () => {
   it("skips unknown rows and handles an empty cube", () => {
     expect(groupAverage([[], mine], ["nope", "cards"]).map((row) => row.id)).toEqual(["cards"]);
     expect(groupAverage([[]], ["cards"])[0]?.cells[0]?.share).toBe(0);
+  });
+});
+
+describe("poolTags", () => {
+  it("pools tags by label across cubes so each cube's cards share one set of tag ids", () => {
+    const pooled = poolTags([
+      { cards: mine, vocabulary: [{ id: "removal", label: "Removal" }] },
+      {
+        cards: theirs,
+        vocabulary: [
+          { id: "kill", label: "removal" },
+          { id: "burn", label: "Burn" },
+        ],
+      },
+    ]);
+    expect(pooled.tags).toEqual([
+      { id: "removal", label: "Removal" },
+      { id: "burn", label: "Burn" },
+    ]);
+    expect(pooled.cubes[0]?.map((entry) => entry.tags)).toEqual([["removal"], [], [], []]);
+    expect(pooled.cubes[1]?.map((entry) => entry.tags)).toEqual([
+      ["burn"],
+      ["burn", "removal"],
+      ["removal"],
+      [],
+    ]);
   });
 });

@@ -17,6 +17,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Next
 
+- [T-065: Compare cubes](tickets/T-065-compare-cubes.md)
 - [T-054: Reviews view](tickets/T-054-reviews-view.md)
 - [T-055: Forge overlay](tickets/T-055-forge-overlay.md)
 - [T-026: Compare cards and groups](tickets/T-026-compare-cards-and-groups.md)

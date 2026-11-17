@@ -50,6 +50,15 @@ beforeEach(async () => {
 });
 
 describe("cube routes", () => {
+  it("reads another cube on the recent list without opening it", async () => {
+    await call("POST", "/api/cubes", { name: "Second" });
+    const peeked = await call("GET", `/api/cubes/cards?dir=${encodeURIComponent(firstDir)}`);
+    expect(peeked).toMatchObject({ status: 200, body: { cards: [], vocabulary: [] } });
+    expect((await call("GET", "/api/cubes")).body).toMatchObject({ current: { name: "Second" } });
+    const stranger = await call("GET", `/api/cubes/cards?dir=${encodeURIComponent(root)}`);
+    expect(stranger.status).toBe(400);
+  });
+
   it("lists the open cube as current and recent", async () => {
     const { body } = await call("GET", "/api/cubes");
     expect(body).toMatchObject({

@@ -1,6 +1,6 @@
 import type { CubeFolder } from "@repo/cube";
 import { createCubeFolder, findCubeFolder, openCubeFolder } from "@repo/cube";
-import type { OfflineStatus } from "@repo/cube/browser";
+import type { OfflineStatus, Workbench } from "@repo/cube/browser";
 import type { CubeList, CubeRef } from "./events.ts";
 import { CUBES_ROUTE } from "./events.ts";
 import { crossOriginGate } from "./gate.ts";
@@ -120,6 +120,13 @@ export class CubeLibrary {
     return this.#server.offlineStatus(dir);
   }
 
+  async cards(dir: string): Promise<Workbench> {
+    if (dir !== this.#server.cube().dir && !(await this.#known(dir))) {
+      throw new CubeError("Only a cube from the recent list can be compared");
+    }
+    return this.#server.peek(dir);
+  }
+
   get routes(): RouteRow[] {
     const post = (path: string, work: (body: unknown) => Promise<unknown>): RouteRow => ({
       method: "POST",
@@ -139,6 +146,12 @@ export class CubeLibrary {
         path: `${CUBES_ROUTE}/offline`,
         example: `${CUBES_ROUTE}/offline?dir=x`,
         handle: answering(({ url }) => this.offlineStatus(url.searchParams.get("dir") ?? "")),
+      },
+      {
+        method: "GET",
+        path: `${CUBES_ROUTE}/cards`,
+        example: `${CUBES_ROUTE}/cards?dir=x`,
+        handle: answering(({ url }) => this.cards(url.searchParams.get("dir") ?? "")),
       },
       post(CUBES_ROUTE, (body) => this.create(stringField(body, "name").trim())),
       post(`${CUBES_ROUTE}/switch`, (body) => this.switchTo(stringField(body, "dir"))),

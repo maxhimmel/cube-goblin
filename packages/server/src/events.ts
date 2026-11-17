@@ -1,4 +1,4 @@
-import type { OfflineStatus } from "@repo/cube/browser";
+import type { OfflineStatus, Workbench } from "@repo/cube/browser";
 
 export const CUBE_CHANGED_EVENT = "cube:changed";
 export const CUBES_ROUTE = "/api/cubes";
@@ -21,6 +21,7 @@ export interface CubesApi {
   switchTo: (dir: string) => Promise<CubeRef>;
   remove: (dir: string) => Promise<CubeList>;
   offlineStatus: (dir: string) => Promise<OfflineStatus>;
+  cards: (dir: string) => Promise<Workbench>;
 }
 
 export interface DesktopBridge {

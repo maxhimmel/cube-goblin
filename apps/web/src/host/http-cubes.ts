@@ -1,4 +1,4 @@
-import { offlineStatusSchema } from "@repo/cube/browser";
+import { offlineStatusSchema, workbenchSchema } from "@repo/cube/browser";
 import type { CubeRef, CubesApi } from "@repo/server/events";
 import { CUBES_ROUTE } from "@repo/server/events";
 import { z } from "zod";
@@ -18,6 +18,8 @@ export const httpCubes: CubesApi = {
     offlineStatusSchema.parse(
       await getJson(`${CUBES_ROUTE}/offline?dir=${encodeURIComponent(dir)}`),
     ),
+  cards: async (dir) =>
+    workbenchSchema.parse(await getJson(`${CUBES_ROUTE}/cards?dir=${encodeURIComponent(dir)}`)),
 };
 
 export async function openPath(dir: string): Promise<CubeRef> {

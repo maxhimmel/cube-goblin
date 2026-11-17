@@ -1,0 +1,13 @@
+{
+  "name": "Lightning Strike",
+  "oracleId": "f34b9bc4-7bfe-47fd-ba23-4eeeb46026eb",
+  "status": "draft",
+  "printing": "f0f55dee-7e39-4183-8e74-844d9c299bf5",
+  "tags": ["kill", "burn"],
+  "notes": "",
+  "source": {
+    "batch": "rival",
+    "line": 11,
+    "input": "Lightning Strike"
+  }
+}

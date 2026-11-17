@@ -456,6 +456,7 @@ function writeRows(
 export interface WorkbenchServer {
   routes: readonly RouteRow[];
   offlineStatus: (dir: string) => Promise<OfflineStatus>;
+  peek: (dir: string) => Promise<Workbench>;
   cube: () => CubeFolder;
   open: (dir: string) => Promise<CubeFolder>;
   watched: () => readonly string[];
@@ -743,9 +744,18 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
     return run === undefined ? status : { ...status, run };
   }
 
+  async function peek(dir: string): Promise<Workbench> {
+    const folder = dir === current.folder.dir ? current.folder : await openCubeFolder(dir);
+    return explained(
+      loadWorkbench(folder.paths, client),
+      "some of that cube's cards aren't saved for offline use",
+    );
+  }
+
   return {
     routes,
     offlineStatus,
+    peek,
     cube: () => current.folder,
     open,
     watched: () => [current.paths.root],

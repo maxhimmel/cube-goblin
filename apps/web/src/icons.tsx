@@ -72,6 +72,12 @@ const VIEW_PATHS = {
       <path d="M12 7.5V12l3 2" />
     </>
   ),
+  cubes: (
+    <>
+      <path d="M3.5 9.5 8 7l4.5 2.5v5L8 17l-4.5-2.5z" />
+      <path d="M11.5 9.5 16 7l4.5 2.5v5L16 17l-4.5-2.5z" />
+    </>
+  ),
 } as const;
 
 export type ViewIconName = keyof typeof VIEW_PATHS;

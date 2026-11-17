@@ -6,6 +6,7 @@ import { Preview } from "../strip.tsx";
 import { useRemembered } from "../view-choices.ts";
 import { mode } from "#mode";
 import { CardColumns, CardImages, CardRows } from "./cards.tsx";
+import { CompareMenu } from "./compare-blocks.tsx";
 import { BlocksMenu, DockBlocks, useDockState } from "./dock.tsx";
 import { LayoutsMenu } from "./layouts-menu.tsx";
 import { PendingGutter, usePendingOpen } from "./pending.tsx";
@@ -70,6 +71,7 @@ function LabView({ lab, onApply }: { lab: Lab; onApply: () => void }): ReactNode
         <div className="lab-controls">
           <BlocksMenu dock={dock} />
           <LayoutsMenu onApply={onApply} />
+          <CompareMenu compare={lab.compare} />
         </div>
       </header>
       {open && (

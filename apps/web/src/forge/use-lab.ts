@@ -21,6 +21,8 @@ import {
   stackQuery,
   usedIn,
 } from "./model.ts";
+import type { Against, Compare } from "./compare.ts";
+import { useCompare } from "./compare.ts";
 import { usePeek } from "./use-peek.ts";
 import { useBaseline, useHideNonMatches } from "./view-settings.tsx";
 
@@ -74,11 +76,13 @@ export interface BlockView {
   lens: Test | undefined;
   used: Used;
   events: ChartEvents;
+  against: Against | undefined;
 }
 
 export interface Lab {
   cards: GridCard[];
   vocabulary: Tag[];
+  compare: Compare;
   filters: Filter[];
   saveFilter: ((label: string, query: string, replaces?: readonly string[]) => void) | undefined;
   deleteFilter: ((id: string) => void) | undefined;
@@ -148,6 +152,8 @@ export interface PendingMessage {
   body?: string;
 }
 
+const NO_TAGS: Tag[] = [];
+
 export function useLab(): Lab | undefined {
   const cube = mode.useCube();
   const filters = mode.useFilters() ?? [];
@@ -179,6 +185,8 @@ export function useLab(): Lab | undefined {
   const [drag, setDrag] = useState<Drag | undefined>(undefined);
   const [hover, setHover] = useState<Hover | undefined>(undefined);
   const { card: selected } = useSearch({ from: "__root__" });
+  const compare = useCompare(cube?.vocabulary ?? NO_TAGS);
+  const against = compare.against;
   if (!cube) {
     return undefined;
   }
@@ -265,6 +273,7 @@ export function useLab(): Lab | undefined {
   return {
     cards,
     vocabulary: cube.vocabulary,
+    compare,
     filters,
     saveFilter: mode.putFilter ? saveFilter : undefined,
     deleteFilter: mode.deleteFilter
@@ -315,7 +324,15 @@ export function useLab(): Lab | undefined {
     selected,
     scope,
     next,
-    events: { onPeek: setPeek, onPick: pick, baseline, filtered: lens !== undefined, picked },
+    events: {
+      onPeek: setPeek,
+      onPick: pick,
+      baseline,
+      filtered: lens !== undefined,
+      picked,
+      against: against?.name,
+      againstUnit: against?.unit,
+    },
     view: (pin, on) => {
       const follows = pin === "filter";
       const blockScope = follows ? scope : all.filter(PIN_INCLUDES[pin]);
@@ -326,12 +343,18 @@ export function useLab(): Lab | undefined {
         next: blockNext,
         lens: blockLens,
         used: usedIn([...blockScope, ...blockNext]),
+        against: against && {
+          ...against,
+          cards: against.cards.filter(PIN_INCLUDES[pin]),
+        },
         events: {
           onPeek: setPeek,
           onPick: pick,
           baseline: on,
           filtered: blockLens !== undefined,
           picked,
+          against: against?.name,
+          againstUnit: against?.unit,
         },
       };
     },

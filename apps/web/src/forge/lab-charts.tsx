@@ -1,9 +1,18 @@
+import type { CompareUnit } from "@repo/cube/browser";
 import { colorKey } from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
 import { colorLabel, ptLabel } from "../insights/labels.tsx";
 import type { GridCard } from "../modes/mode.ts";
 import type { BalanceRow, HeatRow, Matchups, Tally, Test, Used } from "./model.ts";
-import { MATCHUP_CORNERS, PT_AXIS, ghostLabel, isCreatureCard, ptCell, scaleTop } from "./model.ts";
+import {
+  MATCHUP_CORNERS,
+  PT_AXIS,
+  ghostLabel,
+  isCreatureCard,
+  ptCell,
+  refLabel,
+  scaleTop,
+} from "./model.ts";
 
 export interface ChartEvents {
   onPeek: (key: string | undefined) => void;
@@ -11,6 +20,8 @@ export interface ChartEvents {
   baseline: boolean;
   filtered: boolean;
   picked: ReadonlySet<string>;
+  against?: string | undefined;
+  againstUnit?: CompareUnit | undefined;
 }
 
 const MANA_VAR: Record<string, string> = {
@@ -58,6 +69,43 @@ function curveId(tally: Tally): string {
   return tally.id.split(":").at(-1) ?? "";
 }
 
+type RefDirection = "more" | "less" | "even";
+
+const EVEN_WITHIN = 0.5;
+
+const HEAT_EVEN_WITHIN = 1;
+
+function refDirection(row: Tally): RefDirection | undefined {
+  if (row.ref === undefined) {
+    return undefined;
+  }
+  const diff = row.hit - row.ref;
+  return Math.abs(diff) < EVEN_WITHIN ? "even" : diff > 0 ? "more" : "less";
+}
+
+function refSpoken(row: Tally, events: ChartEvents): string {
+  return row.ref === undefined || events.against === undefined
+    ? ""
+    : `, ${events.against} ${refLabel(row.ref)}${events.againstUnit === "share" ? " scaled" : ""}`;
+}
+
+function refTitle(row: Tally, events: ChartEvents): string | undefined {
+  return row.ref === undefined || events.against === undefined
+    ? undefined
+    : `${row.label}: ${String(row.hit)} here, ${refLabel(row.ref)} in ${events.against}${events.againstUnit === "share" ? ", scaled to this cube's size" : ""}`;
+}
+
+function RefNote({ row }: { row: Tally }): ReactNode {
+  if (row.ref === undefined) {
+    return null;
+  }
+  return (
+    <span className="lab-ref-note" data-dir={refDirection(row)}>
+      vs {refLabel(row.ref)}
+    </span>
+  );
+}
+
 function Ghost({ delta, faint }: { delta: number; faint?: boolean }): ReactNode {
   return (
     <em
@@ -93,7 +141,9 @@ export function CurveBars({
           role="listitem"
           className="lab-bar"
           data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
-          aria-label={`MV ${row.label}: ${String(row.hit)} of ${String(row.base)}`}
+          aria-label={`MV ${row.label}: ${String(row.hit)} of ${String(row.base)}${refSpoken(row, events)}`}
+          title={refTitle(row, events)}
+          data-ref={refDirection(row)}
           {...peekProps(row.id, events)}
         >
           <span className="lab-bar-value">
@@ -129,6 +179,9 @@ export function CurveBars({
                 className="lab-bar-loss"
                 style={{ bottom: pct(row.hit + row.ghost), height: pct(-row.ghost) }}
               />
+            )}
+            {row.ref !== undefined && row.ref > 0 && (
+              <span className="lab-ref-tick" data-axis="y" style={{ bottom: pct(row.ref) }} />
             )}
           </span>
           <span className="lab-bar-label">{row.label}</span>
@@ -196,7 +249,13 @@ export function Heat({
                 data-base-ghost={
                   cell.ghost === 0 && cell.baseGhost !== 0 && events.baseline ? "" : undefined
                 }
-                aria-label={`${row.label}, MV ${cell.label}: ${String(cell.hit)}`}
+                aria-label={`${row.label}, MV ${cell.label}: ${String(cell.hit)}${refSpoken(cell, events)}`}
+                title={refTitle(cell, events)}
+                data-ref={
+                  Math.abs(cell.hit - (cell.ref ?? cell.hit)) < HEAT_EVEN_WITHIN
+                    ? undefined
+                    : refDirection(cell)
+                }
                 style={
                   {
                     "--heat": String(cell.base / top),
@@ -316,7 +375,9 @@ export function PtDots({
 }
 
 function shown(row: Tally): boolean {
-  return row.base > 0 || row.baseGhost !== 0 || row.hit > 0 || row.ghost !== 0;
+  return (
+    row.base > 0 || row.baseGhost !== 0 || row.hit > 0 || row.ghost !== 0 || (row.ref ?? 0) > 0
+  );
 }
 
 export function BarList({
@@ -348,7 +409,9 @@ export function BarList({
           role="listitem"
           className="lab-hbar"
           data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
-          aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}`}
+          aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}${refSpoken(row, events)}`}
+          title={refTitle(row, events)}
+          data-ref={refDirection(row)}
           style={{ "--swatch": swatch?.(key(row)) ?? "var(--lab-hit)" } as CSSProperties}
           {...peekProps(row.id, events)}
         >
@@ -383,6 +446,9 @@ export function BarList({
                 style={{ left: pct(row.hit + row.ghost), width: pct(-row.ghost) }}
               />
             )}
+            {row.ref !== undefined && row.ref > 0 && (
+              <span className="lab-ref-tick" data-axis="x" style={{ left: pct(row.ref) }} />
+            )}
           </span>
           <span className="lab-hbar-value">
             {events.filtered && events.baseline
@@ -392,6 +458,7 @@ export function BarList({
             {row.ghost === 0 && row.baseGhost !== 0 && events.baseline && (
               <Ghost delta={row.baseGhost} faint />
             )}
+            <RefNote row={row} />
           </span>
         </button>
       ))}
@@ -421,6 +488,7 @@ export function SummaryTiles({
             {row.ghost === 0 && row.baseGhost !== 0 && events.baseline && (
               <Ghost delta={row.baseGhost} faint />
             )}
+            <RefNote row={row} />
           </>
         );
         return pickable ? (
@@ -429,13 +497,20 @@ export function SummaryTiles({
             type="button"
             role="listitem"
             className="lab-stat"
-            aria-label={`${row.label}: ${String(row.hit)}`}
+            title={refTitle(row, events)}
+            aria-label={`${row.label}: ${String(row.hit)}${refSpoken(row, events)}`}
             {...peekProps(row.id, events)}
           >
             {body}
           </button>
         ) : (
-          <div key={row.id} role="listitem" className="lab-stat">
+          <div
+            key={row.id}
+            role="listitem"
+            className="lab-stat"
+            title={refTitle(row, events)}
+            aria-label={`${row.label}: ${String(row.hit)}${refSpoken(row, events)}`}
+          >
             {body}
           </div>
         );
@@ -466,7 +541,8 @@ export function TagChips({
           role="listitem"
           className="toggle-chip"
           data-ghost={row.ghost === 0 ? undefined : row.ghost > 0 ? "up" : "down"}
-          aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}`}
+          aria-label={`${row.label}: ${String(row.hit)} of ${String(row.base)}${refSpoken(row, events)}`}
+          title={refTitle(row, events)}
           data-filtered={events.filtered ? "" : undefined}
           style={
             {
@@ -480,6 +556,7 @@ export function TagChips({
           {row.ghost === 0 && row.baseGhost !== 0 && events.baseline && (
             <Ghost delta={row.baseGhost} faint />
           )}
+          <RefNote row={row} />
         </button>
       ))}
     </div>
@@ -516,7 +593,11 @@ export function BalanceStrips({
   }
   const top = Math.max(
     1,
-    ...rows.flatMap((row) => [row.range?.max ?? 0, ...row.dots.map((dot) => dot.size)]),
+    ...rows.flatMap((row) => [
+      row.range?.max ?? 0,
+      row.refRange?.median ?? 0,
+      ...row.dots.map((dot) => dot.size),
+    ]),
   );
   const pct = (value: number): string => `${String((value / top) * 100)}%`;
   return (
@@ -531,7 +612,8 @@ export function BalanceStrips({
             role="listitem"
             className="lab-balance-row"
             data-ghost={row.tally.ghost === 0 ? undefined : row.tally.ghost > 0 ? "up" : "down"}
-            aria-label={`MV ${row.tally.label}: ${String(row.tally.hit)} of ${String(row.tally.base)} creatures`}
+            aria-label={`MV ${row.tally.label}: ${String(row.tally.hit)} of ${String(row.tally.base)} creatures${refSpoken(row.tally, events)}`}
+            title={refTitle(row.tally, events)}
             {...peekProps(row.tally.id, events)}
           >
             <span className="lab-balance-mv">{row.tally.label}</span>
@@ -548,6 +630,14 @@ export function BalanceStrips({
                   />
                   <span className="lab-balance-median" style={{ left: pct(row.range.median) }} />
                 </>
+              )}
+              {row.refRange && (
+                <span
+                  className="lab-ref-tick"
+                  data-axis="x"
+                  title={`${events.against ?? "Other cube"} median: ${String(row.refRange.median)}`}
+                  style={{ left: pct(row.refRange.median) }}
+                />
               )}
               {shownDots.map((dot, index) => (
                 <i
@@ -572,6 +662,7 @@ export function BalanceStrips({
               {row.tally.ghost === 0 && row.tally.baseGhost !== 0 && events.baseline && (
                 <Ghost delta={row.tally.baseGhost} faint />
               )}
+              <RefNote row={row.tally} />
             </span>
           </button>
         );
@@ -604,6 +695,7 @@ export function CombatPlot({ data, events }: { data: Matchups; events: ChartEven
           key={corner.id}
           className="lab-combat-corner"
           data-corner={corner.corner}
+          title={refTitle(corner, events)}
           style={{ gridArea: corner.corner }}
         >
           <span className="lab-combat-title">
@@ -617,6 +709,7 @@ export function CombatPlot({ data, events }: { data: Matchups; events: ChartEven
             {corner.ghost === 0 && corner.baseGhost !== 0 && events.baseline && (
               <Ghost delta={corner.baseGhost} faint />
             )}
+            <RefNote row={corner} />
           </span>
         </span>
       ))}

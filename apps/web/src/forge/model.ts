@@ -14,8 +14,11 @@ import {
   bucketQuery,
   joinQuery,
   creatureBalance,
+  scaled,
   size,
+  statTest,
 } from "@repo/cube/browser";
+import type { Against } from "./compare.ts";
 import type { GridCard } from "../modes/mode.ts";
 
 export type Test = (card: GridCard) => boolean;
@@ -185,6 +188,67 @@ export interface Tally {
   hit: number;
   ghost: number;
   baseGhost: number;
+  ref?: number | undefined;
+}
+
+export interface RefView {
+  scope: readonly GridCard[];
+  lens: Test | undefined;
+  against: Against | undefined;
+}
+
+function refCount(count: number, view: RefView, against: Against): number {
+  return against.unit === "share" ? scaled(count, against.cards.length, view.scope.length) : count;
+}
+
+export function refOf(id: string, view: RefView): number | undefined {
+  const { against, lens } = view;
+  const test = statTest(id);
+  if (!against || !test) {
+    return undefined;
+  }
+  const count = against.cards.filter((card) => test(card) && (lens ? lens(card) : true)).length;
+  return refCount(count, view, against);
+}
+
+export function withRefs<T extends Tally>(rows: readonly T[], view: RefView): T[] {
+  return view.against ? rows.map((row) => ({ ...row, ref: refOf(row.id, view) })) : [...rows];
+}
+
+export function heatRefs(rows: readonly HeatRow[], view: RefView): HeatRow[] {
+  return rows.map((row) => ({ ...row, cells: withRefs(row.cells, view) }));
+}
+
+export function balanceRefs(rows: readonly BalanceRow[], view: RefView): BalanceRow[] {
+  const { against } = view;
+  if (!against) {
+    return [...rows];
+  }
+  const ranges = new Map(creatureBalance(against.cards).curve.map((row) => [row.id, row.size]));
+  return rows.map((row) => ({
+    ...row,
+    tally: { ...row.tally, ref: refOf(row.tally.id, view) },
+    refRange: ranges.get(row.tally.id.split(":").at(-1) ?? ""),
+  }));
+}
+
+export function matchupRefs(data: Matchups, view: RefView): Matchups {
+  const { against, lens } = view;
+  if (!against) {
+    return data;
+  }
+  const theirs = matchups(against.cards, against.cards, lens).corners;
+  return {
+    ...data,
+    corners: data.corners.map((corner) => {
+      const found = theirs.find((other) => other.id === corner.id);
+      return { ...corner, ref: found && refCount(found.hit, view, against) };
+    }),
+  };
+}
+
+export function refLabel(ref: number): string {
+  return ref >= 10 || Number.isInteger(ref) ? String(Math.round(ref)) : ref.toFixed(1);
 }
 
 export function tally(
@@ -294,6 +358,7 @@ export function scaleTop(rows: readonly Tally[], toBase: boolean): number {
         row.hit,
         row.hit + row.ghost,
         toBase ? Math.max(row.base, row.base + row.baseGhost) : 0,
+        row.ref ?? 0,
       ),
     ),
   );
@@ -332,6 +397,7 @@ export interface BalanceDot {
 export interface BalanceRow {
   tally: Tally;
   range: Spread | undefined;
+  refRange?: Spread | undefined;
   dots: BalanceDot[];
 }
 

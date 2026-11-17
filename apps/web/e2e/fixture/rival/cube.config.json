@@ -1,0 +1,9 @@
+{
+  "id": "rival-cube",
+  "name": "Rival Cube",
+  "format": "winston",
+  "size": {
+    "min": 12,
+    "max": 12
+  }
+}

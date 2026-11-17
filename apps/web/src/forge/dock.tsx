@@ -21,14 +21,19 @@ import {
 } from "./lab-charts.tsx";
 import type { Tally } from "./model.ts";
 import {
+  balanceRefs,
   balanceRows,
   bucketTallies,
   curveTallies,
+  heatRefs,
   heatRows,
+  matchupRefs,
   matchups,
   resolvePill,
   tally,
+  withRefs,
 } from "./model.ts";
+import { SharedCards, UnmatchedTags } from "./compare-blocks.tsx";
 import type { BlockView, Lab, Pin } from "./use-lab.ts";
 import { PINS } from "./use-lab.ts";
 
@@ -49,6 +54,7 @@ const LAB_BLOCKS = [
   { id: "lab:types", title: "Card types" },
   { id: "lab:heavy", title: "Heavy pips" },
   { id: "lab:tags", title: "Tags" },
+  { id: "lab:shared", title: "Shared cards" },
 ] as const;
 
 const COLOR_ROWS = [
@@ -63,19 +69,22 @@ const TYPE_ROWS = TYPE_COLUMNS.map((column) => ({ id: `type:${column.id}`, label
 function summaryTallies(view: BlockView): Tally[] {
   const row = (id: string, label: string, inside: (card: BlockView["scope"][number]) => boolean) =>
     tally(id, label, view.scope, view.next, inside, view.lens);
-  return [
-    row("cards", "Cards", () => true),
-    row("nonland", "Nonland", (card) => !isLand(card)),
-    ...bucketTallies(
-      [
-        { id: "type:land", label: "Lands" },
-        { id: "type:creature", label: "Creatures" },
-      ],
-      view.scope,
-      view.next,
-      view.lens,
-    ),
-  ];
+  return withRefs(
+    [
+      row("cards", "Cards", () => true),
+      row("nonland", "Nonland", (card) => !isLand(card)),
+      ...bucketTallies(
+        [
+          { id: "type:land", label: "Lands" },
+          { id: "type:creature", label: "Creatures" },
+        ],
+        view.scope,
+        view.next,
+        view.lens,
+      ),
+    ],
+    view,
+  );
 }
 
 const RENAMED: Partial<Record<string, string>> = {
@@ -98,7 +107,7 @@ const DEFAULT_HIDDEN: string[] = [];
 const TAG_BLOCKS = new Set<string>(["lab:tags"]);
 
 const CHARTS = new Set<string>(
-  LAB_BLOCKS.map((block) => block.id).filter((id) => id !== "lab:filters"),
+  LAB_BLOCKS.map((block) => block.id).filter((id) => id !== "lab:filters" && id !== "lab:shared"),
 );
 
 function renameKeys<T>(record: Partial<Record<string, T>>): Partial<Record<string, T>> {
@@ -550,8 +559,10 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
     const pin = dock.pins[id] ?? "filter";
     const view = lab.view(pin, dock.baselines[id] ?? lab.baseline);
     const label = PINS.find((option) => option.id === pin)?.label ?? pin;
-    const caption =
+    const scopeCaption =
       pin !== "filter" ? label : view.lens !== undefined ? "filtered · baseline faint" : "draft";
+    const caption =
+      view.against === undefined ? scopeCaption : `${scopeCaption} · vs ${view.against.name}`;
     const tile = (title: string, chart: ReactNode, live?: boolean): ReactNode => (
       <Tile title={title} caption={live ? caption : undefined} {...controls(id)}>
         {chart}
@@ -571,7 +582,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
           "Color",
           <BarList
             name="Color"
-            tallies={bucketTallies(COLOR_ROWS, view.scope, view.next, view.lens)}
+            tallies={withRefs(bucketTallies(COLOR_ROWS, view.scope, view.next, view.lens), view)}
             events={view.events}
             swatch={manaVar}
             icon={colorIcon}
@@ -583,7 +594,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
           "Heavy pips",
           <BarList
             name="Heavy pips"
-            tallies={bucketTallies(HEAVY_ROWS, view.scope, view.next, view.lens)}
+            tallies={withRefs(bucketTallies(HEAVY_ROWS, view.scope, view.next, view.lens), view)}
             events={view.events}
             swatch={manaVar}
             icon={colorIcon}
@@ -595,7 +606,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
           "Card types",
           <BarList
             name="Card types"
-            tallies={bucketTallies(TYPE_ROWS, view.scope, view.next, view.lens)}
+            tallies={withRefs(bucketTallies(TYPE_ROWS, view.scope, view.next, view.lens), view)}
             events={view.events}
           />,
           true,
@@ -603,16 +614,20 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
       case "lab:tags": {
         const title = "Tags";
         const rows = lab.vocabulary.map((tag) => ({ id: `tag:${tag.id}`, label: tag.label }));
-        const tallies = bucketTallies(rows, view.scope, view.next, view.lens).toSorted(
-          (a, b) => b.base - a.base || a.label.localeCompare(b.label),
-        );
+        const tallies = withRefs(
+          bucketTallies(rows, view.scope, view.next, view.lens),
+          view,
+        ).toSorted((a, b) => b.base - a.base || a.label.localeCompare(b.label));
         return tile(
           title,
-          dock.chips.has(id) ? (
-            <TagChips name={title} tallies={tallies} events={view.events} />
-          ) : (
-            <BarList name={title} tallies={tallies} events={view.events} />
-          ),
+          <>
+            {dock.chips.has(id) ? (
+              <TagChips name={title} tallies={tallies} events={view.events} />
+            ) : (
+              <BarList name={title} tallies={tallies} events={view.events} />
+            )}
+            {view.against && <UnmatchedTags against={view.against} />}
+          </>,
           true,
         );
       }
@@ -620,7 +635,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
         return tile(
           "Curve",
           <CurveBars
-            tallies={curveTallies(view.scope, view.next, view.lens)}
+            tallies={withRefs(curveTallies(view.scope, view.next, view.lens), view)}
             events={view.events}
             used={view.used}
           />,
@@ -630,7 +645,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
         return tile(
           "Color × mana value",
           <Heat
-            rows={heatRows(view.scope, view.next, view.lens)}
+            rows={heatRefs(heatRows(view.scope, view.next, view.lens), view)}
             events={view.events}
             used={view.used}
           />,
@@ -652,7 +667,7 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
         return tile(
           "Creature balance",
           <BalanceStrips
-            rows={balanceRows(view.scope, view.next, view.lens)}
+            rows={balanceRefs(balanceRows(view.scope, view.next, view.lens), view)}
             events={view.events}
           />,
           true,
@@ -660,15 +675,22 @@ export function DockBlocks({ lab, dock }: { lab: Lab; dock: DockState }): ReactN
       case "lab:combat":
         return tile(
           "Combat matchups",
-          <CombatPlot data={matchups(view.scope, view.next, view.lens)} events={view.events} />,
+          <CombatPlot
+            data={matchupRefs(matchups(view.scope, view.next, view.lens), view)}
+            events={view.events}
+          />,
           true,
         );
+      case "lab:shared":
+        return view.against
+          ? tile("Shared cards", <SharedCards scope={view.scope} against={view.against} />, true)
+          : null;
       default:
         return null;
     }
   };
   return dock.order
-    .filter((id) => !dock.hidden.has(id))
+    .filter((id) => !dock.hidden.has(id) && (id !== "lab:shared" || lab.compare.against))
     .map((id) => {
       const spec = ALL_BLOCKS.find((block) => block.id === id);
       const scoped = id !== "lab:filters";

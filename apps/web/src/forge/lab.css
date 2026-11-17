@@ -2561,3 +2561,111 @@ button.lab-stat[data-picked] {
 .lab:is([data-dock="top"], [data-dock="bottom"]) .lab-pt-row:not(.lab-pt-foot) {
   align-items: stretch;
 }
+
+.lab-ref-tick {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--compare);
+  border-radius: 1px;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--panel) 70%, transparent);
+}
+
+.lab-ref-tick[data-axis="y"] {
+  right: -2px;
+  left: -2px;
+  height: 2px;
+  transform: translateY(1px);
+}
+
+.lab-ref-tick[data-axis="x"] {
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  transform: translateX(-1px);
+}
+
+.lab-ref-note {
+  margin-left: 0.35em;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--compare);
+  white-space: nowrap;
+}
+
+.lab-ref-note[data-dir="even"] {
+  color: var(--muted);
+}
+
+.lab-stat .lab-ref-note {
+  display: block;
+  margin-left: 0;
+}
+
+.lab-heat-cell[data-ref="more"]::after,
+.lab-heat-cell[data-ref="less"]::after {
+  position: absolute;
+  bottom: 1px;
+  left: 2px;
+  font-size: var(--fs-2xs);
+  line-height: 1;
+  color: var(--compare);
+  pointer-events: none;
+}
+
+.lab-heat-cell[data-ref="more"]::after {
+  content: "▲";
+}
+
+.lab-heat-cell[data-ref="less"]::after {
+  content: "▼";
+}
+
+.lab-unmatched,
+.lab-shared-list {
+  margin-top: 8px;
+  font-size: var(--fs-sm);
+}
+
+.lab-unmatched summary,
+.lab-shared-list summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.lab-unmatched ul,
+.lab-shared-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  max-height: 14rem;
+  padding: 6px 0 0;
+  margin: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.lab-shared {
+  display: grid;
+  gap: 2px;
+}
+
+.lab-shared .lab-shared-list:first-child {
+  margin-top: 0;
+}
+
+.lab-compare-cubes {
+  display: grid;
+  gap: 4px;
+}
+
+.lab-compare-cubes label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.lab-compare-hint {
+  margin: 0;
+  font-size: var(--fs-xs);
+}

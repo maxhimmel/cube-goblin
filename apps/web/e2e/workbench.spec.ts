@@ -163,6 +163,7 @@ test("the top bar holds brand, cube switcher, views, save state, add, import and
     "Tags",
     "Insights",
     "History",
+    "Cubes",
     "",
   ]);
   await expect(topbar.getByRole("link").last()).toHaveAccessibleName("Add card");

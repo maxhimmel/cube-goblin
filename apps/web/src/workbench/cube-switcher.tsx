@@ -18,7 +18,7 @@ import {
   useOnline,
 } from "./connection.ts";
 
-const CUBES_QUERY_KEY = ["cubes"] as const;
+export const CUBES_QUERY_KEY = ["cubes"] as const;
 const SETTLE_POLL_MS = 50;
 const RUN_POLL_MS = 500;
 const BYTE_UNITS = ["B", "KB", "MB", "GB"] as const;

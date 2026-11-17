@@ -6,6 +6,7 @@ import type {
   SnapshotCard,
   Tag,
 } from "@repo/cube/browser";
+import type { CubeRef } from "@repo/server/events";
 import type { ReactNode } from "react";
 
 export type GridCard = SnapshotCard;
@@ -16,11 +17,16 @@ export interface CubeView {
   size?: { min: number; max: number } | undefined;
 }
 
+export type OtherCube =
+  { status: "loading" } | { status: "failed"; error: string } | { status: "ready"; cube: CubeView };
+
 export interface Mode {
   name: "share" | "workbench";
   boot: () => Promise<void>;
   CubeSwitcher: () => ReactNode;
   useCube: () => CubeView | undefined;
+  useOtherCubes?: () => CubeRef[] | undefined;
+  useOtherCube?: (dir: string | undefined) => OtherCube | undefined;
   useTileMark: (slug: string) => Record<string, string | undefined>;
   Toolbar: () => ReactNode;
   CardPanel: (props: { slug: string }) => ReactNode;

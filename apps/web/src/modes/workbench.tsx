@@ -1,4 +1,5 @@
 import type { Workbench, WorkbenchCard } from "@repo/cube/browser";
+import type { CubeRef } from "@repo/server/events";
 import { pendingMoveSchema } from "@repo/cube/browser";
 import { z } from "zod";
 import { useRemembered } from "../view-choices.ts";
@@ -34,7 +35,7 @@ import {
 } from "../workbench/api.ts";
 import { setCubeIdentity } from "../cube-identity.ts";
 import { scopeStorage } from "../storage-scope.ts";
-import { CubeSwitcher } from "../workbench/cube-switcher.tsx";
+import { CUBES_QUERY_KEY, CubeSwitcher } from "../workbench/cube-switcher.tsx";
 import { OFFLINE_REASON, useOnline } from "../workbench/connection.ts";
 import { boardSavesPending } from "../workbench/board.ts";
 import { AddPanel } from "../workbench/add-panel.tsx";
@@ -48,7 +49,7 @@ import { SettingsPanel } from "../workbench/settings-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { WorkbenchHistoryPage } from "../workbench/history-page.tsx";
 import { Toaster } from "../workbench/toast.tsx";
-import type { Mode } from "./mode.ts";
+import type { Mode, OtherCube } from "./mode.ts";
 
 async function refetch(key: readonly string[], pending: () => boolean): Promise<void> {
   if (pending()) {
@@ -70,6 +71,30 @@ host.onCubeChanged(() => {
 
 function useWorkbench(): Workbench | undefined {
   return useQuery({ queryKey: CUBE_QUERY_KEY, queryFn: fetchCube }).data;
+}
+
+const OTHER_CUBE_STALE_MS = 60_000;
+
+function useOtherCubes(): CubeRef[] | undefined {
+  const { data } = useQuery({ queryKey: CUBES_QUERY_KEY, queryFn: () => host.cubes.list() });
+  return data?.recent.filter((cube) => cube.dir !== data.current.dir);
+}
+
+function useOtherCube(dir: string | undefined): OtherCube | undefined {
+  const { data, error } = useQuery({
+    queryKey: ["other-cube", dir],
+    queryFn: () => host.cubes.cards(dir ?? ""),
+    enabled: dir !== undefined,
+    staleTime: OTHER_CUBE_STALE_MS,
+    retry: false,
+  });
+  if (dir === undefined) {
+    return undefined;
+  }
+  if (data) {
+    return { status: "ready", cube: data };
+  }
+  return error ? { status: "failed", error: error.message } : { status: "loading" };
 }
 
 function useWorkbenchCard(slug: string): WorkbenchCard | undefined {
@@ -221,6 +246,8 @@ export const mode: Mode = {
       }
     );
   },
+  useOtherCubes,
+  useOtherCube,
   useTileMark: (slug) => ({
     "data-status": useWorkbenchCard(slug)?.status,
     "data-selected": useSelection().has(slug) ? "true" : undefined,

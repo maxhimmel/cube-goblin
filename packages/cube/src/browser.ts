@@ -223,3 +223,25 @@ export type {
   ImportRequestInput,
   ImportSource,
 } from "./import-api.ts";
+export {
+  COMPARE_SCOPES,
+  COMPARE_UNITS,
+  UNMATCHED_TAG,
+  cardOverlap,
+  groupAverage,
+  inCompareScope,
+  matchTags,
+  scaled,
+  statTest,
+  translateTags,
+  unmatchedTagCounts,
+} from "./compare.ts";
+export type {
+  CardOverlap,
+  CompareScope,
+  CompareUnit,
+  GroupCell,
+  GroupRow,
+  TagCount,
+  TagMatch,
+} from "./compare.ts";

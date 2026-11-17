@@ -1,0 +1,152 @@
+import type { CardStatus, Tag } from "./schema.ts";
+import type { StatCard } from "./stats.ts";
+import { inBucket, isLand, parseBucket } from "./stats.ts";
+
+export const COMPARE_SCOPES = ["draft", "all"] as const;
+export type CompareScope = (typeof COMPARE_SCOPES)[number];
+
+export const COMPARE_UNITS = ["share", "count"] as const;
+export type CompareUnit = (typeof COMPARE_UNITS)[number];
+
+export const UNMATCHED_TAG = "~";
+
+export function inCompareScope(card: { status: CardStatus }, scope: CompareScope): boolean {
+  return scope === "all" || card.status === "draft";
+}
+
+function normal(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/gu, " ");
+}
+
+export interface TagMatch {
+  ids: ReadonlyMap<string, string>;
+  unmatched: Tag[];
+}
+
+export function matchTags(mine: readonly Tag[], theirs: readonly Tag[]): TagMatch {
+  const byKey = new Map<string, string>();
+  for (const tag of mine) {
+    byKey.set(normal(tag.id), tag.id);
+    byKey.set(normal(tag.label), tag.id);
+  }
+  const ids = new Map<string, string>();
+  const unmatched: Tag[] = [];
+  for (const tag of theirs) {
+    const found = byKey.get(normal(tag.label)) ?? byKey.get(normal(tag.id));
+    if (found === undefined) {
+      unmatched.push(tag);
+    } else {
+      ids.set(tag.id, found);
+    }
+  }
+  return { ids, unmatched };
+}
+
+export function translateTags<T extends { tags: string[] }>(
+  cards: readonly T[],
+  match: TagMatch,
+): T[] {
+  return cards.map((card) => ({
+    ...card,
+    tags: card.tags.map((tag) => match.ids.get(tag) ?? `${UNMATCHED_TAG}${tag}`),
+  }));
+}
+
+export interface TagCount {
+  tag: Tag;
+  count: number;
+}
+
+export function unmatchedTagCounts(
+  cards: readonly { tags: readonly string[] }[],
+  match: TagMatch,
+): TagCount[] {
+  return match.unmatched
+    .map((tag) => ({
+      tag,
+      count: cards.filter(
+        (card) => card.tags.includes(tag.id) || card.tags.includes(`${UNMATCHED_TAG}${tag.id}`),
+      ).length,
+    }))
+    .filter((entry) => entry.count > 0)
+    .toSorted((a, b) => b.count - a.count || a.tag.label.localeCompare(b.tag.label));
+}
+
+export interface CardOverlap<T> {
+  shared: T[];
+  onlyHere: T[];
+  onlyThere: T[];
+}
+
+export function cardOverlap<T extends { oracleId: string; name: string }>(
+  here: readonly T[],
+  there: readonly T[],
+): CardOverlap<T> {
+  const hereIds = new Set(here.map((card) => card.oracleId));
+  const thereIds = new Set(there.map((card) => card.oracleId));
+  const byName = (a: T, b: T): number => a.name.localeCompare(b.name);
+  return {
+    shared: here.filter((card) => thereIds.has(card.oracleId)).toSorted(byName),
+    onlyHere: here.filter((card) => !thereIds.has(card.oracleId)).toSorted(byName),
+    onlyThere: there.filter((card) => !hereIds.has(card.oracleId)).toSorted(byName),
+  };
+}
+
+export function scaled(count: number, theirTotal: number, ourTotal: number): number {
+  return theirTotal === 0 ? 0 : (count * ourTotal) / theirTotal;
+}
+
+export function statTest(id: string): ((card: StatCard) => boolean) | undefined {
+  if (id === "cards") {
+    return () => true;
+  }
+  if (id === "nonland") {
+    return (card) => !isLand(card);
+  }
+  const bucket = parseBucket(id);
+  return bucket && ((card) => inBucket(card, bucket));
+}
+
+export interface GroupCell {
+  count: number;
+  share: number;
+  delta: number;
+}
+
+export interface GroupRow {
+  id: string;
+  mean: number;
+  cells: GroupCell[];
+}
+
+export function groupAverage(
+  cubes: readonly (readonly StatCard[])[],
+  ids: readonly string[],
+): GroupRow[] {
+  return ids.flatMap((id) => {
+    const test = statTest(id);
+    if (!test) {
+      return [];
+    }
+    const counts = cubes.map((cards) => ({
+      count: cards.filter(test).length,
+      total: cards.length,
+    }));
+    const shares = counts.map(({ count, total }) => (total === 0 ? 0 : count / total));
+    const mean =
+      shares.length === 0 ? 0 : shares.reduce((sum, share) => sum + share, 0) / shares.length;
+    return [
+      {
+        id,
+        mean,
+        cells: counts.map(({ count }, index) => {
+          const share = shares[index] ?? 0;
+          return { count, share, delta: share - mean };
+        }),
+      },
+    ];
+  });
+}

@@ -20,6 +20,7 @@
   --strip: #fbfcfe;
   --keep: #2f8a55;
   --cut: #c23b3b;
+  --compare: #138a96;
   --mana-w: #e9dca4;
   --mana-u: #3f86d1;
   --mana-b: #4b4453;
@@ -49,6 +50,7 @@
     --strip: #243047;
     --keep: #58c486;
     --cut: #ff7b72;
+    --compare: #4fd1d9;
     --mana-w: #f2e6b8;
     --mana-u: #5aa0e8;
     --mana-b: #8c84a0;

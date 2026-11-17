@@ -160,4 +160,16 @@ describe("poolTags", () => {
       [],
     ]);
   });
+
+  it("pools a tag that shares an id but not a label, as Forge matches it", () => {
+    const pooled = poolTags([
+      { cards: mine, vocabulary: [{ id: "removal", label: "Removal" }] },
+      {
+        cards: [card("Bolt", "Instant", 1, ["R"], ["removal"])],
+        vocabulary: [{ id: "removal", label: "Kill spells" }],
+      },
+    ]);
+    expect(pooled.tags).toEqual([{ id: "removal", label: "Removal" }]);
+    expect(pooled.cubes[1]?.[0]?.tags).toEqual(["removal"]);
+  });
 });

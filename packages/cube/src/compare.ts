@@ -160,10 +160,16 @@ export function poolTags<T extends { tags: string[] }>(
   cubes: readonly { cards: readonly T[]; vocabulary: readonly Tag[] }[],
 ): PooledTags<T> {
   const labels = new Map<string, string>();
+  const aliases = new Map<string, string>();
   const pooled = cubes.map(({ cards, vocabulary }) => {
-    const keyOf = new Map(vocabulary.map((tag) => [tag.id, tagKey(tag.label)]));
+    const keyOf = new Map<string, string>();
     for (const tag of vocabulary) {
-      const key = tagKey(tag.label);
+      const byLabel = tagKey(tag.label);
+      const byId = tagKey(tag.id);
+      const key = aliases.get(byLabel) ?? aliases.get(byId) ?? byLabel;
+      aliases.set(byLabel, aliases.get(byLabel) ?? key);
+      aliases.set(byId, aliases.get(byId) ?? key);
+      keyOf.set(tag.id, key);
       if (!labels.has(key)) {
         labels.set(key, tag.label);
       }

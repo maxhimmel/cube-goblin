@@ -63,7 +63,7 @@ import {
   isUnreachable,
   printingSummary,
 } from "@repo/scryfall";
-import type { Card } from "@repo/scryfall";
+import type { CacheReuse, Card } from "@repo/scryfall";
 import { IMAGE_ROUTE, ImageCache, isAllowedImage, localImageUrl } from "./image-cache.ts";
 import type { ImportDeps, ImportResult } from "./importer.ts";
 import { exportCube, previewImport, runImport } from "./importer.ts";
@@ -98,13 +98,17 @@ function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
   }
 }
 
-async function loadWorkbench(paths: CubePaths, client: ScryfallClient): Promise<Workbench> {
+async function loadWorkbench(
+  paths: CubePaths,
+  client: ScryfallClient,
+  reuse: CacheReuse = "fresh",
+): Promise<Workbench> {
   const [entries, vocabulary, config] = await Promise.all([
     readCards(paths),
     readTags(paths),
     readConfig(paths),
   ]);
-  const { cards: byOracle, unresolved } = await client.forEntries(entries);
+  const { cards: byOracle, unresolved } = await client.forEntries(entries, reuse);
   if (unresolved.length > 0) {
     console.warn(
       `Showing the default printing for ${String(unresolved.length)} card(s) whose chosen printing could not be loaded`,
@@ -747,7 +751,7 @@ export async function createWorkbenchServer(options: WorkbenchOptions): Promise<
   async function peek(dir: string): Promise<Workbench> {
     const folder = dir === current.folder.dir ? current.folder : await openCubeFolder(dir);
     return explained(
-      loadWorkbench(folder.paths, client),
+      loadWorkbench(folder.paths, client, "any"),
       "some of that cube's cards aren't saved for offline use",
     );
   }

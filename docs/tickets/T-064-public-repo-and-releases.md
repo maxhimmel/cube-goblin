@@ -32,13 +32,18 @@ Put the repo on GitHub as a public repo under `maxhimmel` (`himmelmax@gmail.com`
 
 ## Open questions
 
-- **Windows**: build NSIS in the same workflow, or Mac only until a friend needs it?
+- **Windows**: Mac only; the friend is on an M3 ([T-063](T-063-ship-desktop-app.md)). Revisit when someone needs it.
 
 ## Built
 
 - **History rewrite** (2026-11-16): `gitleaks` found no leaks in any ref. In a `git clone --no-local` copy, `git filter-repo` mapped the 16 work-email commits to `himmelmax@gmail.com` (`--mailmap`) and replaced the work email, account, and domain in every file and message (`--replace-text`, `--replace-message`); the app ID became `com.maxhimmel.cube-goblin` throughout. Verified zero matches across blobs, messages, idents, and paths; 810 commits, final tree unchanged apart from those strings. This checkout's 37 branches were then reset onto the rewritten ones.
 - **App ID**: the data folder follows `productName`, not `appId`, so the new ID still opens `~/Library/Application Support/Cube Goblin` (checked on a packaged build).
 - **This repo's GitHub account**: `.git/config` points the github.com credential at `gh auth git-credential` with username `maxhimmel` and sets `user.email`; a SessionStart hook in `.claude/settings.local.json` exports `GH_TOKEN=$(gh auth token -u maxhimmel)` for Claude sessions. Both stay local.
+
+- **Release pipeline** (2026-11-19): `publish` (`github`, `maxhimmel`/`cube-goblin`) and `mac.artifactName: "Cube-Goblin-${arch}.${ext}"` in `apps/desktop/package.json`; `package` passes `--publish never`, `package:publish` `--publish always`. `pnpm release <patch|minor|major|X.Y.Z>` (`scripts/src/release.ts`) bumps on a `chore/release-*` branch, merges `--no-ff` (so the merge hook runs `pnpm check`), tags, pushes `main` and the tag. `.github/workflows/release.yml` builds on `macos-26`, checks the deep seal, then publishes the draft as latest with `.github/release-notes.md`.
+- **Update notice** (2026-11-19): `apps/desktop/src/main/updates.ts` checks once per launch (packaged only, `autoDownload: false`); the workbench shows a sticky toast "Cube Goblin X is out." whose "Get it" opens the latest release page (not the bare dmg, so the install steps are one click away). electron-vite bundles electron-updater into `out/main` (`externalizeDeps: false`), so it stays a dev dependency.
+- **About** (2026-11-19): app menu → About carries the Scryfall credit and the Fan Content notice (`apps/desktop/src/main/about.ts`).
+- **README** (2026-11-19): what it is, a Forge screenshot (`docs/images/forge.png`), install and update steps, dev quickstart, credits.
 
 ## Done when
 

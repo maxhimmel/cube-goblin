@@ -11,16 +11,15 @@ The user wants to hand the desktop app ([T-056](T-056-desktop-app.md)) to a frie
 - **Name**: Cube Goblin.
 - **Icon**: option I, a violet cube outline with goblin eyes, picked from twelve goblin drafts (user, 2026-11-16). App icon: "glow" (dark square, violet glow behind the cube, glowing eyes). Favicon: "max" (no background, a squat cube filling the square, bold lines, big glowing eyes), since a bare cube at 16px needs every pixel. It replaces favicon E ([T-050](T-050-visual-system.md)) in the workbench and share doc too.
 - **Signing**: free first. No Apple Developer Program until unsigned delivery proves painful.
-- **Friend's computer**: unknown. Ask the friend, or build for every likely target.
+- **Friend's computer**: an M3 Mac (user, 2026-11-19), so the arm64 build covers it; no Windows or x64.
 
 ## Scope
 
 - **Rename**: `productName` and `appId` in `apps/desktop/package.json`. The first launch moves the old `Cube Workbench` data folder over.
 - **Icon**: option I glow as the app icon, from `build/icon.svg`; "max" as the favicon. The macOS 26 `.icon` format needs Xcode 26, which this Mac lacks ([research](../research/desktop-delivery.md#app-icon)).
 - **Fix the seal first**: today's build fails `codesign --verify --deep --strict`, which risks a "damaged" dialog. Switch to ad-hoc signing (`identity: "-"`, `hardenedRuntime: false`) ([research](../research/desktop-delivery.md#macos-without-a-developer-id)).
-- **Delivery**: the research note's [option 2](../research/desktop-delivery.md#options-for-one-friend), unless the friend's machine says otherwise: ad-hoc arm64 `dmg` + `zip` by link, with written Open Anyway steps for the friend. Prove it by downloading on a second Mac. Add Windows NSIS or x64 only if the friend needs it.
+- **Delivery**: the research note's [option 2](../research/desktop-delivery.md#options-for-one-friend): ad-hoc arm64 `dmg` + `zip` by link, with written Open Anyway steps for the friend. The link and steps come from [T-064](T-064-public-repo-and-releases.md) (user chose the full release flow over sending a file, 2026-11-19). Prove it by downloading on a second Mac.
 - **Updates and hosting**: moved to [T-064](T-064-public-repo-and-releases.md). Developer ID ($99/yr) comes when updates get frequent.
-- **Open**: friend's OS and chip.
 
 ## Built
 

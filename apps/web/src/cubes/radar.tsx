@@ -160,6 +160,7 @@ function radarDefinition({ rows, cubes, unit, tile }: RadarInput) {
     ],
     scales: { x: null, y: null },
     focus: focusGroupAngle,
+    keyboard: false,
   });
 }
 

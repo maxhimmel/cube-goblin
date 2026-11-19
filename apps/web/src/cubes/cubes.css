@@ -696,8 +696,82 @@
   border-color: color-mix(in oklab, var(--accent) 50%, transparent);
 }
 
-.cubes-unpin[aria-pressed="true"] {
+.cubes-pin {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.cubes-pin svg {
+  transform: rotate(35deg);
+  transition: transform 0.18s var(--lift);
+}
+
+.cubes-pin .pin-head {
+  fill: transparent;
+  transition: fill 0.12s ease;
+}
+
+.cubes-pin .pin-slash {
+  stroke-dasharray: 23;
+  stroke-dashoffset: 23;
+  transition: stroke-dashoffset 0.18s ease;
+}
+
+.cubes-pin:hover,
+.cubes-pin:focus-visible {
+  color: var(--keep);
+  background: color-mix(in oklab, var(--keep) 14%, transparent);
+}
+
+.cubes-pin:hover svg,
+.cubes-pin:focus-visible svg {
+  transform: rotate(0deg);
+}
+
+.cubes-pin[aria-pressed="true"] {
   color: var(--accent);
+}
+
+.cubes-pin[aria-pressed="true"] svg {
+  transform: rotate(0deg);
+}
+
+.cubes-pin[aria-pressed="true"] .pin-head {
+  fill: currentColor;
+}
+
+.cubes-pin[aria-pressed="true"]:hover,
+.cubes-pin[aria-pressed="true"]:focus-visible {
+  color: var(--cut);
+  background: color-mix(in oklab, var(--cut) 14%, transparent);
+}
+
+.cubes-pin[aria-pressed="true"]:hover .pin-head,
+.cubes-pin[aria-pressed="true"]:focus-visible .pin-head {
+  fill: transparent;
+}
+
+.cubes-pin[aria-pressed="true"]:hover .pin-slash,
+.cubes-pin[aria-pressed="true"]:focus-visible .pin-slash {
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cubes-pin svg,
+  .cubes-pin .pin-slash {
+    transition: none;
+  }
 }
 
 .cubes-detail {
@@ -777,7 +851,7 @@
   transform: scale(1);
 }
 
-.cubes-radar-labels button[data-intent="unpin"] .cubes-label-intent {
+.cubes-radar-labels button[aria-pressed="true"] .cubes-label-intent {
   background: var(--cut);
 }
 

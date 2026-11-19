@@ -298,8 +298,10 @@
 .cubes-inspector {
   display: grid;
   grid-area: inspector;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   align-content: start;
   gap: 12px;
+  font-size: var(--fs-md);
   min-height: 0;
   padding: 14px 16px;
   overflow: auto;
@@ -340,7 +342,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
 }
 
 .cubes-spoke-title small {
@@ -352,9 +354,9 @@
 .cubes-spoke-rows {
   display: grid;
   grid-template-columns: max-content 1fr auto 44px;
-  gap: 6px 10px;
+  gap: 7px 10px;
   align-items: center;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
 }
 
 .cubes-spoke-rows > div {
@@ -624,33 +626,6 @@
   color: inherit;
 }
 
-.cubes-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--line);
-}
-
-.cubes-tabs button {
-  display: inline-flex;
-  gap: 6px;
-  align-items: baseline;
-  padding: 6px 10px;
-  margin-bottom: -1px;
-  font: inherit;
-  font-size: var(--fs-sm);
-  font-weight: 650;
-  color: var(--muted);
-  cursor: pointer;
-  background: none;
-  border: 0;
-  border-bottom: 2px solid transparent;
-}
-
-.cubes-tabs button[aria-selected="true"] {
-  color: var(--fg);
-  border-bottom-color: var(--accent);
-}
-
 .cubes-item {
   cursor: pointer;
 }
@@ -686,4 +661,53 @@
 
 .cubes-unpin[aria-pressed="true"] {
   color: var(--accent);
+}
+
+.cubes-detail {
+  padding: 12px 14px 14px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.cubes-detail .cubes-empty {
+  border: 0;
+  padding: 0;
+}
+
+.cubes-tabs {
+  display: flex;
+  margin-top: 6px;
+}
+
+.cubes-tabs button {
+  display: inline-flex;
+  flex: 1;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: center;
+  font: inherit;
+  font-size: var(--fs-md);
+  cursor: pointer;
+}
+
+.cubes-inspector .cubes-list {
+  align-content: start;
+  overflow: auto;
+  min-height: 0;
+}
+
+.cubes-inspector .cubes-item,
+.cubes-inspector .cubes-gap-line {
+  font-size: var(--fs-md);
+}
+
+.cubes-inspector .cubes-gap,
+.cubes-inspector .cubes-item-gap {
+  font-size: var(--fs-xs);
+}
+
+.cubes-mv {
+  display: inline-flex;
+  align-items: center;
 }

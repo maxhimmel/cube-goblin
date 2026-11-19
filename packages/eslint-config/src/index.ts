@@ -18,6 +18,7 @@ export function createConfig(tsconfigRootDir: string): Linter.Config[] {
         "**/.turbo/**",
         "**/test-results/**",
         "**/playwright-report/**",
+        "**/*.config.ts.*.mjs",
       ],
     },
     {

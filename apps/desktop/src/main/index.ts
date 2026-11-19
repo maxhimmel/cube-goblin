@@ -14,6 +14,7 @@ import {
   startingCube,
 } from "@repo/server";
 import type { CubeHostServer, CubeLibrary, RecentCubes } from "@repo/server";
+import { aboutPanel } from "./about.ts";
 
 const SCHEME = "app";
 const HOST = "bundle";
@@ -295,6 +296,7 @@ async function start(): Promise<void> {
   }
   await app.whenReady();
   lockDown();
+  app.setAboutPanelOptions(aboutPanel());
   const pinned = (process.env["CUBE_DIR"] ?? "") !== "" && (userDataOverride ?? "") === "";
   const recent = recentCubesFor(app.getPath("userData"), pinned);
   const cubeDir = await firstCube(recent);

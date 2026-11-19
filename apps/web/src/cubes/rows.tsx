@@ -1,7 +1,7 @@
 import type { Tag } from "@repo/cube/browser";
 import { COLORS, COLOR_GROUPS, CURVE_COLUMNS, TYPE_COLUMNS } from "@repo/cube/browser";
 import type { ReactNode } from "react";
-import { colorIcon } from "../insights/labels.tsx";
+import { colorIcon, curveTick } from "../insights/labels.tsx";
 
 export interface StatRow {
   id: string;
@@ -9,6 +9,7 @@ export interface StatRow {
   noun: string;
   section: string;
   icon?: ReactNode;
+  iconOnly?: boolean;
 }
 
 export interface Section {
@@ -27,9 +28,11 @@ export const FIXED_SECTIONS: Section[] = [
     blurb: "Share of each cube's cards at each mana value; lands sit out.",
     rows: CURVE_COLUMNS.map((column) => ({
       id: `curve:${column.id}`,
-      label: `MV ${column.label}`,
+      label: `Mana value ${column.label}`,
       noun: `${column.label}-drops`,
       section: "Curve",
+      icon: curveTick(column.id),
+      iconOnly: true,
     })),
   },
   {

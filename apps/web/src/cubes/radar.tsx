@@ -293,7 +293,7 @@ export function RadarHero({
                 }}
               >
                 {spec?.icon}
-                <span>{label}</span>
+                <span className={spec?.iconOnly ? "sr-only" : undefined}>{label}</span>
                 {mixed && spec && <small>{spec.section}</small>}
               </button>
             </li>

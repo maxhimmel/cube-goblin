@@ -49,7 +49,9 @@ export function SectionTable({
               <tr key={row.id}>
                 <th scope="row">
                   {spec?.icon}
-                  {spec?.label ?? row.id}
+                  <span className={spec?.iconOnly ? "sr-only" : undefined}>
+                    {spec?.label ?? row.id}
+                  </span>
                 </th>
                 {row.cells.map((cell, index) => (
                   <td key={columns[index]?.cube.dir ?? index}>

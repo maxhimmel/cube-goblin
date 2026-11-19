@@ -99,7 +99,7 @@ function SpokeName({ spec, id }: { spec: StatRow | undefined; id: string }): Rea
   return (
     <>
       {spec?.icon}
-      <span>{spec?.label ?? id}</span>
+      <span className={spec?.iconOnly ? "sr-only" : undefined}>{spec?.label ?? id}</span>
       <small>{spec?.section}</small>
     </>
   );
@@ -154,22 +154,14 @@ export function Inspector({
   });
   return (
     <aside className="cubes-inspector" aria-label="Inspector">
-      {row ? (
-        <SpokeCard row={row} spec={specs.get(row.id)} columns={columns} unit={unit} />
-      ) : (
-        <p className="cubes-empty">Hover a spoke to see every cube's number on it.</p>
-      )}
-      <div className="cubes-tabs" role="tablist" aria-label="Lists">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "pinned"}
-          onClick={() => {
-            onTab("pinned");
-          }}
-        >
-          Pinned <span className="cubes-count">{pins.length}</span>
-        </button>
+      <section className="cubes-detail" aria-label="Spoke detail">
+        {row ? (
+          <SpokeCard row={row} spec={specs.get(row.id)} columns={columns} unit={unit} />
+        ) : (
+          <p className="cubes-empty">Hover a spoke to see every cube's number on it.</p>
+        )}
+      </section>
+      <div className="segmented cubes-tabs" role="tablist" aria-label="Lists">
         <button
           type="button"
           role="tab"
@@ -179,6 +171,16 @@ export function Inspector({
           }}
         >
           Biggest gaps
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "pinned"}
+          onClick={() => {
+            onTab("pinned");
+          }}
+        >
+          Pinned <span className="cubes-count">{pins.length}</span>
         </button>
       </div>
       {tab === "pinned" ? (
@@ -246,7 +248,9 @@ export function Inspector({
                 >
                   <span className="cubes-gap-line">
                     {spec?.icon}
-                    <strong>{spec?.label ?? gap.id}</strong>
+                    <strong className={spec?.iconOnly ? "sr-only" : undefined}>
+                      {spec?.label ?? gap.id}
+                    </strong>
                     <small>{spec?.section}</small>
                   </span>
                   <span className="cubes-gap-line">

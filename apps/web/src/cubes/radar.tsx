@@ -345,7 +345,12 @@ export function RadarHero({
         onAxis(undefined);
       }}
     >
-      <ol ref={labels} className="cubes-radar-labels" aria-label={`${title} spokes`}>
+      <ol
+        ref={labels}
+        className="cubes-radar-labels"
+        data-custom={mixed ? "" : undefined}
+        aria-label={`${title} spokes`}
+      >
         {rows.map((row) => {
           const spec = specs.get(row.id);
           const label = spec?.label ?? row.id;

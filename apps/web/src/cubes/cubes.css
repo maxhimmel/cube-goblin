@@ -852,7 +852,7 @@
   transition: stroke-dashoffset 0.18s ease;
 }
 
-.cubes-radar-labels button[aria-pressed="true"] .cubes-label-pin,
+.cubes-radar-labels:not([data-custom]) button[aria-pressed="true"] .cubes-label-pin,
 .cubes-radar-labels button[data-intent] .cubes-label-pin {
   opacity: 1;
   transform: scale(1);

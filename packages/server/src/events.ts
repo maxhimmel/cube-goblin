@@ -3,6 +3,8 @@ import type { OfflineStatus, Workbench } from "@repo/cube/browser";
 export const CUBE_CHANGED_EVENT = "cube:changed";
 export const CUBES_ROUTE = "/api/cubes";
 export const OPEN_FOLDER_CHANNEL = "cubes:open-folder";
+export const NEWER_RELEASE_CHANNEL = "app:newer-release";
+export const OPEN_DOWNLOAD_CHANNEL = "app:open-download";
 
 export interface CubeRef {
   dir: string;
@@ -27,4 +29,6 @@ export interface CubesApi {
 export interface DesktopBridge {
   onCubeChanged: (listener: () => void) => () => void;
   openFolder: () => Promise<CubeRef | undefined>;
+  newerRelease: () => Promise<string | undefined>;
+  openDownload: () => Promise<void>;
 }

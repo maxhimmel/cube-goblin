@@ -48,7 +48,7 @@ import { ImportExportPanel } from "../workbench/import-export-panel.tsx";
 import { SettingsPanel } from "../workbench/settings-panel.tsx";
 import { TagsPage } from "../workbench/tags-page.tsx";
 import { WorkbenchHistoryPage } from "../workbench/history-page.tsx";
-import { Toaster } from "../workbench/toast.tsx";
+import { Toaster, showToast } from "../workbench/toast.tsx";
 import type { Mode, OtherCube } from "./mode.ts";
 
 async function refetch(key: readonly string[], pending: () => boolean): Promise<void> {
@@ -58,6 +58,17 @@ async function refetch(key: readonly string[], pending: () => boolean): Promise<
   await queryClient.cancelQueries({ queryKey: key });
   await queryClient.invalidateQueries({ queryKey: key });
 }
+
+void host.newerRelease().then((release) => {
+  if (release !== undefined) {
+    showToast({
+      message: `Cube Goblin ${release.version} is out.`,
+      tone: "info",
+      sticky: true,
+      action: { label: "Get it", run: release.download },
+    });
+  }
+});
 
 host.onCubeChanged(() => {
   void refetch(CUBE_QUERY_KEY, editsPending);

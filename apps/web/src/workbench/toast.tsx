@@ -6,6 +6,7 @@ export interface Toast {
   message: string;
   tone: "info" | "error";
   action?: { label: string; run: () => void };
+  sticky?: boolean;
 }
 
 const DISMISS_MS = 8000;
@@ -33,7 +34,9 @@ function pauseDismiss(): void {
 
 function resumeDismiss(): void {
   clearTimeout(timer);
-  timer = setTimeout(dismissToast, DISMISS_MS);
+  if (current?.sticky !== true) {
+    timer = setTimeout(dismissToast, DISMISS_MS);
+  }
 }
 
 export function showToast(toast: Omit<Toast, "id">): void {

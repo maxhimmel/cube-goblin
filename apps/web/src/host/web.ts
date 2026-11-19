@@ -16,5 +16,6 @@ export function webHost(): CubeHost {
         hot.off(CUBE_CHANGED_EVENT, listener);
       };
     },
+    newerRelease: () => Promise.resolve(undefined),
   };
 }

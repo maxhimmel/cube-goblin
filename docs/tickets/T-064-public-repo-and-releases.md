@@ -1,7 +1,7 @@
 ---
 id: T-064
 title: Public repo, releases, and README
-status: doing
+status: done
 ---
 
 Put the repo on GitHub as a public repo under `maxhimmel` (`himmelmax@gmail.com`), release the desktop app from it, hand out one share link, and write a clean README (user, 2026-11-16). Unblocks delivery in [T-063](T-063-ship-desktop-app.md), whose open questions were hosting and updates.
@@ -44,6 +44,8 @@ Put the repo on GitHub as a public repo under `maxhimmel` (`himmelmax@gmail.com`
 - **Update notice** (2026-11-19): `apps/desktop/src/main/updates.ts` checks once per launch (packaged only, `autoDownload: false`); the workbench shows a sticky toast "Cube Goblin X is out." whose "Get it" opens the latest release page (not the bare dmg, so the install steps are one click away). electron-vite bundles electron-updater into `out/main` (`externalizeDeps: false`), so it stays a dev dependency.
 - **About** (2026-11-19): app menu → About carries the Scryfall credit and the Fan Content notice (`apps/desktop/src/main/about.ts`).
 - **README** (2026-11-19): what it is, a Forge screenshot (`docs/images/forge.png`), install and update steps, dev quickstart, credits.
+- **First release** (2026-11-19): `pnpm release patch` cut v0.1.1 (0.1.0 was never released; the script only takes newer versions). The workflow passed on `macos-26`, seal check included. `releases/latest/download/Cube-Goblin-arm64.dmg` serves it; the downloaded dmg verifies and its app passes `codesign --verify --deep --strict`. A local 0.1.0 package showed "Cube Goblin 0.1.1 is out." Playwright `_electron` can't attach to a packaged build (the inspect fuses are off); `--remote-debugging-port` with `connectOverCDP` works.
+- **Left open**: the update toast shares the single toast slot, so a later toast replaces it until the next launch. Windows stays out (see Open questions).
 
 ## Done when
 

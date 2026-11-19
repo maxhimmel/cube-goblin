@@ -61,7 +61,7 @@
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.games"
+      "category": "public.app-category.productivity"
     },
     "electronFuses": {
       "runAsNode": false,

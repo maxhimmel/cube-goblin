@@ -215,6 +215,7 @@ export function RadarHero({
   mixed,
   pins,
   hover,
+  armed,
   onAxis,
   onPin,
   onHotCube,
@@ -227,11 +228,13 @@ export function RadarHero({
   mixed: boolean;
   pins: ReadonlySet<string>;
   hover: string | undefined;
+  armed: boolean;
   onAxis: (axis: string | undefined) => void;
   onPin: (axis: string) => void;
   onHotCube: (cube: number | undefined) => void;
 }): ReactNode {
   const labels = useRef<HTMLOListElement>(null);
+  const onLabel = useRef<string | undefined>(undefined);
   const definition = useStableDefinition({ rows, cubes, unit, tile: false });
   const [plot, height] = usePlotHeight();
   const count = rows.length;
@@ -271,6 +274,7 @@ export function RadarHero({
       className="cubes-hero-plot"
       ref={plot}
       onPointerLeave={() => {
+        onLabel.current = undefined;
         onHotCube(undefined);
         onAxis(undefined);
       }}
@@ -280,25 +284,28 @@ export function RadarHero({
           const spec = specs.get(row.id);
           const label = spec?.label ?? row.id;
           const pinned = pins.has(row.id);
+          const hovered = hover === row.id;
+          const enter = (): void => {
+            onLabel.current = row.id;
+            onHotCube(undefined);
+            onAxis(row.id);
+          };
+          const leave = (): void => {
+            onLabel.current = undefined;
+            onAxis(undefined);
+          };
           return (
             <li key={row.id}>
               <button
                 type="button"
                 aria-pressed={pinned}
                 aria-label={`${pinned ? "Unpin" : "Pin"} ${label}${mixed && spec ? ` (${spec.section})` : ""}`}
-                data-hover={hover === row.id ? "" : undefined}
-                onPointerEnter={() => {
-                  onAxis(row.id);
-                }}
-                onPointerLeave={() => {
-                  onAxis(undefined);
-                }}
-                onFocus={() => {
-                  onAxis(row.id);
-                }}
-                onBlur={() => {
-                  onAxis(undefined);
-                }}
+                data-hover={hovered ? "" : undefined}
+                data-intent={hovered && armed ? (pinned ? "unpin" : "pin") : undefined}
+                onPointerEnter={enter}
+                onPointerLeave={leave}
+                onFocus={enter}
+                onBlur={leave}
                 onClick={() => {
                   onPin(row.id);
                 }}
@@ -306,10 +313,10 @@ export function RadarHero({
                 {mixed && <b className="cubes-label-index">{index + 1}</b>}
                 {spec?.icon}
                 <span className={spec?.iconOnly ? "sr-only" : undefined}>{label}</span>
+                {mixed && spec && <small>{spec.section}</small>}
                 <span className="cubes-label-intent" aria-hidden="true">
                   {pinned ? "−" : "+"}
                 </span>
-                {mixed && spec && <small>{spec.section}</small>}
               </button>
             </li>
           );
@@ -324,6 +331,9 @@ export function RadarHero({
           initialWidth={height}
           onRender={place}
           onFocusChange={(point) => {
+            if (onLabel.current !== undefined) {
+              return;
+            }
             const datum = point?.datum;
             onHotCube(datum && "cube" in datum ? datum.cube : undefined);
             onAxis(datum?.axis);

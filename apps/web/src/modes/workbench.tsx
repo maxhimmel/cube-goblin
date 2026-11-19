@@ -111,9 +111,16 @@ function useCubeList(): { current: CubeRef; recent: CubeRef[] } | undefined {
 function useCubesAt(dirs: readonly string[]): OtherCube[] {
   const current = useCubeList()?.current.dir;
   const open = useWorkbench();
-  const others = useQueries({
-    queries: dirs.map((dir) => ({ ...otherCubeQuery(dir), enabled: dir !== current })),
-  });
+  const waiting = (dir: string): boolean => {
+    const state = queryClient.getQueryState(["other-cube", dir]);
+    return state === undefined || state.status === "pending";
+  };
+  const next = dirs.findIndex((dir) => dir !== current && waiting(dir));
+  const queries = dirs.map((dir, index) => ({
+    ...otherCubeQuery(dir),
+    enabled: dir !== current && (next === -1 || index <= next),
+  }));
+  const others = useQueries({ queries });
   return dirs.map((dir, index) => {
     if (dir === current) {
       return open ? { status: "ready", cube: open } : { status: "loading" };

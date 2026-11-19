@@ -77,7 +77,7 @@ export function tagSection(tags: readonly Tag[]): Section {
     rows: tags.map((tag) => ({
       id: `tag:${tag.id}`,
       label: tag.label,
-      noun: tag.label.toLowerCase(),
+      noun: `“${tag.label}”`,
       section: "Tags",
     })),
   };

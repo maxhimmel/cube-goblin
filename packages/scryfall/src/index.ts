@@ -12,7 +12,13 @@ export {
   chunk,
   isUnreachable,
 } from "./client.ts";
-export type { CachedEntry, CardIdentifier, PrintedEntry, ScryfallClientOptions } from "./client.ts";
+export type {
+  CacheReuse,
+  CachedEntry,
+  CardIdentifier,
+  PrintedEntry,
+  ScryfallClientOptions,
+} from "./client.ts";
 export { cardFaces, displayFields, imageUrl, printingLabels, printingSummary } from "./card.ts";
 export type { DisplayFields, Printing } from "./card.ts";
 export type { BulkData, Card, CardFace, CardList, ImageUris, ScryfallTag } from "./schemas.ts";

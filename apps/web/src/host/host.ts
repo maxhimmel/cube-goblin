@@ -8,4 +8,10 @@ export interface CubeHost {
   cubes: CubesApi;
   openFolder: FolderOpener;
   onCubeChanged: (listener: () => void) => () => void;
+  newerRelease: () => Promise<NewerRelease | undefined>;
+}
+
+export interface NewerRelease {
+  version: string;
+  download: () => void;
 }

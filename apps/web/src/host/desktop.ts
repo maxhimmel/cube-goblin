@@ -7,5 +7,11 @@ export function desktopHost(bridge: DesktopBridge): CubeHost {
     cubes: httpCubes,
     openFolder: { kind: "dialog", open: () => bridge.openFolder() },
     onCubeChanged: (listener) => bridge.onCubeChanged(listener),
+    newerRelease: async () => {
+      const version = await bridge.newerRelease();
+      return version === undefined
+        ? undefined
+        : { version, download: () => void bridge.openDownload() };
+    },
   };
 }

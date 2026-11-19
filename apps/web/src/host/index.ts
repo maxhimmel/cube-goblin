@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-export type { CubeHost, FolderOpener } from "./host.ts";
+export type { CubeHost, FolderOpener, NewerRelease } from "./host.ts";
 
 export const host: CubeHost =
   window.desktop === undefined ? webHost() : desktopHost(window.desktop);

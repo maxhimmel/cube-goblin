@@ -175,11 +175,12 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await spokes.getByRole("button", { name: /Instant$/u }).hover();
   await expect(inspector.getByLabel("Inspecting Instant")).toContainText("Rival Cube42%");
+  await expect(inspector.locator(".cubes-caption")).toHaveText(/^Click to (un)?pin/u);
   const plot = await page.locator(".cubes-hero-plot").boundingBox();
   if (plot) {
     await page.mouse.click(plot.x + 12, plot.y + plot.height - 12);
   }
-  await expect(inspector.getByLabel("Inspecting Instant")).toBeVisible();
+  await expect(inspector.locator(".cubes-caption")).toHaveText("Biggest gap in Card types");
 
   const gaps = inspector.getByRole("list", { name: "Biggest gaps" }).getByRole("listitem");
   await expect(gaps.first()).toContainText(/[+−]\d/u);

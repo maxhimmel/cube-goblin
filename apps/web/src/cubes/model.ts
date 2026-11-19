@@ -58,6 +58,15 @@ function spreadOf(id: string, rowOf: ReadonlyMap<string, GroupRow>): number {
   return row ? spread(row) : 0;
 }
 
+export function byGap(ids: readonly string[], rowOf: ReadonlyMap<string, GroupRow>): string[] {
+  const rank = new Map([...rowOf.keys()].map((id, index) => [id, index]));
+  return ids.toSorted(
+    (a, b) =>
+      spreadOf(b, rowOf) - spreadOf(a, rowOf) ||
+      (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity),
+  );
+}
+
 export function defaultPins(rowOf: ReadonlyMap<string, GroupRow>): string[] {
   return [...rowOf.values()]
     .filter((row) => !isEmpty(row))

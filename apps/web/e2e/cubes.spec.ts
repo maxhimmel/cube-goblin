@@ -220,6 +220,25 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   await page.reload();
   await expect(page.getByRole("region", { name: "Custom" })).toBeVisible();
   await expect(pinned).toHaveCount(before);
+  const customSpokes = page.getByRole("list", { name: "Custom spokes" }).getByRole("button");
+  await page.getByRole("region", { name: "Custom" }).getByRole("button", { name: "Radar" }).click();
+  await expect(customSpokes).toHaveCount(before);
+  const order = await customSpokes.evaluateAll((buttons) =>
+    buttons.map((button) => button.getAttribute("aria-label")),
+  );
+  const second = customSpokes.nth(1);
+  const name = ((await second.getAttribute("aria-label")) ?? "").replace(/^Unpin | \(.*\)$/gu, "");
+  await second.click();
+  await expect(customSpokes).toHaveCount(order.length - 1);
+  await inspector.getByRole("tab", { name: "Biggest gaps" }).click();
+  await inspector.getByRole("button", { name: `Pin ${name}`, exact: true }).click();
+  await expect(customSpokes).toHaveCount(order.length);
+  expect(
+    await customSpokes.evaluateAll((buttons) =>
+      buttons.map((button) => button.getAttribute("aria-label")),
+    ),
+  ).toEqual(order);
+  await inspector.getByRole("tab", { name: /Pinned/u }).click();
   const section = await pinned.first().locator("small").textContent();
   await pinned.first().locator(".cubes-item").click();
   await expect(page.getByRole("region", { name: section ?? "" })).toBeVisible();

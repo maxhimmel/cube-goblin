@@ -8,6 +8,8 @@ export const API_BASE = "https://api.scryfall.com";
 export const COLLECTION_MAX_IDENTIFIERS = 75;
 export const CARD_ENDPOINT_INTERVAL_MS = 500;
 export const DEFAULT_INTERVAL_MS = 100;
+
+export type CacheReuse = "fresh" | "any";
 export const BULK_HOST = "data.scryfall.io";
 export const REQUEST_TIMEOUT_MS = 15_000;
 export const RATE_LIMIT_COOLDOWN_MS = 60_000;
@@ -248,13 +250,16 @@ export class ScryfallClient {
   async #byKeys(
     ids: readonly string[],
     kind: "oracle_id" | "id",
+    reuse: CacheReuse = "fresh",
   ): Promise<{ cards: Map<string, Card>; missing: string[] }> {
     const keyOf = kind === "id" ? printKey : oracleKey;
     const idOf = (card: Card): string | undefined => (kind === "id" ? card.id : card.oracle_id);
     const unique = [...new Set(ids)];
     const found = new Map<string, Card>();
     const toFetch: string[] = [];
-    const cachedEntries = await Promise.all(unique.map((id) => this.#cache.get(keyOf(id))));
+    const read = (key: string): Promise<unknown> =>
+      reuse === "any" ? this.#cache.peek(key) : this.#cache.get(key);
+    const cachedEntries = await Promise.all(unique.map((id) => read(keyOf(id))));
     unique.forEach((id, index) => {
       const cached = cardSchema.safeParse(cachedEntries[index]);
       if (cached.success) {
@@ -311,14 +316,16 @@ export class ScryfallClient {
 
   async forEntries(
     entries: readonly PrintedEntry[],
+    reuse: CacheReuse = "fresh",
   ): Promise<{ cards: Map<string, Card>; missing: string[]; unresolved: string[] }> {
     const chosen = entries.flatMap((entry) => entry.printing ?? []);
     const [defaults, printed] = await Promise.all([
       this.#byKeys(
         entries.map((entry) => entry.oracleId),
         "oracle_id",
+        reuse,
       ),
-      this.#byKeys(chosen, "id").catch((error: unknown) => {
+      this.#byKeys(chosen, "id", reuse).catch((error: unknown) => {
         if (isUnreachable(error)) {
           return { cards: new Map<string, Card>(), missing: chosen };
         }

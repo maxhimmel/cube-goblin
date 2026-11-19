@@ -227,6 +227,26 @@ describe("ScryfallClient", () => {
     expect(fresh).toBeInstanceOf(TypeError);
   });
 
+  it("reuses cached cards of any age when asked, fetching only ones never cached", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "scryfall-reuse-"));
+    await new FileCache(dir).set("oracle:a", { ...card, id: "d1", oracle_id: "a" });
+    const calls: Call[] = [];
+    const client = new ScryfallClient({
+      userAgent: "Test/1.0",
+      cache: new FileCache(dir, 1000, () => Date.now() + 10_000),
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch(
+        [{ status: 200, body: { object: "list", data: [{ ...card, id: "d2", oracle_id: "b" }] } }],
+        calls,
+      ),
+    });
+    const { cards } = await client.forEntries([{ oracleId: "a" }, { oracleId: "b" }], "any");
+    expect([...cards.values()].map((found) => found.id)).toEqual(["d1", "d2"]);
+    expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({
+      identifiers: [{ oracle_id: "b" }],
+    });
+  });
+
   it("falls back to the default when a new printing can't be fetched offline", async () => {
     const dir = await mkdtemp(join(tmpdir(), "scryfall-offline-"));
     await new FileCache(dir).set("oracle:a", { ...card, id: "d1", oracle_id: "a" });

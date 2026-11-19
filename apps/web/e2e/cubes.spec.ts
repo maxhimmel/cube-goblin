@@ -195,6 +195,11 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   const before = await pinned.count();
   await spokes.getByRole("button", { name: /^Pin /u }).first().click();
   await expect(pinned).toHaveCount(before + 1);
+  await page.mouse.move(1, 1);
+  await expect(spokes.locator('button[aria-pressed="true"] .cubes-label-pin').first()).toHaveCSS(
+    "opacity",
+    "1",
+  );
   await inspector
     .getByRole("button", { name: /^Unpin /u })
     .last()
@@ -223,6 +228,11 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   const customSpokes = page.getByRole("list", { name: "Custom spokes" }).getByRole("button");
   await page.getByRole("region", { name: "Custom" }).getByRole("button", { name: "Radar" }).click();
   await expect(customSpokes).toHaveCount(before);
+  const customPin = customSpokes.first().locator(".cubes-label-pin");
+  await expect(customPin).toHaveCSS("opacity", "0");
+  await customSpokes.first().hover();
+  await expect(customPin).toHaveCSS("opacity", "1");
+  await page.mouse.move(1, 1);
   const order = await customSpokes.evaluateAll((buttons) =>
     buttons.map((button) => button.getAttribute("aria-label")),
   );

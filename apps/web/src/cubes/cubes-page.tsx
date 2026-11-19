@@ -22,6 +22,7 @@ import {
   MIN_AXES,
   OUTLIER,
   PERCENT,
+  byGap,
   defaultPins,
   gapCount,
   hueOf,
@@ -121,7 +122,10 @@ export function CubesPage(): ReactNode {
       [...specs.keys()],
     ).map((row) => [row.id, row]),
   );
-  const pins = (storedPins ?? defaultPins(rowOf)).filter((id) => rowOf.has(id));
+  const pins = byGap(
+    (storedPins ?? defaultPins(rowOf)).filter((id) => rowOf.has(id)),
+    rowOf,
+  );
   const pinSet = new Set(pins);
   const togglePin = (id: string): void => {
     setPins(pinSet.has(id) ? pins.filter((other) => other !== id) : [...pins, id]);

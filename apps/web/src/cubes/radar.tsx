@@ -1,22 +1,24 @@
 import type { CompareUnit, GroupRow } from "@repo/cube/browser";
 import { defineChart } from "@tanstack/charts";
+import { decorative } from "@tanstack/charts/mark/decorative";
 import {
-  angleGrid,
   focusGroupAngle,
   polar,
   radialArea,
   radialDot,
-  radialGrid,
   radialLine,
+  radialRule,
+  radialText,
 } from "@tanstack/charts/polar";
 import { Chart } from "@tanstack/charts/react/core";
 import { scaleLinear } from "@tanstack/charts/scales/linear";
-import { scalePoint } from "@tanstack/charts/scales/point";
 import { curveLinearClosed } from "d3-shape";
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { CHART_MOTION, usePlotHeight } from "../insights/charts.tsx";
 import { OUTLIER, PERCENT } from "./model.ts";
+import type { OutlinePoint } from "./outline.ts";
+import { outline } from "./outline.ts";
 import type { StatRow } from "./rows.tsx";
 
 const HERO_RATIO = 0.66;
@@ -27,24 +29,24 @@ const MAX_RINGS = 5;
 const LABEL_GAP = 16;
 const SIDE_LIMIT = 0.2;
 const VERT_LIMIT = 0.75;
+const RING_FONT = 10;
 
 export interface RadarCube {
   name: string;
   hue: string;
 }
 
-interface Point {
+interface Vertex {
   id: string;
   cube: number;
   axis: string;
+  turn: number;
   value: number;
   delta: number;
 }
 
-interface Mean {
+interface Traced extends OutlinePoint {
   id: string;
-  axis: string;
-  value: number;
 }
 
 function ringsFor(peak: number, unit: CompareUnit): number[] {
@@ -71,92 +73,155 @@ function meanOf(row: GroupRow, unit: CompareUnit): number {
     : row.cells.reduce((sum, cell) => sum + cell.count, 0) / Math.max(1, row.cells.length);
 }
 
+function traced(prefix: string, radii: readonly number[]): Traced[] {
+  return outline(radii).map((point, index) => ({ ...point, id: `${prefix}:${String(index)}` }));
+}
+
 function radarDefinition({ rows, cubes, unit, tile }: RadarInput) {
-  const axes = rows.map((row) => row.id);
-  const series: Point[][] = cubes.map((_, cube) =>
-    rows.map((row) => {
+  const count = rows.length;
+  const vertices: Vertex[][] = cubes.map((_, cube) =>
+    rows.map((row, index) => {
       const cell = row.cells[cube] ?? { count: 0, share: 0, delta: 0 };
       return {
         id: `${String(cube)}:${row.id}`,
         cube,
         axis: row.id,
+        turn: index / count,
         value: unit === "share" ? cell.share : cell.count,
         delta: cell.delta,
       };
     }),
   );
-  const means: Mean[] = rows.map((row) => ({
-    id: `mean:${row.id}`,
-    axis: row.id,
-    value: meanOf(row, unit),
-  }));
+  const means = rows.map((row) => meanOf(row, unit));
   const rings = ringsFor(
-    Math.max(...series.flat().map((point) => point.value), ...means.map((mean) => mean.value)),
+    Math.max(...vertices.flat().map((vertex) => vertex.value), ...means),
     unit,
   );
   const top = rings.at(-1) ?? 1;
+  const scales = {
+    angle: { scale: scaleLinear().domain([0, 1]) },
+    radius: { scale: scaleLinear().domain([0, top]) },
+  };
+  const radiusRatio = tile ? TILE_RATIO : HERO_RATIO;
+  const spokes = rows.map((_, index) => ({ id: `spoke:${String(index)}`, turn: index / count }));
+  const ringLabels = rings.map((value, index) => ({
+    id: `ring:${String(index)}`,
+    turn: 0.5 / count,
+    radius: value * Math.cos(Math.PI / count),
+    text: amount(value, unit),
+  }));
   return defineChart({
+    motion: { path: "morph" },
     marks: [
-      polar({
-        radiusRatio: tile ? TILE_RATIO : HERO_RATIO,
-        scales: {
-          angle: { scale: scalePoint().domain(axes), wrap: true },
-          radius: { scale: scaleLinear().domain([0, top]) },
-        },
-        guides: [
-          radialGrid({
-            values: rings,
-            shape: "polygon",
-            stroke: "var(--radar-grid)",
-            labels: !tile,
-            labelAngle: Math.PI / Math.max(1, axes.length),
-            format: (value) => amount(Number(value), unit),
-          }),
-          angleGrid({ labels: false, stroke: "var(--radar-grid)" }),
-        ],
-        marks: [
-          ...series.map((cubePoints, cube) =>
-            radialArea(cubePoints, {
-              id: `area-${String(cube)}`,
-              className: `radar-cube radar-cube-${String(cube)}`,
-              angle: "axis",
-              radius: "value",
+      decorative(
+        polar({
+          id: "paint",
+          radiusRatio,
+          scales,
+          marks: [
+            radialRule(spokes, {
+              id: "spokes",
+              angle: "turn",
+              radius2: top,
+              key: "id",
+              stroke: "var(--radar-grid)",
+            }),
+            ...rings.map((value, index) =>
+              radialLine(
+                traced(
+                  `ring:${String(index)}`,
+                  rows.map(() => value),
+                ),
+                {
+                  id: `ring-${String(index)}`,
+                  angle: "turn",
+                  radius: "radius",
+                  key: "id",
+                  curve: curveLinearClosed,
+                  stroke: "var(--radar-grid)",
+                  strokeWidth: 1,
+                },
+              ),
+            ),
+            ...vertices.map((points, cube) =>
+              radialArea(
+                traced(
+                  `cube:${String(cube)}`,
+                  points.map((vertex) => vertex.value),
+                ),
+                {
+                  id: `area-${String(cube)}`,
+                  className: `radar-cube radar-cube-${String(cube)}`,
+                  angle: "turn",
+                  radius: "radius",
+                  key: "id",
+                  curve: curveLinearClosed,
+                  fill: cubes[cube]?.hue ?? "currentColor",
+                  fillOpacity: 0.16,
+                  stroke: cubes[cube]?.hue ?? "currentColor",
+                  strokeWidth: tile ? 1.5 : 2,
+                },
+              ),
+            ),
+            radialLine(traced("mean", means), {
+              id: "mean",
+              className: "radar-mean",
+              angle: "turn",
+              radius: "radius",
               key: "id",
               curve: curveLinearClosed,
-              fill: cubes[cube]?.hue ?? "currentColor",
-              fillOpacity: 0.16,
-              stroke: cubes[cube]?.hue ?? "currentColor",
-              strokeWidth: tile ? 1.5 : 2,
+              stroke: "var(--fg)",
+              strokeWidth: 1.4,
+              strokeDasharray: "4 4",
             }),
-          ),
-          radialLine(means, {
-            id: "mean",
-            className: "radar-mean",
-            angle: "axis",
+            ...vertices.map((points, cube) =>
+              radialDot(
+                points.filter((vertex) => Math.abs(vertex.delta) >= OUTLIER),
+                {
+                  id: `outliers-${String(cube)}`,
+                  className: `radar-cube radar-cube-${String(cube)}`,
+                  angle: "turn",
+                  radius: "value",
+                  key: "id",
+                  r: tile ? 3 : 5,
+                  fill: cubes[cube]?.hue ?? "currentColor",
+                  stroke: "var(--panel)",
+                  strokeWidth: 2,
+                },
+              ),
+            ),
+            ...(tile
+              ? []
+              : [
+                  radialText(ringLabels, {
+                    id: "ring-labels",
+                    angle: "turn",
+                    radius: "radius",
+                    key: "id",
+                    text: "text",
+                    fill: "var(--muted)",
+                    fontSize: RING_FONT,
+                    anchor: "middle",
+                    baseline: "middle",
+                  }),
+                ]),
+          ],
+        }),
+      ),
+      polar({
+        id: "focus",
+        radiusRatio,
+        scales,
+        marks: vertices.map((points, cube) =>
+          radialDot(points, {
+            id: `vertices-${String(cube)}`,
+            angle: "turn",
             radius: "value",
             key: "id",
-            curve: curveLinearClosed,
-            stroke: "var(--fg)",
-            strokeWidth: 1.4,
-            strokeDasharray: "4 4",
+            r: tile ? 3 : 5,
+            opacity: 0,
           }),
-          ...series.map((cubePoints, cube) =>
-            radialDot(
-              cubePoints.filter((point) => Math.abs(point.delta) >= OUTLIER),
-              {
-                id: `outliers-${String(cube)}`,
-                className: `radar-cube radar-cube-${String(cube)}`,
-                angle: "axis",
-                radius: "value",
-                key: "id",
-                r: tile ? 3 : 5,
-                fill: cubes[cube]?.hue ?? "currentColor",
-                stroke: "var(--panel)",
-                strokeWidth: 2,
-              },
-            ),
-          ),
-        ],
+        ),
       }),
     ],
     scales: { x: null, y: null },

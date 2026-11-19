@@ -171,6 +171,19 @@
 .cubes-radar-labels li {
   position: absolute;
   transform: translate(-50%, -50%);
+  animation: cubes-label-in 0.35s ease both;
+}
+
+@keyframes cubes-label-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cubes-radar-labels li {
+    animation: none;
+  }
 }
 
 .cubes-radar-labels li[data-side="right"] {

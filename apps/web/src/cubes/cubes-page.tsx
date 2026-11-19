@@ -27,6 +27,7 @@ import {
   hueOf,
   isEmpty,
   radarIds,
+  spread,
 } from "./model.ts";
 import { RadarHero, RadarTile } from "./radar.tsx";
 import type { Section } from "./rows.tsx";
@@ -83,7 +84,7 @@ export function CubesPage(): ReactNode {
   );
   const [tab, setTab] = useRemembered<PanelTab>("cubes.panel", "gaps", z.enum(["pinned", "gaps"]));
   const [hover, setHover] = useState<string | undefined>(undefined);
-  const [last, setLast] = useState<string | undefined>(undefined);
+  const [source, setSource] = useState<"radar" | "panel">("radar");
   const [hot, setHot] = useState<number | undefined>(undefined);
   const list = mode.useCubeList?.();
   const all = list
@@ -149,7 +150,17 @@ export function CubesPage(): ReactNode {
     : rowsOf(stage.rows.map((row) => row.id)).filter((row) => !isEmpty(row));
   const radarable = stageIds.length >= MIN_AXES;
   const cubes = columns.map((column, index) => ({ name: column.cube.name, hue: hueOf(index) }));
-  const inspected = hover ?? last ?? pins[0];
+  const resting = rowsOf(stageIds).toSorted((a, b) => spread(b) - spread(a))[0]?.id ?? pins[0];
+  const inspected = hover ?? resting;
+  const intent = hover !== undefined && source === "radar" ? (pinSet.has(hover) ? -1 : 1) : 0;
+  const caption =
+    hover === undefined
+      ? `Biggest gap in ${stage.title}`
+      : source === "panel"
+        ? "Click to open its section"
+        : intent > 0
+          ? "Click to pin to Custom"
+          : "Click to unpin from Custom";
   const toggle = (dir: string, on: boolean): void => {
     setChoice({
       ...choice,
@@ -162,14 +173,13 @@ export function CubesPage(): ReactNode {
   ).slice(0, GAP_LIST);
   const sectionOf = (id: string): string | undefined =>
     sections.find((section) => section.rows.some((row) => row.id === id))?.key;
-  const inspect = (axis: string | undefined): void => {
-    setHover(axis);
-    if (axis !== undefined) {
-      setLast(axis);
-    }
-  };
+  const inspectFrom =
+    (from: "radar" | "panel") =>
+    (axis: string | undefined): void => {
+      setHover(axis);
+      setSource(from);
+    };
   const goTo = (id: string): void => {
-    setLast(id);
     if (!(isCustom && pinSet.has(id))) {
       setSectionKey(sectionOf(id) ?? stage.key);
     }
@@ -291,7 +301,7 @@ export function CubesPage(): ReactNode {
                   mixed={isCustom}
                   pins={pinSet}
                   hover={hover}
-                  onAxis={inspect}
+                  onAxis={inspectFrom("radar")}
                   onPin={togglePin}
                   onHotCube={setHot}
                 />
@@ -319,6 +329,7 @@ export function CubesPage(): ReactNode {
                     type="button"
                     className="cubes-tile"
                     data-custom={section.key === CUSTOM ? "" : undefined}
+                    data-target={section.key === CUSTOM && intent !== 0 ? "" : undefined}
                     data-holds={
                       hover !== undefined &&
                       section.key !== stage.key &&
@@ -337,7 +348,7 @@ export function CubesPage(): ReactNode {
                       <strong>{section.title}</strong>
                       <small>
                         {section.key === CUSTOM
-                          ? `${String(pins.length)} pins`
+                          ? `${String(pins.length)} pins${intent > 0 ? " +1" : intent < 0 ? " −1" : ""}`
                           : `${String(gapCount(tile))} gaps`}
                       </small>
                     </span>
@@ -368,7 +379,8 @@ export function CubesPage(): ReactNode {
               hover={hover}
               tab={tab}
               onTab={setTab}
-              onHover={inspect}
+              caption={caption}
+              onHover={inspectFrom("panel")}
               onGo={goTo}
               onPin={togglePin}
             />

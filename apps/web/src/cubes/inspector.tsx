@@ -1,5 +1,6 @@
 import type { CompareUnit, GroupRow, Standout } from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
+import { PinIcon } from "../icons.tsx";
 import type { Column } from "./model.ts";
 import { OUTLIER, PERCENT, gapLabel, hueOf, percent, spread } from "./model.ts";
 import type { StatRow } from "./rows.tsx";
@@ -274,15 +275,15 @@ export function Inspector({
                 <Gap delta={gap.delta} />
                 <button
                   type="button"
-                  className="cubes-unpin"
+                  className="cubes-pin"
                   aria-pressed={pinSet.has(gap.id)}
                   aria-label={`${pinSet.has(gap.id) ? "Unpin" : "Pin"} ${spec?.label ?? gap.id}`}
-                  title={pinSet.has(gap.id) ? "Unpin" : "Pin to Custom"}
+                  title={pinSet.has(gap.id) ? "Unpin from Custom" : "Pin to Custom"}
                   onClick={() => {
                     onPin(gap.id);
                   }}
                 >
-                  {pinSet.has(gap.id) ? "●" : "○"}
+                  <PinIcon />
                 </button>
               </li>
             );

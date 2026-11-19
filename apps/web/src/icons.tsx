@@ -24,6 +24,16 @@ export function PlusIcon(): ReactNode {
   );
 }
 
+export function PinIcon(): ReactNode {
+  return (
+    <Icon size={16}>
+      <path className="pin-head" d="M9 3h6l-1 6 3 3v2H7v-2l3-3z" />
+      <path d="M12 14v7" />
+      <path className="pin-slash" d="M4 4l16 16" />
+    </Icon>
+  );
+}
+
 export function ChevronDownIcon(): ReactNode {
   return (
     <Icon size={18}>

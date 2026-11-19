@@ -25,7 +25,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Tag matches the app version
         run: test "v$(node -p 'require("./apps/desktop/package.json").version')" = "$GITHUB_REF_NAME"
-      - name: Build and upload to a draft release
+      - name: Create the draft release
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "${GITHUB_REF_NAME#v}" --notes-file .github/release-notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and upload to the draft
         run: |
           pnpm turbo run build --filter=@repo/desktop
           pnpm --filter @repo/desktop package:publish
@@ -33,7 +37,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check the app's seal
         run: codesign --verify --deep --strict --verbose=2 "apps/desktop/release/mac-arm64/Cube Goblin.app"
+      - name: Check the draft holds every file
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases" --jq "[.[] | select(.tag_name == \"$GITHUB_REF_NAME\")] | length" | grep -qx 1
+          for name in Cube-Goblin-arm64.dmg Cube-Goblin-arm64.zip latest-mac.yml; do
+            gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -qx "$name"
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish as latest
-        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest --notes-file .github/release-notes.md
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

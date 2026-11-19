@@ -256,14 +256,6 @@
   background: color-mix(in oklab, var(--accent) 14%, var(--bg));
 }
 
-.cubes-radar-labels button[aria-pressed="true"]::before {
-  width: 6px;
-  height: 6px;
-  content: "";
-  background: var(--accent);
-  border-radius: 50%;
-}
-
 .cubes-stage-empty {
   align-self: center;
   justify-self: center;
@@ -823,17 +815,14 @@
   align-items: center;
 }
 
-.cubes-label-intent {
+.cubes-label-pin {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: -9px;
+  right: -9px;
   display: grid;
   place-items: center;
-  width: 17px;
-  height: 17px;
-  font-size: var(--fs-sm);
-  font-weight: 800;
-  line-height: 1;
+  width: 19px;
+  height: 19px;
   color: var(--bg);
   pointer-events: none;
   background: var(--keep);
@@ -843,16 +832,62 @@
   transform: scale(0.5);
   transition:
     opacity 0.12s ease,
-    transform 0.12s ease;
+    transform 0.12s ease,
+    background-color 0.12s ease;
 }
 
-.cubes-radar-labels button[data-intent] .cubes-label-intent {
+.cubes-label-pin svg {
+  transform: rotate(35deg);
+  transition: transform 0.18s var(--lift);
+}
+
+.cubes-label-pin .pin-head {
+  fill: transparent;
+  transition: fill 0.12s ease;
+}
+
+.cubes-label-pin .pin-slash {
+  stroke-dasharray: 23;
+  stroke-dashoffset: 23;
+  transition: stroke-dashoffset 0.18s ease;
+}
+
+.cubes-radar-labels button[aria-pressed="true"]:not(:has(.cubes-label-index)) .cubes-label-pin,
+.cubes-radar-labels button[data-intent] .cubes-label-pin {
   opacity: 1;
   transform: scale(1);
 }
 
-.cubes-radar-labels button[aria-pressed="true"] .cubes-label-intent {
+.cubes-radar-labels button[aria-pressed="true"] .cubes-label-pin {
+  background: var(--accent);
+}
+
+.cubes-radar-labels button[aria-pressed="true"] .cubes-label-pin svg,
+.cubes-radar-labels button[data-intent] .cubes-label-pin svg {
+  transform: rotate(0deg);
+}
+
+.cubes-radar-labels button[aria-pressed="true"] .cubes-label-pin .pin-head {
+  fill: currentColor;
+}
+
+.cubes-radar-labels button[aria-pressed="true"][data-intent] .cubes-label-pin {
   background: var(--cut);
+}
+
+.cubes-radar-labels button[aria-pressed="true"][data-intent] .cubes-label-pin .pin-head {
+  fill: transparent;
+}
+
+.cubes-radar-labels button[aria-pressed="true"][data-intent] .cubes-label-pin .pin-slash {
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cubes-label-pin svg,
+  .cubes-label-pin .pin-slash {
+    transition: none;
+  }
 }
 
 .cubes-tile-delta {
@@ -901,8 +936,4 @@
 
 .cubes-tile[data-target] .cubes-tile-head small {
   color: var(--accent);
-}
-
-.cubes-radar-labels button:has(.cubes-label-index)::before {
-  display: none;
 }

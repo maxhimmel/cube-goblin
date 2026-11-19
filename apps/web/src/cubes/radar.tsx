@@ -15,6 +15,7 @@ import { scaleLinear } from "@tanstack/charts/scales/linear";
 import { curveLinearClosed } from "d3-shape";
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { PinIcon } from "../icons.tsx";
 import { CHART_MOTION, usePlotHeight } from "../insights/charts.tsx";
 import { OUTLIER, PERCENT } from "./model.ts";
 import type { OutlinePoint } from "./outline.ts";
@@ -379,8 +380,8 @@ export function RadarHero({
                 {spec?.icon}
                 <span className={spec?.iconOnly ? "sr-only" : undefined}>{label}</span>
                 {mixed && spec && <small>{spec.section}</small>}
-                <span className="cubes-label-intent" aria-hidden="true">
-                  {pinned ? "−" : "+"}
+                <span className="cubes-label-pin" aria-hidden="true">
+                  <PinIcon size={12} />
                 </span>
               </button>
             </li>

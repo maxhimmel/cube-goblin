@@ -147,7 +147,7 @@ test("the renderer is sandboxed and gets only the desktop bridge", async ({ desk
     process: typeof (window as { process?: unknown }).process,
   }));
   expect(exposed).toEqual({
-    bridge: ["onCubeChanged", "openFolder"],
+    bridge: ["onCubeChanged", "openFolder", "newerRelease", "openDownload"],
     require: "undefined",
     process: "undefined",
   });

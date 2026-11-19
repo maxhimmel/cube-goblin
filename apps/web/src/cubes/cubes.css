@@ -852,7 +852,7 @@
   transition: stroke-dashoffset 0.18s ease;
 }
 
-.cubes-radar-labels button[aria-pressed="true"]:not(:has(.cubes-label-index)) .cubes-label-pin,
+.cubes-radar-labels button[aria-pressed="true"] .cubes-label-pin,
 .cubes-radar-labels button[data-intent] .cubes-label-pin {
   opacity: 1;
   transform: scale(1);
@@ -897,24 +897,6 @@
 
 .cubes-tile-delta[data-dir="unpin"] {
   color: var(--cut);
-}
-
-.cubes-label-index {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.35em;
-  height: 1.35em;
-  padding: 0 3px;
-  font-size: var(--fs-2xs);
-  font-weight: 800;
-  color: var(--on-accent);
-  background: var(--accent);
-  border-radius: 99px;
-}
-
-.cubes-radar-labels button[data-hover] .cubes-label-index {
-  color: var(--accent);
-  background: var(--on-accent);
 }
 
 .cubes-caption {

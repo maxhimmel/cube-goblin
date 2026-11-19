@@ -8,11 +8,9 @@ This file is the order of work and the session handoff. Each ticket is a file in
 - **State**: `main` has the editing workbench and share doc; each view and the ticket behind it are in [views.md](design/views.md), and what each ticket built is in its Built notes under Done. Latest: **v0.1.1 released** ([T-064](tickets/T-064-public-repo-and-releases.md)): `pnpm release`, a tag workflow, update notice, README. Before that: compare cubes ([T-065](tickets/T-065-compare-cubes.md)), cross-origin gate ([T-062](tickets/T-062-cross-origin-gate.md)), import and export ([T-059](tickets/T-059-import-export-formats.md)), offline ([T-058](tickets/T-058-offline.md)), multiple cubes ([T-057](tickets/T-057-multiple-cubes.md)) in the desktop app ([T-056](tickets/T-056-desktop-app.md)). Agents drive the desktop app hidden (`cube:workbench-testing`). Merges run the full `pnpm check`, then `pnpm tidy` ([session-timing.md](research/session-timing.md)). Gaps, incl. e2e flakes: [T-042](tickets/T-042-known-gaps.md).
 - **Polish pass done** ([T-043](tickets/T-043-polish-pass.md)): papercuts ([T-044](tickets/T-044-papercuts.md)), top bar and settings ([T-045](tickets/T-045-top-bar-and-settings.md)), **Forge** at `#/` ([T-046](tickets/T-046-wall-and-lab.md), [T-052](tickets/T-052-forge-polish.md), [T-053](tickets/T-053-forge-charts-polish.md)), one **Tags** view ([T-047](tickets/T-047-tag-workspace.md)), History ([T-048](tickets/T-048-history.md)), Insights cut to the deep charts ([T-049](tickets/T-049-insights-trim.md)), favicon, Forge's look shared by every view (drag stipple and tile actions included), and a dev-only type scale panel ("Aa", bottom left in `pnpm dev`) ([T-050](tickets/T-050-visual-system.md)).
 - **Review round trip** ([T-051](tickets/T-051-share-doc-suggestions.md)): reviews carry pending moves; each export saves a version as their base; share top bar has one Review menu.
-- **Next step**: install flow verified on this Mac; friend installs v0.1.1 from the README's Install steps and confirms (M3 Mac, [T-063](tickets/T-063-ship-desktop-app.md)); then [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md).
+- **Next step**: Cube Goblin v0.1.1 shipped ([T-063](tickets/T-063-ship-desktop-app.md)); next [T-054](tickets/T-054-reviews-view.md), [T-055](tickets/T-055-forge-overlay.md).
 
 ## Now
-
-- [T-063: Ship the desktop app to a friend](tickets/T-063-ship-desktop-app.md)
 
 ## Next
 
@@ -30,6 +28,7 @@ This file is the order of work and the session handoff. Each ticket is a file in
 
 ## Done
 
+- [T-063: Ship the desktop app to a friend](tickets/T-063-ship-desktop-app.md)
 - [T-064: Public repo, releases, and README](tickets/T-064-public-repo-and-releases.md)
 - [T-065: Compare cubes](tickets/T-065-compare-cubes.md)
 - [T-062: Cross-origin gate on every route](tickets/T-062-cross-origin-gate.md)

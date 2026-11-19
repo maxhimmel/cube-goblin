@@ -346,7 +346,7 @@ export function RadarHero({
       }}
     >
       <ol ref={labels} className="cubes-radar-labels" aria-label={`${title} spokes`}>
-        {rows.map((row, index) => {
+        {rows.map((row) => {
           const spec = specs.get(row.id);
           const label = spec?.label ?? row.id;
           const pinned = pins.has(row.id);
@@ -376,7 +376,6 @@ export function RadarHero({
                   onPin(row.id);
                 }}
               >
-                {mixed && <b className="cubes-label-index">{index + 1}</b>}
                 {spec?.icon}
                 <span className={spec?.iconOnly ? "sr-only" : undefined}>{label}</span>
                 {mixed && spec && <small>{spec.section}</small>}

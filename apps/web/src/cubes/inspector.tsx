@@ -196,7 +196,7 @@ export function Inspector({
           </p>
         ) : (
           <ul className="cubes-list" aria-label="Pinned spokes">
-            {pins.map((id, index) => {
+            {pins.map((id) => {
               const spec = specs.get(id);
               const best = bestCell(rowOf.get(id));
               return (
@@ -209,7 +209,6 @@ export function Inspector({
                       onGo(id);
                     }}
                   >
-                    <b className="cubes-label-index">{index + 1}</b>
                     <SpokeName spec={spec} id={id} />
                   </button>
                   {best && Math.abs(best.delta) >= OUTLIER ? (

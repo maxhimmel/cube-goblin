@@ -520,15 +520,6 @@
   color: var(--fg);
 }
 
-.cubes-unpin {
-  padding: 0 4px;
-  font: inherit;
-  color: var(--muted);
-  cursor: pointer;
-  background: none;
-  border: 0;
-}
-
 .cubes-hint {
   margin: 0;
   font-size: var(--fs-xs);

@@ -224,13 +224,15 @@ export function Inspector({
                   )}
                   <button
                     type="button"
-                    className="cubes-unpin"
+                    className="cubes-pin"
+                    aria-pressed="true"
                     aria-label={`Unpin ${spec?.label ?? id}`}
+                    title="Unpin from Custom"
                     onClick={() => {
                       onPin(id);
                     }}
                   >
-                    ×
+                    <PinIcon />
                   </button>
                 </li>
               );

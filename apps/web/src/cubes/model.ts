@@ -1,6 +1,5 @@
 import type { GroupRow, StatCard } from "@repo/cube/browser";
 import type { CubeRef } from "@repo/server/events";
-import type { StatRow } from "./rows.tsx";
 
 export const OUTLIER = 0.05;
 export const PERCENT = 100;
@@ -8,7 +7,6 @@ export const MAX_AXES = 8;
 export const MIN_AXES = 3;
 export const DEFAULT_PINS = 5;
 const CUBE_HUE_COUNT = 6;
-const TELLS = 2;
 
 export interface Column {
   cube: CubeRef;
@@ -66,47 +64,4 @@ export function defaultPins(rowOf: ReadonlyMap<string, GroupRow>): string[] {
     .toSorted((a, b) => spread(b) - spread(a))
     .slice(0, DEFAULT_PINS)
     .map((row) => row.id);
-}
-
-export interface Tell {
-  cube: number;
-  nouns: string[];
-}
-
-export function tells(
-  columns: readonly Column[],
-  rowOf: ReadonlyMap<string, GroupRow>,
-  specs: ReadonlyMap<string, StatRow>,
-): Tell[] {
-  return columns.map((_, cube) => ({
-    cube,
-    nouns: [...rowOf.values()]
-      .flatMap((row) => {
-        const delta = row.cells[cube]?.delta ?? 0;
-        const noun = specs.get(row.id)?.noun;
-        return delta >= OUTLIER && noun !== undefined ? [{ noun, delta }] : [];
-      })
-      .toSorted((a, b) => b.delta - a.delta)
-      .slice(0, TELLS)
-      .map((entry) => entry.noun),
-  }));
-}
-
-export interface Biggest {
-  cube: number;
-  id: string;
-  share: number;
-  delta: number;
-}
-
-export function biggestGap(rowOf: ReadonlyMap<string, GroupRow>): Biggest | undefined {
-  let best: Biggest | undefined;
-  for (const row of rowOf.values()) {
-    row.cells.forEach((cell, cube) => {
-      if (best === undefined || Math.abs(cell.delta) > Math.abs(best.delta)) {
-        best = { cube, id: row.id, share: cell.share, delta: cell.delta };
-      }
-    });
-  }
-  return best && Math.abs(best.delta) >= OUTLIER ? best : undefined;
 }

@@ -6,6 +6,7 @@ import {
   groupAverage,
   inCompareScope,
   poolTags,
+  standouts,
 } from "@repo/cube/browser";
 import type { CubeRef } from "@repo/server/events";
 import type { CSSProperties, ReactNode } from "react";
@@ -14,23 +15,21 @@ import { z } from "zod";
 import { Segmented } from "../forge/toolbar.tsx";
 import type { OtherCube } from "../modes/mode.ts";
 import { useRemembered } from "../view-choices.ts";
+import type { PanelTab } from "./inspector.tsx";
 import { Inspector } from "./inspector.tsx";
 import type { Column } from "./model.ts";
 import {
   MIN_AXES,
   OUTLIER,
   PERCENT,
-  biggestGap,
   defaultPins,
   gapCount,
   hueOf,
   isEmpty,
-  percent,
   radarIds,
-  tells,
 } from "./model.ts";
 import { RadarHero, RadarTile } from "./radar.tsx";
-import type { Section, StatRow } from "./rows.tsx";
+import type { Section } from "./rows.tsx";
 import { CUSTOM, FIXED_SECTIONS, tagSection } from "./rows.tsx";
 import { SectionTable } from "./table.tsx";
 
@@ -60,53 +59,13 @@ const UNIT_LABEL: Record<CompareUnit, string> = {
 
 type StageView = "radar" | "table";
 
+const GAP_LIST = 12;
+
 function statusLine(cube: CubeRef, state: OtherCube | undefined): string | undefined {
   if (state?.status === "failed") {
     return `Couldn't load ${cube.name}: ${state.error}`;
   }
   return state?.status === "loading" ? `Loading ${cube.name}…` : undefined;
-}
-
-function Who({ columns, cube }: { columns: readonly Column[]; cube: number }): ReactNode {
-  return (
-    <span className="cubes-who" style={{ "--hue": hueOf(cube) } as CSSProperties}>
-      {columns[cube]?.cube.name}
-    </span>
-  );
-}
-
-function Lede({
-  columns,
-  rowOf,
-  specs,
-}: {
-  columns: readonly Column[];
-  rowOf: ReadonlyMap<string, GroupRow>;
-  specs: ReadonlyMap<string, StatRow>;
-}): ReactNode {
-  const all = tells(columns, rowOf, specs);
-  const biggest = biggestGap(rowOf);
-  const noun = biggest ? specs.get(biggest.id)?.noun : undefined;
-  return (
-    <p className="cubes-lede">
-      {all.map((tell, index) => (
-        <span key={tell.cube}>
-          <Who columns={columns} cube={tell.cube} />
-          {tell.nouns.length === 0
-            ? " sits near the average"
-            : ` leans on ${tell.nouns.join(" and ")}`}
-          {index < all.length - 1 ? "; " : ". "}
-        </span>
-      ))}
-      {biggest && noun !== undefined && (
-        <span className="cubes-muted">
-          Biggest gap: {columns[biggest.cube]?.cube.name}&apos;s {noun}, {percent(biggest.share)},{" "}
-          {String(Math.round(Math.abs(biggest.delta) * PERCENT))} points{" "}
-          {biggest.delta > 0 ? "over" : "under"} the average.
-        </span>
-      )}
-    </p>
-  );
 }
 
 export function CubesPage(): ReactNode {
@@ -122,6 +81,7 @@ export function CubesPage(): ReactNode {
     "radar",
     z.enum(["radar", "table"]),
   );
+  const [tab, setTab] = useRemembered<PanelTab>("cubes.panel", "gaps", z.enum(["pinned", "gaps"]));
   const [hover, setHover] = useState<string | undefined>(undefined);
   const [last, setLast] = useState<string | undefined>(undefined);
   const [hot, setHot] = useState<number | undefined>(undefined);
@@ -196,6 +156,24 @@ export function CubesPage(): ReactNode {
       off: on ? choice.off.filter((other) => other !== dir) : [...choice.off, dir],
     });
   };
+  const gaps = standouts(
+    [...rowOf.values()].filter((row) => !isEmpty(row)),
+    OUTLIER,
+  ).slice(0, GAP_LIST);
+  const sectionOf = (id: string): string | undefined =>
+    sections.find((section) => section.rows.some((row) => row.id === id))?.key;
+  const inspect = (axis: string | undefined): void => {
+    setHover(axis);
+    if (axis !== undefined) {
+      setLast(axis);
+    }
+  };
+  const goTo = (id: string): void => {
+    setLast(id);
+    if (!(isCustom && pinSet.has(id))) {
+      setSectionKey(sectionOf(id) ?? stage.key);
+    }
+  };
   const columnOf = (dir: string): number => columns.findIndex((column) => column.cube.dir === dir);
   const enough = all.length >= 2 && ready.length >= 2;
   const note = isCustom
@@ -241,23 +219,6 @@ export function CubesPage(): ReactNode {
           <i />
           Average
         </span>
-        <span className="cubes-grow" />
-        <Segmented
-          label="Cards"
-          options={COMPARE_SCOPES.map((id) => ({ id, label: SCOPE_LABEL[id] }))}
-          value={choice.scope}
-          onChange={(scope) => {
-            setChoice({ ...choice, scope });
-          }}
-        />
-        <Segmented
-          label="Numbers"
-          options={COMPARE_UNITS.map((id) => ({ id, label: UNIT_LABEL[id] }))}
-          value={choice.unit}
-          onChange={(unit) => {
-            setChoice({ ...choice, unit });
-          }}
-        />
       </header>
       {picked.map((cube, index) => {
         const line = statusLine(cube, states[index]);
@@ -275,7 +236,6 @@ export function CubesPage(): ReactNode {
         </p>
       ) : (
         <>
-          <Lede columns={columns} rowOf={rowOf} specs={specs} />
           <div className="cubes-body">
             <section className="cubes-stage" aria-label={stage.title}>
               <header>
@@ -285,15 +245,33 @@ export function CubesPage(): ReactNode {
                     {note}. {stage.blurb}
                   </p>
                 </div>
-                <Segmented
-                  label={`Show ${stage.title} as`}
-                  options={[
-                    { id: "radar", label: "Radar" },
-                    { id: "table", label: "Table" },
-                  ]}
-                  value={view}
-                  onChange={setView}
-                />
+                <div className="cubes-stage-tools">
+                  <Segmented
+                    label="Cards"
+                    options={COMPARE_SCOPES.map((id) => ({ id, label: SCOPE_LABEL[id] }))}
+                    value={choice.scope}
+                    onChange={(scope) => {
+                      setChoice({ ...choice, scope });
+                    }}
+                  />
+                  <Segmented
+                    label="Numbers"
+                    options={COMPARE_UNITS.map((id) => ({ id, label: UNIT_LABEL[id] }))}
+                    value={choice.unit}
+                    onChange={(unit) => {
+                      setChoice({ ...choice, unit });
+                    }}
+                  />
+                  <Segmented
+                    label={`Show ${stage.title} as`}
+                    options={[
+                      { id: "radar", label: "Radar" },
+                      { id: "table", label: "Table" },
+                    ]}
+                    value={view}
+                    onChange={setView}
+                  />
+                </div>
               </header>
               {view === "table" ? (
                 <SectionTable
@@ -313,12 +291,7 @@ export function CubesPage(): ReactNode {
                   mixed={isCustom}
                   pins={pinSet}
                   hover={hover}
-                  onAxis={(axis) => {
-                    setHover(axis);
-                    if (axis !== undefined) {
-                      setLast(axis);
-                    }
-                  }}
+                  onAxis={inspect}
                   onPin={togglePin}
                   onHotCube={setHot}
                 />
@@ -346,6 +319,15 @@ export function CubesPage(): ReactNode {
                     type="button"
                     className="cubes-tile"
                     data-custom={section.key === CUSTOM ? "" : undefined}
+                    data-holds={
+                      hover !== undefined &&
+                      section.key !== stage.key &&
+                      (section.key === CUSTOM
+                        ? pinSet.has(hover)
+                        : section.rows.some((row) => row.id === hover))
+                        ? ""
+                        : undefined
+                    }
                     aria-pressed={section.key === stage.key}
                     onClick={() => {
                       setSectionKey(section.key);
@@ -382,13 +364,13 @@ export function CubesPage(): ReactNode {
               columns={columns}
               unit={choice.unit}
               pins={pins}
+              gaps={gaps}
               hover={hover}
-              onInspect={(axis) => {
-                if (axis !== undefined) {
-                  setLast(axis);
-                }
-              }}
-              onUnpin={togglePin}
+              tab={tab}
+              onTab={setTab}
+              onHover={inspect}
+              onGo={goTo}
+              onPin={togglePin}
             />
           </div>
         </>

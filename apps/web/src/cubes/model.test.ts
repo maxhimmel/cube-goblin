@@ -1,8 +1,6 @@
 import type { GroupRow } from "@repo/cube/browser";
 import { describe, expect, it } from "vitest";
-import type { Column } from "./model.ts";
-import { biggestGap, defaultPins, gapCount, gapLabel, radarIds, tells } from "./model.ts";
-import type { StatRow } from "./rows.tsx";
+import { defaultPins, gapCount, gapLabel, radarIds } from "./model.ts";
 
 function row(id: string, shares: number[]): GroupRow {
   const mean = shares.reduce((sum, share) => sum + share, 0) / shares.length;
@@ -21,14 +19,6 @@ const rows = [
   row("e", [0.3, 0.32]),
 ];
 const rowOf = new Map(rows.map((entry) => [entry.id, entry]));
-const columns = [{ cube: { name: "One" } }, { cube: { name: "Two" } }] as unknown as Column[];
-const specs = new Map<string, StatRow>(
-  rows.map((entry) => [
-    entry.id,
-    { id: entry.id, label: entry.id, noun: `${entry.id}s`, section: "S" },
-  ]),
-);
-
 describe("cubes model", () => {
   it("drops empty spokes and keeps the widest gaps when a section has too many", () => {
     expect(radarIds(["a", "b", "c", "d"], rowOf)).toEqual(["a", "b", "d"]);
@@ -53,12 +43,8 @@ describe("cubes model", () => {
     expect(gapCount(rows)).toBe(2);
   });
 
-  it("names each cube's top tells and the single biggest gap", () => {
-    expect(tells(columns, rowOf, specs)).toEqual([
-      { cube: 0, nouns: ["as"] },
-      { cube: 1, nouns: ["ds"] },
-    ]);
-    expect(biggestGap(rowOf)).toMatchObject({ cube: 0, id: "a", delta: 0.2 });
+  it("labels a gap with its sign", () => {
     expect(gapLabel(-0.07)).toBe("−7");
+    expect(gapLabel(0.21)).toBe("+21");
   });
 });

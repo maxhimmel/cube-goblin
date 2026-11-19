@@ -114,6 +114,7 @@ export interface InspectorProps {
   pins: readonly string[];
   gaps: readonly Standout[];
   hover: string | undefined;
+  caption: string;
   tab: PanelTab;
   onTab: (tab: PanelTab) => void;
   onHover: (axis: string | undefined) => void;
@@ -130,6 +131,7 @@ export function Inspector({
   pins,
   gaps,
   hover,
+  caption,
   tab,
   onTab,
   onHover,
@@ -155,6 +157,9 @@ export function Inspector({
   return (
     <aside className="cubes-inspector" aria-label="Inspector">
       <section className="cubes-detail" aria-label="Spoke detail">
+        <p className="cubes-caption" data-hovering={hover === undefined ? undefined : ""}>
+          {caption}
+        </p>
         {row ? (
           <SpokeCard row={row} spec={specs.get(row.id)} columns={columns} unit={unit} />
         ) : (
@@ -190,7 +195,7 @@ export function Inspector({
           </p>
         ) : (
           <ul className="cubes-list" aria-label="Pinned spokes">
-            {pins.map((id) => {
+            {pins.map((id, index) => {
               const spec = specs.get(id);
               const best = bestCell(rowOf.get(id));
               return (
@@ -203,6 +208,7 @@ export function Inspector({
                       onGo(id);
                     }}
                   >
+                    <b className="cubes-label-index">{index + 1}</b>
                     <SpokeName spec={spec} id={id} />
                   </button>
                   {best && Math.abs(best.delta) >= OUTLIER ? (

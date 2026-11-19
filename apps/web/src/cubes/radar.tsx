@@ -26,6 +26,7 @@ const COUNT_STEPS = [1, 2, 5, 10, 20, 25, 50, 100];
 const MAX_RINGS = 5;
 const LABEL_GAP = 16;
 const SIDE_LIMIT = 0.2;
+const VERT_LIMIT = 0.75;
 
 export interface RadarCube {
   name: string;
@@ -251,6 +252,9 @@ export function RadarHero({
         const angle = (index / Math.max(1, count)) * Math.PI * 2;
         element.style.left = `${String(cx + Math.sin(angle) * reach)}px`;
         element.style.top = `${String(cy - Math.cos(angle) * reach)}px`;
+        const rise = Math.cos(angle);
+        element.dataset["vert"] =
+          rise > VERT_LIMIT ? "top" : rise < -VERT_LIMIT ? "bottom" : "middle";
         element.dataset["side"] =
           Math.abs(Math.sin(angle)) < SIDE_LIMIT
             ? "middle"
@@ -272,7 +276,7 @@ export function RadarHero({
       }}
     >
       <ol ref={labels} className="cubes-radar-labels" aria-label={`${title} spokes`}>
-        {rows.map((row) => {
+        {rows.map((row, index) => {
           const spec = specs.get(row.id);
           const label = spec?.label ?? row.id;
           const pinned = pins.has(row.id);
@@ -286,15 +290,25 @@ export function RadarHero({
                 onPointerEnter={() => {
                   onAxis(row.id);
                 }}
+                onPointerLeave={() => {
+                  onAxis(undefined);
+                }}
                 onFocus={() => {
                   onAxis(row.id);
+                }}
+                onBlur={() => {
+                  onAxis(undefined);
                 }}
                 onClick={() => {
                   onPin(row.id);
                 }}
               >
+                {mixed && <b className="cubes-label-index">{index + 1}</b>}
                 {spec?.icon}
                 <span className={spec?.iconOnly ? "sr-only" : undefined}>{label}</span>
+                <span className="cubes-label-intent" aria-hidden="true">
+                  {pinned ? "−" : "+"}
+                </span>
                 {mixed && spec && <small>{spec.section}</small>}
               </button>
             </li>
@@ -312,9 +326,7 @@ export function RadarHero({
           onFocusChange={(point) => {
             const datum = point?.datum;
             onHotCube(datum && "cube" in datum ? datum.cube : undefined);
-            if (datum) {
-              onAxis(datum.axis);
-            }
+            onAxis(datum?.axis);
           }}
           onSelect={(point) => {
             const datum = point?.datum;

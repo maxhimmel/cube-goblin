@@ -1,6 +1,6 @@
 {
   "name": "@repo/desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Desktop workbench for designing Magic: The Gathering cubes",
   "author": "Max Himmel",
   "private": true,

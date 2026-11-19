@@ -158,36 +158,55 @@ test("Forge compares the open cube with another cube on the recent list", async 
   await expect(creatures).toHaveAttribute("aria-label", /^Creatures: \d+$/u);
 });
 
-test("the Cubes view compares picked cubes with their average", async ({ web }) => {
+test("the Cubes view shows one radar, a section strip, and an inspector that keeps pins", async ({
+  web,
+}) => {
   const { page } = web;
   await addRival(web);
   await page.getByRole("link", { name: "Cubes" }).click();
-  const summary = page.getByRole("region", { name: "Summary" });
-  await expect(summary.getByRole("article", { name: "Rival Cube" })).toContainText("42%");
-  await expect(summary).toContainText("2 cubes side by side: Max's Cube (29), Rival Cube (12).");
-  await expect(
-    summary.getByRole("list", { name: "What stands out" }).getByRole("listitem").first(),
-  ).toContainText(/pts$/u);
-  const types = page.getByRole("region", { name: "Card types" });
-  await expect(
-    types.getByRole("img", { name: /^Card types: Max's Cube, Rival Cube/u }),
-  ).toBeVisible();
-  await page.getByRole("list", { name: "Legend" }).getByText("Rival Cube").hover();
+  await expect(page.locator(".cubes-lede")).toContainText("Rival Cube leans on");
+  await expect(page.getByRole("img", { name: /^Color: Max's Cube, Rival Cube/u })).toBeVisible();
+
+  const strip = page.getByRole("navigation", { name: "Sections" });
+  await strip.getByRole("button", { name: /^Card types/u }).click();
+  const stage = page.getByRole("region", { name: "Card types" });
+  await expect(stage.getByRole("img", { name: /^Card types:/u })).toBeVisible();
+
+  const spokes = page.getByRole("list", { name: "Card types spokes" });
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await spokes.getByRole("button", { name: /Instant$/u }).hover();
+  await expect(inspector.getByLabel("Inspecting Instant")).toContainText("Rival Cube42%");
+
+  const pinned = inspector.getByRole("list", { name: "Pinned spokes" }).getByRole("listitem");
+  const before = await pinned.count();
+  await spokes.getByRole("button", { name: /^Pin /u }).first().click();
+  await expect(pinned).toHaveCount(before + 1);
+  await inspector
+    .getByRole("button", { name: /^Unpin /u })
+    .last()
+    .click();
+  await expect(pinned).toHaveCount(before);
+
+  await page.getByRole("checkbox", { name: /Rival Cube/u }).hover();
   await expect(page.locator(".cubes")).toHaveAttribute("data-hot", "1");
   await page.mouse.move(1, 1);
   await expect(page.locator(".cubes")).not.toHaveAttribute("data-hot");
-  await types.getByRole("button", { name: "Table" }).click();
-  const creatures = types.getByRole("row", { name: /Creature/u });
-  await expect(types).toContainText("Rival Cube runs more instants (42% vs 35%)");
-  await expect(creatures.getByRole("cell")).toHaveText([/^52%\+5 pts$/u, /^42%-5 pts$/u, "47%"]);
+
+  await stage.getByRole("button", { name: "Table" }).click();
+  const creatures = stage.getByRole("row", { name: /Creature/u });
+  await expect(creatures.getByRole("cell")).toHaveText([/^52%\+5$/u, /^42%−5$/u, "47%"]);
   await page
     .getByRole("group", { name: "Numbers" })
     .getByRole("button", { name: "Counts" })
     .click();
-  await expect(creatures.getByRole("cell")).toHaveText([/^15/u, /^5/u, "10"]);
-  const tags = page.getByRole("region", { name: "Tags" });
-  await tags.getByRole("button", { name: "Table" }).click();
-  await expect(tags.getByRole("rowheader")).toHaveText(["#Removal", "#Burn", "#Ramp"]);
-  await page.getByRole("checkbox", { name: "Rival Cube" }).uncheck();
+  await expect(creatures.getByRole("cell")).toHaveText([/^15/u, /^5/u, "10.0"]);
+
+  await strip.getByRole("button", { name: /^Custom/u }).click();
+  await expect(page.getByRole("region", { name: "Custom" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Custom" })).toBeVisible();
+  await expect(pinned).toHaveCount(before);
+
+  await page.getByRole("checkbox", { name: /Rival Cube/u }).uncheck();
   await expect(page.getByText("Pick two or more cubes.")).toBeVisible();
 });

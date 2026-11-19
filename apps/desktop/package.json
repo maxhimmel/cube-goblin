@@ -10,6 +10,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "package": "electron-builder --mac --arm64 --publish never",
+    "package:publish": "electron-builder --mac --arm64 --publish always",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json",
     "e2e:desktop": "playwright test"

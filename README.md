@@ -17,7 +17,7 @@ After that, Cube Goblin opens normally. Apple's guide: [open a Mac app from an u
 
 ### Updates
 
-When a new version is out, Cube Goblin says so and links to its [release page](https://github.com/maxhimmel/cube-goblin/releases/latest). Download the new dmg, drag it into Applications to replace the old app, and repeat steps 3 and 4. Your cubes stay where they are.
+When a new version is out, Cube Goblin says so and links to its [release page](https://github.com/maxhimmel/cube-goblin/releases/latest). Quit Cube Goblin, download the new dmg, drag it into Applications to replace the old app, and repeat steps 3 and 4. Your cubes stay where they are.
 
 ## Develop
 

@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "package": "electron-builder --mac --arm64",
+    "package": "electron-builder --mac --arm64 --publish never",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json",
     "e2e:desktop": "playwright test"
@@ -23,6 +23,7 @@
     "@types/node": "22.20.5",
     "electron": "45.3.2",
     "electron-builder": "26.18.0",
+    "electron-updater": "6.8.11",
     "electron-vite": "6.0.0",
     "eslint": "10.14.0",
     "jiti": "2.7.0",
@@ -46,7 +47,13 @@
         "to": "renderer"
       }
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "maxhimmel",
+      "repo": "cube-goblin"
+    },
     "mac": {
+      "artifactName": "Cube-Goblin-${arch}.${ext}",
       "identity": "-",
       "hardenedRuntime": false,
       "target": [

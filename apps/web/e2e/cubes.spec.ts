@@ -173,9 +173,12 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
 
   const spokes = page.getByRole("list", { name: "Card types spokes" });
   const inspector = page.getByRole("complementary", { name: "Inspector" });
-  await spokes.getByRole("button", { name: /Instant$/u }).hover();
+  const instant = spokes.getByRole("button", { name: /Instant$/u });
+  await instant.hover();
   await expect(inspector.getByLabel("Inspecting Instant")).toContainText("Rival Cube42%");
-  await expect(inspector.locator(".cubes-caption")).toHaveText(/^Click to (un)?pin/u);
+  await expect(inspector.locator(".cubes-caption")).toHaveText("Hovered spoke");
+  await expect(instant).toHaveAttribute("data-intent", /^(un)?pin$/u);
+  await expect(instant).toHaveAttribute("data-hover", "");
   const plot = await page.locator(".cubes-hero-plot").boundingBox();
   if (plot) {
     await page.mouse.click(plot.x + 12, plot.y + plot.height - 12);
@@ -186,6 +189,7 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   await expect(gaps.first()).toContainText(/[+−]\d/u);
   await gaps.first().locator(".cubes-item").hover();
   await expect(page.locator(".cubes-tile[data-holds]").first()).toBeVisible();
+  await expect(spokes.locator("button[data-intent]")).toHaveCount(0);
   await inspector.getByRole("tab", { name: /Pinned/u }).click();
   const pinned = inspector.getByRole("list", { name: "Pinned spokes" }).getByRole("listitem");
   const before = await pinned.count();
@@ -216,6 +220,9 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   await page.reload();
   await expect(page.getByRole("region", { name: "Custom" })).toBeVisible();
   await expect(pinned).toHaveCount(before);
+  const section = await pinned.first().locator("small").textContent();
+  await pinned.first().locator(".cubes-item").click();
+  await expect(page.getByRole("region", { name: section ?? "" })).toBeVisible();
 
   await page.getByRole("checkbox", { name: /Rival Cube/u }).uncheck();
   await expect(page.getByText("Pick two or more cubes.")).toBeVisible();

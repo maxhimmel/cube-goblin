@@ -153,14 +153,7 @@ export function CubesPage(): ReactNode {
   const resting = rowsOf(stageIds).toSorted((a, b) => spread(b) - spread(a))[0]?.id ?? pins[0];
   const inspected = hover ?? resting;
   const intent = hover !== undefined && source === "radar" ? (pinSet.has(hover) ? -1 : 1) : 0;
-  const caption =
-    hover === undefined
-      ? `Biggest gap in ${stage.title}`
-      : source === "panel"
-        ? "Click to open its section"
-        : intent > 0
-          ? "Click to pin to Custom"
-          : "Click to unpin from Custom";
+  const caption = hover === undefined ? `Biggest gap in ${stage.title}` : "Hovered spoke";
   const toggle = (dir: string, on: boolean): void => {
     setChoice({
       ...choice,
@@ -180,9 +173,7 @@ export function CubesPage(): ReactNode {
       setSource(from);
     };
   const goTo = (id: string): void => {
-    if (!(isCustom && pinSet.has(id))) {
-      setSectionKey(sectionOf(id) ?? stage.key);
-    }
+    setSectionKey(sectionOf(id) ?? stage.key);
   };
   const columnOf = (dir: string): number => columns.findIndex((column) => column.cube.dir === dir);
   const enough = all.length >= 2 && ready.length >= 2;
@@ -301,6 +292,7 @@ export function CubesPage(): ReactNode {
                   mixed={isCustom}
                   pins={pinSet}
                   hover={hover}
+                  armed={source === "radar"}
                   onAxis={inspectFrom("radar")}
                   onPin={togglePin}
                   onHotCube={setHot}
@@ -347,9 +339,21 @@ export function CubesPage(): ReactNode {
                     <span className="cubes-tile-head">
                       <strong>{section.title}</strong>
                       <small>
-                        {section.key === CUSTOM
-                          ? `${String(pins.length)} pins${intent > 0 ? " +1" : intent < 0 ? " −1" : ""}`
-                          : `${String(gapCount(tile))} gaps`}
+                        {section.key === CUSTOM ? (
+                          <>
+                            {pins.length} pins
+                            {intent !== 0 && (
+                              <span
+                                className="cubes-tile-delta"
+                                data-dir={intent > 0 ? "pin" : "unpin"}
+                              >
+                                {intent > 0 ? " +1" : " −1"}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          `${String(gapCount(tile))} gaps`
+                        )}
                       </small>
                     </span>
                     {tile.length >= MIN_AXES ? (

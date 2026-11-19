@@ -164,7 +164,6 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   const { page } = web;
   await addRival(web);
   await page.getByRole("link", { name: "Cubes" }).click();
-  await expect(page.locator(".cubes-lede")).toContainText("Rival Cube leans on");
   await expect(page.getByRole("img", { name: /^Color: Max's Cube, Rival Cube/u })).toBeVisible();
 
   const strip = page.getByRole("navigation", { name: "Sections" });
@@ -177,6 +176,11 @@ test("the Cubes view shows one radar, a section strip, and an inspector that kee
   await spokes.getByRole("button", { name: /Instant$/u }).hover();
   await expect(inspector.getByLabel("Inspecting Instant")).toContainText("Rival Cube42%");
 
+  const gaps = inspector.getByRole("list", { name: "Biggest gaps" }).getByRole("listitem");
+  await expect(gaps.first()).toContainText(/[+−]\d/u);
+  await gaps.first().locator(".cubes-item").hover();
+  await expect(page.locator(".cubes-tile[data-holds]").first()).toBeVisible();
+  await inspector.getByRole("tab", { name: /Pinned/u }).click();
   const pinned = inspector.getByRole("list", { name: "Pinned spokes" }).getByRole("listitem");
   const before = await pinned.count();
   await spokes.getByRole("button", { name: /^Pin /u }).first().click();

@@ -1,11 +1,13 @@
-import type { CompareUnit, GroupRow } from "@repo/cube/browser";
+import type { CompareUnit, GroupRow, Standout } from "@repo/cube/browser";
 import type { CSSProperties, ReactNode } from "react";
 import type { Column } from "./model.ts";
-import { OUTLIER, PERCENT, gapLabel, hueOf, percent } from "./model.ts";
+import { OUTLIER, PERCENT, gapLabel, hueOf, percent, spread } from "./model.ts";
 import type { StatRow } from "./rows.tsx";
 
 const BAR_SPAN = 0.15;
 const HALF = 50;
+
+export type PanelTab = "pinned" | "gaps";
 
 function value(row: GroupRow, cube: number, unit: CompareUnit): string {
   const cell = row.cells[cube];
@@ -85,8 +87,38 @@ function SpokeCard({
   );
 }
 
-function spread(row: GroupRow): number {
-  return Math.max(0, ...row.cells.map((cell) => Math.abs(cell.delta)));
+function bestCell(row: GroupRow | undefined): { cube: number; delta: number } | undefined {
+  return row?.cells.reduce<{ cube: number; delta: number }>(
+    (found, cell, cube) =>
+      Math.abs(cell.delta) > Math.abs(found.delta) ? { cube, delta: cell.delta } : found,
+    { cube: 0, delta: 0 },
+  );
+}
+
+function SpokeName({ spec, id }: { spec: StatRow | undefined; id: string }): ReactNode {
+  return (
+    <>
+      {spec?.icon}
+      <span>{spec?.label ?? id}</span>
+      <small>{spec?.section}</small>
+    </>
+  );
+}
+
+export interface InspectorProps {
+  axis: string | undefined;
+  rowOf: ReadonlyMap<string, GroupRow>;
+  specs: ReadonlyMap<string, StatRow>;
+  columns: readonly Column[];
+  unit: CompareUnit;
+  pins: readonly string[];
+  gaps: readonly Standout[];
+  hover: string | undefined;
+  tab: PanelTab;
+  onTab: (tab: PanelTab) => void;
+  onHover: (axis: string | undefined) => void;
+  onGo: (axis: string) => void;
+  onPin: (axis: string) => void;
 }
 
 export function Inspector({
@@ -96,90 +128,160 @@ export function Inspector({
   columns,
   unit,
   pins,
+  gaps,
   hover,
-  onInspect,
-  onUnpin,
-}: {
-  axis: string | undefined;
-  rowOf: ReadonlyMap<string, GroupRow>;
-  specs: ReadonlyMap<string, StatRow>;
-  columns: readonly Column[];
-  unit: CompareUnit;
-  pins: readonly string[];
-  hover: string | undefined;
-  onInspect: (axis: string | undefined) => void;
-  onUnpin: (axis: string) => void;
-}): ReactNode {
+  tab,
+  onTab,
+  onHover,
+  onGo,
+  onPin,
+}: InspectorProps): ReactNode {
   const row = axis === undefined ? undefined : rowOf.get(axis);
+  const pinSet = new Set(pins);
+  const hoverProps = (id: string) => ({
+    onPointerEnter: () => {
+      onHover(id);
+    },
+    onPointerLeave: () => {
+      onHover(undefined);
+    },
+    onFocus: () => {
+      onHover(id);
+    },
+    onBlur: () => {
+      onHover(undefined);
+    },
+  });
   return (
     <aside className="cubes-inspector" aria-label="Inspector">
-      <h2>Inspecting</h2>
       {row ? (
         <SpokeCard row={row} spec={specs.get(row.id)} columns={columns} unit={unit} />
       ) : (
         <p className="cubes-empty">Hover a spoke to see every cube's number on it.</p>
       )}
-      <h2>
-        Pinned <span className="cubes-count">{pins.length}</span>
-      </h2>
-      {pins.length === 0 ? (
-        <p className="cubes-empty">
-          Click a spoke on the big radar to pin it. Pins build your Custom radar.
-        </p>
+      <div className="cubes-tabs" role="tablist" aria-label="Lists">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "pinned"}
+          onClick={() => {
+            onTab("pinned");
+          }}
+        >
+          Pinned <span className="cubes-count">{pins.length}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "gaps"}
+          onClick={() => {
+            onTab("gaps");
+          }}
+        >
+          Biggest gaps
+        </button>
+      </div>
+      {tab === "pinned" ? (
+        pins.length === 0 ? (
+          <p className="cubes-empty">
+            Click a spoke on the big radar to pin it. Pins build your Custom radar.
+          </p>
+        ) : (
+          <ul className="cubes-list" aria-label="Pinned spokes">
+            {pins.map((id) => {
+              const spec = specs.get(id);
+              const best = bestCell(rowOf.get(id));
+              return (
+                <li key={id} data-hover={hover === id ? "" : undefined}>
+                  <button
+                    type="button"
+                    className="cubes-item"
+                    {...hoverProps(id)}
+                    onClick={() => {
+                      onGo(id);
+                    }}
+                  >
+                    <SpokeName spec={spec} id={id} />
+                  </button>
+                  {best && Math.abs(best.delta) >= OUTLIER ? (
+                    <span
+                      className="cubes-item-gap"
+                      style={{ "--hue": hueOf(best.cube) } as CSSProperties}
+                      title={`${columns[best.cube]?.cube.name ?? ""} ${gapLabel(best.delta)} points`}
+                    >
+                      {gapLabel(best.delta)}
+                    </span>
+                  ) : (
+                    <span className="cubes-item-gap">even</span>
+                  )}
+                  <button
+                    type="button"
+                    className="cubes-unpin"
+                    aria-label={`Unpin ${spec?.label ?? id}`}
+                    onClick={() => {
+                      onPin(id);
+                    }}
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )
       ) : (
-        <ul className="cubes-pins" aria-label="Pinned spokes">
-          {pins.map((id) => {
-            const pinned = rowOf.get(id);
-            const spec = specs.get(id);
-            const best = pinned?.cells.reduce<{ cube: number; delta: number }>(
-              (found, cell, cube) =>
-                Math.abs(cell.delta) > Math.abs(found.delta) ? { cube, delta: cell.delta } : found,
-              { cube: 0, delta: 0 },
-            );
+        <ol className="cubes-list cubes-gaps" aria-label="Biggest gaps">
+          {gaps.map((gap) => {
+            const spec = specs.get(gap.id);
+            const name = columns[gap.cube]?.cube.name ?? "";
             return (
-              <li key={id} data-hover={hover === id ? "" : undefined}>
+              <li key={gap.id} data-hover={hover === gap.id ? "" : undefined}>
                 <button
                   type="button"
-                  className="cubes-pin"
-                  onPointerEnter={() => {
-                    onInspect(id);
-                  }}
-                  onFocus={() => {
-                    onInspect(id);
+                  className="cubes-item"
+                  {...hoverProps(gap.id)}
+                  onClick={() => {
+                    onGo(gap.id);
                   }}
                 >
-                  {spec?.icon}
-                  <span>{spec?.label ?? id}</span>
-                  <small>{spec?.section}</small>
-                </button>
-                {best && Math.abs(best.delta) >= OUTLIER ? (
-                  <span
-                    className="cubes-pin-gap"
-                    style={{ "--hue": hueOf(best.cube) } as CSSProperties}
-                    title={`${columns[best.cube]?.cube.name ?? ""} ${gapLabel(best.delta)} points`}
-                  >
-                    {gapLabel(best.delta)}
+                  <span className="cubes-gap-line">
+                    {spec?.icon}
+                    <strong>{spec?.label ?? gap.id}</strong>
+                    <small>{spec?.section}</small>
                   </span>
-                ) : (
-                  <span className="cubes-pin-gap">even</span>
-                )}
+                  <span className="cubes-gap-line">
+                    <span
+                      className="cubes-who"
+                      style={{ "--hue": hueOf(gap.cube) } as CSSProperties}
+                    >
+                      {name}
+                    </span>
+                    <span className="cubes-muted">
+                      {percent(gap.share)} vs {percent(gap.mean)}
+                    </span>
+                  </span>
+                </button>
+                <Gap delta={gap.delta} />
                 <button
                   type="button"
                   className="cubes-unpin"
-                  aria-label={`Unpin ${spec?.label ?? id}`}
+                  aria-pressed={pinSet.has(gap.id)}
+                  aria-label={`${pinSet.has(gap.id) ? "Unpin" : "Pin"} ${spec?.label ?? gap.id}`}
+                  title={pinSet.has(gap.id) ? "Unpin" : "Pin to Custom"}
                   onClick={() => {
-                    onUnpin(id);
+                    onPin(gap.id);
                   }}
                 >
-                  ×
+                  {pinSet.has(gap.id) ? "●" : "○"}
                 </button>
               </li>
             );
           })}
-        </ul>
+        </ol>
       )}
       <p className="cubes-hint">
-        Pins stay while you switch sections. Gaps are points from the average, out of {PERCENT}.
+        Hover a row to find it on the charts; click it to open its section. Gaps are points from the
+        average, out of {PERCENT}.
       </p>
     </aside>
   );
